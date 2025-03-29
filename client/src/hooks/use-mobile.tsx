@@ -94,3 +94,75 @@ export function usePlatform() {
   
   return platform;
 }
+
+/**
+ * Hook to detect if the device is currently online
+ * @returns {boolean} True if online, false if offline
+ */
+export function useIsOnline() {
+  const [isOnline, setIsOnline] = useState<boolean>(
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
+  
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    // Check network status using Capacitor Network plugin if available
+    async function checkNetworkStatus() {
+      try {
+        const isNative = await checkIfNative();
+        
+        if (isNative) {
+          const { Network } = await import('@capacitor/network');
+          const status = await Network.getStatus();
+          setIsOnline(status.connected);
+          
+          // Listen for network status changes
+          Network.addListener('networkStatusChange', (status) => {
+            setIsOnline(status.connected);
+          });
+        }
+      } catch (err) {
+        console.log('Capacitor Network plugin not available', err);
+      }
+    }
+    
+    // Helper function to check if we're in a native environment
+    async function checkIfNative() {
+      try {
+        const { Capacitor } = await import('@capacitor/core');
+        return Capacitor.isNativePlatform();
+      } catch {
+        return false;
+      }
+    }
+    
+    // In browser environments, use standard online/offline events
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    // Also check using Capacitor if available
+    checkNetworkStatus();
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      
+      // Cleanup Capacitor listener if it was registered
+      (async () => {
+        try {
+          const isNative = await checkIfNative();
+          if (isNative) {
+            const { Network } = await import('@capacitor/network');
+            Network.removeAllListeners();
+          }
+        } catch (err) {
+          // Ignore errors during cleanup
+        }
+      })();
+    };
+  }, []);
+  
+  return isOnline;
+}

@@ -1,36 +1,40 @@
 import { Switch, Route, useLocation } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
 import { ProtectedRoute } from "@/lib/protected-route";
-import NotFound from "@/pages/not-found";
-import LandingPage from "@/pages/landing-page";
-import AuthPage from "@/pages/auth-page";
-import SettingsPage from "@/pages/settings-page";
-import ForgotPasswordPage from "@/pages/forgot-password";
-import ResetPasswordPage from "@/pages/reset-password";
-import JoinPage from "@/pages/join-page";
-import { useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { useIsNative } from "@/hooks/use-mobile";
 import { setupDeepLinks } from "@/lib/mobile";
 import { MobileNavbar } from "@/components/mobile-nav";
-
-// Coach routes
-import CoachDashboard from "@/pages/coach/dashboard";
-import CoachClients from "@/pages/coach/clients";
-import CoachSessions from "@/pages/coach/sessions";
-import CoachResources from "@/pages/coach/resources";
-import CoachPayments from "@/pages/coach/payments";
-
-// Client routes
-import ClientDashboard from "@/pages/client/dashboard";
-import ClientSessions from "@/pages/client/sessions";
-import ClientReflections from "@/pages/client/reflections";
-import ClientResources from "@/pages/client/resources";
-import ClientPayments from "@/pages/client/payments";
-
-// Demo pages
-import AudioDemoPage from "@/pages/demo/audio-demo";
-
 import { useAuth } from "@/hooks/use-auth";
+import { PageLoader } from "@/components/loading-spinner";
+import { NetworkStatus } from "@/components/network-status";
+import { OfflineStatusBanner } from "@/components/offline-status-banner";
+
+// Lazy-loaded components
+const NotFound = lazy(() => import("@/pages/not-found"));
+const LandingPage = lazy(() => import("@/pages/landing-page"));
+const AuthPage = lazy(() => import("@/pages/auth-page"));
+const SettingsPage = lazy(() => import("@/pages/settings-page"));
+const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password"));
+const ResetPasswordPage = lazy(() => import("@/pages/reset-password"));
+const JoinPage = lazy(() => import("@/pages/join-page"));
+
+// Coach routes - lazy loaded
+const CoachDashboard = lazy(() => import("@/pages/coach/dashboard"));
+const CoachClients = lazy(() => import("@/pages/coach/clients"));
+const CoachSessions = lazy(() => import("@/pages/coach/sessions"));
+const CoachResources = lazy(() => import("@/pages/coach/resources"));
+const CoachPayments = lazy(() => import("@/pages/coach/payments"));
+
+// Client routes - lazy loaded
+const ClientDashboard = lazy(() => import("@/pages/client/dashboard"));
+const ClientSessions = lazy(() => import("@/pages/client/sessions"));
+const ClientReflections = lazy(() => import("@/pages/client/reflections"));
+const ClientResources = lazy(() => import("@/pages/client/resources"));
+const ClientPayments = lazy(() => import("@/pages/client/payments"));
+
+// Demo pages - lazy loaded
+const AudioDemoPage = lazy(() => import("@/pages/demo/audio-demo"));
 
 function Router() {
   const { user } = useAuth();
@@ -172,11 +176,21 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-assistant" dir="rtl">
-      <Router />
+      {/* Offline/Online Status Banner */}
+      <div className="fixed top-0 left-0 right-0 z-50 px-4 pt-2">
+        <OfflineStatusBanner />
+      </div>
+      
+      <Suspense fallback={<PageLoader />}>
+        <Router />
+      </Suspense>
       <Toaster />
       
       {/* Mobile Navigation Bar */}
       <MobileNavbar />
+      
+      {/* Network Status Indicator */}
+      <NetworkStatus />
       
       {/* Add CSS variables for safe area insets on iOS */}
       <style dangerouslySetInnerHTML={{

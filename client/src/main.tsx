@@ -7,6 +7,7 @@ import "./index.css";
 import "./styles/onboarding.css";
 import "./styles/mobile.css";
 import { queryClient } from "./lib/queryClient";
+import { registerServiceWorker } from "./lib/service-worker";
 
 // Check if we're running in a mobile environment
 const isMobile = () => {
@@ -32,6 +33,11 @@ const tryInitMobileFeatures = async () => {
 
 // Try to initialize mobile features, but don't block rendering
 tryInitMobileFeatures();
+
+// Register service worker for offline capabilities and better performance
+registerServiceWorker().catch(error => {
+  console.warn('Service worker registration failed:', error);
+});
 
 // Initialize the app
 createRoot(document.getElementById("root")!).render(
