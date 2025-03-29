@@ -26,6 +26,19 @@ import createMemoryStore from "memorystore";
 
 const MemoryStore = createMemoryStore(session);
 
+// Define a ResourceFilters interface for advanced filtering
+export interface ResourceFilters {
+  type?: string | string[];
+  category?: string | string[];
+  tags?: string[];
+  difficulty?: string;
+  search?: string;
+  featured?: boolean;
+  languageCode?: string;
+  minDuration?: number;
+  maxDuration?: number;
+}
+
 export interface IStorage {
   // User methods
   getUser(id: number): Promise<User | undefined>;
@@ -69,8 +82,14 @@ export interface IStorage {
   createResource(resource: InsertResource): Promise<Resource>;
   getResourceById(id: number): Promise<Resource | undefined>;
   getResourcesByCoachId(coachId: number): Promise<Resource[]>;
+  getResourcesByCoachIdAndFilters(coachId: number, filters: ResourceFilters): Promise<Resource[]>;
   getVisibleResourcesForClient(clientId: number): Promise<Resource[]>;
+  getVisibleResourcesForClientByFilters(clientId: number, filters: ResourceFilters): Promise<Resource[]>;
   updateResource(id: number, resource: Partial<Resource>): Promise<Resource | undefined>;
+  getFeaturedResources(limit?: number): Promise<Resource[]>;
+  getResourcesByTag(tag: string): Promise<Resource[]>;
+  getResourcesByCategory(category: string): Promise<Resource[]>;
+  getResourcesByDifficulty(difficulty: string): Promise<Resource[]>;
   
   // ResourceAccess methods
   createResourceAccess(resourceAccess: InsertResourceAccess): Promise<ResourceAccess>;
@@ -435,6 +454,109 @@ export class MemStorage implements IStorage {
     const updatedResource = { ...existingResource, ...resourceData };
     this.resourcesData.set(id, updatedResource);
     return updatedResource;
+  }
+
+  // Implement the new resource filtering methods
+  async getResourcesByCoachIdAndFilters(coachId: number, filters: ResourceFilters): Promise<Resource[]> {
+    let resources = await this.getResourcesByCoachId(coachId);
+    
+    // Apply filters
+    return this.applyResourceFilters(resources, filters);
+  }
+  
+  async getVisibleResourcesForClientByFilters(clientId: number, filters: ResourceFilters): Promise<Resource[]> {
+    let resources = await this.getVisibleResourcesForClient(clientId);
+    
+    // Apply filters
+    return this.applyResourceFilters(resources, filters);
+  }
+  
+  async getFeaturedResources(limit?: number): Promise<Resource[]> {
+    const featuredResources = Array.from(this.resourcesData.values())
+      .filter(resource => resource.featured)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      
+    return limit ? featuredResources.slice(0, limit) : featuredResources;
+  }
+  
+  async getResourcesByTag(tag: string): Promise<Resource[]> {
+    return Array.from(this.resourcesData.values())
+      .filter(resource => resource.tags && resource.tags.includes(tag));
+  }
+  
+  async getResourcesByCategory(category: string): Promise<Resource[]> {
+    return Array.from(this.resourcesData.values())
+      .filter(resource => resource.category === category);
+  }
+  
+  async getResourcesByDifficulty(difficulty: string): Promise<Resource[]> {
+    return Array.from(this.resourcesData.values())
+      .filter(resource => resource.difficulty === difficulty);
+  }
+  
+  // Helper method to apply filters to a resource array
+  private applyResourceFilters(resources: Resource[], filters: ResourceFilters): Resource[] {
+    if (!filters) return resources;
+    
+    let filteredResources = [...resources];
+    
+    // Filter by type
+    if (filters.type) {
+      const types = Array.isArray(filters.type) ? filters.type : [filters.type];
+      filteredResources = filteredResources.filter(r => types.includes(r.type));
+    }
+    
+    // Filter by category
+    if (filters.category) {
+      const categories = Array.isArray(filters.category) ? filters.category : [filters.category];
+      filteredResources = filteredResources.filter(r => categories.includes(r.category));
+    }
+    
+    // Filter by tags (match any)
+    if (filters.tags && filters.tags.length > 0) {
+      filteredResources = filteredResources.filter(r => 
+        r.tags && filters.tags.some(tag => r.tags.includes(tag))
+      );
+    }
+    
+    // Filter by difficulty
+    if (filters.difficulty) {
+      filteredResources = filteredResources.filter(r => r.difficulty === filters.difficulty);
+    }
+    
+    // Filter by language
+    if (filters.languageCode) {
+      filteredResources = filteredResources.filter(r => r.languageCode === filters.languageCode);
+    }
+    
+    // Filter by featured
+    if (filters.featured !== undefined) {
+      filteredResources = filteredResources.filter(r => r.featured === filters.featured);
+    }
+    
+    // Filter by duration
+    if (filters.minDuration !== undefined) {
+      filteredResources = filteredResources.filter(r => 
+        r.durationMinutes !== undefined && r.durationMinutes >= filters.minDuration!
+      );
+    }
+    
+    if (filters.maxDuration !== undefined) {
+      filteredResources = filteredResources.filter(r => 
+        r.durationMinutes !== undefined && r.durationMinutes <= filters.maxDuration!
+      );
+    }
+    
+    // Search by title and description
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filteredResources = filteredResources.filter(r => 
+        (r.title && r.title.toLowerCase().includes(searchLower)) || 
+        (r.description && r.description.toLowerCase().includes(searchLower))
+      );
+    }
+    
+    return filteredResources;
   }
 
   // ResourceAccess methods

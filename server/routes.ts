@@ -1,6 +1,6 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage, ResourceFilters } from "./storage";
 import { setupAuth } from "./auth";
 import { registerAudioRoutes } from "./routes/audio";
 import { z } from "zod";
@@ -505,6 +505,133 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       res.json(resourcesWithCoachDetails);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Advanced resource filtering for clients
+  app.post("/api/resources/client/filter", ensureClient, async (req, res, next) => {
+    try {
+      const filterSchema = z.object({
+        type: z.union([z.string(), z.array(z.string())]).optional(),
+        category: z.union([z.string(), z.array(z.string())]).optional(),
+        tags: z.array(z.string()).optional(),
+        difficulty: z.string().optional(),
+        search: z.string().optional(),
+        featured: z.boolean().optional(),
+        languageCode: z.string().optional(),
+        minDuration: z.number().optional(),
+        maxDuration: z.number().optional(),
+      });
+      
+      const validatedFilters = filterSchema.parse(req.body);
+      const resources = await storage.getVisibleResourcesForClientByFilters(req.user!.id, validatedFilters);
+      
+      // Fetch coach details for each resource
+      const resourcesWithCoachDetails = await Promise.all(
+        resources.map(async (resource) => {
+          const coach = await storage.getUser(resource.coachId);
+          return {
+            ...resource,
+            coach: coach ? {
+              id: coach.id,
+              name: coach.name,
+              email: coach.email,
+              profilePicture: coach.profilePicture,
+            } : null,
+          };
+        })
+      );
+      
+      res.json(resourcesWithCoachDetails);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Advanced resource filtering for coaches
+  app.post("/api/resources/coach/filter", ensureCoach, async (req, res, next) => {
+    try {
+      const filterSchema = z.object({
+        type: z.union([z.string(), z.array(z.string())]).optional(),
+        category: z.union([z.string(), z.array(z.string())]).optional(),
+        tags: z.array(z.string()).optional(),
+        difficulty: z.string().optional(),
+        search: z.string().optional(),
+        featured: z.boolean().optional(),
+        languageCode: z.string().optional(),
+        minDuration: z.number().optional(),
+        maxDuration: z.number().optional(),
+      });
+      
+      const validatedFilters = filterSchema.parse(req.body);
+      const resources = await storage.getResourcesByCoachIdAndFilters(req.user!.id, validatedFilters);
+      res.json(resources);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Get featured resources
+  app.get("/api/resources/featured", ensureAuthenticated, async (req, res, next) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const resources = await storage.getFeaturedResources(limit);
+      
+      // If client, filter only visible resources
+      let filteredResources = resources;
+      if (req.user!.role === 'client') {
+        const visibleResources = await storage.getVisibleResourcesForClient(req.user!.id);
+        const visibleIds = new Set(visibleResources.map(r => r.id));
+        filteredResources = resources.filter(r => visibleIds.has(r.id));
+      }
+      
+      res.json(filteredResources);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Get resources by category
+  app.get("/api/resources/category/:category", ensureAuthenticated, async (req, res, next) => {
+    try {
+      const category = req.params.category;
+      let resources = await storage.getResourcesByCategory(category);
+      
+      // If client, filter only visible resources
+      if (req.user!.role === 'client') {
+        const visibleResources = await storage.getVisibleResourcesForClient(req.user!.id);
+        const visibleIds = new Set(visibleResources.map(r => r.id));
+        resources = resources.filter(r => visibleIds.has(r.id));
+      } else if (req.user!.role === 'coach') {
+        // Coaches can only see their own resources
+        resources = resources.filter(r => r.coachId === req.user!.id);
+      }
+      
+      res.json(resources);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Get resources by tag
+  app.get("/api/resources/tag/:tag", ensureAuthenticated, async (req, res, next) => {
+    try {
+      const tag = req.params.tag;
+      let resources = await storage.getResourcesByTag(tag);
+      
+      // If client, filter only visible resources
+      if (req.user!.role === 'client') {
+        const visibleResources = await storage.getVisibleResourcesForClient(req.user!.id);
+        const visibleIds = new Set(visibleResources.map(r => r.id));
+        resources = resources.filter(r => visibleIds.has(r.id));
+      } else if (req.user!.role === 'coach') {
+        // Coaches can only see their own resources
+        resources = resources.filter(r => r.coachId === req.user!.id);
+      }
+      
+      res.json(resources);
     } catch (error) {
       next(error);
     }

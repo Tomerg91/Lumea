@@ -95,7 +95,15 @@ export const resources = pgTable("resources", {
   description: text("description"),
   fileUrl: text("file_url"),
   type: text("type", { enum: ["pdf", "audio", "video", "image", "text", "other"] }).notNull(),
+  category: text("category", { 
+    enum: ["mindfulness", "exercises", "assessments", "readings", "worksheets", "general"] 
+  }).notNull().default("general"),
+  tags: text("tags").array(),
+  difficulty: text("difficulty", { enum: ["beginner", "intermediate", "advanced"] }).default("beginner"),
+  languageCode: text("language_code").default("he"),
+  durationMinutes: integer("duration_minutes"),
   visibleToClients: boolean("visible_to_clients").notNull().default(true),
+  featured: boolean("featured").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

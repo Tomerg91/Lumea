@@ -26,13 +26,13 @@ export function CTASection() {
           
           <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 md:space-x-reverse justify-center">
             <Link href="/auth">
-              <Button className="bg-white hover:bg-primary-50 text-primary-800 font-bold py-3 px-8 rounded-lg shadow-lg transition duration-300 text-lg w-full md:w-auto">
+              <Button className="bg-primary-500 hover:bg-primary-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition duration-300 text-lg w-full md:w-auto">
                 {t("landing.cta.signup")}
                 <ChevronLeft className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <Link href="/auth">
-              <Button variant="outline" className="border-2 border-white hover:bg-white/10 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition duration-300 text-lg w-full md:w-auto">
+              <Button variant="outline" className="border-2 border-white bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition duration-300 text-lg w-full md:w-auto">
                 {t("landing.cta.login")}
               </Button>
             </Link>

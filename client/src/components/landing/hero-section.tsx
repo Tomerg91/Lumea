@@ -26,12 +26,12 @@ export function HeroSection() {
             </p>
             <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 md:space-x-reverse justify-center md:justify-end">
               <Link href="/auth">
-                <Button className="bg-white text-primary-800 hover:bg-primary-50 font-bold py-3 px-8 rounded-lg shadow-lg transition duration-300 text-lg">
+                <Button className="bg-primary-500 text-white hover:bg-primary-600 font-bold py-3 px-8 rounded-lg shadow-lg transition duration-300 text-lg">
                   {t("landing.login")}
                 </Button>
               </Link>
               <Link href="/auth">
-                <Button variant="outline" className="border-2 border-white hover:bg-white/10 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition duration-300 text-lg">
+                <Button variant="outline" className="border-2 border-white bg-white/10 hover:bg-white/20 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition duration-300 text-lg">
                   {t("landing.signup")}
                 </Button>
               </Link>
