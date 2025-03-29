@@ -33,6 +33,11 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: Partial<User>): Promise<User | undefined>;
   
+  // Password reset methods
+  createPasswordResetToken(email: string): Promise<string | null>;
+  validatePasswordResetToken(token: string): Promise<User | null>;
+  resetPassword(userId: number, newPassword: string): Promise<boolean>;
+  
   // UserLink methods
   createUserLink(userLink: InsertUserLink): Promise<UserLink>;
   getUserLinksByCoachId(coachId: number): Promise<UserLink[]>;
@@ -84,6 +89,9 @@ export class MemStorage implements IStorage {
   private resourcesData: Map<number, Resource>;
   private resourceAccessData: Map<number, ResourceAccess>;
   
+  // Password reset tokens: token -> {userId, expiry}
+  private passwordResetTokens: Map<string, { userId: number, expiry: Date }>;
+  
   private currentUserId: number = 1;
   private currentUserLinkId: number = 1;
   private currentSessionId: number = 1;
@@ -102,10 +110,76 @@ export class MemStorage implements IStorage {
     this.paymentsData = new Map();
     this.resourcesData = new Map();
     this.resourceAccessData = new Map();
+    this.passwordResetTokens = new Map();
     
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // prune expired entries every 24h
     });
+  }
+  
+  // Password reset methods
+  async createPasswordResetToken(email: string): Promise<string | null> {
+    const user = await this.getUserByEmail(email);
+    if (!user) {
+      return null;
+    }
+    
+    // Generate a unique token
+    const token = require('crypto').randomBytes(32).toString('hex');
+    
+    // Store token with expiration (24 hours from now)
+    const expiry = new Date();
+    expiry.setHours(expiry.getHours() + 24);
+    
+    this.passwordResetTokens.set(token, {
+      userId: user.id,
+      expiry
+    });
+    
+    return token;
+  }
+  
+  async validatePasswordResetToken(token: string): Promise<User | null> {
+    const resetInfo = this.passwordResetTokens.get(token);
+    
+    // Token doesn't exist
+    if (!resetInfo) {
+      return null;
+    }
+    
+    // Token expired
+    if (resetInfo.expiry < new Date()) {
+      this.passwordResetTokens.delete(token);
+      return null;
+    }
+    
+    const user = await this.getUser(resetInfo.userId);
+    return user || null;
+  }
+  
+  async resetPassword(userId: number, newPassword: string): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      return false;
+    }
+    
+    // Hash the new password
+    const salt = require('crypto').randomBytes(16).toString('hex');
+    const buf = await require('util').promisify(require('crypto').scrypt)(newPassword, salt, 64);
+    const hashedPassword = `${buf.toString('hex')}.${salt}`;
+    
+    // Update the user's password
+    user.password = hashedPassword;
+    this.usersData.set(userId, user);
+    
+    // Remove any existing reset tokens for this user
+    for (const [token, info] of this.passwordResetTokens.entries()) {
+      if (info.userId === userId) {
+        this.passwordResetTokens.delete(token);
+      }
+    }
+    
+    return true;
   }
 
   // User methods

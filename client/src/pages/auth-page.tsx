@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { Redirect } from "wouter";
+import { Redirect, Link } from "wouter";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -159,9 +159,9 @@ export default function AuthPage() {
                           </div>
                         )}
                       />
-                      <a href="#" className="text-sm text-primary-600 hover:text-primary-800">
+                      <Link href="/forgot-password" className="text-sm text-primary-600 hover:text-primary-800">
                         {t("auth.login.forgotPassword")}
-                      </a>
+                      </Link>
                     </div>
                     <Button 
                       type="submit" 

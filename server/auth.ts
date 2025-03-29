@@ -2,11 +2,12 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { scrypt, randomBytes, timingSafeEqual, createHash } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
+import { v4 as uuidv4 } from 'uuid';
 
 declare global {
   namespace Express {
@@ -156,5 +157,85 @@ export function setupAuth(app: Express) {
     // Remove sensitive data
     const { password, ...userWithoutPassword } = req.user!;
     res.json(userWithoutPassword);
+  });
+  
+  // Request password reset endpoint
+  app.post("/api/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      
+      // Create reset token
+      const token = await storage.createPasswordResetToken(email);
+      
+      if (!token) {
+        // Don't reveal if the user exists or not for security reasons
+        return res.status(200).json({ 
+          message: "If an account with that email exists, a password reset link has been sent."
+        });
+      }
+      
+      // In a real application, you would send an email with the reset link
+      // For this demo, we'll just return the token in the response
+      res.status(200).json({ 
+        message: "If an account with that email exists, a password reset link has been sent.",
+        token // In production, remove this and send it via email instead
+      });
+    } catch (error) {
+      console.error("Password reset error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  // Validate reset token endpoint
+  app.get("/api/reset-password/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      
+      const user = await storage.validatePasswordResetToken(token);
+      
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+      
+      res.status(200).json({ valid: true });
+    } catch (error) {
+      console.error("Token validation error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  // Reset password endpoint
+  app.post("/api/reset-password/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      const { password, confirmPassword } = req.body;
+      
+      if (password !== confirmPassword) {
+        return res.status(400).json({ message: "Passwords don't match" });
+      }
+      
+      // Validate the token and get the user
+      const user = await storage.validatePasswordResetToken(token);
+      
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+      
+      // Reset the password
+      const success = await storage.resetPassword(user.id, password);
+      
+      if (!success) {
+        return res.status(400).json({ message: "Failed to reset password" });
+      }
+      
+      res.status(200).json({ message: "Password has been reset successfully" });
+    } catch (error) {
+      console.error("Password reset error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
   });
 }
