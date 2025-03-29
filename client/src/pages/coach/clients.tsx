@@ -55,6 +55,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
+import {
   Form,
   FormControl,
   FormDescription,
@@ -72,7 +77,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Types
@@ -191,7 +195,12 @@ export default function ClientsPage() {
   
   // Copy invitation link to clipboard
   const copyInvitationLink = () => {
-    navigator.clipboard.writeText(invitationLink);
+    // Ensure we copy the absolute URL for better compatibility
+    const absoluteUrl = invitationLink.startsWith('http') 
+      ? invitationLink 
+      : window.location.origin + invitationLink;
+    
+    navigator.clipboard.writeText(absoluteUrl);
     toast({
       title: t("coach.clients.invite.linkCopied"),
       duration: 2000,
@@ -297,18 +306,40 @@ export default function ClientsPage() {
               ) : (
                 <div className="space-y-4">
                   <div className="bg-primary-50 p-3 rounded-md">
-                    <div className="text-sm text-primary-800 break-all">{invitationLink}</div>
+                    <div className="text-sm text-primary-800 break-all">
+                      {invitationLink.startsWith('http') 
+                        ? invitationLink 
+                        : window.location.origin + invitationLink}
+                    </div>
                   </div>
                   
-                  <Button
-                    type="button"
-                    className="w-full gap-2"
-                    variant="outline"
-                    onClick={copyInvitationLink}
-                  >
-                    <Copy className="h-4 w-4" />
-                    {t("coach.clients.invite.copyLink")}
-                  </Button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      className="gap-2"
+                      variant="outline"
+                      onClick={copyInvitationLink}
+                    >
+                      <Copy className="h-4 w-4" />
+                      {t("coach.clients.invite.copyLink")}
+                    </Button>
+                    
+                    <Button
+                      type="button"
+                      className="gap-2"
+                      variant="secondary"
+                      onClick={() => {
+                        // Handle both absolute and relative URLs
+                        const url = invitationLink.startsWith('http') 
+                          ? invitationLink 
+                          : window.location.origin + invitationLink;
+                        window.open(url, '_blank');
+                      }}
+                    >
+                      <LinkIcon className="h-4 w-4" />
+                      פתח קישור
+                    </Button>
+                  </div>
                 </div>
               )}
             </DialogContent>
