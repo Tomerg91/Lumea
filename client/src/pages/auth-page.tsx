@@ -254,7 +254,7 @@ export default function AuthPage() {
                             <Button
                               type="button"
                               variant={field.value === "client" ? "default" : "outline"}
-                              className={`py-3 px-4 rounded-lg text-center transition-colors duration-200 ${
+                              className={`py-5 px-6 rounded-lg text-center transition-colors duration-200 h-auto ${
                                 field.value === "client"
                                   ? "bg-primary-600 text-white"
                                   : "border-2 border-gray-300 hover:bg-gray-50"
@@ -262,14 +262,14 @@ export default function AuthPage() {
                               onClick={() => field.onChange("client")}
                             >
                               <div className="flex flex-col items-center">
-                                <i className="fas fa-user text-lg mb-1"></i>
-                                <div className="font-medium">{t("auth.signup.roleClient")}</div>
+                                <i className="fas fa-user text-base mb-2"></i>
+                                <div className="font-medium text-sm">{t("auth.signup.roleClient")}</div>
                               </div>
                             </Button>
                             <Button
                               type="button"
                               variant={field.value === "coach" ? "default" : "outline"}
-                              className={`py-3 px-4 rounded-lg text-center transition-colors duration-200 ${
+                              className={`py-5 px-6 rounded-lg text-center transition-colors duration-200 h-auto ${
                                 field.value === "coach"
                                   ? "bg-primary-600 text-white"
                                   : "border-2 border-gray-300 hover:bg-gray-50"
@@ -277,8 +277,8 @@ export default function AuthPage() {
                               onClick={() => field.onChange("coach")}
                             >
                               <div className="flex flex-col items-center">
-                                <i className="fas fa-user-tie text-lg mb-1"></i>
-                                <div className="font-medium">{t("auth.signup.roleCoach")}</div>
+                                <i className="fas fa-user-tie text-base mb-2"></i>
+                                <div className="font-medium text-sm">{t("auth.signup.roleCoach")}</div>
                               </div>
                             </Button>
                           </div>
