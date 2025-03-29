@@ -1,0 +1,135 @@
+/* Mobile Specific Styles */
+
+/* Generic mobile optimizations */
+@media (max-width: 768px) {
+  /* Increase touch targets on mobile */
+  button, 
+  .btn, 
+  [role="button"], 
+  input[type="button"], 
+  input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Add extra padding to inputs to make them easier to use on mobile */
+  input, 
+  select, 
+  textarea {
+    padding: 10px 12px;
+  }
+  
+  /* Increase font size for better readability */
+  body {
+    font-size: 16px;
+  }
+}
+
+/* iOS-specific optimizations */
+@supports (-webkit-touch-callout: none) {
+  /* Safe area insets for notches */
+  .safe-area-top {
+    padding-top: var(--sat-top);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: var(--sat-bottom);
+  }
+  
+  .safe-area-left {
+    padding-left: var(--sat-left);
+  }
+  
+  .safe-area-right {
+    padding-right: var(--sat-right);
+  }
+
+  /* For fixed position elements like headers and footers */
+  .fixed-header {
+    padding-top: var(--sat-top);
+  }
+  
+  .fixed-footer {
+    padding-bottom: var(--sat-bottom);
+  }
+}
+
+/* Mobile navigation enhancers */
+.mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: white;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  padding-bottom: var(--sat-bottom, 0);
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0;
+  color: #7c7c7c;
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.mobile-nav-item.active {
+  color: #3A86FF;
+}
+
+.mobile-nav-icon {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+/* Hide mobile nav on desktop */
+@media (min-width: 769px) {
+  .mobile-nav {
+    display: none;
+  }
+}
+
+/* Prevent overscroll effects and bounce */
+html, body {
+  overscroll-behavior-y: none;
+}
+
+/* Disable pull-to-refresh on mobile */
+body {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+#root {
+  overflow-y: auto;
+  height: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Disable text selection on mobile */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Mobile offline indicator */
+.offline-indicator {
+  position: fixed;
+  top: var(--sat-top, 0);
+  left: 0;
+  right: 0;
+  background-color: #FF3B30;
+  color: white;
+  text-align: center;
+  padding: 8px;
+  z-index: 9999;
+  font-weight: bold;
+}
