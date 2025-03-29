@@ -191,7 +191,7 @@ export function AudioRecorder({
       <div className="flex flex-col gap-2">
         <div className="flex justify-between text-sm">
           <span className="font-medium">
-            {isRecording ? "Recording" : recordedAudioUrl ? "Playback" : "Ready"}
+            {isRecording ? "מקליט" : recordedAudioUrl ? "השמעה" : "מוכן"}
           </span>
           <span>
             {isRecording ? formatTime(recordingDuration) : 
@@ -244,7 +244,7 @@ export function AudioRecorder({
             onClick={onCancel}
           >
             <X className="h-4 w-4 mr-2" />
-            Cancel
+            ביטול
           </Button>
           
           <Button
@@ -254,7 +254,7 @@ export function AudioRecorder({
             disabled={!recordedAudioUrl && !initialAudioUrl}
           >
             <Save className="h-4 w-4 mr-2" />
-            Save
+            שמור
           </Button>
         </div>
       </div>
@@ -262,7 +262,7 @@ export function AudioRecorder({
       {/* Recording limit warning */}
       {isRecording && recordingDuration >= maxDuration * 0.8 && (
         <p className="text-sm text-destructive mt-2">
-          Recording limit approaching ({formatTime(maxDuration - recordingDuration)} remaining)
+          מתקרב למגבלת הקלטה ({formatTime(maxDuration - recordingDuration)} נותרו)
         </p>
       )}
     </div>

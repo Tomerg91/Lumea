@@ -27,24 +27,24 @@ export default function AudioDemoPage() {
 
   return (
     <div className="container py-10">
-      <h1 className="text-3xl font-bold mb-8">Audio Recording Demo</h1>
+      <h1 className="text-3xl font-bold mb-8">הדגמת הקלטת אודיו</h1>
       
       <p className="text-muted-foreground mb-8">
-        This demo showcases the audio recording functionality for both reflections and session notes.
-        In a real application, the recordings would be saved to the server and associated with the appropriate entity.
+        הדגמה זו מציגה את פונקציונליות הקלטת האודיו עבור רפלקציות והערות מפגש.
+        באפליקציה אמיתית, ההקלטות יישמרו בשרת ויקושרו לישות המתאימה.
       </p>
       
       <Tabs defaultValue="reflection" className="w-full max-w-3xl mx-auto">
         <TabsList className="grid grid-cols-2 mb-8">
-          <TabsTrigger value="reflection">Client Reflection</TabsTrigger>
-          <TabsTrigger value="session">Coach Session Notes</TabsTrigger>
+          <TabsTrigger value="reflection">רפלקציה של מתאמן</TabsTrigger>
+          <TabsTrigger value="session">הערות מפגש של מאמן</TabsTrigger>
         </TabsList>
         
         <TabsContent value="reflection" className="space-y-4">
-          <h2 className="text-xl font-semibold">Client Reflection Recording</h2>
+          <h2 className="text-xl font-semibold">הקלטת רפלקציה של מתאמן</h2>
           <p className="text-muted-foreground mb-4">
-            Clients can record audio reflections about their coaching sessions.
-            These can be shared with their coach if desired.
+            מתאמנים יכולים להקליט רפלקציות קוליות על מפגשי האימון שלהם.
+            ניתן לשתף אותן עם המאמן לפי בחירתם.
           </p>
           
           <AudioRecordingCard
@@ -56,10 +56,10 @@ export default function AudioDemoPage() {
         </TabsContent>
         
         <TabsContent value="session" className="space-y-4">
-          <h2 className="text-xl font-semibold">Coach Session Notes Recording</h2>
+          <h2 className="text-xl font-semibold">הקלטת הערות מפגש של מאמן</h2>
           <p className="text-muted-foreground mb-4">
-            Coaches can record audio notes about sessions with their clients.
-            These notes are private to the coach.
+            מאמנים יכולים להקליט הערות קוליות על מפגשים עם המתאמנים שלהם.
+            הערות אלה הן פרטיות למאמן.
           </p>
           
           <AudioRecordingCard

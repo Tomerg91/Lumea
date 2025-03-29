@@ -55,12 +55,12 @@ export function AudioRecordingCard({
     <Card>
       <CardHeader>
         <CardTitle className="text-lg">
-          {entityType === "reflection" ? "Voice Reflection" : "Session Voice Notes"}
+          {entityType === "reflection" ? "רפלקציה קולית" : "הערות קוליות למפגש"}
         </CardTitle>
         <CardDescription>
           {entityType === "reflection" 
-            ? "Record your thoughts about this session" 
-            : "Record notes about this coaching session"}
+            ? "הקלטת המחשבות שלך על המפגש" 
+            : "הקלטת הערות על מפגש האימון"}
         </CardDescription>
       </CardHeader>
       
@@ -77,14 +77,14 @@ export function AudioRecordingCard({
               <div className="w-full">
                 <audio src={initialAudioUrl} controls className="w-full" />
                 <p className="text-sm text-muted-foreground mt-2 text-center">
-                  Audio recording available. Click below to record a new one.
+                  הקלטת אודיו זמינה. לחץ למטה להקלטה חדשה.
                 </p>
               </div>
             ) : (
               <>
                 <Mic className="h-12 w-12 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground text-center">
-                  No audio recording yet. Click below to start recording.
+                  אין הקלטת אודיו עדיין. לחץ למטה כדי להתחיל להקליט.
                 </p>
               </>
             )}
@@ -95,7 +95,7 @@ export function AudioRecordingCard({
           <div className="mt-4">
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm">Uploading: {Math.round(uploadProgress)}%</span>
+              <span className="text-sm">מעלה: {Math.round(uploadProgress)}%</span>
             </div>
             <div className="w-full h-2 bg-muted rounded-full mt-1 overflow-hidden">
               <div 
@@ -114,7 +114,7 @@ export function AudioRecordingCard({
             className="w-full"
             disabled={isUploading}
           >
-            {initialAudioUrl ? "Record New Audio" : "Start Recording"}
+            {initialAudioUrl ? "הקלט אודיו חדש" : "התחל הקלטה"}
           </Button>
         )}
       </CardFooter>
