@@ -10,11 +10,6 @@ export const isServiceWorkerSupported = 'serviceWorker' in navigator;
  * @returns Promise resolving to service worker registration or undefined if not supported
  */
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | undefined> {
-  // Temporarily disabled for debugging
-  console.log('Service worker registration temporarily disabled for debugging');
-  return undefined;
-  
-  /* Original implementation:
   if (!isServiceWorkerSupported) {
     console.warn('Service workers are not supported in this browser');
     return undefined;
@@ -30,7 +25,6 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
     console.error('Service worker registration failed:', error);
     return undefined;
   }
-  */
 }
 
 /**

@@ -189,8 +189,8 @@ function App() {
       {/* Mobile Navigation Bar */}
       <MobileNavbar />
       
-      {/* Network Status Indicator - temporarily disabled for debugging */}
-      {/* <NetworkStatus /> */}
+      {/* Network Status Indicator */}
+      <NetworkStatus />
       
       {/* Add CSS variables for safe area insets on iOS */}
       <style dangerouslySetInnerHTML={{
