@@ -4,6 +4,7 @@ import { ProtectedRoute } from "@/lib/protected-route";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing-page";
 import AuthPage from "@/pages/auth-page";
+import SettingsPage from "@/pages/settings-page";
 
 // Coach routes
 import CoachDashboard from "@/pages/coach/dashboard";
@@ -82,6 +83,12 @@ function Router() {
         path="/client/payments" 
         component={ClientPayments} 
         requiredRole="client"
+      />
+      
+      {/* Shared routes */}
+      <ProtectedRoute 
+        path="/settings" 
+        component={SettingsPage} 
       />
 
       {/* Redirect logged in users to their dashboard */}

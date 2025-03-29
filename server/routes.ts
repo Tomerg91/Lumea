@@ -41,14 +41,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 
   // User Profile routes
-  app.put("/api/user/profile", ensureAuthenticated, async (req, res, next) => {
+  app.patch("/api/user", ensureAuthenticated, async (req, res, next) => {
     try {
       const updateSchema = z.object({
         name: z.string().optional(),
+        email: z.string().email().optional(),
         profilePicture: z.string().optional(),
+        phone: z.string().optional(),
+        bio: z.string().optional(),
       });
 
       const validatedData = updateSchema.parse(req.body);
+      
+      // If trying to update email, check if it's already in use
+      if (validatedData.email && validatedData.email !== req.user!.email) {
+        const existingUser = await storage.getUserByEmail(validatedData.email);
+        if (existingUser) {
+          return res.status(409).json({ message: "Email already in use" });
+        }
+      }
+      
       const updatedUser = await storage.updateUser(req.user!.id, validatedData);
       
       if (!updatedUser) {
@@ -58,6 +70,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Remove sensitive data
       const { password, ...userWithoutPassword } = updatedUser;
       res.json(userWithoutPassword);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Password change endpoint
+  app.post("/api/user/change-password", ensureAuthenticated, async (req, res, next) => {
+    try {
+      const passwordSchema = z.object({
+        currentPassword: z.string(),
+        newPassword: z.string().min(6),
+        confirmPassword: z.string(),
+      }).refine(data => data.newPassword === data.confirmPassword, {
+        message: "Passwords don't match",
+        path: ["confirmPassword"]
+      });
+
+      const validatedData = passwordSchema.parse(req.body);
+      
+      // Get current user with password
+      const user = await storage.getUser(req.user!.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if current password is correct
+      // In a real app, you would use a proper password hashing mechanism
+      if (validatedData.currentPassword !== user.password) {
+        return res.status(400).json({ message: "Current password is incorrect" });
+      }
+      
+      // Update the password
+      const updatedUser = await storage.updateUser(req.user!.id, {
+        password: validatedData.newPassword
+      });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.status(200).json({ message: "Password updated successfully" });
     } catch (error) {
       next(error);
     }
@@ -471,6 +524,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const resourceAccess = await storage.createResourceAccess(validatedData);
       res.status(201).json(resourceAccess);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Client invitation functionality
+  app.post("/api/clients/invite", ensureCoach, async (req, res, next) => {
+    try {
+      const inviteSchema = z.object({
+        name: z.string().min(2),
+        email: z.string().email(),
+        message: z.string().optional(),
+      });
+      
+      const validatedData = inviteSchema.parse(req.body);
+      
+      // Check if user with that email already exists
+      const existingUser = await storage.getUserByEmail(validatedData.email);
+      
+      if (existingUser) {
+        // If user exists and is already a client
+        if (existingUser.role === "client") {
+          // Check if already linked to this coach
+          const existingLink = await storage.getUserLink(req.user!.id, existingUser.id);
+          
+          if (existingLink) {
+            return res.status(409).json({ 
+              message: "This client is already linked to your account",
+              clientId: existingUser.id
+            });
+          }
+          
+          // Link the existing client to this coach
+          const userLink = await storage.createUserLink({
+            coachId: req.user!.id,
+            clientId: existingUser.id,
+            status: "active"
+          });
+          
+          return res.status(201).json({
+            message: "Existing client linked successfully",
+            link: userLink,
+            isNewUser: false,
+          });
+        } else {
+          // User exists but is not a client (probably another coach)
+          return res.status(409).json({ 
+            message: "A user with this email already exists but is not a client"
+          });
+        }
+      }
+      
+      // In a real app, you would send an email invitation here
+      // For now, we'll just generate an invitation link
+      const invitationId = Math.random().toString(36).substring(2, 15);
+      const invitationLink = `${process.env.APP_URL || 'http://localhost:5000'}/join/${invitationId}?email=${encodeURIComponent(validatedData.email)}&name=${encodeURIComponent(validatedData.name)}&coach=${req.user!.id}`;
+      
+      res.status(200).json({
+        message: "Invitation created successfully",
+        invitationLink,
+        coachId: req.user!.id,
+        email: validatedData.email,
+        name: validatedData.name
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+  // Client invite acceptance endpoint
+  app.post("/api/clients/join", async (req, res, next) => {
+    try {
+      const joinSchema = z.object({
+        name: z.string().min(2),
+        email: z.string().email(),
+        password: z.string().min(6),
+        coachId: z.number(),
+      });
+      
+      const validatedData = joinSchema.parse(req.body);
+      
+      // Check if user with that email already exists
+      const existingUser = await storage.getUserByEmail(validatedData.email);
+      
+      if (existingUser) {
+        return res.status(409).json({ message: "Email already in use" });
+      }
+      
+      // Check if coach exists
+      const coach = await storage.getUser(validatedData.coachId);
+      if (!coach || coach.role !== "coach") {
+        return res.status(404).json({ message: "Coach not found" });
+      }
+      
+      // Create the new client user
+      const newUser = await storage.createUser({
+        name: validatedData.name,
+        email: validatedData.email,
+        password: validatedData.password,
+        role: "client"
+      });
+      
+      // Create the link to the coach
+      const userLink = await storage.createUserLink({
+        coachId: validatedData.coachId,
+        clientId: newUser.id,
+        status: "active"
+      });
+      
+      res.status(201).json({
+        message: "Client account created successfully",
+        user: {
+          id: newUser.id,
+          name: newUser.name,
+          email: newUser.email,
+          role: newUser.role
+        },
+        link: userLink
+      });
     } catch (error) {
       next(error);
     }
