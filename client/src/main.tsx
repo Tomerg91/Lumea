@@ -34,9 +34,12 @@ const tryInitMobileFeatures = async () => {
 // Try to initialize mobile features, but don't block rendering
 tryInitMobileFeatures();
 
-// Register service worker for offline capabilities and better performance
-registerServiceWorker().catch(error => {
-  console.warn('Service worker registration failed:', error);
+// Unregister any existing service workers and temporarily disable registration
+import { unregisterServiceWorker } from "./lib/service-worker";
+
+// Unregister service worker to fix homepage issues
+unregisterServiceWorker().catch(error => {
+  console.warn('Service worker unregistration failed:', error);
 });
 
 // Initialize the app
