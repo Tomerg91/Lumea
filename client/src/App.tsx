@@ -20,6 +20,9 @@ import ClientReflections from "@/pages/client/reflections";
 import ClientResources from "@/pages/client/resources";
 import ClientPayments from "@/pages/client/payments";
 
+// Demo pages
+import AudioDemoPage from "@/pages/demo/audio-demo";
+
 import { useAuth } from "@/hooks/use-auth";
 
 function Router() {
@@ -90,6 +93,9 @@ function Router() {
         path="/settings" 
         component={SettingsPage} 
       />
+      
+      {/* Demo routes */}
+      <Route path="/demo/audio" component={AudioDemoPage} />
 
       {/* Redirect logged in users to their dashboard */}
       <Route path="/dashboard">

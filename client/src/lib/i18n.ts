@@ -147,6 +147,19 @@ export const t = (key: string): string => {
     "coach.clients.invite.copyLink": "העתק קישור הזמנה",
     "coach.clients.invite.linkCopied": "הקישור הועתק!",
     
+    // Audio Recording
+    "audio.startRecording": "התחל הקלטה",
+    "audio.recording": "מקליט",
+    "audio.paused": "הקלטה מושהית",
+    "audio.recordNew": "הקלטה חדשה",
+    "audio.save": "שמור הקלטה",
+    "audio.recorded": "הקלטה מוכנה",
+    "audio.playing": "מנגן כעת",
+    "audio.microphoneError": "לא ניתן לגשת למיקרופון",
+    "audio.saveError": "אירעה שגיאה בשמירת ההקלטה",
+    "audio.addToReflection": "הוסף הקלטה לרפלקציה",
+    "audio.addToNotes": "הוסף הקלטה להערות",
+    
     // Errors and Messages
     "error.required": "שדה חובה",
     "error.email": "נא להזין כתובת דוא\"ל תקינה",

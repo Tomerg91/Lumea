@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
+import { registerAudioRoutes } from "./routes/audio";
 import { z } from "zod";
 import { 
   insertUserLinkSchema, 
@@ -39,6 +40,9 @@ const ensureClient = (req: any, res: any, next: any) => {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication routes
   setupAuth(app);
+  
+  // Register audio upload and serving routes
+  registerAudioRoutes(app);
 
   // User Profile routes
   app.patch("/api/user", ensureAuthenticated, async (req, res, next) => {

@@ -236,6 +236,16 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async updateReflection(id: number, reflectionData: Partial<Reflection>): Promise<Reflection | undefined> {
+    const existingReflection = this.reflectionsData.get(id);
+    if (!existingReflection) {
+      return undefined;
+    }
+    const updatedReflection = { ...existingReflection, ...reflectionData };
+    this.reflectionsData.set(id, updatedReflection);
+    return updatedReflection;
+  }
+
   async getSharedReflectionsForCoach(coachId: number): Promise<Reflection[]> {
     // Get all clients of the coach
     const userLinks = await this.getUserLinksByCoachId(coachId);
