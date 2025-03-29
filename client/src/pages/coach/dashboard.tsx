@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2, Users, CalendarCheck, FileText, MoreHorizontal, Video, Edit } from "lucide-react";
 import { t } from "@/lib/i18n";
 import { Session, UserLink, Reflection, Payment } from "@shared/schema";
-import { ReflectionReminder } from "@/components/reflection-reminder";
+
 
 export default function CoachDashboard() {
   const { user } = useAuth();
@@ -117,9 +117,6 @@ export default function CoachDashboard() {
         
         <main className="flex-1 bg-gray-50 p-6">
           <h1 className="text-2xl font-bold text-gray-800 mb-6">{t("dashboard.title")}</h1>
-          
-          {/* Reflection Reminder */}
-          <ReflectionReminder />
           
           {isLoading ? (
             <div className="flex justify-center items-center h-64">

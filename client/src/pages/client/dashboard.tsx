@@ -16,7 +16,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Session, Resource } from "@shared/schema";
-import { ReflectionReminder } from "@/components/reflection-reminder";
+
 
 export default function ClientDashboard() {
   const { user } = useAuth();
@@ -181,9 +181,6 @@ export default function ClientDashboard() {
         
         <main className="flex-1 bg-gray-50 p-6">
           <h1 className="text-2xl font-bold text-gray-800 mb-6">{t("dashboard.title")}</h1>
-          
-          {/* Reflection Reminder */}
-          <ReflectionReminder />
           
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
