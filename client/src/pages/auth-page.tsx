@@ -262,7 +262,7 @@ export default function AuthPage() {
                               onClick={() => field.onChange("client")}
                             >
                               <div className="flex flex-col items-center">
-                                <i className="fas fa-user text-2xl mb-2"></i>
+                                <i className="fas fa-user text-lg mb-1"></i>
                                 <div className="font-medium">{t("auth.signup.roleClient")}</div>
                               </div>
                             </Button>
@@ -277,7 +277,7 @@ export default function AuthPage() {
                               onClick={() => field.onChange("coach")}
                             >
                               <div className="flex flex-col items-center">
-                                <i className="fas fa-user-tie text-2xl mb-2"></i>
+                                <i className="fas fa-user-tie text-lg mb-1"></i>
                                 <div className="font-medium">{t("auth.signup.roleCoach")}</div>
                               </div>
                             </Button>
