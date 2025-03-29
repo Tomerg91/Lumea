@@ -197,7 +197,47 @@ export const t = (key: string): string => {
     "join.successDescription": "החשבון שלך נוצר בהצלחה. מיד תועבר לדף ההתחברות.",
     "join.error": "שגיאה ביצירת החשבון",
     "join.invalidInvite": "הזמנה לא תקינה",
-    "join.invalidInviteDescription": "הקישור להזמנה אינו תקין או פג תוקפו. אנא בקש הזמנה חדשה מהמאמן/ת שלך."
+    "join.invalidInviteDescription": "הקישור להזמנה אינו תקין או פג תוקפו. אנא בקש הזמנה חדשה מהמאמן/ת שלך.",
+    
+    // Onboarding tutorials
+    "onboarding.next": "הבא",
+    "onboarding.prev": "הקודם",
+    "onboarding.skip": "דלג",
+    "onboarding.finish": "סיום",
+    
+    // Coach Dashboard Tutorial
+    "onboarding.coach.dashboard.welcome": "ברוך הבא ללוח הבקרה שלך! כאן תוכל לנהל את כל הפעילויות והמתאמנים שלך.",
+    "onboarding.coach.dashboard.clientsOverview": "כאן תוכל לראות סקירה מהירה של המתאמנים הפעילים שלך.",
+    "onboarding.coach.dashboard.upcomingSessions": "צפה בפגישות הקרובות שלך וכמות הפגישות השבועיות.",
+    "onboarding.coach.dashboard.metrics": "עקוב אחר הביצועים והמדדים שלך כדי לשפר את האימונים.",
+    "onboarding.coach.dashboard.navigation": "השתמש בתפריט הניווט כדי לגשת לכל האפשרויות של הפלטפורמה.",
+    
+    // Client Dashboard Tutorial
+    "onboarding.client.dashboard.welcome": "ברוך הבא למרחב האישי שלך! כאן תוכל לנהל את תהליך האימון שלך.",
+    "onboarding.client.dashboard.coachInfo": "כאן תוכל לראות את פרטי המאמן שלך וליצור איתו קשר.",
+    "onboarding.client.dashboard.upcomingSessions": "צפה בפגישות הקרובות שלך והצטרף אליהן בקלות.",
+    "onboarding.client.dashboard.reflections": "יצירת רפלקציות היא חלק חשוב מתהליך האימון - תוכל ליצור אותן כאן.",
+    "onboarding.client.dashboard.resources": "גש לחומרי הלימוד והמשאבים שהמאמן שלך שיתף איתך.",
+    
+    // Client Management Tutorial
+    "onboarding.coach.clients.welcome": "ברוך הבא לניהול המתאמנים! כאן תוכל לנהל את כל המתאמנים שלך.",
+    "onboarding.coach.clients.invite": "השתמש בכפתור זה כדי להזמין מתאמנים חדשים לפלטפורמה.",
+    "onboarding.coach.clients.search": "חפש במהירות מתאמנים לפי שם, אימייל או מידע אחר.",
+    "onboarding.coach.clients.filters": "סנן את רשימת המתאמנים לפי סטטוס או קריטריונים אחרים.",
+    "onboarding.coach.clients.actions": "נהל את הפעולות הקשורות למתאמן כמו יצירת פגישה או שליחת הודעה.",
+    
+    // Session Scheduling Tutorial
+    "onboarding.sessions.welcome": "ברוך הבא לניהול הפגישות! כאן תוכל לתזמן ולנהל את כל הפגישות שלך.",
+    "onboarding.sessions.calendar": "צפה בלוח השנה שלך ותזמן פגישות חדשות בקלות.",
+    "onboarding.sessions.create": "צור פגישה חדשה עם מתאמן בלחיצת כפתור.",
+    "onboarding.sessions.list": "נהל את כל הפגישות המתוזמנות שלך במקום אחד.",
+    
+    // Reflection Tools Tutorial
+    "onboarding.reflections.welcome": "ברוך הבא לכלי הרפלקציה! רפלקציות הן חלק חשוב מתהליך האימון.",
+    "onboarding.reflections.create": "צור רפלקציה חדשה כדי לשתף את המחשבות והתובנות שלך.",
+    "onboarding.reflections.audio": "הוסף הקלטות קוליות כדי לבטא את עצמך ביתר קלות.",
+    "onboarding.reflections.text": "כתוב את המחשבות והרגשות שלך בצורה מובנית.",
+    "onboarding.reflections.sharing": "בחר אם לשתף את הרפלקציה עם המאמן שלך או לשמור אותה לעצמך."
   };
 
   return translations[key] || key;

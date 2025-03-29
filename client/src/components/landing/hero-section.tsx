@@ -4,11 +4,11 @@ import { t } from "@/lib/i18n";
 
 export function HeroSection() {
   return (
-    <div className="bg-gradient-to-br from-primary-900 via-primary-800 to-primary-900 text-white">
+    <div className="bg-gradient-to-br from-slate-900 via-primary-950 to-slate-900 text-white">
       <div className="container mx-auto px-4 py-20 md:py-28 relative overflow-hidden">
         {/* Background decoration elements */}
-        <div className="absolute top-20 left-10 w-64 h-64 rounded-full bg-primary-400 opacity-10 blur-3xl"></div>
-        <div className="absolute bottom-10 right-10 w-80 h-80 rounded-full bg-primary-300 opacity-10 blur-3xl"></div>
+        <div className="absolute top-20 left-10 w-64 h-64 rounded-full bg-primary-300 opacity-20 blur-3xl"></div>
+        <div className="absolute bottom-10 right-10 w-80 h-80 rounded-full bg-primary-200 opacity-20 blur-3xl"></div>
 
         <div className="flex flex-col md:flex-row items-center justify-between relative z-10">
           <div className="w-full md:w-1/2 text-center md:text-right mb-12 md:mb-0">
@@ -21,7 +21,7 @@ export function HeroSection() {
               <br />
               <span className="text-white">שעובד למענך</span>
             </h1>
-            <p className="text-lg md:text-xl mb-8 text-primary-100 max-w-lg mx-auto md:mr-0 md:ml-auto">
+            <p className="text-lg md:text-xl mb-8 text-gray-200 max-w-lg mx-auto md:mr-0 md:ml-auto">
               פלטפורמה חדשנית לאימון אישי שתסייע לך לגלות את הפוטנציאל האמיתי שלך ולהגיע להישגים המשמעותיים בחייך
             </p>
             <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 md:space-x-reverse justify-center md:justify-end">

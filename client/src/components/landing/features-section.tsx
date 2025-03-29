@@ -49,7 +49,7 @@ export function FeaturesSection() {
                 </div>
                 <h3 className="text-xl font-bold mb-4">{feature.title}</h3>
                 <p className="text-gray-600 mb-6">{feature.description}</p>
-                <div className={`flex items-center text-sm font-medium bg-gradient-to-r ${feature.color} text-transparent bg-clip-text`}>
+                <div className={`flex items-center text-sm font-bold bg-gradient-to-r ${feature.color} text-transparent bg-clip-text`}>
                   קרא עוד <ArrowRight className="mr-2 h-4 w-4" />
                 </div>
               </div>

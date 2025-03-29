@@ -5,10 +5,10 @@ import { ChevronLeft } from "lucide-react";
 
 export function CTASection() {
   return (
-    <div className="bg-gradient-to-tr from-primary-900 via-primary-800 to-primary-700 text-white py-20 relative overflow-hidden">
+    <div className="bg-gradient-to-tr from-slate-900 via-primary-950 to-slate-900 text-white py-20 relative overflow-hidden">
       {/* Decorative elements */}
-      <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-primary-500 opacity-10 blur-3xl"></div>
-      <div className="absolute bottom-0 right-0 w-64 h-64 rounded-full bg-primary-400 opacity-10 blur-3xl"></div>
+      <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-primary-400 opacity-20 blur-3xl"></div>
+      <div className="absolute bottom-0 right-0 w-64 h-64 rounded-full bg-primary-300 opacity-20 blur-3xl"></div>
       
       <div className="container mx-auto px-4 text-center relative z-10">
         <div className="max-w-3xl mx-auto">
@@ -20,7 +20,7 @@ export function CTASection() {
           <h2 className="text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-white to-primary-200 text-transparent bg-clip-text">
             {t("landing.cta.title")}
           </h2>
-          <p className="text-xl mb-10 text-primary-100">
+          <p className="text-xl mb-10 text-gray-200">
             {t("landing.cta.subtitle")}
           </p>
           
