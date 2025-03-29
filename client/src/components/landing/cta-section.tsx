@@ -1,28 +1,42 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { t } from "@/lib/i18n";
+import { ChevronLeft } from "lucide-react";
 
 export function CTASection() {
   return (
-    <div className="bg-primary-600 text-white py-16">
-      <div className="container mx-auto px-4 text-center">
-        <h2 className="text-3xl font-bold mb-6">
-          {t("landing.cta.title")}
-        </h2>
-        <p className="text-xl mb-8">
-          {t("landing.cta.subtitle")}
-        </p>
-        <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 md:space-x-reverse justify-center">
-          <Link href="/auth">
-            <Button className="bg-white hover:bg-gray-100 text-primary-600 font-bold py-3 px-8 rounded-lg shadow-lg transition duration-300 text-lg">
-              {t("landing.cta.signup")}
-            </Button>
-          </Link>
-          <Link href="/auth">
-            <Button variant="outline" className="bg-transparent hover:bg-primary-700 text-white border-2 border-white font-bold py-3 px-8 rounded-lg shadow-lg transition duration-300 text-lg">
-              {t("landing.cta.login")}
-            </Button>
-          </Link>
+    <div className="bg-gradient-to-tr from-primary-900 via-primary-800 to-primary-700 text-white py-20 relative overflow-hidden">
+      {/* Decorative elements */}
+      <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-primary-500 opacity-10 blur-3xl"></div>
+      <div className="absolute bottom-0 right-0 w-64 h-64 rounded-full bg-primary-400 opacity-10 blur-3xl"></div>
+      
+      <div className="container mx-auto px-4 text-center relative z-10">
+        <div className="max-w-3xl mx-auto">
+          <div className="inline-flex items-center mb-6">
+            <span className="bg-white text-primary-600 font-bold text-xl p-1.5 rounded-lg mr-2">L</span>
+            <span className="bg-gradient-to-r from-white to-primary-200 text-transparent bg-clip-text text-2xl font-bold">Lumea</span>
+          </div>
+          
+          <h2 className="text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-white to-primary-200 text-transparent bg-clip-text">
+            {t("landing.cta.title")}
+          </h2>
+          <p className="text-xl mb-10 text-primary-100">
+            {t("landing.cta.subtitle")}
+          </p>
+          
+          <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 md:space-x-reverse justify-center">
+            <Link href="/auth">
+              <Button className="bg-white hover:bg-primary-50 text-primary-800 font-bold py-3 px-8 rounded-lg shadow-lg transition duration-300 text-lg w-full md:w-auto">
+                {t("landing.cta.signup")}
+                <ChevronLeft className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+            <Link href="/auth">
+              <Button variant="outline" className="border-2 border-white hover:bg-white/10 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition duration-300 text-lg w-full md:w-auto">
+                {t("landing.cta.login")}
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     </div>

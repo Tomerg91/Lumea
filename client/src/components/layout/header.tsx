@@ -48,7 +48,10 @@ export function Header() {
               <Menu className="text-xl" />
             </button>
             <Link href={baseUrl + "/dashboard"}>
-              <a className="text-primary-600 font-bold text-xl">שיטת סאטיה</a>
+              <a className="text-primary-600 font-bold text-xl flex items-center">
+                <span className="bg-primary-600 text-white p-1 rounded-md mr-2">L</span>
+                <span className="bg-gradient-to-r from-primary-600 to-primary-400 text-transparent bg-clip-text">Lumea</span>
+              </a>
             </Link>
           </div>
           <div className="flex items-center">
@@ -108,13 +111,23 @@ export function Header() {
 
       {/* Mobile Navigation */}
       <div 
-        className={`lg:hidden fixed inset-0 z-40 bg-gray-800 bg-opacity-80 transform transition-transform duration-300 ${
-          mobileNavOpen ? 'translate-x-0' : 'translate-x-full'
+        className={`lg:hidden fixed inset-0 z-40 backdrop-blur-sm bg-black/30 transform transition-all duration-300 ${
+          mobileNavOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
+        onClick={closeMobileNav}
       >
-        <div className="absolute inset-y-0 right-0 w-64 bg-gray-800 shadow-xl transform transition-transform duration-300 translate-x-0">
-          <div className="flex justify-start p-4">
-            <button className="text-white" onClick={closeMobileNav}>
+        <div 
+          className={`absolute inset-y-0 right-0 w-72 bg-white dark:bg-gray-900 shadow-xl transform transition-transform duration-300 ${
+            mobileNavOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="flex justify-between items-center p-4 border-b">
+            <div className="text-primary-600 font-bold text-xl flex items-center">
+              <span className="bg-primary-600 text-white p-1 rounded-md mr-2">L</span>
+              <span className="bg-gradient-to-r from-primary-600 to-primary-400 text-transparent bg-clip-text">Lumea</span>
+            </div>
+            <button className="text-gray-600" onClick={closeMobileNav}>
               <X className="text-xl" />
             </button>
           </div>
