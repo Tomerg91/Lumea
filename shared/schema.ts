@@ -44,6 +44,8 @@ export const sessions = pgTable("sessions", {
   status: text("status", { enum: ["scheduled", "completed", "cancelled", "rescheduled"] }).notNull().default("scheduled"),
   textNotes: text("text_notes"),
   audioNotes: text("audio_notes"),
+  clientReflectionReminderSent: boolean("client_reflection_reminder_sent").notNull().default(false),
+  coachReflectionReminderSent: boolean("coach_reflection_reminder_sent").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -43,6 +43,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register audio upload and serving routes
   registerAudioRoutes(app);
+  
+  // Endpoint to check for and send reflection reminders
+  app.get("/api/sessions/reminders", ensureAuthenticated, async (req, res, next) => {
+    try {
+      // Get all completed sessions that haven't had reflection reminders sent yet
+      const allSessions = req.user!.role === "coach" 
+        ? await storage.getSessionsByCoachId(req.user!.id)
+        : await storage.getSessionsByClientId(req.user!.id);
+      
+      const needsReminder = allSessions.filter(session => 
+        session.status === "completed" && 
+        ((req.user!.role === "coach" && !session.coachReflectionReminderSent) || 
+         (req.user!.role === "client" && !session.clientReflectionReminderSent))
+      );
+      
+      if (needsReminder.length > 0) {
+        // Mark the most recent session as having had a reminder sent
+        const mostRecentSession = needsReminder.reduce((latest, session) => 
+          new Date(session.dateTime) > new Date(latest.dateTime) ? session : latest, 
+          needsReminder[0]
+        );
+        
+        // Update the reminder status
+        const reminderUpdate = req.user!.role === "coach"
+          ? { coachReflectionReminderSent: true }
+          : { clientReflectionReminderSent: true };
+          
+        await storage.updateSession(mostRecentSession.id, reminderUpdate);
+        
+        // Include details about the other participant
+        let participantInfo = null;
+        if (req.user!.role === "coach") {
+          const client = await storage.getUser(mostRecentSession.clientId);
+          if (client) {
+            participantInfo = {
+              id: client.id,
+              name: client.name,
+              profilePicture: client.profilePicture,
+            };
+          }
+        } else {
+          const coach = await storage.getUser(mostRecentSession.coachId);
+          if (coach) {
+            participantInfo = {
+              id: coach.id,
+              name: coach.name,
+              profilePicture: coach.profilePicture,
+            };
+          }
+        }
+        
+        // Send response with session that needs reflection and participant details
+        res.json({
+          needsReflection: true,
+          session: mostRecentSession,
+          participant: participantInfo
+        });
+      } else {
+        // No sessions need reflection reminders
+        res.json({
+          needsReflection: false
+        });
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
 
   // User Profile routes
   app.patch("/api/user", ensureAuthenticated, async (req, res, next) => {
@@ -267,14 +334,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: z.enum(["scheduled", "completed", "cancelled", "rescheduled"]).optional(),
           textNotes: z.string().optional(),
           audioNotes: z.string().optional(),
+          clientReflectionReminderSent: z.boolean().optional(),
+          coachReflectionReminderSent: z.boolean().optional(),
         });
         validatedData = updateSchema.parse(req.body);
       } else {
         // Clients can only update status (for accepting/declining)
         const updateSchema = z.object({
           status: z.enum(["scheduled", "cancelled", "rescheduled"]).optional(),
+          clientReflectionReminderSent: z.boolean().optional(),
         });
         validatedData = updateSchema.parse(req.body);
+      }
+
+      // Check if the session is being marked as completed
+      // If so, set both reflection reminder flags to false
+      if (validatedData.status === "completed" && session.status !== "completed") {
+        validatedData = {
+          ...validatedData,
+          clientReflectionReminderSent: false,
+          coachReflectionReminderSent: false
+        };
       }
       
       const updatedSession = await storage.updateSession(sessionId, validatedData);
