@@ -187,7 +187,17 @@ export const t = (key: string): string => {
     "error.minLength": "מינימום {{count}} תווים",
     "success.login": "התחברות בוצעה בהצלחה",
     "success.register": "הרשמה בוצעה בהצלחה",
-    "success.logout": "התנתקות בוצעה בהצלחה"
+    "success.logout": "התנתקות בוצעה בהצלחה",
+    
+    // Client Invitation and Join
+    "join.title": "הצטרף למתאמני Lumea",
+    "join.invitedBy": "הוזמנת על ידי {{coachName}} להצטרף כמתאמן/ת",
+    "join.submit": "צור חשבון והצטרף",
+    "join.success": "חשבון נוצר בהצלחה!",
+    "join.successDescription": "החשבון שלך נוצר בהצלחה. מיד תועבר לדף ההתחברות.",
+    "join.error": "שגיאה ביצירת החשבון",
+    "join.invalidInvite": "הזמנה לא תקינה",
+    "join.invalidInviteDescription": "הקישור להזמנה אינו תקין או פג תוקפו. אנא בקש הזמנה חדשה מהמאמן/ת שלך."
   };
 
   return translations[key] || key;

@@ -583,7 +583,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // In a real app, you would send an email invitation here
       // For now, we'll just generate an invitation link
       const invitationId = Math.random().toString(36).substring(2, 15);
-      const invitationLink = `${process.env.APP_URL || 'http://localhost:5000'}/join/${invitationId}?email=${encodeURIComponent(validatedData.email)}&name=${encodeURIComponent(validatedData.name)}&coach=${req.user!.id}`;
+      const invitationLink = `${process.env.APP_URL || 'http://localhost:5000'}/join/${invitationId}?email=${encodeURIComponent(validatedData.email)}&name=${encodeURIComponent(validatedData.name)}&coach=${req.user!.id}&coachName=${encodeURIComponent(req.user!.name)}`;
       
       res.status(200).json({
         message: "Invitation created successfully",

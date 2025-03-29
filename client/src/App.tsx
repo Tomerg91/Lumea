@@ -7,6 +7,7 @@ import AuthPage from "@/pages/auth-page";
 import SettingsPage from "@/pages/settings-page";
 import ForgotPasswordPage from "@/pages/forgot-password";
 import ResetPasswordPage from "@/pages/reset-password";
+import JoinPage from "@/pages/join-page";
 
 // Coach routes
 import CoachDashboard from "@/pages/coach/dashboard";
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <Route path="/forgot-password" component={ForgotPasswordPage} />
       <Route path="/reset-password/:token" component={ResetPasswordPage} />
+      <Route path="/join/:inviteId" component={JoinPage} />
 
       {/* Coach routes */}
       <ProtectedRoute 
