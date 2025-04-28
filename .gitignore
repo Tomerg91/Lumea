@@ -18,6 +18,9 @@ server/.env
 server/sqlite.db
 *.sqlite
 *.sqlite-journal
+/server/prisma/*.db
+/server/prisma/*.sqlite
+/server/prisma/*.sqlite-journal
 
 # OS generated files
 Thumbs.db

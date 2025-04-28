@@ -7,6 +7,7 @@
 *   Basic Tailwind CSS configuration.
 *   Capacitor integrated for iOS and Android native builds.
 *   Xcode/Cocoapods setup completed for iOS builds.
+*   **Continuous Deployment setup via Vercel (connected to GitHub, deploying `client/` directory).**
 
 ## MVP - What's Left to Build (Current Focus)
 
@@ -66,7 +67,9 @@
 *   Accessibility audit (WCAG 2.1 AA conformance).
 
 ## Current Status
-*   Defined MVP scope. Starting implementation of the first vertical slice: "Coach views their Clients".
+*   Defined MVP scope.
+*   **Deployment pipeline established on Vercel.**
+*   Starting implementation of the first vertical slice: "Coach views their Clients".
 
 ## Known Issues
 *   Potential inconsistencies in existing i18n implementation need review during feature build-out.
@@ -76,4 +79,5 @@
 
 ## Evolution of Project Decisions
 *   Decision made to use Capacitor to wrap the PWA for native app store deployment.
-*   Adopted an MVP approach with Vertical Slices for development. 
+*   Adopted an MVP approach with Vertical Slices for development.
+*   **Chose Vercel for hosting the frontend application due to its ease of use with React/Vite and Supabase integration.** 

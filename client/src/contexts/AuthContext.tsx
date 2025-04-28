@@ -1,11 +1,12 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { supabase } from '../supabaseClient';
-import type { AuthError, Session, User } from '@supabase/supabase-js';
+import { AuthError, Session, User } from '@supabase/supabase-js';
+import type { Session as TypeSession, User as TypeUser } from '@supabase/supabase-js';
 
 // Define the shape of the context value
 interface AuthContextType {
-  session: Session | null;
-  user: User | null;
+  session: TypeSession | null;
+  user: TypeUser | null;
   profile: Record<string, any> | null; // Or define a specific Profile type
   loading: boolean;
   authError: AuthError | null;
@@ -24,8 +25,8 @@ interface AuthProviderProps {
 
 // Create the provider component
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<TypeSession | null>(null);
+  const [user, setUser] = useState<TypeUser | null>(null);
   const [profile, setProfile] = useState<Record<string, any> | null>(null); // To store role, name, etc.
   const [loading, setLoading] = useState<boolean>(true);
   const [authError, setAuthError] = useState<AuthError | null>(null); // Add state for auth errors
@@ -76,16 +77,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(session?.user ?? null);
         setProfile(null); 
         setAuthError(null);
+
+        // If a user session exists, try to fetch profile, ensuring loading is reset
         if (session?.user) {
-          console.log(`[AuthContext] onAuthStateChange: Calling fetchProfile for user: ${session.user.id}`);
-          setLoading(true); 
-          await fetchProfile(session.user.id);
-          console.log('[AuthContext] onAuthStateChange: fetchProfile call completed.');
-          if (!ignore) setLoading(false); 
-           console.log('[AuthContext] onAuthStateChange: Profile fetch complete, loading set to false.');
+          console.log(`[AuthContext] onAuthStateChange: Setting loading true and calling fetchProfile for user: ${session.user.id}`);
+          if (!ignore) setLoading(true);
+          try {
+            await fetchProfile(session.user.id);
+            console.log('[AuthContext] onAuthStateChange: fetchProfile call completed successfully.');
+            // Clear previous auth error on successful profile fetch within listener
+            if (!ignore) setAuthError(null); 
+          } catch (error) {
+            console.error('[AuthContext] onAuthStateChange: Error during fetchProfile call:', error);
+            // Check if it's already an AuthError, otherwise create a generic message or handle differently
+            if (!ignore) {
+              if (error instanceof AuthError) {
+                 setAuthError(error);
+              } else {
+                 // Optionally set a generic error state or log differently
+                 // For now, we won't set a generic Error into the AuthError state
+                 console.error('[AuthContext] onAuthStateChange: Non-AuthError occurred during profile fetch:', error);
+                 // setAuthError(new AuthError('Profile fetch failed during auth change')); // Avoid this due to type mismatch
+              }
+            }
+          } finally {
+            // Always set loading to false after attempting profile fetch
+            if (!ignore) {
+              setLoading(false); 
+              console.log('[AuthContext] onAuthStateChange: (finally block) Profile fetch attempt complete, loading set to false.');
+            }
+          }
         } else {
-           console.log('[AuthContext] onAuthStateChange: No session, loading set to false.');
-           if (!ignore) setLoading(false); 
+          // No session, ensure loading is false and clear any potential error
+          console.log('[AuthContext] onAuthStateChange: No session, loading set to false.');
+          if (!ignore) {
+             setLoading(false); 
+             setAuthError(null);
+          }
         }
       }
     );
