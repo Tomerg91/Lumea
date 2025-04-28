@@ -52,18 +52,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          console.log(`[AuthContext] Session exists, calling fetchProfile for user: ${session.user.id}`);
+          console.log(`[AuthContext] Initial Load: >>> Calling fetchProfile for user: ${session.user.id}`);
           await fetchProfile(session.user.id);
-          console.log('[AuthContext] Initial fetchProfile call completed.');
+          console.log(`[AuthContext] Initial Load: <<< fetchProfile call completed for user: ${session.user.id}`);
         } else {
-          console.log('[AuthContext] No initial session, skipping profile fetch.');
+          console.log('[AuthContext] Initial Load: No initial session, skipping profile fetch.');
         }
       } catch (err) {
-        console.error("[AuthContext] Error in getSessionAndProfile:", err);
-        if (!ignore) setAuthError(err as AuthError);
+        console.error("[AuthContext] Error in getSessionAndProfile catch block:", err);
+        if (!ignore) setAuthError(err instanceof AuthError ? err : null);
       } finally {
-        console.log('[AuthContext] getSessionAndProfile finally block. Setting loading to false.');
+        console.log('[AuthContext] Initial Load: >>> Reached finally block. Attempting setLoading(false).');
         if (!ignore) setLoading(false);
+        console.log('[AuthContext] Initial Load: <<< setLoading(false) executed.');
       }
     }
 
@@ -83,8 +84,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log(`[AuthContext] onAuthStateChange: Setting loading true and calling fetchProfile for user: ${session.user.id}`);
           if (!ignore) setLoading(true);
           try {
+            console.log(`[AuthContext] onAuthStateChange: >>> Calling fetchProfile for user: ${session.user.id}`);
             await fetchProfile(session.user.id);
-            console.log('[AuthContext] onAuthStateChange: fetchProfile call completed successfully.');
+            console.log(`[AuthContext] onAuthStateChange: <<< fetchProfile call completed successfully for user: ${session.user.id}`);
             // Clear previous auth error on successful profile fetch within listener
             if (!ignore) setAuthError(null); 
           } catch (error) {
@@ -94,25 +96,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               if (error instanceof AuthError) {
                  setAuthError(error);
               } else {
-                 // Optionally set a generic error state or log differently
-                 // For now, we won't set a generic Error into the AuthError state
                  console.error('[AuthContext] onAuthStateChange: Non-AuthError occurred during profile fetch:', error);
-                 // setAuthError(new AuthError('Profile fetch failed during auth change')); // Avoid this due to type mismatch
               }
             }
           } finally {
             // Always set loading to false after attempting profile fetch
+            console.log('[AuthContext] onAuthStateChange: >>> Reached finally block. Attempting setLoading(false).');
             if (!ignore) {
               setLoading(false); 
-              console.log('[AuthContext] onAuthStateChange: (finally block) Profile fetch attempt complete, loading set to false.');
+              console.log('[AuthContext] onAuthStateChange: <<< setLoading(false) executed.');
             }
           }
         } else {
           // No session, ensure loading is false and clear any potential error
-          console.log('[AuthContext] onAuthStateChange: No session, loading set to false.');
+          console.log('[AuthContext] onAuthStateChange: No session, >>> attempting setLoading(false).');
           if (!ignore) {
              setLoading(false); 
              setAuthError(null);
+             console.log('[AuthContext] onAuthStateChange: No session, <<< setLoading(false) executed.');
           }
         }
       }
