@@ -3,7 +3,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.lumea.app',
   appName: 'Lumea',
-  webDir: 'dist/public',
+  webDir: 'client/dist',
   server: {
     androidScheme: 'https',
     // During development, you can use this for live reload

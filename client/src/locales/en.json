@@ -1,0 +1,51 @@
+{
+  "greeting": "Hello!",
+  "validation": {
+    "emailInvalid": "Please enter a valid email address",
+    "passwordMinLength": "Password must be at least {{length}} characters long",
+    "nameMinLength": "Name must be at least {{length}} characters long",
+    "confirmPasswordRequired": "Please confirm your password",
+    "passwordsDontMatch": "Passwords don't match"
+  },
+  "toast": {
+    "loginSuccessTitle": "Login successful",
+    "loginSuccessDescription": "Redirecting to your dashboard...",
+    "signupSuccessTitle": "Account created successfully",
+    "signupSuccessDescription": "Please check your email for verification.",
+    "loginErrorTitle": "Login Failed",
+    "signupErrorTitle": "Registration Failed",
+    "genericError": "An unknown error occurred. Please try again."
+  },
+  "auth": {
+    "tagline": "Your soulful coaching companion",
+    "loginTitle": "Welcome Back",
+    "signupTitle": "Create Account",
+    "loginDescription": "Enter your credentials to access your account",
+    "signupDescription": "Join Lumea to start your transformation journey",
+    "emailLabel": "Email",
+    "emailPlaceholder": "your.email@example.com",
+    "passwordLabel": "Password",
+    "forgotPasswordLink": "Forgot password?",
+    "signInButton": "Sign In",
+    "nameLabel": "Full Name",
+    "namePlaceholder": "Your Name",
+    "confirmPasswordLabel": "Confirm Password",
+    "createAccountButton": "Create Account",
+    "promptSignup": "Don't have an account?",
+    "promptLogin": "Already have an account?",
+    "signUpLink": "Sign up",
+    "signInLink": "Sign in"
+  },
+  "footer": {
+    "copyright": "Lumea. All rights reserved."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "sessions": "Sessions",
+    "profile": "Profile",
+    "logout": "Logout"
+  },
+  "common": {
+    "loading": "Loading..."
+  }
+} 

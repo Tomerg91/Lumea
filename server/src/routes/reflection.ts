@@ -1,0 +1,25 @@
+import express from 'express';
+import { isAuthenticated } from '../middleware/auth.js';
+import { reflectionController } from '../controllers/reflectionController.js';
+
+const router = express.Router();
+
+// Create a new reflection
+router.post('/', isAuthenticated, reflectionController.createReflection);
+
+// Get a specific reflection
+router.get('/:id', isAuthenticated, reflectionController.getReflection);
+
+// Get all reflections for a session
+router.get('/session/:sessionId', isAuthenticated, reflectionController.getSessionReflections);
+
+// Update a reflection
+router.put('/:id', isAuthenticated, reflectionController.updateReflection);
+
+// Delete a reflection
+router.delete('/:id', isAuthenticated, reflectionController.deleteReflection);
+
+// Share reflection with coach
+router.post('/:id/share', isAuthenticated, reflectionController.shareWithCoach);
+
+export default router; 

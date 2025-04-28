@@ -1,0 +1,51 @@
+{
+  "greeting": "שלום!",
+  "validation": {
+    "emailInvalid": "אנא הזן כתובת אימייל חוקית",
+    "passwordMinLength": "סיסמה חייבת להכיל לפחות {{length}} תווים",
+    "nameMinLength": "שם חייב להכיל לפחות {{length}} תווים",
+    "confirmPasswordRequired": "אנא אשר את הסיסמה",
+    "passwordsDontMatch": "הסיסמאות אינן תואמות"
+  },
+  "toast": {
+    "loginSuccessTitle": "התחברת בהצלחה",
+    "loginSuccessDescription": "מעביר אותך ללוח הבקרה...",
+    "signupSuccessTitle": "החשבון נוצר בהצלחה",
+    "signupSuccessDescription": "אנא בדוק את האימייל שלך לאימות.",
+    "loginErrorTitle": "התחברות נכשלה",
+    "signupErrorTitle": "הרשמה נכשלה",
+    "genericError": "אירעה שגיאה לא ידועה. אנא נסה שוב."
+  },
+  "auth": {
+    "tagline": "שותפת הקואצ'ינג הנשמתית שלך",
+    "loginTitle": "ברוך שובך",
+    "signupTitle": "יצירת חשבון",
+    "loginDescription": "הזן את פרטיך כדי לגשת לחשבונך",
+    "signupDescription": "הצטרף ל-Lumea כדי להתחיל את מסע השינוי שלך",
+    "emailLabel": "אימייל",
+    "emailPlaceholder": "your.email@example.com",
+    "passwordLabel": "סיסמה",
+    "forgotPasswordLink": "שכחת סיסמה?",
+    "signInButton": "התחבר",
+    "nameLabel": "שם מלא",
+    "namePlaceholder": "השם שלך",
+    "confirmPasswordLabel": "אישור סיסמה",
+    "createAccountButton": "צור חשבון",
+    "promptSignup": "אין לך חשבון?",
+    "promptLogin": "כבר יש לך חשבון?",
+    "signUpLink": "הירשם",
+    "signInLink": "התחבר"
+  },
+  "footer": {
+    "copyright": "Lumea. כל הזכויות שמורות."
+  },
+  "nav": {
+    "dashboard": "לוח בקרה",
+    "sessions": "מפגשים",
+    "profile": "פרופיל",
+    "logout": "התנתק"
+  },
+  "common": {
+    "loading": "טוען..."
+  }
+} 

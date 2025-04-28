@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["mongodb"]
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String      @id @default(auto()) @map("_id") @db.ObjectId
+  email              String      @unique
+  name               String?
+  password           String
+  resetToken         String?
+  resetTokenExpiry   DateTime?
+  role               String      @default("user")
+  clientSessions     Session[]   @relation("ClientSessions")
+  coachSessions      Session[]   @relation("CoachSessions")
+  clientPayments     Payment[]   @relation("ClientPayments")
+  coachPayments      Payment[]   @relation("CoachPayments")
+  reflections        Reflection[]
+  resources          ResourceUser[]
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Session {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  date          DateTime  @map("date")
+  status        String    @default("Upcoming")
+  notes         String?
+  clientId      String    @db.ObjectId @map("client_id")
+  client        User      @relation("ClientSessions", fields: [clientId], references: [id])
+  coachId       String    @db.ObjectId @map("coach_id")
+  coach         User      @relation("CoachSessions", fields: [coachId], references: [id])
+  paymentId     String?   @db.ObjectId @map("payment_id")
+  payment       Payment?  @relation(fields: [paymentId], references: [id])
+  reminderSent  Boolean   @default(false) @map("reminder_sent")
+  audioFile     String?   @map("audio_file")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@map("sessions")
+}
+
+model Payment {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  amount          Float
+  status          String    @default("Due")
+  dueDate         DateTime  @map("due_date")
+  clientId        String    @db.ObjectId @map("client_id")
+  client          User      @relation("ClientPayments", fields: [clientId], references: [id])
+  coachId         String    @db.ObjectId @map("coach_id")
+  coach           User      @relation("CoachPayments", fields: [coachId], references: [id])
+  sessions        Session[]
+  reminderSent    Boolean   @default(false) @map("reminder_sent")
+  sessionsCovered String[]  @map("sessions_covered")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("payments")
+}
+
+model Reflection {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  content   String
+  userId    String   @db.ObjectId @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("reflections")
+}
+
+model Resource {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  content     String
+  type        String
+  users       ResourceUser[]
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  @@map("resources")
+}
+
+model ResourceUser {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId @map("user_id")
+  user        User     @relation(fields: [userId], references: [id])
+  resourceId  String   @db.ObjectId @map("resource_id")
+  resource    Resource @relation(fields: [resourceId], references: [id])
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("resource_users")
+} 

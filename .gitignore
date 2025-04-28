@@ -4,3 +4,43 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+.env
+client/.env
+server/.env
+
+# Suggested additions
+**/node_modules
+*.log
+.env.*
+!.env.example
+
+# Database files
+server/sqlite.db
+*.sqlite
+*.sqlite-journal
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+
+# Editor directories and files
+.vscode/
+.idea/
+
+# Capacitor generated folders (Common practice to ignore)
+/ios/App/DerivedData/
+/ios/Pods/
+/android/app/build/
+/android/.gradle/
+/android/gradle/
+# Uncomment the lines below if you want to ignore the entire native folders
+# /ios/
+# /android/
+
+# Temporary/Backup folders observed
+client_backup/
+soul-flow-lumea-path-main/
+temp_ui_clone/
+
+# Build output / artifacts (add specific ones if needed)
+# Example: /client/build/
