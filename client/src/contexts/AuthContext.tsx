@@ -129,7 +129,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Function to fetch user profile data
   const fetchProfile = async (userId: string) => {
     console.log(`[AuthContext] fetchProfile called for user: ${userId}`);
+    let tempProfileData = null; // Placeholder
     try {
+      // --- DEBUGGING STEP: Try a different Supabase call ---
+      console.log(`[AuthContext] fetchProfile (DEBUG): >>> Attempting supabase.auth.getUser() for user: ${userId}`);
+      const { data: { user: authUser }, error: getUserError } = await supabase.auth.getUser();
+      if (getUserError) {
+         console.error(`[AuthContext] fetchProfile (DEBUG): Error during supabase.auth.getUser():`, getUserError);
+      } else {
+        console.log(`[AuthContext] fetchProfile (DEBUG): <<< supabase.auth.getUser() completed successfully for user: ${userId}`, authUser);
+      }
+      // --- END DEBUGGING STEP ---
+
+      /* --- Temporarily Commented Out Profile Fetch ---
       console.log(`[AuthContext] fetchProfile: >>> Attempting Supabase query for profile of user: ${userId}`);
       const { data, error, status } = await supabase
         .from('profiles')
@@ -142,11 +154,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (error && status !== 406) {
         console.error('[AuthContext] Error identified in profile fetch result (and status != 406):', error);
-        setProfile(null);
+        // tempProfileData = null; // Already null
       } else {
         console.log('[AuthContext] Profile fetched successfully or status 406. Setting profile state.', data);
-        setProfile(data);
+        tempProfileData = data;
       }
+      */// --- End Temporarily Commented Out Profile Fetch ---
+
     } catch (caughtError) {
       // Log more details about the caught error
       console.error('[AuthContext] Catch block error in fetchProfile:', caughtError);
@@ -155,9 +169,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
          console.error('[AuthContext] Error Message:', caughtError.message);
          console.error('[AuthContext] Error Stack:', caughtError.stack);
       }
-      setProfile(null);
+      // tempProfileData = null; // Already null
+    } finally {
+       // Set profile state based on what happened (currently always null)
+       console.log(`[AuthContext] fetchProfile finally block for user: ${userId}. Setting profile to:`, tempProfileData);
+       setProfile(tempProfileData);
+       console.log(`[AuthContext] fetchProfile finished for user: ${userId}`); 
     }
-     console.log(`[AuthContext] fetchProfile finished for user: ${userId}`); 
   };
 
   // Explicitly type the signIn function
