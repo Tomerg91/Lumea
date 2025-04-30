@@ -130,11 +130,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const fetchProfile = async (userId: string) => {
     console.log(`[AuthContext] fetchProfile called for user: ${userId}`);
     try {
+      console.log(`[AuthContext] fetchProfile: >>> Attempting Supabase query for profile of user: ${userId}`);
       const { data, error, status } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
+      console.log(`[AuthContext] fetchProfile: <<< Supabase query completed for user: ${userId}. Status: ${status}`);
       
       console.log(`[AuthContext] Profile fetch API call returned - Status: ${status}, Error: ${JSON.stringify(error)}, Data: ${JSON.stringify(data)}`); 
 
