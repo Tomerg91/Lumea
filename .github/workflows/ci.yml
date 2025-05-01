@@ -21,9 +21,12 @@ jobs:
     
     - name: Install dependencies
       run: npm ci
+      
+    - name: Install explicit React type declarations
+      run: npm install --no-save @types/react @types/react-dom @types/react-router-dom
     
-    - name: Run type checking
-      run: npm run check
+    - name: Run type checking (CI mode)
+      run: npm run ci-check
     
     - name: Run linting
       run: npm run lint
