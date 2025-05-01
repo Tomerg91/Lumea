@@ -15,6 +15,7 @@ i18n
   .init({
     debug: true, // Logs info to console. Set to false for production.
     fallbackLng: "he", // Use Hebrew if detected language is not available
+    lng: "he", // Force Hebrew as the default language
     interpolation: {
       escapeValue: false, // React already protects from XSS
     },
@@ -31,6 +32,10 @@ i18n
       order: ['querystring', 'cookie', 'localStorage', 'sessionStorage', 'navigator', 'htmlTag'],
       // Caching detected language
       caches: ['localStorage', 'cookie'],
+      // Override detected language with Hebrew unless explicitly changed
+      lookupQuerystring: 'lng',
+      lookupCookie: 'i18next',
+      lookupLocalStorage: 'i18nextLng'
     }
   });
 

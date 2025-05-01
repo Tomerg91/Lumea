@@ -2,25 +2,54 @@ import { Routes, Route, Link, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import ClientsPage from './pages/Dashboard/ClientsPage';
 import AuthPage from './pages/Auth';
+import HomePage from './pages/Index'; // Import HomePage component
+import Dashboard from './pages/Dashboard'; // Import the Dashboard component
 import './App.css'
 
 // Protected Route Component - redirect to /auth
 const ProtectedRoute = ({ allowedRoles }) => {
   const { session, profile, loading } = useAuth();
 
+  // Log the state received by ProtectedRoute
+  console.log('[ProtectedRoute] State:', { loading, sessionExists: !!session, profileRole: profile?.role, allowedRoles });
+
   if (loading) {
+    console.log('[ProtectedRoute] Rendering Loading state');
     return <div>Loading session...</div>; 
   }
 
   if (!session) {
     // Redirect to /auth if not authenticated
+    console.log('[ProtectedRoute] No session, redirecting to /auth');
     return <Navigate to="/auth" replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(profile?.role)) {
-    return <Navigate to="/" replace />; // Or an unauthorized page
+  // Added check for profile existence before role check
+  if (!profile) {
+    console.log('[ProtectedRoute] Session exists, but profile not yet loaded. Rendering loading.'); 
+    // It's possible to be authenticated but profile hasn't loaded yet
+    // Render loading or a placeholder, DO NOT redirect to /auth here
+    return <div>Loading profile...</div>; // Or null, or a spinner
   }
 
+  // Check if the user's role is in the allowedRoles array
+  if (allowedRoles && !allowedRoles.includes(profile.role)) {
+    console.log(`[ProtectedRoute] Role mismatch (Profile: ${profile.role}, Allowed: ${allowedRoles}), redirecting to /`);
+    
+    // If they're logged in but wrong role, redirect to their appropriate dashboard
+    if (profile.role === 'coach') {
+      console.log('[ProtectedRoute] Redirecting coach to /coach/dashboard');
+      return <Navigate to="/coach/dashboard" replace />;
+    } else if (profile.role === 'client') {
+      console.log('[ProtectedRoute] Redirecting client to /client/dashboard');
+      return <Navigate to="/client/dashboard" replace />;
+    }
+    
+    // Fallback if no recognized role
+    return <Navigate to="/" replace />;
+  }
+
+  console.log('[ProtectedRoute] Checks passed, rendering Outlet');
   return <Outlet />;
 };
 
@@ -34,7 +63,13 @@ function App() {
         {/* Show different links based on auth state and role */} 
         {session && profile?.role === 'coach' && ( 
           <> 
-           | <Link to="/dashboard/clients">My Clients</Link>
+           | <Link to="/coach/dashboard">Dashboard</Link>
+           | <Link to="/coach/clients">My Clients</Link>
+          </>
+        )}
+        {session && profile?.role === 'client' && ( 
+          <> 
+           | <Link to="/client/dashboard">My Dashboard</Link>
           </>
         )}
         {/* Add links for other roles/pages */} 
@@ -56,24 +91,38 @@ function App() {
       <main style={{ paddingTop: '20px' }}>
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<div>Home Page (Public)</div>} /> 
+          <Route path="/" element={<HomePage />} /> {/* Use HomePage component */}
           <Route path="/auth" element={<AuthPage />} /> {/* Route for Auth component */} 
-          {/* Remove /login and /signup routes */}
 
-          {/* Protected Routes */} 
+          {/* Coach Protected Routes */} 
           <Route element={<ProtectedRoute allowedRoles={['coach']} />}>
-            <Route path="/dashboard" element={<div>Coach Dashboard</div>} /> {/* Example dashboard route */} 
-            <Route path="/dashboard/clients" element={<ClientsPage />} />
+            <Route path="/coach/dashboard" element={<Dashboard />} />
+            <Route path="/coach/clients" element={<ClientsPage />} />
+            <Route path="/coach/sessions" element={<div>Coach Sessions Page</div>} />
+            <Route path="/coach/reflections" element={<div>Coach Reflections Page</div>} />
+            <Route path="/coach/resources" element={<div>Coach Resources Page</div>} />
+            <Route path="/coach/profile" element={<div>Coach Profile Page</div>} />
           </Route>
 
-          {/* Add other routes for clients, admins etc. potentially with different allowedRoles */}
-          {/* Example: 
+          {/* Client Protected Routes */}
           <Route element={<ProtectedRoute allowedRoles={['client']} />}>
-            <Route path="/my-reflections" element={<ReflectionsPage />} />
+            <Route path="/client/dashboard" element={<Dashboard />} />
+            <Route path="/client/sessions" element={<div>Client Sessions Page</div>} />
+            <Route path="/client/reflections" element={<div>Client Reflections Page</div>} />
+            <Route path="/client/resources" element={<div>Client Resources Page</div>} />
+            <Route path="/client/profile" element={<div>Client Profile Page</div>} />
           </Route>
-          */}
 
-          <Route path="*" element={<div>404 Not Found</div>} />
+          {/* Fallback 404 route */}
+          <Route path="*" element={
+            <div style={{ padding: '2rem', textAlign: 'center' }}>
+              <h2>404 Not Found</h2>
+              <p>The page you're looking for doesn't exist.</p>
+              <div style={{ marginTop: '1rem' }}>
+                <Link to="/">Go Home</Link>
+              </div>
+            </div>
+          } />
         </Routes>
       </main>
     </div>

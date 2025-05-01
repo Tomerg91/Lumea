@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,7 +14,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../supabaseClient';
+import { supabase, checkSupabaseConnection } from '../lib/supabase';
 
 const createLoginSchema = (t: TFunction) => z.object({
   email: z.string().email({ message: t('validation.emailInvalid') }),
@@ -36,10 +36,12 @@ type SignupFormValues = z.infer<ReturnType<typeof createSignupSchema>>;
 
 const Auth = () => {
   const { t } = useTranslation();
-  const { signIn, signUp, loading: authLoading, authError, session } = useAuth();
+  const { signIn, signUp, loading: authLoading, authError, session, profile } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [connectionChecking, setConnectionChecking] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   
   const loginSchema = createLoginSchema(t);
   const signupSchema = createSignupSchema(t);
@@ -62,7 +64,50 @@ const Auth = () => {
     },
   });
   
+  // Check Supabase connection on component mount
+  useEffect(() => {
+    const checkConnection = async () => {
+      setConnectionChecking(true);
+      setConnectionError(null);
+      try {
+        console.log("[Auth] Initiating Supabase connection check...");
+        const isConnected = await checkSupabaseConnection();
+        console.log("[Auth] Connection check result:", isConnected ? "SUCCESS" : "FAILED");
+        
+        if (!isConnected) {
+          setConnectionError("Cannot connect to authentication service. This might be due to network issues or the service being temporarily unavailable.");
+        }
+      } catch (error) {
+        console.error("[Auth] Connection check error:", error);
+        setConnectionError("Error checking connection to authentication service. Please try again later.");
+      } finally {
+        setConnectionChecking(false);
+      }
+    };
+    
+    checkConnection();
+  }, []);
+  
   const onLoginSubmit = async (data: LoginFormValues) => {
+    // Check connection before attempting login
+    setConnectionChecking(true);
+    const isConnected = await checkSupabaseConnection();
+    setConnectionChecking(false);
+    
+    if (!isConnected) {
+      toast({
+        title: t('toast.connectionErrorTitle', 'Connection Error'),
+        description: t('toast.connectionErrorDescription', 'Cannot connect to the authentication service. Please check your internet connection.'),
+        variant: 'destructive',
+      });
+      setConnectionError("Cannot connect to authentication service. Please check your internet connection.");
+      return;
+    }
+    
+    // Clear any connection errors
+    setConnectionError(null);
+    
+    // Proceed with login
     const { error } = await signIn({ email: data.email, password: data.password });
 
     if (error) {
@@ -76,11 +121,28 @@ const Auth = () => {
         title: t('toast.loginSuccessTitle'),
         description: t('toast.loginSuccessDescription'),
       });
-      navigate('/dashboard');
     }
   };
   
   const onSignupSubmit = async (data: SignupFormValues) => {
+    // Check connection before attempting signup
+    setConnectionChecking(true);
+    const isConnected = await checkSupabaseConnection();
+    setConnectionChecking(false);
+    
+    if (!isConnected) {
+      toast({
+        title: t('toast.connectionErrorTitle', 'Connection Error'),
+        description: t('toast.connectionErrorDescription', 'Cannot connect to the authentication service. Please check your internet connection.'),
+        variant: 'destructive',
+      });
+      setConnectionError("Cannot connect to authentication service. Please check your internet connection.");
+      return;
+    }
+    
+    // Clear any connection errors
+    setConnectionError(null);
+    
     const { confirmPassword, ...signupData } = data;
     
     const { error: signupError, data: signupResult } = await signUp({
@@ -112,10 +174,26 @@ const Auth = () => {
   };
 
   React.useEffect(() => {
-    if (session) {
-      navigate('/dashboard', { replace: true });
+    console.log('[Auth] useEffect - checking session and profile');
+    console.log('[Auth] Session:', session);
+    console.log('[Auth] Profile:', profile);
+    
+    if (session && profile) {
+      console.log('[Auth] Both session and profile exist, checking role for redirect');
+      if (profile.role === 'coach') {
+        console.log('[Auth] Redirecting coach to /coach/dashboard');
+        navigate('/coach/dashboard', { replace: true });
+      } else if (profile.role === 'client') {
+        console.log('[Auth] Redirecting client to /client/dashboard');
+        navigate('/client/dashboard', { replace: true });
+      } else {
+        console.log('[Auth] Unknown role:', profile.role, 'redirecting to home');
+        navigate('/', { replace: true });
+      }
+    } else if (session && !profile) {
+      console.log('[Auth] Session exists but no profile yet, waiting for profile to load');
     }
-  }, [session, navigate]);
+  }, [session, profile, navigate]);
 
   return (
     <BackgroundPattern>
@@ -145,7 +223,60 @@ const Auth = () => {
               </CardHeader>
               
               <CardContent>
-                {authError && (
+                {connectionError && (
+                  <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded p-3 mb-4 text-sm text-red-600 dark:text-red-300">
+                    <p className="font-medium">Connection Error</p>
+                    <p>{connectionError}</p>
+                    <p className="mt-2">Possible solutions:</p>
+                    <ul className="list-disc list-inside mt-1">
+                      <li>Check your internet connection</li>
+                      <li>Try using a different network or device</li>
+                      <li>The service might be temporarily down - try again later</li>
+                      <li>If you're using a VPN or firewall, try disabling it temporarily</li>
+                      <li>If the problem persists, contact support at help@satyacoaching.com</li>
+                    </ul>
+                    <div className="mt-3 pt-2 border-t border-red-200 dark:border-red-800">
+                      <button 
+                        onClick={() => window.location.reload()} 
+                        className="text-lumea-sage hover:text-lumea-stone dark:hover:text-lumea-beige text-sm font-medium"
+                      >
+                        Refresh Page
+                      </button>
+                      <span className="px-2 text-red-400">•</span>
+                      <button 
+                        onClick={async () => {
+                          setConnectionChecking(true);
+                          try {
+                            const isConnected = await checkSupabaseConnection();
+                            if (isConnected) {
+                              setConnectionError(null);
+                              toast({
+                                title: "Connection Restored",
+                                description: "Successfully connected to the authentication service.",
+                              });
+                            } else {
+                              toast({
+                                title: "Still Disconnected",
+                                description: "Could not connect to the authentication service. Please try the suggestions above.",
+                                variant: "destructive",
+                              });
+                            }
+                          } catch (error) {
+                            console.error("[Auth] Retry connection error:", error);
+                          } finally {
+                            setConnectionChecking(false);
+                          }
+                        }} 
+                        className="text-lumea-sage hover:text-lumea-stone dark:hover:text-lumea-beige text-sm font-medium"
+                        disabled={connectionChecking}
+                      >
+                        {connectionChecking ? "Checking..." : "Try Again"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                {authError && !connectionError && (
                   <p className="text-sm text-red-600 mb-4 text-center">Error: {authError.message}</p>
                 )}
 
@@ -182,8 +313,12 @@ const Auth = () => {
                       )}
                     </div>
                     
-                    <Button type="submit" className="w-full bg-lumea-stone hover:bg-lumea-stone/90 text-lumea-beige" disabled={authLoading}>
-                      {authLoading ? t('common.loading', 'Loading...') : t('auth.signInButton')}
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-lumea-stone hover:bg-lumea-stone/90 text-lumea-beige" 
+                      disabled={authLoading || connectionChecking}
+                    >
+                      {authLoading || connectionChecking ? t('common.loading', 'Loading...') : t('auth.signInButton')}
                     </Button>
                   </form>
                 ) : (
@@ -239,8 +374,12 @@ const Auth = () => {
                       )}
                     </div>
                     
-                    <Button type="submit" className="w-full bg-lumea-stone hover:bg-lumea-stone/90 text-lumea-beige" disabled={authLoading}>
-                      {authLoading ? t('common.loading', 'Loading...') : t('auth.createAccountButton', 'Create Account')}
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-lumea-stone hover:bg-lumea-stone/90 text-lumea-beige" 
+                      disabled={authLoading || connectionChecking}
+                    >
+                      {authLoading || connectionChecking ? t('common.loading', 'Loading...') : t('auth.createAccountButton', 'Create Account')}
                     </Button>
                   </form>
                 )}

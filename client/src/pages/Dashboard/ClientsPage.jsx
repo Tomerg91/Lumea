@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-// Go up two levels to reach src directory
-import { supabase } from '../../supabaseClient';
+// Use the consolidated Supabase client
+import { supabase } from '../../lib/supabase';
 // Go up two levels to reach src directory
 import { useAuth } from '../../contexts/AuthContext';
 

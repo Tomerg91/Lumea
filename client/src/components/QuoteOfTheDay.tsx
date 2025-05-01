@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const quotes = [
   {
@@ -25,11 +24,43 @@ const quotes = [
 ];
 
 const QuoteOfTheDay = () => {
-  // Get a random quote based on the day
-  const today = new Date();
-  const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
-  const quoteIndex = dayOfYear % quotes.length;
-  const quote = quotes[quoteIndex];
+  const [quote, setQuote] = useState<{ text: string; author: string } | null>(null);
+  const [error, setError] = useState<boolean>(false);
+  
+  useEffect(() => {
+    try {
+      console.log('[QuoteOfTheDay] Component mounted');
+      // Get a random quote based on the day
+      const today = new Date();
+      const startOfYear = new Date(today.getFullYear(), 0, 0);
+      const diffTime = today.getTime() - startOfYear.getTime();
+      const dayOfYear = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const quoteIndex = dayOfYear % quotes.length;
+      const selectedQuote = quotes[quoteIndex];
+      
+      console.log('[QuoteOfTheDay] Selected quote at index', quoteIndex);
+      setQuote(selectedQuote);
+    } catch (err) {
+      console.error('[QuoteOfTheDay] Error selecting quote:', err);
+      setError(true);
+    }
+  }, []);
+
+  if (error) {
+    return (
+      <div className="lumea-card p-6 text-center">
+        <p className="text-muted-foreground">Daily inspiration coming soon...</p>
+      </div>
+    );
+  }
+
+  if (!quote) {
+    return (
+      <div className="lumea-card p-6 text-center">
+        <p className="text-muted-foreground">Loading daily wisdom...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="lumea-card p-6 text-center">

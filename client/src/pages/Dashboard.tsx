@@ -1,15 +1,66 @@
-import React from 'react';
+import React, { useMemo, useEffect, Suspense } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import QuoteOfTheDay from '@/components/QuoteOfTheDay';
 import MainLayout from '@/components/MainLayout';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
+
+// ErrorFallback component for QuoteOfTheDay
+const QuoteFallback = () => (
+  <div className="lumea-card p-6 text-center">
+    <p className="text-muted-foreground">Inspiring quote coming soon...</p>
+  </div>
+);
+
+// Error boundary for QuoteOfTheDay
+class QuoteErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean}> {
+  constructor(props: {children: React.ReactNode}) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('[Dashboard] QuoteOfTheDay error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <QuoteFallback />;
+    }
+
+    return this.props.children;
+  }
+}
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile, loading } = useAuth();
+
+  // Debug logging for dashboard
+  useEffect(() => {
+    console.log('[Dashboard] Rendering Dashboard component');
+    console.log('[Dashboard] User:', user);
+    console.log('[Dashboard] Profile:', profile);
+    console.log('[Dashboard] Loading:', loading);
+  }, [user, profile, loading]);
+
+  // Determine the role prefix for routes based on user role
+  const rolePrefix = useMemo(() => {
+    const prefix = profile?.role === 'coach' ? '/coach' : '/client';
+    console.log('[Dashboard] Using rolePrefix:', prefix);
+    return prefix;
+  }, [profile?.role]);
   
+  // If profile is not loaded yet but not in loading state
+  if (!profile && !loading) {
+    console.log('[Dashboard] No profile but not loading - might be a session issue');
+  }
+
   const upcomingSession = {
     date: new Date(Date.now() + 86400000), // Tomorrow
     coach: "Sarah Johnson",
@@ -28,7 +79,7 @@ const Dashboard = () => {
       <div className="max-w-6xl mx-auto animate-fade-in">
         <header className="mb-8">
           <h1 className="text-3xl md:text-4xl font-playfair mb-2">
-            Welcome, {user?.name || 'User'}
+            Welcome, {profile?.name || user?.email || 'User'}
           </h1>
           <p className="text-muted-foreground">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
@@ -53,7 +104,7 @@ const Dashboard = () => {
                   <p className="mt-2 text-sm">{upcomingSession.notes}</p>
                 </div>
                 <div className="flex gap-2 mt-4 md:mt-0">
-                  <Button variant="outline" onClick={() => navigate('/sessions')}>
+                  <Button variant="outline" onClick={() => navigate(`${rolePrefix}/sessions`)}>
                     Reschedule
                   </Button>
                   <Button className="bg-lumea-stone text-lumea-beige hover:bg-lumea-stone/90">
@@ -74,7 +125,7 @@ const Dashboard = () => {
             <CardContent>
               <h3 className="font-medium mb-2">{lastReflection.title}</h3>
               <p className="text-muted-foreground text-sm line-clamp-3">{lastReflection.excerpt}</p>
-              <Button variant="link" className="mt-2 p-0 text-lumea-sage" onClick={() => navigate('/reflections')}>
+              <Button variant="link" className="mt-2 p-0 text-lumea-sage" onClick={() => navigate(`${rolePrefix}/reflections`)}>
                 Continue reading
               </Button>
             </CardContent>
@@ -85,7 +136,7 @@ const Dashboard = () => {
           <div className="col-span-1 md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Button 
               className="h-auto py-6 bg-lumea-sage/20 hover:bg-lumea-sage/30 text-lumea-stone dark:text-lumea-beige"
-              onClick={() => navigate('/sessions')}
+              onClick={() => navigate(`${rolePrefix}/sessions`)}
             >
               <div className="flex flex-col items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path><path d="M16 18h.01"></path></svg>
@@ -95,7 +146,7 @@ const Dashboard = () => {
             
             <Button 
               className="h-auto py-6 bg-lumea-taupe/20 hover:bg-lumea-taupe/30 text-lumea-stone dark:text-lumea-beige"
-              onClick={() => navigate('/reflections')}
+              onClick={() => navigate(`${rolePrefix}/reflections`)}
             >
               <div className="flex flex-col items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4h6v6"></path><path d="M10 20H4v-6"></path><path d="m20 4-6 6"></path><path d="m4 20 6-6"></path></svg>
@@ -105,7 +156,7 @@ const Dashboard = () => {
             
             <Button 
               className="h-auto py-6 bg-lumea-beige/40 hover:bg-lumea-beige/50 text-lumea-stone dark:text-lumea-beige"
-              onClick={() => navigate('/resources')}
+              onClick={() => navigate(`${rolePrefix}/resources`)}
             >
               <div className="flex flex-col items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg>
@@ -115,7 +166,9 @@ const Dashboard = () => {
           </div>
           
           <div className="col-span-1">
-            <QuoteOfTheDay />
+            <QuoteErrorBoundary>
+              <QuoteOfTheDay />
+            </QuoteErrorBoundary>
           </div>
         </div>
         

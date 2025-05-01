@@ -36,6 +36,20 @@
     "signUpLink": "Sign up",
     "signInLink": "Sign in"
   },
+  "home": {
+    "welcome": "Welcome to Satya Coaching",
+    "tagline": "Your journey to meaningful change begins here",
+    "getStarted": "Get started on your transformation journey today",
+    "loginButton": "Login / Sign Up",
+    "welcomeBack": "Welcome back",
+    "dashboard": "Go to Dashboard",
+    "feature1Title": "Personal Growth",
+    "feature1Description": "Embark on a journey of self-discovery and personal development with our expert coaches.",
+    "feature2Title": "Tailored Coaching",
+    "feature2Description": "Receive personalized coaching sessions designed to meet your unique needs and goals.",
+    "feature3Title": "Track Progress",
+    "feature3Description": "Monitor your growth and achievements with our intuitive progress tracking tools."
+  },
   "footer": {
     "copyright": "Lumea. All rights reserved."
   },
