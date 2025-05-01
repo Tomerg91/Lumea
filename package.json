@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "concurrently \"cd client && npm run dev\" \"cd server && npm run dev\"",
     "install:all": "npm install && cd client && npm install && cd ../server && npm install",
-    "build": "cd client && npm run build && cd ../server && npm run build"
+    "build": "cd client && npm run build && cd ../server && npm run build",
+    "check": "cd client && npm run typecheck && cd ../server && npm run typecheck",
+    "lint": "cd client && npm run lint && cd ../server && npm run lint",
+    "test": "cd client && npm run test && cd ../server && npm run test"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.2.0",
