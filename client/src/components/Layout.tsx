@@ -4,11 +4,11 @@ import { useTranslation } from 'react-i18next';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import Logo from '@/components/Logo';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const Layout = () => {
   const { t, i18n } = useTranslation();
-  const { user, logoutUser, isLoading: isAuthLoading } = useAuth();
+  const { user, signOut, loading } = useAuth();
 
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
@@ -54,10 +54,10 @@ const Layout = () => {
                  <Button 
                     variant="outline" 
                     size="sm" 
-                    onClick={logoutUser} 
-                    disabled={isAuthLoading}
+                    onClick={signOut} 
+                    disabled={loading}
                  >
-                    {isAuthLoading ? t('common.loading', 'Loading...') : t('nav.logout', 'Logout')}
+                    {loading ? t('common.loading', 'Loading...') : t('nav.logout', 'Logout')}
                  </Button>
              )}
              {/* TODO: Add User Profile Dropdown instead of simple button */}

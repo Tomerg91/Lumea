@@ -18,7 +18,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@shared/*": ["../shared/*"]
+      "@shared/*": ["../shared/*"],
+      "@context/*": ["src/contexts/*"],
+      "@components/*": ["src/components/*"]
     },
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
