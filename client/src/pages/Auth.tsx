@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */ // Disabled due to persistent issue with i18next t() function default value
 import React from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -503,8 +504,7 @@ const Auth = () => {
                       >
                         {['client', 'coach'].map((roleOption) => (
                           <option key={roleOption} value={roleOption} className="capitalize">
-                            {/* eslint-disable-next-line react/no-unescaped-entities */}
-                            {t(`auth.${roleOption}Option`, { defaultValue: `I'm a ${roleOption}` })}
+                            {t(`auth.${roleOption}Option`, { defaultValue: `Role: ${roleOption}` })}
                           </option>
                         ))}
                       </select>

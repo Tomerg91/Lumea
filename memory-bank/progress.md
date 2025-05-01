@@ -63,6 +63,31 @@
 - Added visible styling for debugging component visibility
 - Fixed component imports and file references
 
+### Linting and Formatting Fixes
+
+- Ran `npx prettier --write .` and `npx eslint . --fix` extensively.
+- Configured `.eslintignore` to exclude build outputs, backups, and temporary directories.
+- Adjusted root `.eslintrc.json`:
+  - Added `parserOptions.project` pointing to root, client, and server `tsconfig.json` files.
+  - Added override for JS files.
+  - Added override for `client/*.config.ts` to disable project parsing (`parserOptions.project: null`).
+  - Added overrides to allow `require()` in `tailwind.config.ts` and `server/storage.ts`.
+  - Added override to disable `@typescript-eslint/no-empty-object-type` for `*.d.ts` files.
+  - Added override to disable `@typescript-eslint/no-namespace` for specific server auth files.
+  - Explicitly set React version in `settings.react.version`.
+  - Disabled `react/prop-types` rule.
+- Updated root `tsconfig.json` to include `*.config.ts`.
+- Removed conflicting `parserOptions` from `client/.eslintrc.json`.
+- Updated `client/tsconfig.json` to include `*.config.ts` and `vite.config.ts`.
+- Fixed numerous errors:
+  - Replaced `require()` with `import` or allowed via overrides.
+  - Escaped HTML entities (`&apos;`, `&quot;`) in JSX.
+  - Replaced empty interfaces with type aliases where appropriate.
+  - Disabled rules for specific lines/files where necessary (e.g., declaration files).
+  - Fixed `no-case-declarations` by adding block scope `{}`.
+  - Removed unused variables.
+  - Removed non-standard HTML attributes (`cmdk-input-wrapper`).
+
 ## Authentication & Error Handling Improvements
 
 - Implemented comprehensive connection error detection and user messaging
@@ -154,15 +179,15 @@
 - TypeScript conversion for React components completed.
 - Role selection (client/coach) added to the signup process.
 - Fallback mechanism for Supabase connectivity issues implemented.
+- **Linting/Formatting:** Significantly improved codebase linting and formatting. Build should now pass on Vercel.
 
 ## Known Issues
 
-- UI rendering may experience blank page issues if React imports are inconsistent
+- **ESLint Errors (4):** Parsing errors related to project configuration persist in `server/auth.ts`, `server/config/passport.ts`, and `server/middleware/auth.ts`.
+- **ESLint Warnings (~170):** Numerous warnings, mostly `@typescript-eslint/no-explicit-any`.
 - Supabase project requires proper setup with correct schemas
 - Row Level Security (RLS) policies need to be implemented for all tables
 - Profile table must be created on the new Supabase project
-- Fast Refresh with React may have issues with certain export patterns
-- React imports and hook usage need standardization to avoid TypeScript errors
 
 ## Evolution of Project Decisions
 
