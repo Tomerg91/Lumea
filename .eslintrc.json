@@ -92,7 +92,7 @@
     {
       "files": ["server/**/*.ts"],
       "parserOptions": {
-        "project": ["./server/tsconfig.json"],
+        "project": ["./tsconfig.json"],
         "tsconfigRootDir": "."
       }
     }
