@@ -11,7 +11,7 @@
     "install:all": "npm install && cd client && npm install && cd ../server && npm install",
     "build": "cd client && npm run build && cd ../server && npm run build",
     "check": "cd client && npm run typecheck && cd ../server && npm run typecheck",
-    "ci-check": "echo 'CI check - skipping actual type checking to avoid declaration file issues'",
+    "ci-check": "npm run check",
     "lint": "cd client && npm run lint && cd ../server && npm run lint",
     "test": "cd client && npm run test -- --reporter verbose && cd ../server && npm run test -- --verbose"
   },

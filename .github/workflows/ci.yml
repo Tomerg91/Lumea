@@ -31,7 +31,7 @@ jobs:
         run: npm install --save-dev @types/react @types/react-dom @types/react-router-dom
 
       - name: Run type checking (CI mode)
-        run: npm run ci-check
+        run: npm run ci-check || exit 1
 
       - name: Install ESLint
         run: |
@@ -39,10 +39,10 @@ jobs:
           cd ../server && npm install --save-dev eslint
 
       - name: Run linting
-        run: npm run lint
+        run: npm run lint || exit 1
 
       - name: Run tests
-        run: npm run test
+        run: npm run test || exit 1
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
