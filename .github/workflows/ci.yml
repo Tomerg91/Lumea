@@ -33,6 +33,11 @@ jobs:
     - name: Run type checking (CI mode)
       run: npm run ci-check
     
+    - name: Install ESLint
+      run: |
+        cd client && npm install --save-dev eslint
+        cd ../server && npm install --save-dev eslint
+    
     - name: Run linting
       run: npm run lint
     

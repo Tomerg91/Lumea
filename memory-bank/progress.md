@@ -19,6 +19,11 @@
 
 ## Recent Development Progress
 
+### CI/CD Pipeline Fixes
+*   Added ESLint as a dev dependency in the server package to fix CI linting
+*   Fixed GitHub Actions workflow to properly run the linting step
+*   Added explicit ESLint installation step in GitHub Actions workflow before linting
+
 ### Supabase Connection & Authentication Improvements
 *   Implemented a new Supabase URL and API key for the application
 *   Added a development fallback mechanism when the primary Supabase project is unreachable

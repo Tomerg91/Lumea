@@ -9,6 +9,8 @@ Recent changes:
 *   Added role selection (coach/client) to the signup form for better user management
 *   Updated the profile creation process to store user roles in user metadata
 *   Addressed React import issues and TypeScript errors in the AuthContext component
+*   Fixed CI/CD pipeline by adding ESLint as a dev dependency to the server package
+*   Enhanced GitHub Actions workflow with explicit ESLint installation steps
 
 Next steps: 
 1. Implement database schema for roles (Client, Coach, Admin) & status (pending, active)
