@@ -24,6 +24,7 @@
 *   Fixed GitHub Actions workflow to properly run the linting step
 *   Added explicit ESLint installation step in GitHub Actions workflow before linting
 *   Downgraded ESLint to v8.57.0 to maintain compatibility with existing .eslintrc.json configuration
+*   Added required ESLint plugins (eslint-plugin-prettier, prettier, eslint-config-prettier) to fix linting process
 
 ### Supabase Connection & Authentication Improvements
 *   Implemented a new Supabase URL and API key for the application

@@ -12,6 +12,7 @@ Recent changes:
 *   Fixed CI/CD pipeline by adding ESLint as a dev dependency to the server package
 *   Enhanced GitHub Actions workflow with explicit ESLint installation steps
 *   Downgraded ESLint to v8.57.0 to maintain compatibility with existing .eslintrc.json configuration
+*   Added required ESLint plugins (eslint-plugin-prettier, prettier, eslint-config-prettier) to fix linting process
 
 Next steps: 
 1. Implement database schema for roles (Client, Coach, Admin) & status (pending, active)
