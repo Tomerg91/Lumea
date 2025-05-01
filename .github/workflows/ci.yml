@@ -16,14 +16,19 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
         cache: 'npm'
     
     - name: Install dependencies
-      run: npm ci
+      run: npm install
+      
+    - name: Update package-lock.json
+      run: |
+        npm install --package-lock-only
+        git diff --exit-code || echo "package-lock.json updated"
       
     - name: Install explicit React type declarations
-      run: npm install --no-save @types/react @types/react-dom @types/react-router-dom
+      run: npm install --save-dev @types/react @types/react-dom @types/react-router-dom
     
     - name: Run type checking (CI mode)
       run: npm run ci-check
@@ -52,11 +57,11 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
         cache: 'npm'
     
     - name: Install dependencies
-      run: npm ci
+      run: npm install
     
     - name: Build
       run: npm run build

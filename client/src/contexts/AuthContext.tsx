@@ -1,7 +1,18 @@
-import React, { createContext, useState, useEffect, useContext, ReactNode, useRef } from 'react';
-import { supabase } from '../lib/supabase';
+import * as React from 'react';
+import { getSupabaseClient } from '@/lib/supabase';
 import { AuthError, Session, User } from '@supabase/supabase-js';
 import type { Session as TypeSession, User as TypeUser } from '@supabase/supabase-js';
+
+// Define types for the user profile
+interface UserProfile {
+  id: string;
+  created_at?: string;
+  updated_at?: string;
+  email?: string;
+  name?: string;
+  role?: string;
+  [key: string]: any;
+}
 
 // Define the shape of the context value
 interface AuthContextType {
@@ -13,34 +24,49 @@ interface AuthContextType {
   signIn: (credentials: { email?: string; password?: string; provider?: any; options?: any }) => Promise<{ data: any; error: AuthError | null }>;
   signUp: (credentials: { email?: string; password?: string; options?: any }) => Promise<{ data: any; error: AuthError | null }>;
   signOut: () => Promise<void>;
+  updateProfile?: (updates: Partial<UserProfile>) => Promise<{ data?: UserProfile | null; error: Error | null }>;
 }
 
 // Create the context with an explicit type (or null initially)
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = React.createContext<AuthContextType | null>(null);
 
 // Define props for the provider
 interface AuthProviderProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
 // Create the provider component
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [session, setSession] = useState<TypeSession | null>(null);
-  const [user, setUser] = useState<TypeUser | null>(null);
-  const [profile, setProfile] = useState<Record<string, any> | null>(null); // To store role, name, etc.
-  const [loadingSession, setLoadingSession] = useState<boolean>(true); // Loading state for session check
-  const [loadingProfile, setLoadingProfile] = useState<boolean>(false); // Loading state for profile fetch
-  const [authError, setAuthError] = useState<AuthError | null>(null); // Add state for auth errors
+  const [session, setSession] = React.useState<TypeSession | null>(null);
+  const [user, setUser] = React.useState<TypeUser | null>(null);
+  const [profile, setProfile] = React.useState<Record<string, any> | null>(null); // To store role, name, etc.
+  const [loadingSession, setLoadingSession] = React.useState<boolean>(true); // Loading state for session check
+  const [loadingProfile, setLoadingProfile] = React.useState<boolean>(false); // Loading state for profile fetch
+  const [authError, setAuthError] = React.useState<AuthError | null>(null); // Add state for auth errors
+  const [isUpdatingProfile, setIsUpdatingProfile] = React.useState<boolean>(false);
 
   // Add a ref to track ongoing profile fetch requests
-  const profileFetchInProgress = useRef<string | null>(null);
+  const profileFetchInProgress = React.useRef<string | null>(null);
   
   // Add refs to track session initialization state
-  const isInitialized = useRef<boolean>(false);
-  const initializedUser = useRef<string | null>(null);
+  const isInitialized = React.useRef<boolean>(false);
+  const initializedUser = React.useRef<string | null>(null);
+
+  // Reset error state after 5 seconds
+  React.useEffect(() => {
+    if (authError) {
+      const timer = setTimeout(() => {
+        setAuthError(null);
+      }, 5000);
+      
+      return () => {
+        clearTimeout(timer);
+      };
+    }
+  }, [authError]);
 
   // Effect for initializing session and setting up listener
-  useEffect(() => {
+  React.useEffect(() => {
     let ignore = false;
     console.log('[AuthContext] Session Effect mounting...');
     setLoadingSession(true);
@@ -49,11 +75,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     async function getInitialSession() {
       console.log('[AuthContext] Attempting to get initial session...');
       try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) {
-           console.error('[AuthContext] Error getting session:', sessionError);
-           throw sessionError;
+        // Use the appropriate client based on availability
+        const client = getSupabaseClient();
+        
+        // Fetch session with error handling
+        const { data: { session }, error } = await client.auth.getSession();
+        
+        if (error) {
+          console.error('[AuthContext] Error getting initial session:', error.message);
+          if (ignore) return;
+          setAuthError(error);
         }
+        
+        // Update session if component is still mounted
         if (ignore) return;
         console.log('[AuthContext] Initial session fetched:', session ? 'Exists' : 'null');
         
@@ -85,7 +119,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     getInitialSession();
 
     console.log('[AuthContext] Setting up onAuthStateChange listener...');
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = getSupabaseClient().auth.onAuthStateChange(
       (_event, session) => {
         if (ignore) return; // Prevent updates after unmount
         console.log('[AuthContext] onAuthStateChange triggered. Event:', _event, 'Session:', session ? 'Exists' : 'null');
@@ -130,87 +164,104 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []); // Runs only once on mount
 
-  // Function to fetch user profile data (keep separate)
+  // Update the fetchProfile function to handle missing table
   const fetchProfile = async (userId: string) => {
-    console.log(`[AuthContext] fetchProfile called for user: ${userId}`);
+    console.log('[AuthContext] fetchProfile called for user:', userId);
     
-    // Skip if a fetch is already in progress for this user
-    if (profileFetchInProgress.current === userId) {
-      console.log(`[AuthContext] fetchProfile: Skipping duplicate request for user: ${userId}`);
-      return;
+    if (!userId) {
+      console.log('[AuthContext] No userId provided to fetchProfile, returning null');
+      return null;
     }
     
-    // Skip if we already have a profile for this user
-    if (profile?.id === userId) {
-      console.log(`[AuthContext] fetchProfile: Profile already loaded for user: ${userId}`);
-      return;
-    }
-    
-    // Set the current fetch in progress
-    profileFetchInProgress.current = userId;
-    
-    let tempProfileData = null;
-    // Reset profile-specific loading/error before fetch
     setLoadingProfile(true);
-    // Do NOT clear global authError here, only profile fetch errors
-
+    
     try {
-      // --- Temporarily Comment Out DEBUGGING STEP ---
-      /*
-      console.log(`[AuthContext] fetchProfile (DEBUG): >>> Attempting supabase.auth.getUser() for user: ${userId}`);
-      const { data: { user: authUser }, error: getUserError } = await supabase.auth.getUser();
-      if (getUserError) {
-         console.error(`[AuthContext] fetchProfile (DEBUG): Error during supabase.auth.getUser():`, getUserError);
-      } else {
-        console.log(`[AuthContext] fetchProfile (DEBUG): <<< supabase.auth.getUser() completed successfully for user: ${userId}`, authUser);
-      }
-      */
-      // --- END Temporarily Comment Out DEBUGGING STEP ---
-
-      // --- PROFILE FETCH LOGIC ---
-      console.log(`[AuthContext] fetchProfile: >>> Preparing to call supabase.from('profiles').select()`);
-      console.log('[AuthContext] fetchProfile: Inspecting supabase client object:', supabase);
-      console.log(`[AuthContext] fetchProfile: >>> Attempting Supabase query for profile of user: ${userId}`);
-      const { data, error, status } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId);
-      console.log(`[AuthContext] fetchProfile: <<< Supabase query completed for user: ${userId}. Status: ${status}`);
+      console.log('[AuthContext] fetchProfile: >>> Preparing to call supabase.from(\'profiles\').select()');
+      console.log('[AuthContext] fetchProfile: Inspecting supabase client object:', getSupabaseClient().constructor.name);
+      console.log('[AuthContext] fetchProfile: >>> Attempting Supabase query for profile of user:', userId);
       
-      console.log(`[AuthContext] Profile fetch API call returned - Status: ${status}, Error: ${JSON.stringify(error)}, Data: ${JSON.stringify(data)}`); 
-
-      if (error && status !== 406) {
-        console.error('[AuthContext] Error identified in profile fetch result (and status != 406):', error);
-        throw error; // Throw error to be caught below
-      } else if (data && data.length > 0) {
-        console.log('[AuthContext] Profile array fetched successfully. Setting profile state.', data[0]);
-        tempProfileData = data[0];
+      // Try to fetch the profile
+      const { data, error, status } = await getSupabaseClient()
+        .from('profiles')
+        .select()
+        .eq('id', userId)
+        .single();
+      
+      console.log('[AuthContext] fetchProfile: <<< Supabase query completed for user:', userId, 'Status:', status);
+      
+      // If the table doesn't exist or there's no profile, create a new one
+      if ((error && status === 404) || (error && error.message?.includes('relation "public.profiles" does not exist')) || !data) {
+        console.log('[AuthContext] No profile found for user or profiles table does not exist. Creating profile directly...');
+        
+        // Get user details from auth to create profile
+        const { data: { user: currentUser } } = await getSupabaseClient().auth.getUser();
+        
+        if (currentUser) {
+          console.log('[AuthContext] Fetched current user for profile creation:', currentUser.id);
+          
+          try {
+            // Create a new profile directly in the user's metadata
+            // This is a workaround since we can't create tables without admin rights
+            const { data: userMetadata, error: metadataError } = await getSupabaseClient()
+              .auth.updateUser({
+                data: {
+                  name: currentUser.user_metadata?.name || '',
+                  role: currentUser.user_metadata?.role || 'client',
+                  is_profile_created: true
+                }
+              });
+            
+            if (metadataError) {
+              console.error('[AuthContext] Error updating user metadata:', metadataError);
+              return null;
+            }
+            
+            // Create a virtual profile from the metadata
+            const profileFromMetadata = {
+              id: currentUser.id,
+              name: currentUser.user_metadata?.name || userMetadata.user.user_metadata?.name || '',
+              email: currentUser.email,
+              role: currentUser.user_metadata?.role || userMetadata.user.user_metadata?.role || 'client',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+            
+            console.log('[AuthContext] Created virtual profile from metadata:', profileFromMetadata);
+            
+            // Update global profile state
+            setProfile(profileFromMetadata);
+            return profileFromMetadata;
+          } catch (metadataError) {
+            console.error('[AuthContext] Error in profile metadata update:', metadataError);
+            return null;
+          }
+        } else {
+          console.error('[AuthContext] Could not fetch current user for profile creation');
+          return null;
+        }
+      }
+      
+      // If we get here, we successfully fetched an existing profile
+      console.log('[AuthContext] Profile successfully fetched:', data);
+      setProfile(data);
+      return data;
+    } catch (error) {
+      console.log('[AuthContext] Catch block error in fetchProfile:', error);
+      if (error instanceof AuthError) {
+        setAuthError(error);
       } else {
-        console.log('[AuthContext] Profile fetch returned no data or status 406. Setting profile to null.', data);
-        tempProfileData = null;
+        console.log('[AuthContext] Non-AuthError during profile fetch:', error);
       }
-      // --- END PROFILE FETCH LOGIC ---
-
-    } catch (caughtError) {
-      console.error('[AuthContext] Catch block error in fetchProfile:', caughtError);
-      // Set specific profile fetch error if needed, or handle globally
-      // For now, we let the main authError state handle it if it's an AuthError
-      if (!(caughtError instanceof AuthError)) {
-        console.error('[AuthContext] Non-AuthError during profile fetch:', caughtError);
-      }
-       tempProfileData = null; // Ensure profile is null on error
+      return null;
     } finally {
-       console.log(`[AuthContext] fetchProfile finally block for user: ${userId}. Setting profile to:`, tempProfileData);
-       setProfile(tempProfileData);
-       setLoadingProfile(false); // Profile fetch attempt is complete
-       // Clear the in-progress tracker
-       profileFetchInProgress.current = null;
-       console.log(`[AuthContext] fetchProfile finished for user: ${userId}`); 
+      console.log('[AuthContext] fetchProfile finally block for user:', userId);
+      setLoadingProfile(false);
+      console.log('[AuthContext] fetchProfile finished for user:', userId);
     }
   };
 
   // NEW Effect for fetching profile when user changes
-  useEffect(() => {
+  React.useEffect(() => {
     let ignore = false;
     console.log('[AuthContext] User Effect triggered. User:', user ? user.id : 'null');
 
@@ -248,7 +299,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // setLoading(true); // Handled by listener/user effect
     setAuthError(null);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await getSupabaseClient().auth.signInWithPassword({
         email: email!, // Add non-null assertion or handle undefined
         password: password!, // Add non-null assertion or handle undefined
       });
@@ -269,7 +320,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setAuthError(null);
     try {
       // options can include { data: { name: 'Full Name' } } for metadata
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await getSupabaseClient().auth.signUp({
         email: email!,
         password: password!,
         options,
@@ -291,7 +342,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // setLoading(true); // Handled by listener/user effect
     setAuthError(null);
     try {
-      const { error } = await supabase.auth.signOut();
+      const { error } = await getSupabaseClient().auth.signOut();
       if (error) throw error; // onAuthStateChange will handle clearing user/session/profile
     } catch (error) {
        console.error('Sign out failed:', error as AuthError);
@@ -300,19 +351,57 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Function to update user profile
+  const updateProfile = async (updates: Partial<UserProfile>) => {
+    if (!user) {
+      return { error: new Error('No user logged in') };
+    }
+
+    setIsUpdatingProfile(true);
+    
+    try {
+      // Use the appropriate client based on availability
+      const client = getSupabaseClient();
+      
+      const { data, error } = await client
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id)
+        .select('*')
+        .single();
+        
+      if (error) {
+        console.error('[AuthContext] Error updating profile:', error);
+        return { error };
+      }
+      
+      console.log('[AuthContext] Profile updated successfully', data);
+      setProfile(data as UserProfile);
+      return { data, error: null };
+    } catch (error) {
+      console.error('[AuthContext] Unexpected error updating profile:', error);
+      return { 
+        error: error instanceof Error ? error : new Error('Unknown error updating profile') 
+      };
+    } finally {
+      setIsUpdatingProfile(false);
+    }
+  };
+
   // Combine loading states for the context value
-  const loading = loadingSession || loadingProfile;
+  const combinedLoading = loadingSession || loadingProfile;
 
   // Ensure the provided value matches AuthContextType
   const value: AuthContextType = {
     session,
     user,
     profile,
-    loading, // Use combined loading state
+    loading: combinedLoading, // Use combined loading state
     authError,
     signIn,    
-    signUp,    // Provide signUp function
+    signUp,
     signOut,
+    updateProfile,
   };
 
   return (
@@ -322,14 +411,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   );
 };
 
-// Custom hook to use the auth context
-const useAuthHook = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  // Check if context is null (meaning useAuth is used outside of AuthProvider)
-  if (context === null) { 
+// Export the useAuth hook
+export function useAuth(): AuthContextType {
+  const context = React.useContext(AuthContext);
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
-
-export const useAuth = useAuthHook; 
+} 

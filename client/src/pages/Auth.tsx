@@ -1,20 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { AuthError } from '@supabase/supabase-js';
+import { useAuth } from '@/contexts/AuthContext';
+import { getSupabaseClient, checkSupabaseConnection } from '@/lib/supabase';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
 import Logo from '@/components/Logo';
 import BackgroundPattern from '@/components/BackgroundPattern';
-import { useNavigate } from 'react-router-dom';
 import ThemeToggle from '@/components/ThemeToggle';
-import { useTranslation } from 'react-i18next';
-import type { TFunction } from 'i18next';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase, checkSupabaseConnection } from '../lib/supabase';
 
 const createLoginSchema = (t: TFunction) => z.object({
   email: z.string().email({ message: t('validation.emailInvalid') }),
@@ -24,7 +25,10 @@ const createLoginSchema = (t: TFunction) => z.object({
 const createSignupSchema = (t: TFunction) => createLoginSchema(t).extend({
   name: z.string().min(2, { message: t('validation.nameMinLength', { length: 2 }) }),
   confirmPassword: z.string().min(6, { message: t('validation.confirmPasswordRequired') }),
-  role: z.string().optional(),
+  role: z.enum(['client', 'coach'], { 
+    required_error: t('validation.roleRequired', 'Please select your account type'),
+    invalid_type_error: t('validation.roleInvalid', 'Invalid role selected')
+  }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: t('validation.passwordsDontMatch'),
   path: ["confirmPassword"],
@@ -37,11 +41,12 @@ type SignupFormValues = z.infer<ReturnType<typeof createSignupSchema>>;
 const Auth = () => {
   const { t } = useTranslation();
   const { signIn, signUp, loading: authLoading, authError, session, profile } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = React.useState<'login' | 'register'>('login');
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [connectionChecking, setConnectionChecking] = useState(false);
-  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [connectionChecking, setConnectionChecking] = React.useState(false);
+  const [connectionError, setConnectionError] = React.useState<string | null>(null);
+  const [usingDevMode, setUsingDevMode] = React.useState(false);
   
   const loginSchema = createLoginSchema(t);
   const signupSchema = createSignupSchema(t);
@@ -61,25 +66,37 @@ const Auth = () => {
       email: "",
       password: "",
       confirmPassword: "",
+      role: "client",
     },
   });
   
-  // Check Supabase connection on component mount
-  useEffect(() => {
+  // Effect to check Supabase connection on component mount
+  React.useEffect(() => {
     const checkConnection = async () => {
       setConnectionChecking(true);
-      setConnectionError(null);
       try {
-        console.log("[Auth] Initiating Supabase connection check...");
+        // Check if we can connect to Supabase
         const isConnected = await checkSupabaseConnection();
-        console.log("[Auth] Connection check result:", isConnected ? "SUCCESS" : "FAILED");
-        
         if (!isConnected) {
-          setConnectionError("Cannot connect to authentication service. This might be due to network issues or the service being temporarily unavailable.");
+          setConnectionError("We're having trouble connecting to our database. Please check your internet connection.");
+          
+          // If we're in development, check if we're using the dev client
+          if (process.env.NODE_ENV === 'development') {
+            // We can check if it's dev mode by checking if we're connecting to the dev URL
+            const clientUrl = await getSupabaseClient().auth.getSession().then(
+              () => true, // Session call succeeded
+              () => false // Session call failed
+            );
+            // If we're in development and the connection check failed, assume dev mode
+            setUsingDevMode(!isConnected && process.env.NODE_ENV === 'development');
+          }
+        } else {
+          setConnectionError(null);
+          setUsingDevMode(false);
         }
       } catch (error) {
-        console.error("[Auth] Connection check error:", error);
-        setConnectionError("Error checking connection to authentication service. Please try again later.");
+        console.error("Connection check error:", error);
+        setConnectionError("An error occurred while checking connectivity. Please try again later.");
       } finally {
         setConnectionChecking(false);
       }
@@ -145,33 +162,74 @@ const Auth = () => {
     
     const { confirmPassword, ...signupData } = data;
     
-    const { error: signupError, data: signupResult } = await signUp({
-      email: signupData.email!,
-      password: signupData.password!,
-      options: {
-        data: {
-          name: signupData.name,
+    try {
+      // Include role in the signup options
+      const { error } = await signUp({
+        email: signupData.email,
+        password: signupData.password,
+        options: {
+          data: {
+            name: signupData.name,
+            role: signupData.role
+          }
         }
+      });
+      
+      if (error) throw error;
+      
+      // Signup successful
+      toast({
+        title: t('toast.signupSuccessTitle', 'Signup Successful'),
+        description: t('toast.signupSuccessDescription', 'Please check your email to confirm your account.'),
+      });
+      
+      // Optionally switch to login mode
+      setMode('login');
+    } catch (error) {
+      console.error('[Auth] Signup error:', error);
+      // Handle specific error cases
+      if (error instanceof AuthError) {
+        if (error.message.includes('already registered')) {
+          toast({
+            title: t('toast.signupErrorTitle', 'Signup Failed'),
+            description: t('toast.emailAlreadyRegistered', 'This email is already registered. Please log in.'),
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: t('toast.signupErrorTitle', 'Signup Failed'),
+            description: error.message,
+            variant: 'destructive',
+          });
+        }
+      } else {
+        toast({
+          title: t('toast.signupErrorTitle', 'Signup Error'),
+          description: t('toast.signupUnexpectedError', 'An unexpected error occurred. Please try again.'),
+          variant: 'destructive',
+        });
       }
-    });
-
-    if (signupError) {
-      toast({
-        title: t('toast.signupErrorTitle', 'Registration Failed'),
-        description: signupError.message || t('toast.genericError', 'An unknown error occurred'),
-        variant: 'destructive',
-      });
-    } else {
-      const needsVerification = signupResult?.user && !signupResult.session;
-      toast({
-        title: needsVerification ? t('toast.signupVerificationTitle', 'Check your email') : t('toast.signupSuccessTitle'),
-        description: needsVerification ? t('toast.signupVerificationDescription', 'Please click the link in the email we sent you.') : t('toast.signupSuccessDescription', 'Registration successful!')
-      });
-      setIsLogin(true);
-      loginForm.reset();
-      signupForm.reset();
     }
   };
+
+  // Effect to check for connection issues and display appropriate message
+  React.useEffect(() => {
+    console.log('[Auth] useEffect - checking session and profile');
+    console.log('[Auth] Session:', session);
+    console.log('[Auth] Profile:', profile);
+
+    // If loading is complete and we're still seeing auth errors, likely a connection issue
+    if (!authLoading && authError && !session) {
+      // Check if the error is related to network connectivity
+      if (authError.message?.includes('Failed to fetch') || 
+          authError.message?.includes('Network Error') ||
+          authError.message?.includes('network request failed')) {
+        setConnectionError(true);
+      }
+    } else {
+      setConnectionError(false);
+    }
+  }, [authLoading, session, profile, authError]);
 
   React.useEffect(() => {
     console.log('[Auth] useEffect - checking session and profile');
@@ -195,6 +253,21 @@ const Auth = () => {
     }
   }, [session, profile, navigate]);
 
+  // Display development mode notice when applicable
+  const DevModeNotice = () => {
+    if (!usingDevMode) return null;
+    
+    return (
+      <div className="bg-amber-100 dark:bg-amber-900 p-3 mb-4 rounded-md text-amber-800 dark:text-amber-200 text-sm">
+        <strong>Development Mode:</strong> Using a fallback database because the production database is unreachable.
+        <br />
+        <span className="text-xs">
+          To fix this in production: Create a new Supabase project and update the credentials in your environment variables.
+        </span>
+      </div>
+    );
+  };
+
   return (
     <BackgroundPattern>
       <div className="min-h-screen flex flex-col">
@@ -214,9 +287,9 @@ const Auth = () => {
             
             <Card className="backdrop-blur-sm border-lumea-beige dark:border-lumea-stone/30 bg-white/90 dark:bg-lumea-stone/20">
               <CardHeader>
-                <CardTitle className="text-center">{isLogin ? t('auth.loginTitle') : t('auth.signupTitle')}</CardTitle>
+                <CardTitle className="text-center">{mode === 'login' ? t('auth.loginTitle') : t('auth.signupTitle')}</CardTitle>
                 <CardDescription className="text-center">
-                  {isLogin 
+                  {mode === 'login' 
                     ? t('auth.loginDescription')
                     : t('auth.signupDescription')}
                 </CardDescription>
@@ -225,13 +298,14 @@ const Auth = () => {
               <CardContent>
                 {connectionError && (
                   <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded p-3 mb-4 text-sm text-red-600 dark:text-red-300">
-                    <p className="font-medium">Connection Error</p>
+                    <p className="font-medium">Supabase Connection Error</p>
                     <p>{connectionError}</p>
                     <p className="mt-2">Possible solutions:</p>
                     <ul className="list-disc list-inside mt-1">
                       <li>Check your internet connection</li>
+                      <li>Verify the Supabase project is still active in your Supabase dashboard</li>
+                      <li>Confirm the Supabase URL and API key are correct</li>
                       <li>Try using a different network or device</li>
-                      <li>The service might be temporarily down - try again later</li>
                       <li>If you're using a VPN or firewall, try disabling it temporarily</li>
                       <li>If the problem persists, contact support at help@satyacoaching.com</li>
                     </ul>
@@ -257,7 +331,7 @@ const Auth = () => {
                             } else {
                               toast({
                                 title: "Still Disconnected",
-                                description: "Could not connect to the authentication service. Please try the suggestions above.",
+                                description: "Could not connect to the Supabase service. Please contact support if this persists.",
                                 variant: "destructive",
                               });
                             }
@@ -276,11 +350,24 @@ const Auth = () => {
                   </div>
                 )}
                 
+                {usingDevMode && !connectionError && (
+                  <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded p-3 mb-4 text-sm text-blue-600 dark:text-blue-300">
+                    <p className="font-medium">Development Mode Active</p>
+                    <p>Using a development Supabase project for authentication. Your credentials will work in this environment, but not in production.</p>
+                    <p className="mt-2">To fix the production environment:</p>
+                    <ol className="list-decimal list-inside mt-1">
+                      <li>Create a new Supabase project at <a href="https://app.supabase.com" target="_blank" rel="noopener noreferrer" className="underline">app.supabase.com</a></li>
+                      <li>Update the Supabase URL and anon key in your environment configuration</li>
+                      <li>Restart the application</li>
+                    </ol>
+                  </div>
+                )}
+                
                 {authError && !connectionError && (
                   <p className="text-sm text-red-600 mb-4 text-center">Error: {authError.message}</p>
                 )}
 
-                {isLogin ? (
+                {mode === 'login' ? (
                   <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="email">{t('auth.emailLabel')}</Label>
@@ -336,6 +423,21 @@ const Auth = () => {
                     </div>
                     
                     <div className="space-y-2">
+                      <Label htmlFor="role">{t('auth.roleLabel', 'I am a')}</Label>
+                      <select 
+                        id="role"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        {...signupForm.register("role")}
+                      >
+                        <option value="client">{t('auth.roleClient', 'Client')}</option>
+                        <option value="coach">{t('auth.roleCoach', 'Coach')}</option>
+                      </select>
+                      {signupForm.formState.errors.role && (
+                        <p className="text-sm text-red-500">{signupForm.formState.errors.role.message}</p>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
                       <Label htmlFor="signup-email">{t('auth.emailLabel')}</Label>
                       <Input 
                         id="signup-email"
@@ -387,12 +489,12 @@ const Auth = () => {
               
               <CardFooter className="flex flex-col space-y-2">
                 <div className="text-sm text-center">
-                  {isLogin ? t('auth.promptSignup') : t('auth.promptLogin')}{" "}
+                  {mode === 'login' ? t('auth.promptSignup') : t('auth.promptLogin')}{" "}
                   <button
-                    onClick={() => setIsLogin(!isLogin)}
+                    onClick={() => setMode('register')}
                     className="text-lumea-sage hover:text-lumea-stone dark:hover:text-lumea-beige font-medium transition-colors"
                   >
-                    {isLogin ? t('auth.signUpLink') : t('auth.signInLink')}
+                    {mode === 'login' ? t('auth.signUpLink') : t('auth.signInLink')}
                   </button>
                 </div>
               </CardFooter>

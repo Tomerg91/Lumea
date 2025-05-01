@@ -2,6 +2,9 @@
   "name": "satya-coaching",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "concurrently \"cd client && npm run dev\" \"cd server && npm run dev\"",
     "install:all": "npm install && cd client && npm install && cd ../server && npm install",

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Console Error Checker</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
+    pre { background: #f4f4f4; padding: 10px; overflow: auto; }
+    #log { margin-top: 20px; border: 1px solid #ddd; padding: 15px; max-height: 400px; overflow: auto; }
+    .error { color: red; }
+    .warn { color: orange; }
+    .info { color: blue; }
+  </style>
+</head>
+<body>
+  <h1>Console Error Checker</h1>
+  <p>This page will load the app in an iframe and capture console errors.</p>
+  
+  <div id="log"></div>
+  
+  <script>
+    const logDiv = document.getElementById('log');
+    
+    // Create a proxy to capture console messages
+    function captureConsole() {
+      const oldConsole = {
+        log: console.log,
+        error: console.error,
+        warn: console.warn,
+        info: console.info
+      };
+      
+      console.log = function() {
+        appendToLog('log', arguments);
+        oldConsole.log.apply(console, arguments);
+      };
+      
+      console.error = function() {
+        appendToLog('error', arguments);
+        oldConsole.error.apply(console, arguments);
+      };
+      
+      console.warn = function() {
+        appendToLog('warn', arguments);
+        oldConsole.warn.apply(console, arguments);
+      };
+      
+      console.info = function() {
+        appendToLog('info', arguments);
+        oldConsole.info.apply(console, arguments);
+      };
+      
+      function appendToLog(type, args) {
+        const message = Array.from(args).map(arg => {
+          try {
+            return typeof arg === 'object' ? JSON.stringify(arg) : String(arg);
+          } catch (e) {
+            return '[Object]';
+          }
+        }).join(' ');
+        
+        const pre = document.createElement('pre');
+        pre.className = type;
+        pre.textContent = `[${type}] ${message}`;
+        logDiv.appendChild(pre);
+        logDiv.scrollTop = logDiv.scrollHeight;
+      }
+    }
+    
+    captureConsole();
+    
+    // Create an iframe to load the app
+    const iframe = document.createElement('iframe');
+    iframe.style.width = '100%';
+    iframe.style.height = '500px';
+    iframe.style.border = '1px solid #ddd';
+    iframe.src = 'http://localhost:8080';
+    document.body.appendChild(iframe);
+    
+    // Listen for errors from the iframe
+    window.addEventListener('error', function(event) {
+      console.error('Caught error:', event.message);
+    });
+  </script>
+</body>
+</html> 

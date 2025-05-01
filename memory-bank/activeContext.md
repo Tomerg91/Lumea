@@ -1,25 +1,41 @@
 # Active Context
 
-Current work focus: Implementing the defined Minimum Viable Product (MVP). Starting with the first vertical slice: **"Coach views their Clients"**. This involves database schema updates, creating a backend API endpoint, and building the corresponding frontend page/component.
+Current work focus: Fixing Supabase connectivity issues, implementing user role selection during signup, and ensuring proper authentication flow in the application.
 
 Recent changes:
-*   Established foundational elements (auth scaffolding, i18n, PWA setup, Capacitor integration).
-*   Defined the detailed MVP feature set.
-*   **Configured Git repository and set up CI/CD with Vercel for frontend deployment.**
+*   Fixed Supabase connectivity issues by implementing a new Supabase URL and API key
+*   Added a fallback mechanism for development environments when the primary Supabase project is unreachable
+*   Improved error handling for Supabase connection issues with clear user messaging
+*   Added role selection (coach/client) to the signup form for better user management
+*   Updated the profile creation process to store user roles in user metadata
+*   Addressed React import issues and TypeScript errors in the AuthContext component
 
 Next steps: 
-1. Implement the database schema changes for users, roles, and client-coach assignment (using Supabase).
-2. Build the backend API functionality (likely using Supabase Functions or auto-generated APIs with RLS) for `GET /api/my-clients`.
-3. Create the frontend `/dashboard/clients` page and component in React to display the client list for a logged-in coach.
-4. Integrate these parts end-to-end.
+1. Implement database schema for roles (Client, Coach, Admin) & status (pending, active)
+2. Complete the "Coach views their Clients" vertical slice
+3. Implement Client invitation mechanism (linked to Coach)
+4. Enhance the profile management functionality
+5. Address remaining TypeScript errors throughout the codebase
 
 Active decisions and considerations:
-*   Adhering strictly to the MVP scope to ensure focus.
-*   Implementing features as vertical slices.
-*   Continuing with the chosen tech stack (React, **Vite**, **Supabase (PostgreSQL, Auth, Storage, APIs)**, Tailwind, i18next, Capacitor). **(Node/Express backend deprecated for MVP)**.
-*   Prioritizing Hebrew/RTL support within each slice.
-*   **Utilizing Vercel for deployment.**
+*   Using a new Supabase project with updated URL and API key
+*   Implementing a fallback mechanism for development to ensure continuous productivity
+*   Storing user roles in both user metadata and a profiles table/structure
+*   Developing with both online and poor-connectivity scenarios in mind
+*   Ensuring proper TypeScript configuration for React components
 
-Important patterns and preferences: Role-Based Access Control (RBAC) is crucial. Mobile-first design approach. Emphasis on a calm, clean, minimalist aesthetic. Use of functional components and hooks in React. RESTful API design.
+Important patterns and preferences: 
+* Robust error handling for network and API operations
+* Clear user messaging for connection issues
+* Role-based user management from signup
+* Centralized Supabase client configuration with fallback options
+* Following a specific color scheme (lumea-* colors) for consistent styling
+* Using TypeScript for type safety throughout the codebase
 
-Learnings and project insights: A clear MVP definition is essential for focused development. Vertical slices help deliver demonstrable value incrementally and validate integration early.
+Learnings and project insights: 
+* Supabase projects can become unavailable, requiring fallback mechanisms for development
+* User roles should be captured during signup for proper user management
+* Profile data can be stored in both user metadata and a dedicated profiles structure
+* Authentication flows need careful TypeScript typing and error handling
+* React imports and hook usage need consistent patterns for proper TypeScript compatibility
+* Environment variables should be properly managed for different deployment environments

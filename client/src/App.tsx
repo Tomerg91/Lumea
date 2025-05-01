@@ -5,6 +5,8 @@ import ClientsPage from './pages/Dashboard/ClientsPage';
 import AuthPage from './pages/Auth';
 import HomePage from './pages/Index'; // Import HomePage component
 import Dashboard from './pages/Dashboard'; // Import the Dashboard component
+import TestPage from './pages/Test'; // Import TestPage component
+import DebugPage from './pages/Debug'; // Import DebugPage component
 import './App.css'
 
 interface ProtectedRouteProps {
@@ -64,7 +66,7 @@ const App: React.FC = () => {
   return (
     <div>
       <nav>
-        <Link to="/">Home</Link>
+        <Link to="/">Home</Link> | <Link to="/test">Test Page</Link> | <Link to="/debug">Debug</Link>
         {/* Show different links based on auth state and role */} 
         {session && profile?.role === 'coach' && ( 
           <> 
@@ -98,6 +100,8 @@ const App: React.FC = () => {
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} /> {/* Use HomePage component */}
           <Route path="/auth" element={<AuthPage />} /> {/* Route for Auth component */} 
+          <Route path="/test" element={<TestPage />} /> {/* New Test Page Route */}
+          <Route path="/debug" element={<DebugPage />} /> {/* Debug Page Route */}
 
           {/* Coach Protected Routes */} 
           <Route element={<ProtectedRoute allowedRoles={['coach']} />}>
@@ -107,6 +111,12 @@ const App: React.FC = () => {
             <Route path="/coach/reflections" element={<div>Coach Reflections Page</div>} />
             <Route path="/coach/resources" element={<div>Coach Resources Page</div>} />
             <Route path="/coach/profile" element={<div>Coach Profile Page</div>} />
+          </Route>
+
+          {/* Coach Protected Routes (legacy paths) */}
+          <Route element={<ProtectedRoute allowedRoles={['coach']} />}>
+            <Route path="/dashboard" element={<Navigate to="/coach/dashboard" replace />} />
+            <Route path="/clients" element={<Navigate to="/coach/clients" replace />} />
           </Route>
 
           {/* Client Protected Routes */}
