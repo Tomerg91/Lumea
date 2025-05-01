@@ -25,7 +25,7 @@ jobs:
       - name: Update package-lock.json
         run: |
           npm install --package-lock-only
-          git diff --exit-code || echo "package-lock.json updated"
+          git diff --quiet package-lock.json || echo "package-lock.json updated"
 
       - name: Install explicit React type declarations
         run: npm install --save-dev @types/react @types/react-dom @types/react-router-dom
