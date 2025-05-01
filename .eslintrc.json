@@ -17,7 +17,8 @@
   "parserOptions": {
     "ecmaVersion": "latest",
     "sourceType": "module",
-    "project": ["./tsconfig.json", "./client/tsconfig.json", "./server/tsconfig.json"]
+    "project": ["./tsconfig.json", "./client/tsconfig.json", "./server/tsconfig.json"],
+    "tsconfigRootDir": "."
   },
   "plugins": ["react-refresh", "@typescript-eslint", "react", "prettier"],
   "rules": {
@@ -91,7 +92,8 @@
     {
       "files": ["server/**/*.ts"],
       "parserOptions": {
-        "project": ["./server/tsconfig.json"]
+        "project": ["./server/tsconfig.json"],
+        "tsconfigRootDir": "."
       }
     }
   ]
