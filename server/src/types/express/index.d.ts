@@ -12,4 +12,4 @@ declare global {
 
 // If this file doesn't contain any top-level imports or exports,
 // you might need to add an empty export to make it a module.
-export {}; 
+export {};

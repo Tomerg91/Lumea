@@ -1,0 +1,8 @@
+node_modules
+dist
+build
+android/app/src/main/assets/public/assets/
+ios/App/App/public/assets/
+client_backup/
+temp_ui_clone/
+soul-flow-lumea-path-main/ 

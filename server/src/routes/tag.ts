@@ -19,4 +19,4 @@ router.put('/:id', isAuthenticated, tagController.updateTag);
 // Delete a tag
 router.delete('/:id', isAuthenticated, tagController.deleteTag);
 
-export default router; 
+export default router;

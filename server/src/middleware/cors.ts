@@ -25,4 +25,4 @@ const corsOptions = {
 };
 
 // Create the CORS middleware
-export const corsMiddleware = cors(corsOptions); 
+export const corsMiddleware = cors(corsOptions);

@@ -35,44 +35,48 @@ const port = process.env.PORT || 3000;
 const prisma = new PrismaClient();
 
 // Middleware
-app.use(cors({
-  // Allow multiple origins for development (client port might change)
-  origin: [
-    'http://localhost:8080', // Added the current frontend port
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:5175',
-    'http://localhost:5176',
-    'http://localhost:5177',
-    'http://localhost:5178',
-    'http://localhost:5179',
-    process.env.FRONTEND_URL || ''
-  ].filter(Boolean),
-  credentials: true
-}));
+app.use(
+  cors({
+    // Allow multiple origins for development (client port might change)
+    origin: [
+      'http://localhost:8080', // Added the current frontend port
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:5175',
+      'http://localhost:5176',
+      'http://localhost:5177',
+      'http://localhost:5178',
+      'http://localhost:5179',
+      process.env.FRONTEND_URL || '',
+    ].filter(Boolean),
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Session configuration
 if (!process.env.SESSION_SECRET) {
   console.warn('WARNING: SESSION_SECRET environment variable is not set. Using default secret.');
 }
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'fallback-insecure-secret-key', // Provide a fallback but warn
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true, // Recommended for security
-    sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'none', // Adjust for cross-site needs if any, 'lax' is safer default
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
-}));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'fallback-insecure-secret-key', // Provide a fallback but warn
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true, // Recommended for security
+      sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'none', // Adjust for cross-site needs if any, 'lax' is safer default
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    },
+  })
+);
 
 // Initialize Passport AFTER session middleware
 app.use(passport.initialize());
 app.use(passport.session());
 
-// --- Removed Passport Strategy Definition --- 
+// --- Removed Passport Strategy Definition ---
 // The configuration is now handled by importing './config/passport'
 
 // --- Removed Passport Serialization/Deserialization ---

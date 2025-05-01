@@ -10,10 +10,7 @@ interface RequestIdOptions {
 
 // Create a request ID middleware
 export const requestId = (options: RequestIdOptions = {}) => {
-  const {
-    headerName = 'X-Request-ID',
-    generateId = () => uuidv4(),
-  } = options;
+  const { headerName = 'X-Request-ID', generateId = () => uuidv4() } = options;
 
   return (req: Request, res: Response, next: NextFunction) => {
     // Get request ID from header or generate new one
@@ -52,4 +49,4 @@ export const uploadRequestId = () => {
   return requestId({
     headerName: 'X-Upload-Request-ID',
   });
-}; 
+};

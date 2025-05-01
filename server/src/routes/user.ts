@@ -10,4 +10,4 @@ router.use(isAuthenticated);
 // Export user data
 router.get('/export', userController.exportData);
 
-export default router; 
+export default router;

@@ -17,6 +17,7 @@ A modern, bilingual (Hebrew-first) coaching platform built for 1-on-1 Satya Meth
 ## Tech Stack
 
 ### Frontend
+
 - React 18 with TypeScript
 - Vite for build tooling
 - Tailwind CSS for styling
@@ -26,6 +27,7 @@ A modern, bilingual (Hebrew-first) coaching platform built for 1-on-1 Satya Meth
 - zod for runtime type validation
 
 ### Backend
+
 - Node.js with Express
 - Mongoose for MongoDB ODM
 - MongoDB for database
@@ -42,18 +44,21 @@ A modern, bilingual (Hebrew-first) coaching platform built for 1-on-1 Satya Meth
 ## Getting Started
 
 1. Clone the repository:
+
 ```bash
 git clone [repository-url]
 cd lumea-coaching
 ```
 
 2. Install server dependencies:
+
 ```bash
 cd server
 npm install
 ```
 
 3. Install client dependencies:
+
 ```bash
 cd ../client
 npm install
@@ -64,6 +69,7 @@ npm install
 5. Start the development servers:
 
 Backend:
+
 ```bash
 cd server
 npm run dev
@@ -71,6 +77,7 @@ npm run dev
 ```
 
 Frontend:
+
 ```bash
 cd client
 npm run dev
@@ -82,6 +89,7 @@ npm run dev
 ### Server (.env)
 
 Required variables:
+
 ```
 DATABASE_URL="mongodb://localhost:27017/lumea"
 JWT_SECRET="your-secret-key"
@@ -110,6 +118,7 @@ ENCRYPTION_IV="32-character-hex-string-for-16-byte-iv"
 ```
 
 Optional variables (for AWS S3):
+
 ```
 AWS_ACCESS_KEY_ID="your-aws-access-key"
 AWS_SECRET_ACCESS_KEY="your-aws-secret-key"
@@ -120,6 +129,7 @@ AWS_S3_BUCKET="your-bucket-name"
 ### Client (.env)
 
 Required variables:
+
 ```
 VITE_API_URL=http://localhost:3000
 VITE_GOOGLE_CLIENT_ID=your_google_client_id
@@ -155,6 +165,7 @@ VITE_FACEBOOK_CLIENT_ID=your_facebook_client_id
 ## Available Scripts
 
 ### Server
+
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run start` - Start production server
@@ -162,6 +173,7 @@ VITE_FACEBOOK_CLIENT_ID=your_facebook_client_id
 - `npm run test` - Run tests
 
 ### Client
+
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
@@ -182,4 +194,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Support
 
-For support, please contact [your-contact-info] 
+For support, please contact [your-contact-info]

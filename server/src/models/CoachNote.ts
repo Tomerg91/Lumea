@@ -36,10 +36,12 @@ const coachNoteSchema = new Schema<ICoachNote>(
       type: Schema.Types.ObjectId,
       ref: 'File',
     },
-    tags: [{
-      type: Schema.Types.ObjectId,
-      ref: 'Tag',
-    }],
+    tags: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Tag',
+      },
+    ],
     isEncrypted: {
       type: Boolean,
       default: true,
@@ -55,7 +57,7 @@ coachNoteSchema.index({ sessionId: 1 });
 coachNoteSchema.index({ coachId: 1 });
 
 // Pre-save middleware to encrypt text content
-coachNoteSchema.pre('save', function(next) {
+coachNoteSchema.pre('save', function (next) {
   if (this.isModified('textContent') && this.isEncrypted) {
     try {
       const cipher = crypto.createCipheriv(
@@ -76,11 +78,11 @@ coachNoteSchema.pre('save', function(next) {
 });
 
 // Method to decrypt text content
-coachNoteSchema.methods.decryptText = function(): string {
+coachNoteSchema.methods.decryptText = function (): string {
   if (!this.isEncrypted) {
     return this.textContent;
   }
-  
+
   try {
     const decipher = crypto.createDecipheriv(
       'aes-256-cbc',
@@ -96,4 +98,4 @@ coachNoteSchema.methods.decryptText = function(): string {
   }
 };
 
-export const CoachNote = mongoose.model<ICoachNote>('CoachNote', coachNoteSchema); 
+export const CoachNote = mongoose.model<ICoachNote>('CoachNote', coachNoteSchema);

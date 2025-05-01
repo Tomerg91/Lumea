@@ -21,4 +21,4 @@ export interface UpdateReflectionDto {
   text?: string;
   audioFile?: File;
   sharedWithCoach?: boolean;
-} 
+}

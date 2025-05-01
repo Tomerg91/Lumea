@@ -33,4 +33,4 @@ describe('GET /api/auth/me (Protected)', () => {
   });
 
   // Add tests with mock authentication later
-}); 
+});

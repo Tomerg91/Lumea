@@ -23,9 +23,10 @@ export const cacheMiddleware = (options: CacheOptions = {}) => {
     }
 
     // Generate cache key
-    const key = typeof options.key === 'function'
-      ? options.key(req)
-      : options.key || `${req.originalUrl || req.url}`;
+    const key =
+      typeof options.key === 'function'
+        ? options.key(req)
+        : options.key || `${req.originalUrl || req.url}`;
 
     // Try to get cached response
     if (options.useCache && cache.has(key)) {
@@ -34,9 +35,10 @@ export const cacheMiddleware = (options: CacheOptions = {}) => {
 
     const originalSend = res.send; // Store original send function
 
-    res.send = (body: any): Response<any, Record<string, any>> => { // Match return type and use arrow function
+    res.send = (body: any): Response<any, Record<string, any>> => {
+      // Match return type and use arrow function
       if (options.useCache) {
-        cache.set(key, body, options.ttl ?? 60); 
+        cache.set(key, body, options.ttl ?? 60);
       }
       return originalSend.call(res, body); // Call original send with correct context and return value
     };
@@ -58,4 +60,4 @@ export const clearAllCache = () => {
 // Get cache stats
 export const getCacheStats = () => {
   return cache.getStats();
-}; 
+};

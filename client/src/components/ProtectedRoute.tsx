@@ -21,7 +21,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
 
   // Not authenticated if no session
   if (!session) {
-    console.log("ProtectedRoute: Not authenticated, redirecting to login.");
+    console.log('ProtectedRoute: Not authenticated, redirecting to login.');
     return <Navigate to="/auth" replace />;
   }
 
@@ -38,4 +38,4 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
   return children ? <>{children}</> : <Outlet />;
 };
 
-export default ProtectedRoute; 
+export default ProtectedRoute;

@@ -23,8 +23,9 @@ declare module 'react-router-dom' {
 }
 
 declare namespace JSX {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface Element {}
   interface IntrinsicElements {
     [elemName: string]: any;
   }
-} 
+}

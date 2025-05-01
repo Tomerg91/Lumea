@@ -21,47 +21,44 @@ declare global {
 }
 
 passport.use(
-  new LocalStrategy(
-    { usernameField: 'email' },
-    async (email, password, done) => {
-      try {
-        console.log(`Attempting login for email: ${email}`);
-        const user = await prisma.user.findUnique({
-          where: { email },
-        });
+  new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
+    try {
+      console.log(`Attempting login for email: ${email}`);
+      const user = await prisma.user.findUnique({
+        where: { email },
+      });
 
-        if (!user) {
-          console.log(`Login failed: No user found for email ${email}`);
-          return done(null, false, { message: 'Incorrect email.' });
-        }
-
-        if (!user.password) {
-            console.log(`Login failed: User ${email} has no password set.`);
-            return done(null, false, { message: 'Password not set for user.' });
-        }
-
-        console.log(`User found: ${user.id}. Comparing password.`);
-        const isMatch = await bcrypt.compare(password, user.password);
-
-        if (!isMatch) {
-          console.log(`Login failed: Incorrect password for email ${email}`);
-          return done(null, false, { message: 'Incorrect password.' });
-        }
-
-        const authenticatedUser: AuthenticatedUser = {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role || 'DEFAULT_ROLE',
-        };
-        console.log(`Login successful for user: ${authenticatedUser.id}`);
-        return done(null, authenticatedUser);
-      } catch (err) {
-         console.error('Error during authentication strategy:', err);
-        return done(err);
+      if (!user) {
+        console.log(`Login failed: No user found for email ${email}`);
+        return done(null, false, { message: 'Incorrect email.' });
       }
+
+      if (!user.password) {
+        console.log(`Login failed: User ${email} has no password set.`);
+        return done(null, false, { message: 'Password not set for user.' });
+      }
+
+      console.log(`User found: ${user.id}. Comparing password.`);
+      const isMatch = await bcrypt.compare(password, user.password);
+
+      if (!isMatch) {
+        console.log(`Login failed: Incorrect password for email ${email}`);
+        return done(null, false, { message: 'Incorrect password.' });
+      }
+
+      const authenticatedUser: AuthenticatedUser = {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role || 'DEFAULT_ROLE',
+      };
+      console.log(`Login successful for user: ${authenticatedUser.id}`);
+      return done(null, authenticatedUser);
+    } catch (err) {
+      console.error('Error during authentication strategy:', err);
+      return done(err);
     }
-  )
+  })
 );
 
 passport.serializeUser((user, done) => {
@@ -88,10 +85,10 @@ passport.deserializeUser(async (id: string, done) => {
     }
 
     const authenticatedUser: AuthenticatedUser = {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role || 'DEFAULT_ROLE',
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role || 'DEFAULT_ROLE',
     };
     console.log(`User deserialized successfully: ${authenticatedUser.id}`);
     done(null, authenticatedUser);

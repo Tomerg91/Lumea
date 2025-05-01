@@ -31,4 +31,4 @@ router.delete('/:id', isCoach, sessionController.deleteSession);
 // Send reminder for a session (coach only)
 router.post('/:id/send-reminder', isCoach, sessionController.sendReminder);
 
-export default router; 
+export default router;

@@ -34,7 +34,11 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
   if (allowedFileTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only JPEG, PNG, GIF, PDF, DOC, DOCX, and TXT files are allowed.'));
+    cb(
+      new Error(
+        'Invalid file type. Only JPEG, PNG, GIF, PDF, DOC, DOCX, and TXT files are allowed.'
+      )
+    );
   }
 };
 
@@ -59,4 +63,4 @@ export const handleMulterError = (err: any, req: Request, res: any, next: any) =
     return res.status(400).json({ error: err.message });
   }
   next();
-}; 
+};

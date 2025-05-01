@@ -14,9 +14,7 @@ export const coachController = {
       const coachId = req.user.id;
 
       // Find sessions with this coach
-      const sessions = await Session.find({ coachId })
-        .select('clientId')
-        .distinct('clientId');
+      const sessions = await Session.find({ coachId }).select('clientId').distinct('clientId');
 
       // Find clients who have sessions with this coach
       const clients = await User.find({
@@ -50,4 +48,4 @@ export const coachController = {
       res.status(500).json({ message: 'Failed to fetch clients' });
     }
   },
-}; 
+};

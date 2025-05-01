@@ -20,4 +20,4 @@ export const isCoach = (req: Request, res: Response, next: NextFunction) => {
     return next();
   }
   res.status(403).json({ message: 'Forbidden. Coach access required.' });
-}; 
+};

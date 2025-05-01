@@ -21,7 +21,7 @@ const Layout = () => {
           <div className="mr-4 hidden md:flex">
             <Link to="/dashboard" className="mr-6 flex items-center space-x-2">
               <Logo size="sm" />
-              <span className="font-bold sm:inline-block">Lumea</span> {/* TODO: Translate? */} 
+              <span className="font-bold sm:inline-block">Lumea</span> {/* TODO: Translate? */}
             </Link>
             <nav className="flex items-center gap-6 text-sm">
               <Link
@@ -40,27 +40,36 @@ const Layout = () => {
                 to="/profile"
                 className="transition-colors hover:text-foreground/80 text-foreground/60"
               >
-                 {t('nav.profile', 'Profile')} {/* Placeholder default text */}
+                {t('nav.profile', 'Profile')} {/* Placeholder default text */}
               </Link>
             </nav>
           </div>
-          {/* TODO: Add mobile navigation toggle */} 
+          {/* TODO: Add mobile navigation toggle */}
           <div className="flex flex-1 items-center justify-end space-x-2">
-             <ThemeToggle />
-             <Button size="sm" variant="ghost" onClick={() => changeLanguage('en')} disabled={i18n.language === 'en'}>EN</Button>
-             <Button size="sm" variant="ghost" onClick={() => changeLanguage('he')} disabled={i18n.language === 'he'}>HE</Button>
-             {/* Basic Logout Button */} 
-             {user && (
-                 <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={signOut} 
-                    disabled={loading}
-                 >
-                    {loading ? t('common.loading', 'Loading...') : t('nav.logout', 'Logout')}
-                 </Button>
-             )}
-             {/* TODO: Add User Profile Dropdown instead of simple button */}
+            <ThemeToggle />
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => changeLanguage('en')}
+              disabled={i18n.language === 'en'}
+            >
+              EN
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => changeLanguage('he')}
+              disabled={i18n.language === 'he'}
+            >
+              HE
+            </Button>
+            {/* Basic Logout Button */}
+            {user && (
+              <Button variant="outline" size="sm" onClick={signOut} disabled={loading}>
+                {loading ? t('common.loading', 'Loading...') : t('nav.logout', 'Logout')}
+              </Button>
+            )}
+            {/* TODO: Add User Profile Dropdown instead of simple button */}
           </div>
         </div>
       </header>
@@ -68,10 +77,10 @@ const Layout = () => {
         <Outlet /> {/* Page content renders here */}
       </main>
       <footer className="py-4 text-center text-sm text-muted-foreground">
-         &copy; {new Date().getFullYear()} {t('footer.copyright', 'Lumea. All rights reserved.')}
+        &copy; {new Date().getFullYear()} {t('footer.copyright', 'Lumea. All rights reserved.')}
       </footer>
     </div>
   );
 };
 
-export default Layout; 
+export default Layout;

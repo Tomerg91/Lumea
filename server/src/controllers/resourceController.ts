@@ -36,12 +36,11 @@ export const resourceController = {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      let query: any = {};
-      
+      const query: any = {};
+
       if (req.user.role === 'coach') {
         query.coachId = req.user.id;
-      }
-      else if (req.user.role === 'client') {
+      } else if (req.user.role === 'client') {
         query.assignedClientIds = req.user.id;
       }
 
@@ -64,24 +63,19 @@ export const resourceController = {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      const resource = await Resource.findById(req.params.id)
-        .populate('fileId')
-        .populate('tags');
+      const resource = await Resource.findById(req.params.id).populate('fileId').populate('tags');
 
       if (!resource) {
         return res.status(404).json({ error: 'Resource not found' });
       }
 
-      if (
-        req.user.role === 'coach' && 
-        resource.coachId.toString() !== req.user.id.toString()
-      ) {
+      if (req.user.role === 'coach' && resource.coachId.toString() !== req.user.id.toString()) {
         return res.status(403).json({ error: 'Not authorized to view this resource' });
       }
 
       if (
-        req.user.role === 'client' && 
-        !resource.assignedClientIds.map(id => id.toString()).includes(req.user.id)
+        req.user.role === 'client' &&
+        !resource.assignedClientIds.map((id) => id.toString()).includes(req.user.id)
       ) {
         return res.status(403).json({ error: 'Not authorized to view this resource' });
       }
@@ -121,7 +115,9 @@ export const resourceController = {
           tags,
         },
         { new: true }
-      ).populate('fileId').populate('tags');
+      )
+        .populate('fileId')
+        .populate('tags');
 
       res.json(updatedResource);
     } catch (error) {
@@ -175,13 +171,16 @@ export const resourceController = {
 
       const { clientIds } = req.body;
 
-      if (!Array.isArray(clientIds) || !clientIds.every(id => mongoose.Types.ObjectId.isValid(id))) {
+      if (
+        !Array.isArray(clientIds) ||
+        !clientIds.every((id) => mongoose.Types.ObjectId.isValid(id))
+      ) {
         return res.status(400).json({ error: 'Invalid client IDs provided' });
       }
 
       const clients = await User.find({
         _id: { $in: clientIds },
-        role: 'client'
+        role: 'client',
       });
 
       if (clients.length !== clientIds.length) {
@@ -192,7 +191,9 @@ export const resourceController = {
         req.params.id,
         { assignedClientIds: clientIds },
         { new: true }
-      ).populate('fileId').populate('tags');
+      )
+        .populate('fileId')
+        .populate('tags');
 
       res.json(updatedResource);
     } catch (error) {
@@ -200,4 +201,4 @@ export const resourceController = {
       res.status(500).json({ error: 'Failed to assign resource' });
     }
   },
-}; 
+};

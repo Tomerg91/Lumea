@@ -13,4 +13,4 @@ const compressionOptions = {
 };
 
 // Create the compression middleware
-export const compressionMiddleware = compression(compressionOptions); 
+export const compressionMiddleware = compression(compressionOptions);

@@ -9,7 +9,12 @@ const router = express.Router();
 router.post('/upload', isAuthenticated, upload.single('file'), fileController.uploadFile);
 
 // Upload multiple files
-router.post('/upload-multiple', isAuthenticated, upload.array('files', 10), fileController.uploadMultipleFiles);
+router.post(
+  '/upload-multiple',
+  isAuthenticated,
+  upload.array('files', 10),
+  fileController.uploadMultipleFiles
+);
 
 // Get a specific file
 router.get('/:id', isAuthenticated, fileController.getFile);
@@ -20,4 +25,4 @@ router.get('/user/:context', isAuthenticated, fileController.getFilesByContext);
 // Delete a file
 router.delete('/:id', isAuthenticated, fileController.deleteFile);
 
-export default router; 
+export default router;

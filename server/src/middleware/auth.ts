@@ -135,8 +135,7 @@ export const hasResourceAccess = (resourceType: 'session' | 'reflection' | 'paym
           if (req.user.role === 'coach') {
             const session = await req.app.locals.db.Session.findById(resourceId);
             hasAccess = session && session.coachId.toString() === req.user.id.toString();
-          }
-          else if (req.user.role === 'client') {
+          } else if (req.user.role === 'client') {
             const session = await req.app.locals.db.Session.findById(resourceId);
             hasAccess = session && session.clientId.toString() === req.user.id.toString();
           }
@@ -146,20 +145,20 @@ export const hasResourceAccess = (resourceType: 'session' | 'reflection' | 'paym
           if (req.user.role === 'coach') {
             const reflection = await req.app.locals.db.Reflection.findById(resourceId);
             hasAccess = reflection && reflection.sharedWithCoach;
-          }
-          else if (req.user.role === 'client') {
+          } else if (req.user.role === 'client') {
             const reflection = await req.app.locals.db.Reflection.findById(resourceId);
             hasAccess = reflection && reflection.userId.toString() === req.user.id.toString();
           }
           break;
 
-        case 'payment':
+        case 'payment': {
           const payment = await req.app.locals.db.Payment.findById(resourceId);
-          hasAccess = payment && (
-            payment.coachId.toString() === req.user.id.toString() ||
-            payment.clientId.toString() === req.user.id.toString()
-          );
+          hasAccess =
+            payment &&
+            (payment.coachId.toString() === req.user.id.toString() ||
+              payment.clientId.toString() === req.user.id.toString());
           break;
+        }
       }
 
       if (!hasAccess) {
@@ -172,4 +171,4 @@ export const hasResourceAccess = (resourceType: 'session' | 'reflection' | 'paym
       res.status(500).json({ error: 'Failed to verify resource access' });
     }
   };
-}; 
+};

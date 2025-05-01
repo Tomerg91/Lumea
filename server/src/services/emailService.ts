@@ -17,8 +17,8 @@ export class EmailService {
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
         user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
+        pass: process.env.SMTP_PASS,
+      },
     });
   }
 
@@ -29,11 +29,11 @@ export class EmailService {
         to: options.to,
         subject: options.subject,
         text: options.text,
-        html: options.html
+        html: options.html,
       });
     } catch (error) {
       console.error('Error sending email:', error);
       throw error;
     }
   }
-} 
+}

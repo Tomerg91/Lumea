@@ -13,55 +13,58 @@ const SCRYPT_dkLen = 64;
 
 export function configurePassport() {
   // Configure Local Strategy
-  passport.use(new LocalStrategy(
-    {
-      usernameField: 'email',
-      passwordField: 'password',
-    },
-    async (email, password, done) => {
-      try {
-        console.log('[LocalStrategy] Attempting to authenticate user:', email);
-        const user = await getUserByEmail(email);
-        
-        if (!user || !user.passwordSalt || !user.passwordHash) {
-          console.log('[LocalStrategy] User not found or missing password data:', email);
-          return done(null, false, { message: 'Incorrect email or password.' });
+  passport.use(
+    new LocalStrategy(
+      {
+        usernameField: 'email',
+        passwordField: 'password',
+      },
+      async (email, password, done) => {
+        try {
+          console.log('[LocalStrategy] Attempting to authenticate user:', email);
+          const user = await getUserByEmail(email);
+
+          if (!user || !user.passwordSalt || !user.passwordHash) {
+            console.log('[LocalStrategy] User not found or missing password data:', email);
+            return done(null, false, { message: 'Incorrect email or password.' });
+          }
+
+          // Hash the provided password with the user's salt
+          console.log('[LocalStrategy] Hashing provided password for comparison');
+          const suppliedPasswordHashBuffer = await scrypt.scrypt(
+            Buffer.from(password),
+            Buffer.from(user.passwordSalt),
+            SCRYPT_N,
+            SCRYPT_r,
+            SCRYPT_p,
+            SCRYPT_dkLen
+          );
+
+          // Compare the hashes
+          const storedPasswordHashBuffer = Buffer.from(user.passwordHash, 'hex');
+          const isValid =
+            Buffer.compare(suppliedPasswordHashBuffer, storedPasswordHashBuffer) === 0;
+
+          if (!isValid) {
+            console.log('[LocalStrategy] Invalid password for user:', email);
+            return done(null, false, { message: 'Incorrect email or password.' });
+          }
+
+          console.log('[LocalStrategy] Authentication successful for user:', email);
+
+          // Remove sensitive data before passing to session
+          const userObject = user.toObject();
+          delete userObject.passwordHash;
+          delete userObject.passwordSalt;
+
+          return done(null, userObject);
+        } catch (error) {
+          console.error('[LocalStrategy] Error during authentication:', error);
+          return done(error);
         }
-
-        // Hash the provided password with the user's salt
-        console.log('[LocalStrategy] Hashing provided password for comparison');
-        const suppliedPasswordHashBuffer = await scrypt.scrypt(
-          Buffer.from(password),
-          Buffer.from(user.passwordSalt),
-          SCRYPT_N,
-          SCRYPT_r,
-          SCRYPT_p,
-          SCRYPT_dkLen
-        );
-
-        // Compare the hashes
-        const storedPasswordHashBuffer = Buffer.from(user.passwordHash, 'hex');
-        const isValid = Buffer.compare(suppliedPasswordHashBuffer, storedPasswordHashBuffer) === 0;
-
-        if (!isValid) {
-          console.log('[LocalStrategy] Invalid password for user:', email);
-          return done(null, false, { message: 'Incorrect email or password.' });
-        }
-
-        console.log('[LocalStrategy] Authentication successful for user:', email);
-        
-        // Remove sensitive data before passing to session
-        const userObject = user.toObject();
-        delete userObject.passwordHash;
-        delete userObject.passwordSalt;
-        
-        return done(null, userObject);
-      } catch (error) {
-        console.error('[LocalStrategy] Error during authentication:', error);
-        return done(error);
       }
-    }
-  ));
+    )
+  );
 
   // Configure serialization
   passport.serializeUser((user: any, done) => {
@@ -78,12 +81,12 @@ export function configurePassport() {
         console.error('[deserializeUser] User not found for ID:', id);
         return done(null, false);
       }
-      
+
       // Remove sensitive data before passing to session
       const userObject = user.toObject();
       delete userObject.passwordHash;
       delete userObject.passwordSalt;
-      
+
       console.log('[deserializeUser] Successfully deserialized user:', id);
       done(null, userObject);
     } catch (error) {
@@ -91,4 +94,4 @@ export function configurePassport() {
       done(error);
     }
   });
-} 
+}

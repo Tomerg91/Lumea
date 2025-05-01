@@ -29,4 +29,4 @@ export interface UpdateResourceDto {
   url?: string;
   clientIds?: string[];
   tags?: string[];
-} 
+}

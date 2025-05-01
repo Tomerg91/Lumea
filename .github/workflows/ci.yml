@@ -2,54 +2,54 @@ name: CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm install
-      
-    - name: Update package-lock.json
-      run: |
-        npm install --package-lock-only
-        git diff --exit-code || echo "package-lock.json updated"
-      
-    - name: Install explicit React type declarations
-      run: npm install --save-dev @types/react @types/react-dom @types/react-router-dom
-    
-    - name: Run type checking (CI mode)
-      run: npm run ci-check
-    
-    - name: Install ESLint
-      run: |
-        cd client && npm install --save-dev eslint
-        cd ../server && npm install --save-dev eslint
-    
-    - name: Run linting
-      run: npm run lint
-    
-    - name: Run tests
-      run: npm run test
-    
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v4
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        files: ./coverage/coverage-final.json
-        fail_ci_if_error: true
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Update package-lock.json
+        run: |
+          npm install --package-lock-only
+          git diff --exit-code || echo "package-lock.json updated"
+
+      - name: Install explicit React type declarations
+        run: npm install --save-dev @types/react @types/react-dom @types/react-router-dom
+
+      - name: Run type checking (CI mode)
+        run: npm run ci-check
+
+      - name: Install ESLint
+        run: |
+          cd client && npm install --save-dev eslint
+          cd ../server && npm install --save-dev eslint
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/coverage-final.json
+          fail_ci_if_error: true
 
   build:
     needs: test
@@ -57,24 +57,24 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm install
-    
-    - name: Build
-      run: npm run build
-      env:
-        VITE_API_URL: ${{ secrets.VITE_API_URL }}
-    
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: build
-        path: dist/ 
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: dist/

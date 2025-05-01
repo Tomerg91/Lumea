@@ -25,4 +25,4 @@ router.delete('/:id', isCoach, resourceController.deleteResource);
 // Assign resource to clients (coach only)
 router.post('/:id/assign', isCoach, resourceController.assignResource);
 
-export default router; 
+export default router;

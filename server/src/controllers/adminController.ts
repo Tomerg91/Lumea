@@ -154,4 +154,4 @@ export const adminController = {
       res.status(500).json({ message: 'Failed to send announcement' });
     }
   },
-}; 
+};

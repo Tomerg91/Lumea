@@ -49,8 +49,9 @@ export const authController = {
 
       const userId = req.user.id;
 
-      const user = await User.findById(userId)
-        .select('_id name email role language timezone createdAt updatedAt');
+      const user = await User.findById(userId).select(
+        '_id name email role language timezone createdAt updatedAt'
+      );
 
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
@@ -62,4 +63,4 @@ export const authController = {
       res.status(500).json({ message: 'Failed to fetch current user' });
     }
   },
-}; 
+};

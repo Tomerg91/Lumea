@@ -1,9 +1,11 @@
 # System Patterns
 
 ## Architecture
+
 Full-stack Progressive Web App (PWA) with a React TypeScript frontend, leveraging **Supabase for backend services (Auth, PostgreSQL DB, Storage, Realtime APIs)**. Node.js/Express backend for API endpoints and server-side logic.
 
 ## Component Implementation Pattern
+
 1. Use TypeScript for all React components (.tsx extension)
 2. Use proper type definitions for component props and state
 3. Export components as default exports for compatibility with Fast Refresh
@@ -17,6 +19,7 @@ Full-stack Progressive Web App (PWA) with a React TypeScript frontend, leveragin
 6. Avoid exporting hooks as const assignments that are later renamed
 
 ## Authentication Flow
+
 1. User enters credentials on the Auth page
 2. Application performs connectivity checks before authentication attempts
 3. Authentication request is sent to Supabase Auth API
@@ -25,6 +28,7 @@ Full-stack Progressive Web App (PWA) with a React TypeScript frontend, leveragin
 6. Role-Based Access Control (RBAC) is enforced via Supabase RLS policies
 
 ## Error Handling Pattern
+
 1. Connectivity check before critical API operations
 2. DNS resolution testing for network diagnostics
 3. User-friendly error messages with troubleshooting steps
@@ -34,8 +38,9 @@ Full-stack Progressive Web App (PWA) with a React TypeScript frontend, leveragin
 7. TypeScript typing for error objects for better error handling
 
 ## UI Component Pattern
+
 1. Consistent use of shadcn/ui component library
-2. Custom Tailwind color scheme (lumea-*)
+2. Custom Tailwind color scheme (lumea-\*)
 3. Responsive design with mobile-first approach
 4. Common error display patterns
 5. Internationalization support in all components
@@ -43,6 +48,7 @@ Full-stack Progressive Web App (PWA) with a React TypeScript frontend, leveragin
 7. Debugging components with clear visibility styles when needed
 
 ## State Management
+
 1. React Context API for authentication state
 2. Local component state for UI interactions
 3. Form state management with React Hook Form
@@ -51,6 +57,7 @@ Full-stack Progressive Web App (PWA) with a React TypeScript frontend, leveragin
 6. Strongly typed state with TypeScript interfaces
 
 ## Data Flow
+
 1. Supabase Auth for user authentication and session management
 2. Database tables with proper relations (users, profiles, sessions)
 3. Row Level Security (RLS) for data access control
@@ -59,6 +66,7 @@ Full-stack Progressive Web App (PWA) with a React TypeScript frontend, leveragin
 6. Type-safe API responses and request payloads
 
 ## Development Workflow
+
 1. CI/CD pipeline with GitHub Actions for automated testing and deployment
 2. TypeScript type checking for maintaining code quality
 3. ESLint for code style enforcement
@@ -66,6 +74,7 @@ Full-stack Progressive Web App (PWA) with a React TypeScript frontend, leveragin
 5. Environment-specific configurations (.env files)
 
 ## Critical Implementation Paths
+
 1. Robust authentication flow with proper error handling
 2. Secure data access patterns with RLS policies
 3. Comprehensive internationalization (i18n) support

@@ -13,12 +13,7 @@ export class APIError extends Error {
 }
 
 // Error handler middleware
-export const errorHandler = (
-  err: Error,
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error('Error:', {
     name: err.name,
     message: err.message,
@@ -81,4 +76,4 @@ export const notFound = (req: Request, res: Response) => {
   res.status(404).json({
     error: 'Not Found',
   });
-}; 
+};

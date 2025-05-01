@@ -36,20 +36,20 @@ const ClientsPage: React.FC = () => {
         // RLS policy ensures only clients linked to the logged-in coach (auth.uid()) are returned.
         const { data, error: fetchError } = await supabase
           .from('profiles')
-          .select('id, full_name, email') 
-          .eq('role', 'client'); 
+          .select('id, full_name, email')
+          .eq('role', 'client');
 
         if (fetchError) {
           // Handle specific Supabase errors if needed
-          if (fetchError.code === '42501') { // RLS policy violation
-             setError('You do not have permission to view clients.'); 
+          if (fetchError.code === '42501') {
+            // RLS policy violation
+            setError('You do not have permission to view clients.');
           } else {
-             throw fetchError;
+            throw fetchError;
           }
         } else {
-           setClients(data || []);
+          setClients(data || []);
         }
-
       } catch (err: any) {
         console.error('Error fetching clients:', err);
         setError(err.message || 'Failed to fetch clients.');
@@ -58,7 +58,7 @@ const ClientsPage: React.FC = () => {
       }
     }
     // Dependency array includes authLoading and profile state
-  }, [authLoading, profile]); 
+  }, [authLoading, profile]);
 
   // Show loading indicator while authentication is in progress
   if (authLoading) {
@@ -80,7 +80,7 @@ const ClientsPage: React.FC = () => {
     <div>
       <h1>My Clients</h1>
       {clients.length === 0 ? (
-        <p>You don't have any clients assigned yet.</p>
+        <p>You don&apos;t have any clients assigned yet.</p>
       ) : (
         <ul>
           {clients.map((client) => (
@@ -92,6 +92,6 @@ const ClientsPage: React.FC = () => {
       )}
     </div>
   );
-}
+};
 
-export default ClientsPage; 
+export default ClientsPage;

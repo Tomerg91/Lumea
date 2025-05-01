@@ -19,14 +19,17 @@ router.post('/google', async (req, res) => {
     }
 
     const userData = await verifyGoogleToken(token);
-    const user = await handleOAuthLogin('google', userData.email ?? '', userData.name ?? '', userData.picture ?? '');
+    const user = await handleOAuthLogin(
+      'google',
+      userData.email ?? '',
+      userData.name ?? '',
+      userData.picture ?? ''
+    );
 
     // Generate JWT token
-    const jwtToken = jwt.sign(
-      { userId: user.id, role: user.role },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    const jwtToken = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, {
+      expiresIn: '24h',
+    });
 
     res.json({
       token: jwtToken,
@@ -52,14 +55,17 @@ router.post('/facebook', async (req, res) => {
     }
 
     const userData = await verifyFacebookToken(token);
-    const user = await handleOAuthLogin('facebook', userData.email, userData.name, userData.picture);
+    const user = await handleOAuthLogin(
+      'facebook',
+      userData.email,
+      userData.name,
+      userData.picture
+    );
 
     // Generate JWT token
-    const jwtToken = jwt.sign(
-      { userId: user.id, role: user.role },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
+    const jwtToken = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, {
+      expiresIn: '24h',
+    });
 
     res.json({
       token: jwtToken,
@@ -76,4 +82,4 @@ router.post('/facebook', async (req, res) => {
   }
 });
 
-export default router; 
+export default router;

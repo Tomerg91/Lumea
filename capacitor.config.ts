@@ -7,21 +7,21 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
     // During development, you can use this for live reload
-    // url: 'http://YOUR-LOCAL-IP:5000', 
+    // url: 'http://YOUR-LOCAL-IP:5000',
     // cleartext: true
   },
   plugins: {
     SplashScreen: {
       launchShowDuration: 2000,
-      backgroundColor: "#FFFFFF",
+      backgroundColor: '#FFFFFF',
       showSpinner: true,
-      spinnerColor: "#3A86FF",
+      spinnerColor: '#3A86FF',
     },
     StatusBar: {
       style: 'dark',
-      backgroundColor: '#FFFFFF'
+      backgroundColor: '#FFFFFF',
     },
-  }
+  },
 };
 
 export default config;

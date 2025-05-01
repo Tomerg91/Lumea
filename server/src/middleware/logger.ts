@@ -14,10 +14,7 @@ const logger = createLogger({
   defaultMeta: { service: 'lumea-api' },
   transports: [
     new transports.Console({
-      format: format.combine(
-        format.colorize(),
-        format.simple()
-      ),
+      format: format.combine(format.colorize(), format.simple()),
     }),
     new transports.File({
       filename: 'logs/error.log',
@@ -51,4 +48,4 @@ export const loggingMiddleware = morgan(
 );
 
 // Export the logger for use in other parts of the application
-export { logger }; 
+export { logger };

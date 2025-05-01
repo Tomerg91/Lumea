@@ -27,6 +27,6 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src", "src/types"],
+  "include": ["src", "src/types", "*.config.ts", "vite.config.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
-} 
+}

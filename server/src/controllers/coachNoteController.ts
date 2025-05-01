@@ -57,7 +57,7 @@ export const coachNoteController = {
       }
 
       const coachNote = await getCoachNoteById(req.params.id);
-      
+
       if (!coachNote) {
         return res.status(404).json({ error: 'Coach note not found' });
       }
@@ -99,9 +99,9 @@ export const coachNoteController = {
       }
 
       const notes = await getCoachNotesBySession(req.params.sessionId);
-      
+
       // Decrypt all notes if they're encrypted
-      const decryptedNotes = notes.map(note => {
+      const decryptedNotes = notes.map((note) => {
         const decryptedNote = note.toObject();
         if (note.isEncrypted) {
           decryptedNote.textContent = (note as any).decryptText();
@@ -128,9 +128,9 @@ export const coachNoteController = {
       }
 
       const notes = await getCoachNotesByCoach(req.user.id.toString());
-      
+
       // Decrypt all notes if they're encrypted
-      const decryptedNotes = notes.map(note => {
+      const decryptedNotes = notes.map((note) => {
         const decryptedNote = note.toObject();
         if (note.isEncrypted) {
           decryptedNote.textContent = (note as any).decryptText();
@@ -153,7 +153,7 @@ export const coachNoteController = {
       }
 
       const coachNote = await getCoachNoteById(req.params.id);
-      
+
       if (!coachNote) {
         return res.status(404).json({ error: 'Coach note not found' });
       }
@@ -165,7 +165,7 @@ export const coachNoteController = {
 
       const validatedData = updateCoachNoteSchema.parse(req.body);
       const updatedNote = await updateCoachNote(req.params.id, validatedData);
-      
+
       if (!updatedNote) {
         return res.status(404).json({ error: 'Coach note not found' });
       }
@@ -196,7 +196,7 @@ export const coachNoteController = {
       }
 
       const coachNote = await getCoachNoteById(req.params.id);
-      
+
       if (!coachNote) {
         return res.status(404).json({ error: 'Coach note not found' });
       }
@@ -213,4 +213,4 @@ export const coachNoteController = {
       res.status(500).json({ error: 'Failed to delete coach note' });
     }
   },
-}; 
+};

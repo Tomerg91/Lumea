@@ -35,4 +35,4 @@ const securityOptions = {
 */
 
 // Create the security middleware using helmet defaults
-export const securityMiddleware = helmet(); // Use defaults 
+export const securityMiddleware = helmet(); // Use defaults

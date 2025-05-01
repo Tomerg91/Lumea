@@ -57,4 +57,4 @@ export const formLimit = () => {
     maxSize: 2 * 1024 * 1024, // 2MB
     errorMessage: 'Form data too large',
   });
-}; 
+};

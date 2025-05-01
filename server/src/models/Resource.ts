@@ -33,14 +33,18 @@ const resourceSchema = new Schema<IResource>(
       ref: 'User',
       required: true,
     },
-    tags: [{
-      type: Schema.Types.ObjectId,
-      ref: 'Tag',
-    }],
-    assignedClientIds: [{
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-    }],
+    tags: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Tag',
+      },
+    ],
+    assignedClientIds: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
   },
   {
     timestamps: true,
@@ -52,4 +56,4 @@ resourceSchema.index({ coachId: 1 });
 resourceSchema.index({ assignedClientIds: 1 });
 resourceSchema.index({ tags: 1 });
 
-export const Resource = mongoose.model<IResource>('Resource', resourceSchema); 
+export const Resource = mongoose.model<IResource>('Resource', resourceSchema);

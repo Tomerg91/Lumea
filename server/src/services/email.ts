@@ -33,4 +33,4 @@ export async function sendPasswordResetEmail(email: string, resetToken: string) 
     console.error('Error sending password reset email:', error);
     return false;
   }
-} 
+}

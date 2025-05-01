@@ -56,4 +56,4 @@ export const uploadResponseTime = () => {
     logSlowRequests: true,
     slowRequestThreshold: 2000, // 2 seconds
   });
-}; 
+};

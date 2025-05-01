@@ -49,10 +49,12 @@ const sessionSchema = new Schema<ISession>(
       default: 'pending',
       required: true,
     },
-    tags: [{
-      type: Schema.Types.ObjectId,
-      ref: 'Tag',
-    }],
+    tags: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Tag',
+      },
+    ],
     clientReflectionReminderSent: {
       type: Boolean,
       default: false,
@@ -82,4 +84,4 @@ sessionSchema.index({ coachId: 1, dateTime: 1 });
 sessionSchema.index({ clientId: 1, dateTime: 1 });
 sessionSchema.index({ paymentStatus: 1 });
 
-export const Session = mongoose.model<ISession>('Session', sessionSchema); 
+export const Session = mongoose.model<ISession>('Session', sessionSchema);

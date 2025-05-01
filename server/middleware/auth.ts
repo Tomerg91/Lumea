@@ -30,7 +30,8 @@ export const isCoach = (req: Request, res: Response, next: NextFunction) => {
   }
   // Check if the authenticated user has the 'COACH' role
   // Ensure req.user and req.user.role exist and match your AuthenticatedUser structure
-  if (req.user && req.user.role === 'COACH') { // Use uppercase 'COACH' as per likely schema enum/string
+  if (req.user && req.user.role === 'COACH') {
+    // Use uppercase 'COACH' as per likely schema enum/string
     return next();
   }
   res.status(403).json({ message: 'Forbidden: Coach role required.' });
@@ -41,4 +42,4 @@ export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
     return next();
   }
   res.status(403).json({ message: 'Not authorized' });
-}; 
+};

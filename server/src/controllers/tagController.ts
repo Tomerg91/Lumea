@@ -39,7 +39,7 @@ export const tagController = {
       }
 
       const tag = await getTagById(req.params.id);
-      
+
       if (!tag) {
         return res.status(404).json({ error: 'Tag not found' });
       }
@@ -79,7 +79,7 @@ export const tagController = {
       }
 
       const tag = await getTagById(req.params.id);
-      
+
       if (!tag) {
         return res.status(404).json({ error: 'Tag not found' });
       }
@@ -91,7 +91,7 @@ export const tagController = {
 
       const validatedData = updateTagSchema.parse(req.body);
       const updatedTag = await updateTag(req.params.id, validatedData);
-      
+
       if (!updatedTag) {
         return res.status(404).json({ error: 'Tag not found' });
       }
@@ -115,7 +115,7 @@ export const tagController = {
       }
 
       const tag = await getTagById(req.params.id);
-      
+
       if (!tag) {
         return res.status(404).json({ error: 'Tag not found' });
       }
@@ -132,4 +132,4 @@ export const tagController = {
       res.status(500).json({ error: 'Failed to delete tag' });
     }
   },
-}; 
+};

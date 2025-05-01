@@ -5,16 +5,29 @@ import { APIError } from './error.js';
 // HTML sanitization options
 const sanitizeOptions = {
   allowedTags: [
-    'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-    'p', 'br', 'strong', 'em', 'u', 's',
-    'ul', 'ol', 'li', 'blockquote',
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'h5',
+    'h6',
+    'p',
+    'br',
+    'strong',
+    'em',
+    'u',
+    's',
+    'ul',
+    'ol',
+    'li',
+    'blockquote',
   ],
   allowedAttributes: {
     '*': ['class'],
   },
   allowedStyles: {
     '*': {
-      'color': [/^#[0-9a-fA-F]{6}$/],
+      color: [/^#[0-9a-fA-F]{6}$/],
       'text-align': [/^left$/, /^center$/, /^right$/],
     },
   },
@@ -74,4 +87,4 @@ export const sanitizeParams = (req: Request, res: Response, next: NextFunction) 
   } catch (error) {
     throw new APIError(400, 'Invalid URL parameters');
   }
-}; 
+};

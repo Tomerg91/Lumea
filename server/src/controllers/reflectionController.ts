@@ -32,7 +32,9 @@ export const reflectionController = {
       }
 
       if (session.clientId.toString() !== req.user.id.toString()) {
-        return res.status(403).json({ error: 'Not authorized to create reflection for this session' });
+        return res
+          .status(403)
+          .json({ error: 'Not authorized to create reflection for this session' });
       }
 
       // If audio file is provided, verify it exists and belongs to the user
@@ -47,8 +49,12 @@ export const reflectionController = {
         ...validatedData,
         userId: req.user.id,
         sessionId: new mongoose.Types.ObjectId(validatedData.sessionId),
-        audioFileId: validatedData.audioFileId ? new mongoose.Types.ObjectId(validatedData.audioFileId) : undefined,
-        tags: validatedData.tags ? validatedData.tags.map(id => new mongoose.Types.ObjectId(id)) : undefined,
+        audioFileId: validatedData.audioFileId
+          ? new mongoose.Types.ObjectId(validatedData.audioFileId)
+          : undefined,
+        tags: validatedData.tags
+          ? validatedData.tags.map((id) => new mongoose.Types.ObjectId(id))
+          : undefined,
       });
 
       await reflection.save();
@@ -85,17 +91,11 @@ export const reflectionController = {
         return res.status(404).json({ error: 'Associated session not found' });
       }
 
-      if (
-        req.user.role === 'client' &&
-        reflection.userId.toString() !== req.user.id.toString()
-      ) {
+      if (req.user.role === 'client' && reflection.userId.toString() !== req.user.id.toString()) {
         return res.status(403).json({ error: 'Not authorized to view this reflection' });
       }
 
-      if (
-        req.user.role === 'coach' &&
-        session.coachId.toString() !== req.user.id.toString()
-      ) {
+      if (req.user.role === 'coach' && session.coachId.toString() !== req.user.id.toString()) {
         return res.status(403).json({ error: 'Not authorized to view this reflection' });
       }
 
@@ -126,18 +126,16 @@ export const reflectionController = {
       }
 
       // Check if user has access to this session
-      if (
-        req.user.role === 'client' &&
-        session.clientId.toString() !== req.user.id.toString()
-      ) {
-        return res.status(403).json({ error: 'Not authorized to view reflections for this session' });
+      if (req.user.role === 'client' && session.clientId.toString() !== req.user.id.toString()) {
+        return res
+          .status(403)
+          .json({ error: 'Not authorized to view reflections for this session' });
       }
 
-      if (
-        req.user.role === 'coach' &&
-        session.coachId.toString() !== req.user.id.toString()
-      ) {
-        return res.status(403).json({ error: 'Not authorized to view reflections for this session' });
+      if (req.user.role === 'coach' && session.coachId.toString() !== req.user.id.toString()) {
+        return res
+          .status(403)
+          .json({ error: 'Not authorized to view reflections for this session' });
       }
 
       const reflections = await Reflection.find({ sessionId: req.params.sessionId })
@@ -145,7 +143,7 @@ export const reflectionController = {
         .populate('tags');
 
       // Decrypt all reflections if they're encrypted
-      const decryptedReflections = reflections.map(reflection => {
+      const decryptedReflections = reflections.map((reflection) => {
         const decryptedReflection = reflection.toObject();
         if (reflection.isEncrypted) {
           decryptedReflection.textContent = (reflection as any).decryptText();
@@ -187,7 +185,9 @@ export const reflectionController = {
         }
 
         if (session.clientId.toString() !== req.user.id.toString()) {
-          return res.status(403).json({ error: 'Not authorized to update reflection for this session' });
+          return res
+            .status(403)
+            .json({ error: 'Not authorized to update reflection for this session' });
         }
       }
 
@@ -201,24 +201,24 @@ export const reflectionController = {
 
       // Update the reflection
       const updateData: any = { ...validatedData };
-      
+
       if (validatedData.sessionId) {
         updateData.sessionId = new mongoose.Types.ObjectId(validatedData.sessionId);
       }
-      
+
       if (validatedData.audioFileId) {
         updateData.audioFileId = new mongoose.Types.ObjectId(validatedData.audioFileId);
       }
-      
+
       if (validatedData.tags) {
-        updateData.tags = validatedData.tags.map(id => new mongoose.Types.ObjectId(id));
+        updateData.tags = validatedData.tags.map((id) => new mongoose.Types.ObjectId(id));
       }
 
-      const updatedReflection = await Reflection.findByIdAndUpdate(
-        req.params.id,
-        updateData,
-        { new: true }
-      ).populate('audioFileId').populate('tags');
+      const updatedReflection = await Reflection.findByIdAndUpdate(req.params.id, updateData, {
+        new: true,
+      })
+        .populate('audioFileId')
+        .populate('tags');
 
       if (!updatedReflection) {
         return res.status(404).json({ error: 'Reflection not found' });
@@ -298,4 +298,4 @@ export const reflectionController = {
       res.status(500).json({ error: 'Failed to share reflection with coach' });
     }
   },
-}; 
+};

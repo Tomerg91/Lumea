@@ -67,4 +67,4 @@ export interface DataDeletionRequest {
 export interface CreateDataDeletionRequestDto {
   dataTypes: ('reflections' | 'sessions' | 'payments' | 'resources' | 'all')[];
   reason?: string;
-} 
+}

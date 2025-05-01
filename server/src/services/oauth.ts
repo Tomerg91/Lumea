@@ -62,15 +62,15 @@ export async function handleOAuthLogin(
       // Generate a temporary random password as Mongoose schema requires it
       // OAuth users typically don't use passwords directly, but the model needs one.
       // The createUser function handles hashing.
-      const temporaryPassword = crypto.randomBytes(20).toString('hex'); 
-      
+      const temporaryPassword = crypto.randomBytes(20).toString('hex');
+
       user = await createUser({
         name,
         email,
-        password: temporaryPassword, 
+        password: temporaryPassword,
         role: 'client', // Default to client role for OAuth signups
         // Add other fields if needed, e.g., profile picture
-        // profilePictureUrl: picture 
+        // profilePictureUrl: picture
       });
       console.log(`[OAuth] New user created with ID: ${user._id}`);
     } else {
@@ -86,13 +86,12 @@ export async function handleOAuthLogin(
     const userObject = user.toObject ? user.toObject() : { ...user }; // Handle potential plain object return from createUser
     delete userObject.passwordHash;
     delete userObject.passwordSalt;
-    
-    return userObject; 
-    
+
+    return userObject;
   } catch (error) {
     console.error(`[OAuth] ${provider} login error for email ${email}:`, error);
     // Don't rethrow generic error, maybe return null or specific error type
-    // throw error; 
+    // throw error;
     return null; // Indicate failure
   }
-} 
+}

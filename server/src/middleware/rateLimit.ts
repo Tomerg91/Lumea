@@ -30,4 +30,4 @@ export const uploadLimiter = rateLimit({
   handler: (req: Request, res: Response) => {
     throw new APIError(429, 'Too many requests');
   },
-}); 
+});

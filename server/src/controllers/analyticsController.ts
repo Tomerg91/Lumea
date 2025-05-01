@@ -11,13 +11,13 @@ export const analyticsController = {
         where: {
           createdAt: {
             gte: startDate ? new Date(startDate as string) : undefined,
-            lte: endDate ? new Date(endDate as string) : undefined
+            lte: endDate ? new Date(endDate as string) : undefined,
           },
-          status: 'paid'
+          status: 'paid',
         },
         orderBy: {
-          createdAt: 'asc'
-        }
+          createdAt: 'asc',
+        },
       });
 
       const revenueData = payments.reduce((acc: Record<string, number>, payment) => {
@@ -40,12 +40,12 @@ export const analyticsController = {
         where: {
           createdAt: {
             gte: startDate ? new Date(startDate as string) : undefined,
-            lte: endDate ? new Date(endDate as string) : undefined
-          }
+            lte: endDate ? new Date(endDate as string) : undefined,
+          },
         },
         orderBy: {
-          createdAt: 'asc'
-        }
+          createdAt: 'asc',
+        },
       });
 
       const growthData = users.reduce((acc: Record<string, number>, user) => {
@@ -68,16 +68,16 @@ export const analyticsController = {
         where: {
           date: {
             gte: startDate ? new Date(startDate as string) : undefined,
-            lte: endDate ? new Date(endDate as string) : undefined
-          }
+            lte: endDate ? new Date(endDate as string) : undefined,
+          },
         },
         include: {
           client: true,
-          coach: true
+          coach: true,
         },
         orderBy: {
-          date: 'asc'
-        }
+          date: 'asc',
+        },
       });
 
       const metrics = {
@@ -90,7 +90,7 @@ export const analyticsController = {
           const date = session.date.toISOString().split('T')[0];
           acc[date] = (acc[date] || 0) + 1;
           return acc;
-        }, {})
+        }, {}),
       };
 
       res.json(metrics);
@@ -112,27 +112,29 @@ export const analyticsController = {
             where: {
               date: {
                 gte: startDate ? new Date(startDate as string) : undefined,
-                lte: endDate ? new Date(endDate as string) : undefined
-              }
+                lte: endDate ? new Date(endDate as string) : undefined,
+              },
             },
             include: {
-              client: true
-            }
-          }
-        }
+              client: true,
+            },
+          },
+        },
       });
 
-      const performance = coaches.map(coach => {
+      const performance = coaches.map((coach) => {
         // Calculate unique clients
-        const clientIds = new Set(coach.coachSessions.map(session => session.clientId));
-        
+        const clientIds = new Set(coach.coachSessions.map((session) => session.clientId));
+
         return {
           id: coach.id,
           name: coach.name,
           totalClients: clientIds.size, // Use size of Set for unique clients
           totalSessions: coach.coachSessions.length, // Correctly uses coachSessions
-          sessionCompletionRate: coach.coachSessions.filter(session => session.status === 'completed').length / coach.coachSessions.length || 0 // Correctly uses coachSessions
-        }
+          sessionCompletionRate:
+            coach.coachSessions.filter((session) => session.status === 'completed').length /
+              coach.coachSessions.length || 0, // Correctly uses coachSessions
+        };
       });
 
       res.json(performance);
@@ -191,12 +193,12 @@ export const analyticsController = {
         where: {
           date: {
             gte: startDate ? new Date(startDate as string) : undefined,
-            lte: endDate ? new Date(endDate as string) : undefined
-          }
+            lte: endDate ? new Date(endDate as string) : undefined,
+          },
         },
         select: {
-          date: true
-        }
+          date: true,
+        },
       });
 
       const hourlyUsage = sessions.reduce((acc: Record<number, number>, session) => {
@@ -213,7 +215,7 @@ export const analyticsController = {
 
       res.json({
         hourlyUsage,
-        dailyUsage
+        dailyUsage,
       });
     } catch (error) {
       console.error('Error fetching peak usage data:', error);
@@ -231,14 +233,14 @@ export const analyticsController = {
           where: {
             createdAt: {
               gte: startDate ? new Date(startDate) : undefined,
-              lte: endDate ? new Date(endDate) : undefined
+              lte: endDate ? new Date(endDate) : undefined,
             },
-            status: 'paid'
+            status: 'paid',
           },
           select: {
             amount: true,
-            createdAt: true
-          }
+            createdAt: true,
+          },
         });
       }
 
@@ -247,13 +249,13 @@ export const analyticsController = {
           where: {
             date: {
               gte: startDate ? new Date(startDate) : undefined,
-              lte: endDate ? new Date(endDate) : undefined
-            }
+              lte: endDate ? new Date(endDate) : undefined,
+            },
           },
           include: {
             client: true,
-            coach: true
-          }
+            coach: true,
+          },
         });
       }
 
@@ -262,16 +264,16 @@ export const analyticsController = {
           where: {
             createdAt: {
               gte: startDate ? new Date(startDate) : undefined,
-              lte: endDate ? new Date(endDate) : undefined
-            }
+              lte: endDate ? new Date(endDate) : undefined,
+            },
           },
           select: {
             id: true,
             name: true,
             email: true,
             role: true,
-            createdAt: true
-          }
+            createdAt: true,
+          },
         });
       }
 
@@ -292,27 +294,28 @@ export const analyticsController = {
     // Extract headers and data from each metric
     Object.entries(data).forEach(([metric, items]) => {
       if (Array.isArray(items) && items.length > 0) {
-        const metricHeaders = Object.keys(items[0]).map(key => `${metric}_${key}`);
+        const metricHeaders = Object.keys(items[0]).map((key) => `${metric}_${key}`);
         headers.push(...metricHeaders);
 
         items.forEach((item, index) => {
           if (!rows[index]) rows[index] = [];
           const values = Object.values(item);
-          rows[index].push(...values.map(value => 
-            value instanceof Date ? value.toISOString() :
-            typeof value === 'object' ? JSON.stringify(value) :
-            String(value)
-          ));
+          rows[index].push(
+            ...values.map((value) =>
+              value instanceof Date
+                ? value.toISOString()
+                : typeof value === 'object'
+                  ? JSON.stringify(value)
+                  : String(value)
+            )
+          );
         });
       }
     });
 
     // Combine headers and rows into CSV format
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
+    const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
 
     return csvContent;
-  }
-}; 
+  },
+};

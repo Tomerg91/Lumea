@@ -49,4 +49,4 @@ export interface LoginDto {
 export interface LoginResponse {
   user: User;
   token: string;
-} 
+}

@@ -10,10 +10,7 @@ interface CorrelationOptions {
 
 // Create a correlation middleware
 export const correlation = (options: CorrelationOptions = {}) => {
-  const {
-    headerName = 'X-Correlation-ID',
-    generateId = () => uuidv4(),
-  } = options;
+  const { headerName = 'X-Correlation-ID', generateId = () => uuidv4() } = options;
 
   return (req: Request, res: Response, next: NextFunction) => {
     // Get correlation ID from header or generate new one
@@ -59,4 +56,4 @@ export const webhookCorrelation = () => {
   return correlation({
     headerName: 'X-Webhook-Correlation-ID',
   });
-}; 
+};

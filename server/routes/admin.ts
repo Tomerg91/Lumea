@@ -12,53 +12,48 @@ router.use(isAdmin);
 // Get system overview statistics
 router.get('/stats', async (req, res) => {
   try {
-    const [
-      totalUsers,
-      totalSessions,
-      totalPayments,
-      activeUsers,
-      recentSessions
-    ] = await Promise.all([
-      // Get total users
-      prisma.user.count(),
-      
-      // Get total sessions
-      prisma.session.count(),
-      
-      // Get total payments
-      prisma.payment.aggregate({
-        where: { status: 'paid' },
-        _sum: { amount: true }
-      }),
-      
-      // Get active users in last 30 days
-      prisma.session.groupBy({
-        by: ['clientId'],
-        where: {
-          date: {
-            gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-          }
-        },
-        _count: true
-      }),
-      
-      // Get recent sessions
-      prisma.session.findMany({
-        take: 5,
-        orderBy: { date: 'desc' },
-        include: {
-          client: true,
-          coach: true
-        }
-      })
-    ]);
+    const [totalUsers, totalSessions, totalPayments, activeUsers, recentSessions] =
+      await Promise.all([
+        // Get total users
+        prisma.user.count(),
+
+        // Get total sessions
+        prisma.session.count(),
+
+        // Get total payments
+        prisma.payment.aggregate({
+          where: { status: 'paid' },
+          _sum: { amount: true },
+        }),
+
+        // Get active users in last 30 days
+        prisma.session.groupBy({
+          by: ['clientId'],
+          where: {
+            date: {
+              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+            },
+          },
+          _count: true,
+        }),
+
+        // Get recent sessions
+        prisma.session.findMany({
+          take: 5,
+          orderBy: { date: 'desc' },
+          include: {
+            client: true,
+            coach: true,
+          },
+        }),
+      ]);
 
     res.json({
       totalUsers,
       totalSessions,
       totalPayments: totalPayments._sum.amount || 0,
       activeUsers: activeUsers.length,
-      recentSessions
+      recentSessions,
     });
   } catch (error) {
     console.error('Error fetching admin stats:', error);
@@ -74,12 +69,14 @@ router.get('/users', async (req, res) => {
 
     const where = {
       ...(role && role !== 'all' ? { role: role as string } : {}),
-      ...(search ? {
-        OR: [
-          { name: { contains: search as string } },
-          { email: { contains: search as string } }
-        ]
-      } : {})
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search as string } },
+              { email: { contains: search as string } },
+            ],
+          }
+        : {}),
     };
 
     const [users, total] = await Promise.all([
@@ -94,17 +91,17 @@ router.get('/users', async (req, res) => {
           name: true,
           role: true,
           createdAt: true,
-          updatedAt: true
-        }
+          updatedAt: true,
+        },
       }),
-      prisma.user.count({ where })
+      prisma.user.count({ where }),
     ]);
 
     res.json({
       users,
       total,
       page: Number(page),
-      limit: Number(limit)
+      limit: Number(limit),
     });
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -120,4 +117,4 @@ router.get('/analytics/coach-performance', analyticsController.getCoachPerforman
 router.get('/analytics/peak-usage', analyticsController.getPeakUsage);
 router.post('/analytics/export', analyticsController.exportData);
 
-export default router; 
+export default router;

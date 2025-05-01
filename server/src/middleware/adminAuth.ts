@@ -9,7 +9,7 @@ export const isAdmin = async (req: Request, res: Response, next: NextFunction) =
 
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      select: { role: true }
+      select: { role: true },
     });
 
     if (!user || user.role !== 'admin') {
@@ -21,4 +21,4 @@ export const isAdmin = async (req: Request, res: Response, next: NextFunction) =
     console.error('Admin auth error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-}; 
+};

@@ -41,4 +41,4 @@ export const longOperationTimeout = () => {
     timeout: 300000, // 5 minutes
     errorMessage: 'Operation timeout',
   });
-}; 
+};

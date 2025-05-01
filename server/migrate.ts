@@ -25,4 +25,4 @@ migrate(db, { migrationsFolder: './migrations' })
   .catch((err) => {
     console.error('Error running migrations:', err);
     process.exit(1);
-  }); 
+  });

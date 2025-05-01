@@ -48,7 +48,14 @@ const permissions: Record<Role, Record<Resource, Action[]>> = {
     [Resource.REFLECTION]: [Action.CREATE, Action.READ, Action.UPDATE, Action.DELETE, Action.LIST],
     [Resource.FILE]: [Action.CREATE, Action.READ, Action.DELETE, Action.LIST],
     [Resource.USER]: [Action.CREATE, Action.READ, Action.UPDATE, Action.DELETE, Action.LIST],
-    [Resource.ADMIN]: [Action.CREATE, Action.READ, Action.UPDATE, Action.DELETE, Action.LIST, Action.APPROVE],
+    [Resource.ADMIN]: [
+      Action.CREATE,
+      Action.READ,
+      Action.UPDATE,
+      Action.DELETE,
+      Action.LIST,
+      Action.APPROVE,
+    ],
   },
 };
 
@@ -80,7 +87,11 @@ export const checkPermission = (resource: Resource, action: Action) => {
 };
 
 // Middleware to check if a user has permission to access a specific resource by ID
-export const checkResourcePermission = (resource: Resource, action: Action, getResourceUserId: (resourceId: string) => Promise<string | null>) => {
+export const checkResourcePermission = (
+  resource: Resource,
+  action: Action,
+  getResourceUserId: (resourceId: string) => Promise<string | null>
+) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.user) {
@@ -119,4 +130,4 @@ export const checkResourcePermission = (resource: Resource, action: Action, getR
       res.status(500).json({ error: 'Error checking resource permissions' });
     }
   };
-}; 
+};

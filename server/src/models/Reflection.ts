@@ -40,10 +40,12 @@ const reflectionSchema = new Schema<IReflection>(
       type: Schema.Types.ObjectId,
       ref: 'File',
     },
-    tags: [{
-      type: Schema.Types.ObjectId,
-      ref: 'Tag',
-    }],
+    tags: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Tag',
+      },
+    ],
     isEncrypted: {
       type: Boolean,
       default: true,
@@ -59,7 +61,7 @@ reflectionSchema.index({ sessionId: 1 });
 reflectionSchema.index({ userId: 1 });
 
 // Pre-save middleware to encrypt text content
-reflectionSchema.pre('save', function(next) {
+reflectionSchema.pre('save', function (next) {
   if (this.isModified('textContent') && this.isEncrypted) {
     try {
       const cipher = crypto.createCipheriv(
@@ -80,11 +82,11 @@ reflectionSchema.pre('save', function(next) {
 });
 
 // Method to decrypt text content
-reflectionSchema.methods.decryptText = function(): string {
+reflectionSchema.methods.decryptText = function (): string {
   if (!this.isEncrypted) {
     return this.textContent;
   }
-  
+
   try {
     const decipher = crypto.createDecipheriv(
       'aes-256-cbc',
@@ -100,4 +102,4 @@ reflectionSchema.methods.decryptText = function(): string {
   }
 };
 
-export const Reflection = mongoose.model<IReflection>('Reflection', reflectionSchema); 
+export const Reflection = mongoose.model<IReflection>('Reflection', reflectionSchema);

@@ -1,14 +1,7 @@
-
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import {
@@ -55,7 +48,7 @@ const Sessions = () => {
       coach: 'Sarah Johnson',
       type: 'One-on-one Session',
       status: 'upcoming',
-      notes: 'Focus on mindful breathing techniques and connecting to core values.'
+      notes: 'Focus on mindful breathing techniques and connecting to core values.',
     },
     {
       id: '2',
@@ -64,7 +57,7 @@ const Sessions = () => {
       coach: 'Michael Chen',
       type: 'Group Session',
       status: 'completed',
-      notes: 'Explored somatic experiences related to work stress.'
+      notes: 'Explored somatic experiences related to work stress.',
     },
     {
       id: '3',
@@ -134,11 +127,25 @@ const Sessions = () => {
             <h1 className="text-3xl md:text-4xl font-playfair mb-2">Sessions</h1>
             <p className="text-muted-foreground">Manage your coaching appointments</p>
           </div>
-          
+
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="bg-lumea-stone text-lumea-beige hover:bg-lumea-stone/90">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><line x1="12" x2="12" y1="5" y2="19"></line><line x1="5" x2="19" y1="12" y2="12"></line></svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="mr-2"
+                >
+                  <line x1="12" x2="12" y1="5" y2="19"></line>
+                  <line x1="5" x2="19" y1="12" y2="12"></line>
+                </svg>
                 New Session
               </Button>
             </DialogTrigger>
@@ -146,7 +153,7 @@ const Sessions = () => {
               <DialogHeader>
                 <DialogTitle>Schedule a Session</DialogTitle>
                 <DialogDescription>
-                  Create a new coaching session. Click save when you're done.
+                  Create a new coaching session. Click save when you&apos;re done.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -155,7 +162,7 @@ const Sessions = () => {
                   <Calendar
                     mode="single"
                     selected={newSession.date}
-                    onSelect={(date) => date && setNewSession({...newSession, date})}
+                    onSelect={(date) => date && setNewSession({ ...newSession, date })}
                     className="rounded-md border p-3"
                     disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                   />
@@ -166,12 +173,15 @@ const Sessions = () => {
                     id="time"
                     type="time"
                     value={newSession.time}
-                    onChange={(e) => setNewSession({...newSession, time: e.target.value})}
+                    onChange={(e) => setNewSession({ ...newSession, time: e.target.value })}
                   />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="coach">Coach</Label>
-                  <Select value={newSession.coach} onValueChange={(value) => setNewSession({...newSession, coach: value})}>
+                  <Select
+                    value={newSession.coach}
+                    onValueChange={(value) => setNewSession({ ...newSession, coach: value })}
+                  >
                     <SelectTrigger id="coach">
                       <SelectValue placeholder="Select a coach" />
                     </SelectTrigger>
@@ -184,7 +194,10 @@ const Sessions = () => {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="type">Session Type</Label>
-                  <Select value={newSession.type} onValueChange={(value) => setNewSession({...newSession, type: value})}>
+                  <Select
+                    value={newSession.type}
+                    onValueChange={(value) => setNewSession({ ...newSession, type: value })}
+                  >
                     <SelectTrigger id="type">
                       <SelectValue placeholder="Select session type" />
                     </SelectTrigger>
@@ -200,7 +213,7 @@ const Sessions = () => {
                   <Textarea
                     id="notes"
                     value={newSession.notes}
-                    onChange={(e) => setNewSession({...newSession, notes: e.target.value})}
+                    onChange={(e) => setNewSession({ ...newSession, notes: e.target.value })}
                     placeholder="Add any details or topics you'd like to cover..."
                   />
                 </div>
@@ -209,7 +222,7 @@ const Sessions = () => {
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button 
+                <Button
                   className="bg-lumea-stone text-lumea-beige hover:bg-lumea-stone/90"
                   onClick={handleCreateSession}
                   disabled={!newSession.time || !newSession.coach || !newSession.type}
@@ -227,7 +240,7 @@ const Sessions = () => {
             <TabsTrigger value="past">Past</TabsTrigger>
             <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
           </TabsList>
-          
+
           <div className="flex justify-end my-4">
             <div className="inline-flex rounded-md border border-input">
               <Button
@@ -235,7 +248,23 @@ const Sessions = () => {
                 className={`rounded-r-none ${view === 'calendar' ? 'bg-muted' : ''}`}
                 onClick={() => setView('calendar')}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="mr-1"
+                >
+                  <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
+                  <line x1="16" x2="16" y1="2" y2="6"></line>
+                  <line x1="8" x2="8" y1="2" y2="6"></line>
+                  <line x1="3" x2="21" y1="10" y2="10"></line>
+                </svg>
                 Calendar
               </Button>
               <Button
@@ -243,14 +272,34 @@ const Sessions = () => {
                 className={`rounded-l-none ${view === 'list' ? 'bg-muted' : ''}`}
                 onClick={() => setView('list')}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><line x1="8" x2="21" y1="6" y2="6"></line><line x1="8" x2="21" y1="12" y2="12"></line><line x1="8" x2="21" y1="18" y2="18"></line><line x1="3" x2="3.01" y1="6" y2="6"></line><line x1="3" x2="3.01" y1="12" y2="12"></line><line x1="3" x2="3.01" y1="18" y2="18"></line></svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="mr-1"
+                >
+                  <line x1="8" x2="21" y1="6" y2="6"></line>
+                  <line x1="8" x2="21" y1="12" y2="12"></line>
+                  <line x1="8" x2="21" y1="18" y2="18"></line>
+                  <line x1="3" x2="3.01" y1="6" y2="6"></line>
+                  <line x1="3" x2="3.01" y1="12" y2="12"></line>
+                  <line x1="3" x2="3.01" y1="18" y2="18"></line>
+                </svg>
                 List
               </Button>
             </div>
           </div>
 
           <TabsContent value="upcoming">
-            <div className={`grid ${view === 'calendar' ? 'grid-cols-1 lg:grid-cols-3 gap-6' : 'grid-cols-1 gap-4'}`}>
+            <div
+              className={`grid ${view === 'calendar' ? 'grid-cols-1 lg:grid-cols-3 gap-6' : 'grid-cols-1 gap-4'}`}
+            >
               {view === 'calendar' && (
                 <Card className="lumea-card">
                   <CardHeader>
@@ -267,19 +316,40 @@ const Sessions = () => {
                   </CardContent>
                 </Card>
               )}
-              
+
               <div className={view === 'calendar' ? 'lg:col-span-2' : ''}>
                 {view === 'calendar' ? (
                   <>
                     <h3 className="text-xl font-medium mb-4">
-                      Sessions on {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Selected Date'}
+                      Sessions on{' '}
+                      {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Selected Date'}
                     </h3>
                     {selectedSessions.length === 0 && (
                       <Card className="lumea-card">
                         <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground mb-4"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="48"
+                            height="48"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-muted-foreground mb-4"
+                          >
+                            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
+                            <line x1="16" x2="16" y1="2" y2="6"></line>
+                            <line x1="8" x2="8" y1="2" y2="6"></line>
+                            <line x1="3" x2="21" y1="10" y2="10"></line>
+                          </svg>
                           <p>No sessions scheduled for this date.</p>
-                          <Button variant="outline" className="mt-4" onClick={() => setIsDialogOpen(true)}>
+                          <Button
+                            variant="outline"
+                            className="mt-4"
+                            onClick={() => setIsDialogOpen(true)}
+                          >
                             Schedule a Session
                           </Button>
                         </CardContent>
@@ -293,18 +363,33 @@ const Sessions = () => {
                             <CardTitle>
                               {session.time} - {session.type}
                             </CardTitle>
-                            <CardDescription>
-                              with {session.coach}
-                            </CardDescription>
+                            <CardDescription>with {session.coach}</CardDescription>
                           </CardHeader>
                           <CardContent>
                             {session.notes && <p className="text-sm mb-4">{session.notes}</p>}
                             <div className="flex gap-2">
                               <Button variant="outline" size="sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4l3 3"></path></svg>
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="mr-1"
+                                >
+                                  <circle cx="12" cy="12" r="10"></circle>
+                                  <path d="M12 8v4l3 3"></path>
+                                </svg>
                                 Reschedule
                               </Button>
-                              <Button className="bg-lumea-stone text-lumea-beige hover:bg-lumea-stone/90" size="sm">
+                              <Button
+                                className="bg-lumea-stone text-lumea-beige hover:bg-lumea-stone/90"
+                                size="sm"
+                              >
                                 Join Session
                               </Button>
                             </div>
@@ -338,10 +423,27 @@ const Sessions = () => {
                             {session.notes && <p className="text-sm mb-4">{session.notes}</p>}
                             <div className="flex gap-2">
                               <Button variant="outline" size="sm">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4l3 3"></path></svg>
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="mr-1"
+                                >
+                                  <circle cx="12" cy="12" r="10"></circle>
+                                  <path d="M12 8v4l3 3"></path>
+                                </svg>
                                 Reschedule
                               </Button>
-                              <Button className="bg-lumea-stone text-lumea-beige hover:bg-lumea-stone/90" size="sm">
+                              <Button
+                                className="bg-lumea-stone text-lumea-beige hover:bg-lumea-stone/90"
+                                size="sm"
+                              >
                                 Join Session
                               </Button>
                             </div>
@@ -351,9 +453,29 @@ const Sessions = () => {
                     {sessions.filter((session) => session.status === 'upcoming').length === 0 && (
                       <Card className="lumea-card">
                         <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground mb-4"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect><line x1="16" x2="16" y1="2" y2="6"></line><line x1="8" x2="8" y1="2" y2="6"></line><line x1="3" x2="21" y1="10" y2="10"></line></svg>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="48"
+                            height="48"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-muted-foreground mb-4"
+                          >
+                            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
+                            <line x1="16" x2="16" y1="2" y2="6"></line>
+                            <line x1="8" x2="8" y1="2" y2="6"></line>
+                            <line x1="3" x2="21" y1="10" y2="10"></line>
+                          </svg>
                           <p>No upcoming sessions.</p>
-                          <Button variant="outline" className="mt-4" onClick={() => setIsDialogOpen(true)}>
+                          <Button
+                            variant="outline"
+                            className="mt-4"
+                            onClick={() => setIsDialogOpen(true)}
+                          >
                             Schedule a Session
                           </Button>
                         </CardContent>
@@ -403,7 +525,20 @@ const Sessions = () => {
               {sessions.filter((session) => session.status === 'completed').length === 0 && (
                 <Card className="lumea-card">
                   <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground mb-4"><clock></clock></svg>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="48"
+                      height="48"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-muted-foreground mb-4"
+                    >
+                      <clock></clock>
+                    </svg>
                     <p>No past sessions yet.</p>
                   </CardContent>
                 </Card>
@@ -443,7 +578,21 @@ const Sessions = () => {
               {sessions.filter((session) => session.status === 'cancelled').length === 0 && (
                 <Card className="lumea-card">
                   <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground mb-4"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="48"
+                      height="48"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-muted-foreground mb-4"
+                    >
+                      <path d="M18 6 6 18"></path>
+                      <path d="m6 6 12 12"></path>
+                    </svg>
                     <p>No cancelled sessions.</p>
                   </CardContent>
                 </Card>

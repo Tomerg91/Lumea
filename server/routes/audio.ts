@@ -1,5 +1,5 @@
-import { Express, Request, Response } from "express";
-import { storage } from "../storage";
+import { Express, Request, Response } from 'express';
+import { storage } from '../storage';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
@@ -19,7 +19,7 @@ const audioStorage = multer.diskStorage({
   filename: (req, file, cb) => {
     const uniqueFilename = `${uuidv4()}-${file.originalname}`;
     cb(null, uniqueFilename);
-  }
+  },
 });
 
 // Filter to accept only audio files
@@ -48,7 +48,7 @@ export function registerAudioRoutes(app: Express) {
     }
 
     const filePath = `/uploads/${req.file.filename}`;
-    
+
     return res.status(201).json({
       success: true,
       filePath,
@@ -121,7 +121,7 @@ export function registerAudioRoutes(app: Express) {
   app.get('/uploads/:filename', (req: Request, res: Response) => {
     const filename = req.params.filename;
     const filePath = path.join(uploadDir, filename);
-    
+
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'Audio file not found' });
     }

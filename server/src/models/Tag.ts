@@ -36,4 +36,4 @@ const tagSchema = new Schema<ITag>(
 // Index for faster queries by user
 tagSchema.index({ createdBy: 1 });
 
-export const Tag = mongoose.model<ITag>('Tag', tagSchema); 
+export const Tag = mongoose.model<ITag>('Tag', tagSchema);

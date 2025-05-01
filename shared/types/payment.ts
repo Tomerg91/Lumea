@@ -26,4 +26,4 @@ export interface UpdatePaymentDto {
   status?: PaymentStatus;
   reminderSent?: boolean;
   sessionsCovered?: string[];
-} 
+}

@@ -52,7 +52,11 @@ const transporter = nodemailer.createTransport({
 });
 
 // Middleware to ensure user is authenticated
-const ensureAuthenticated = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+const ensureAuthenticated = (
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) => {
   if (req.isAuthenticated()) {
     return next();
   }
@@ -67,7 +71,10 @@ router.post('/signup', async (req, res) => {
     const validatedData = signupSchema.parse(req.body);
     console.log('[POST /api/auth/signup] Request body validated successfully');
 
-    console.log('[POST /api/auth/signup] Checking for existing user with email:', validatedData.email);
+    console.log(
+      '[POST /api/auth/signup] Checking for existing user with email:',
+      validatedData.email
+    );
     const existingUser = await getUserByEmail(validatedData.email);
     if (existingUser) {
       console.log('[POST /api/auth/signup] User already exists with email:', validatedData.email);
@@ -91,12 +98,12 @@ router.post('/signup', async (req, res) => {
   } catch (error) {
     console.error('[POST /api/auth/signup] Error during signup:', error);
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ 
-        message: 'Validation error', 
-        errors: error.errors.map(err => ({
+      return res.status(400).json({
+        message: 'Validation error',
+        errors: error.errors.map((err) => ({
           path: err.path.join('.'),
-          message: err.message
-        }))
+          message: err.message,
+        })),
       });
     }
     if (error instanceof Error) {
@@ -110,21 +117,24 @@ router.post('/login', (req, res, next) => {
   try {
     // try {
     //   loginSchema.parse(req.body); // Commented out schema usage
-    passport.authenticate('local', (err: Error | null, user: IUser | false, info: { message: string }) => {
-      if (err) {
-        return next(err);
-      }
-      if (!user) {
-        return res.status(401).json({ message: info.message });
-      }
-      req.login(user as any, (err) => {
+    passport.authenticate(
+      'local',
+      (err: Error | null, user: IUser | false, info: { message: string }) => {
         if (err) {
           return next(err);
         }
-        const { password, ...userWithoutPassword } = user.toObject();
-        res.json(userWithoutPassword);
-      });
-    })(req, res, next);
+        if (!user) {
+          return res.status(401).json({ message: info.message });
+        }
+        req.login(user as any, (err) => {
+          if (err) {
+            return next(err);
+          }
+          const { password, ...userWithoutPassword } = user.toObject();
+          res.json(userWithoutPassword);
+        });
+      }
+    )(req, res, next);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: 'Validation error', errors: error.errors });
@@ -151,7 +161,9 @@ router.post('/logout', (req, res) => {
 router.get('/current-user', ensureAuthenticated, (req, res) => {
   console.log('[GET /api/auth/current-user] Starting current user check');
   if (!req.user) {
-    console.error('[GET /api/auth/current-user] Error: req.user is missing after ensureAuthenticated');
+    console.error(
+      '[GET /api/auth/current-user] Error: req.user is missing after ensureAuthenticated'
+    );
     return res.status(500).json({ message: 'Internal server error: User context missing' });
   }
   console.log('[GET /api/auth/current-user] User found:', (req.user as any)._id);
@@ -175,7 +187,7 @@ router.post('/request-password-reset', async (req, res) => {
     const expiryDate = new Date(Date.now() + 3600000); // 1 hour from now
 
     // Use user.id which should be a string | undefined
-    if (!user || !user.id) { 
+    if (!user || !user.id) {
       // Handle case where user or user.id is null/undefined, though technically covered by earlier check
       // Log error or return specific response if needed
       console.error('[request-password-reset] User or user ID missing after check');
@@ -216,9 +228,9 @@ router.post('/reset-password', async (req, res) => {
     }
 
     // Use user.id which should be a string | undefined
-    if (!user || !user.id) { 
-        console.error('[reset-password] User or user ID missing after check');
-        return res.status(500).json({ message: 'Internal error processing request' });
+    if (!user || !user.id) {
+      console.error('[reset-password] User or user ID missing after check');
+      return res.status(500).json({ message: 'Internal error processing request' });
     }
     await updateUserPassword(user.id, newPassword);
     await clearUserPasswordResetToken(user.id);
@@ -236,4 +248,4 @@ router.post('/reset-password', async (req, res) => {
 router.get('/me', isAuthenticated, authController.getCurrentUser);
 router.put('/profile', isAuthenticated, authController.updateProfile);
 
-export default router; 
+export default router;

@@ -47,7 +47,7 @@ export const sessionController = {
       }
 
       const session = await getSessionById(req.params.id);
-      
+
       if (!session) {
         return res.status(404).json({ error: 'Session not found' });
       }
@@ -111,10 +111,7 @@ export const sessionController = {
         return res.status(404).json({ error: 'Session not found' });
       }
 
-      if (
-        req.user.role !== 'admin' &&
-        session.coachId.toString() !== req.user.id.toString()
-      ) {
+      if (req.user.role !== 'admin' && session.coachId.toString() !== req.user.id.toString()) {
         return res.status(403).json({ error: 'Not authorized to update this session' });
       }
 
@@ -146,10 +143,7 @@ export const sessionController = {
         return res.status(404).json({ error: 'Session not found' });
       }
 
-      if (
-        req.user.role !== 'admin' &&
-        session.coachId.toString() !== req.user.id.toString()
-      ) {
+      if (req.user.role !== 'admin' && session.coachId.toString() !== req.user.id.toString()) {
         return res.status(403).json({ error: 'Not authorized to delete this session' });
       }
 
@@ -237,26 +231,25 @@ export const sessionController = {
         return res.status(404).json({ error: 'Session not found' });
       }
 
-      if (
-        req.user.role !== 'admin' &&
-        session.coachId.toString() !== req.user.id.toString()
-      ) {
+      if (req.user.role !== 'admin' && session.coachId.toString() !== req.user.id.toString()) {
         return res.status(403).json({ error: 'Not authorized to send reminders for this session' });
       }
 
       // Get client details
       const client = await User.findById(session.clientId).select('name email');
-      
+
       if (!client) {
         return res.status(404).json({ error: 'Client not found' });
       }
 
       // Log the reminder (in a real implementation, this would send an email)
-      console.log(`Reminder triggered for session ${sessionId} with client ${client.name} (${client.email})`);
-      
+      console.log(
+        `Reminder triggered for session ${sessionId} with client ${client.name} (${client.email})`
+      );
+
       // Update the session to mark that a reminder was sent
       await Session.findByIdAndUpdate(sessionId, {
-        $set: { clientReflectionReminderSent: true }
+        $set: { clientReflectionReminderSent: true },
       });
 
       res.json({ message: 'Reminder sent successfully' });
@@ -265,4 +258,4 @@ export const sessionController = {
       res.status(500).json({ error: 'Failed to send reminder' });
     }
   },
-}; 
+};

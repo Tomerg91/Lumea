@@ -15,10 +15,7 @@ export const userController = {
 
       // Fetch user's sessions
       const sessions = await Session.find({
-        $or: [
-          { coachId: userId },
-          { clientId: userId }
-        ]
+        $or: [{ coachId: userId }, { clientId: userId }],
       })
         .populate('coachId', 'name email')
         .populate('clientId', 'name email')
@@ -26,7 +23,7 @@ export const userController = {
 
       // Fetch user's reflections
       const reflections = await Reflection.find({
-        userId
+        userId,
       }).lean();
 
       // Prepare data for export
@@ -38,18 +35,18 @@ export const userController = {
           role: req.user.role,
         },
         sessions,
-        reflections
+        reflections,
       };
 
       // Set headers for file download
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', 'attachment; filename="satya_coaching_data.json"');
-      
+
       // Send the data
       res.json(exportData);
     } catch (error) {
       console.error('Error exporting user data:', error);
       res.status(500).json({ error: 'Failed to export user data' });
     }
-  }
-}; 
+  },
+};

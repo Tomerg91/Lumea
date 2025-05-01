@@ -22,4 +22,4 @@ router.delete('/:id', isAuthenticated, reflectionController.deleteReflection);
 // Share reflection with coach
 router.post('/:id/share', isAuthenticated, reflectionController.shareWithCoach);
 
-export default router; 
+export default router;

@@ -10,4 +10,4 @@ router.use(isCoach);
 // Clients
 router.get('/clients', coachController.getClients);
 
-export default router; 
+export default router;

@@ -11,8 +11,8 @@ import crypto from 'crypto';
 
 // Add these constants at the top of the file
 const SCRYPT_N = 16384; // CPU/memory cost parameter
-const SCRYPT_r = 8;     // Block size parameter
-const SCRYPT_p = 1;     // Parallelization parameter
+const SCRYPT_r = 8; // Block size parameter
+const SCRYPT_p = 1; // Parallelization parameter
 const SCRYPT_dkLen = 64; // Derived key length
 
 // Session schemas
@@ -73,7 +73,10 @@ export async function createSession(data: z.infer<typeof createSessionSchema>): 
   return await session.save();
 }
 
-export async function updateSession(id: string, data: z.infer<typeof updateSessionSchema>): Promise<ISession | null> {
+export async function updateSession(
+  id: string,
+  data: z.infer<typeof updateSessionSchema>
+): Promise<ISession | null> {
   return await Session.findByIdAndUpdate(id, data, { new: true });
 }
 
@@ -95,7 +98,10 @@ export async function deleteSession(id: string): Promise<boolean> {
 }
 
 // Tag storage functions
-export async function createTag(data: z.infer<typeof createTagSchema>, userId: string): Promise<ITag> {
+export async function createTag(
+  data: z.infer<typeof createTagSchema>,
+  userId: string
+): Promise<ITag> {
   const tag = new Tag({
     ...data,
     createdBy: new mongoose.Types.ObjectId(userId),
@@ -103,7 +109,10 @@ export async function createTag(data: z.infer<typeof createTagSchema>, userId: s
   return await tag.save();
 }
 
-export async function updateTag(id: string, data: z.infer<typeof updateTagSchema>): Promise<ITag | null> {
+export async function updateTag(
+  id: string,
+  data: z.infer<typeof updateTagSchema>
+): Promise<ITag | null> {
   return await Tag.findByIdAndUpdate(id, data, { new: true });
 }
 
@@ -121,20 +130,26 @@ export async function deleteTag(id: string): Promise<boolean> {
 }
 
 // Coach Note storage functions
-export async function createCoachNote(data: z.infer<typeof createCoachNoteSchema>, coachId: string): Promise<HydratedDocument<ICoachNote>> {
+export async function createCoachNote(
+  data: z.infer<typeof createCoachNoteSchema>,
+  coachId: string
+): Promise<HydratedDocument<ICoachNote>> {
   const coachNote = new CoachNote({
     ...data,
     coachId: new mongoose.Types.ObjectId(coachId),
     sessionId: new mongoose.Types.ObjectId(data.sessionId),
-    tags: data.tags?.map(id => new mongoose.Types.ObjectId(id)),
+    tags: data.tags?.map((id) => new mongoose.Types.ObjectId(id)),
   });
   return await coachNote.save();
 }
 
-export async function updateCoachNote(id: string, data: z.infer<typeof updateCoachNoteSchema>): Promise<HydratedDocument<ICoachNote> | null> {
+export async function updateCoachNote(
+  id: string,
+  data: z.infer<typeof updateCoachNoteSchema>
+): Promise<HydratedDocument<ICoachNote> | null> {
   const updateData = {
     ...data,
-    tags: data.tags?.map(id => new mongoose.Types.ObjectId(id)),
+    tags: data.tags?.map((id) => new mongoose.Types.ObjectId(id)),
   };
   return await CoachNote.findByIdAndUpdate(id, updateData, { new: true });
 }
@@ -143,11 +158,15 @@ export async function getCoachNoteById(id: string): Promise<HydratedDocument<ICo
   return await CoachNote.findById(id);
 }
 
-export async function getCoachNotesBySession(sessionId: string): Promise<HydratedDocument<ICoachNote>[]> {
+export async function getCoachNotesBySession(
+  sessionId: string
+): Promise<HydratedDocument<ICoachNote>[]> {
   return await CoachNote.find({ sessionId: new mongoose.Types.ObjectId(sessionId) });
 }
 
-export async function getCoachNotesByCoach(coachId: string): Promise<HydratedDocument<ICoachNote>[]> {
+export async function getCoachNotesByCoach(
+  coachId: string
+): Promise<HydratedDocument<ICoachNote>[]> {
   return await CoachNote.find({ coachId: new mongoose.Types.ObjectId(coachId) });
 }
 
@@ -175,10 +194,7 @@ export async function createFileRecord(
   return await file.save();
 }
 
-export async function getFileById(
-  fileId: string,
-  userId: string
-): Promise<IFile | null> {
+export async function getFileById(fileId: string, userId: string): Promise<IFile | null> {
   return await File.findOne({
     _id: new mongoose.Types.ObjectId(fileId),
     userId: new mongoose.Types.ObjectId(userId),
@@ -195,10 +211,7 @@ export async function getFilesByUserAndContext(
   });
 }
 
-export async function deleteFileRecord(
-  fileId: string,
-  userId: string
-): Promise<boolean> {
+export async function deleteFileRecord(fileId: string, userId: string): Promise<boolean> {
   const result = await File.findOneAndDelete({
     _id: new mongoose.Types.ObjectId(fileId),
     userId: new mongoose.Types.ObjectId(userId),
@@ -239,7 +252,12 @@ export async function getUserById(id: string): Promise<IUser | null> {
   }
 }
 
-export async function createUser({ name, email, password, role }: {
+export async function createUser({
+  name,
+  email,
+  password,
+  role,
+}: {
   name: string;
   email: string;
   password: string;
@@ -247,7 +265,7 @@ export async function createUser({ name, email, password, role }: {
 }): Promise<IUser> {
   try {
     console.log('[createUser] Starting user creation for email:', email);
-    
+
     // Generate a unique salt
     const salt = crypto.randomBytes(16).toString('hex');
     console.log('[createUser] Generated unique salt');
@@ -263,7 +281,7 @@ export async function createUser({ name, email, password, role }: {
     );
     // Convert scrypt result to Buffer before toString
     const passwordHash = (hashBuffer as any).toString('hex'); // Force type to any
-    
+
     console.log('[createUser] Password hashed successfully');
 
     const user = new User({
@@ -278,12 +296,12 @@ export async function createUser({ name, email, password, role }: {
     console.log('[createUser] Saving user to database');
     const savedUser = await user.save();
     console.log('[createUser] User saved successfully:', savedUser._id);
-    
+
     // Remove sensitive data before returning
     const userObjectForReturn: any = savedUser.toObject();
     delete userObjectForReturn.passwordHash;
     delete userObjectForReturn.passwordSalt;
-    
+
     return userObjectForReturn;
   } catch (error) {
     console.error('[createUser] Error creating user:', error);
@@ -296,10 +314,7 @@ export async function setUserPasswordResetToken(
   token: string,
   expiryDate: Date
 ): Promise<void> {
-  const hashedToken = crypto
-    .createHash('sha256')
-    .update(token)
-    .digest('hex');
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
   await User.findByIdAndUpdate(userId, {
     passwordResetToken: hashedToken,
@@ -307,13 +322,8 @@ export async function setUserPasswordResetToken(
   });
 }
 
-export async function findUserByPasswordResetToken(
-  token: string
-): Promise<IUser | null> {
-  const hashedToken = crypto
-    .createHash('sha256')
-    .update(token)
-    .digest('hex');
+export async function findUserByPasswordResetToken(token: string): Promise<IUser | null> {
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
   return User.findOne({
     passwordResetToken: hashedToken,
@@ -321,22 +331,17 @@ export async function findUserByPasswordResetToken(
   });
 }
 
-export async function clearUserPasswordResetToken(
-  userId: string
-): Promise<void> {
+export async function clearUserPasswordResetToken(userId: string): Promise<void> {
   await User.findByIdAndUpdate(userId, {
     $unset: { passwordResetToken: 1, passwordResetExpires: 1 },
   });
 }
 
-export async function updateUserPassword(
-  userId: string,
-  newPassword: string
-): Promise<void> {
+export async function updateUserPassword(userId: string, newPassword: string): Promise<void> {
   try {
     // Generate a new unique salt
     const salt = crypto.randomBytes(16).toString('hex');
-    
+
     // Hash the new password with the new salt
     const hashBuffer = await scrypt.scrypt(
       Buffer.from(newPassword),
@@ -369,38 +374,41 @@ export const createReflectionSchema = z.object({
 export const updateReflectionSchema = createReflectionSchema.partial();
 
 // Reflection storage functions
-export async function createReflection(data: z.infer<typeof createReflectionSchema>, userId: string): Promise<IReflection> {
+export async function createReflection(
+  data: z.infer<typeof createReflectionSchema>,
+  userId: string
+): Promise<IReflection> {
   try {
     console.log('[createReflection] Starting reflection creation for session:', data.sessionId);
-    
+
     // Check if the session exists
     const session = await Session.findById(data.sessionId);
     if (!session) {
       throw new Error('Session not found');
     }
-    
+
     // Check if the user is authorized to create a reflection for this session
     if (session.clientId.toString() !== userId && session.coachId.toString() !== userId) {
       throw new Error('Not authorized to create a reflection for this session');
     }
-    
+
     // Check if a reflection already exists for this session
     const existingReflection = await Reflection.findOne({ sessionId: data.sessionId });
     if (existingReflection) {
       throw new Error('Reflection already exists for this session');
     }
-    
+
     const reflection = new Reflection({
       ...data,
       sessionId: new mongoose.Types.ObjectId(data.sessionId),
       userId: new mongoose.Types.ObjectId(userId),
       audioFileId: data.audioFileId ? new mongoose.Types.ObjectId(data.audioFileId) : undefined,
     });
-    
+
     console.log('[createReflection] Saving reflection to database');
     const savedReflection = await reflection.save();
     console.log('[createReflection] Reflection saved successfully:', savedReflection._id);
-    
+
     return savedReflection;
   } catch (error) {
     console.error('[createReflection] Error creating reflection:', error);
@@ -427,7 +435,9 @@ export async function getReflectionById(reflectionId: string): Promise<IReflecti
 export async function getReflectionBySessionId(sessionId: string): Promise<IReflection | null> {
   try {
     console.log('[getReflectionBySessionId] Fetching reflection for session:', sessionId);
-    const reflection = await Reflection.findOne({ sessionId: new mongoose.Types.ObjectId(sessionId) });
+    const reflection = await Reflection.findOne({
+      sessionId: new mongoose.Types.ObjectId(sessionId),
+    });
     if (!reflection) {
       console.log('[getReflectionBySessionId] Reflection not found for session:', sessionId);
       return null;
@@ -459,44 +469,42 @@ export async function updateReflection(
 ): Promise<IReflection | null> {
   try {
     console.log('[updateReflection] Updating reflection:', reflectionId);
-    
+
     const reflection = await Reflection.findById(reflectionId);
     if (!reflection) {
       throw new Error('Reflection not found');
     }
-    
+
     // Check if the user is authorized to update this reflection
     if (reflection.userId.toString() !== userId) {
       throw new Error('Not authorized to update this reflection');
     }
-    
+
     const update: any = { ...updateData };
-    
+
     if (updateData.sessionId) {
       // Check if the session exists
       const session = await Session.findById(updateData.sessionId);
       if (!session) {
         throw new Error('Session not found');
       }
-      
+
       // Check if the user is authorized to update a reflection for this session
       if (session.clientId.toString() !== userId && session.coachId.toString() !== userId) {
         throw new Error('Not authorized to update a reflection for this session');
       }
-      
+
       update.sessionId = new mongoose.Types.ObjectId(updateData.sessionId);
     }
-    
+
     if (updateData.audioFileId) {
       update.audioFileId = new mongoose.Types.ObjectId(updateData.audioFileId);
     }
-    
-    const updatedReflection = await Reflection.findByIdAndUpdate(
-      reflectionId,
-      update,
-      { new: true }
-    );
-    
+
+    const updatedReflection = await Reflection.findByIdAndUpdate(reflectionId, update, {
+      new: true,
+    });
+
     console.log('[updateReflection] Reflection updated successfully:', reflectionId);
     return updatedReflection;
   } catch (error) {
@@ -508,17 +516,17 @@ export async function updateReflection(
 export async function deleteReflection(reflectionId: string, userId: string): Promise<boolean> {
   try {
     console.log('[deleteReflection] Deleting reflection:', reflectionId);
-    
+
     const reflection = await Reflection.findById(reflectionId);
     if (!reflection) {
       throw new Error('Reflection not found');
     }
-    
+
     // Check if the user is authorized to delete this reflection
     if (reflection.userId.toString() !== userId) {
       throw new Error('Not authorized to delete this reflection');
     }
-    
+
     const result = await Reflection.findByIdAndDelete(reflectionId);
     console.log('[deleteReflection] Reflection deleted successfully:', reflectionId);
     return !!result;
@@ -526,4 +534,4 @@ export async function deleteReflection(reflectionId: string, userId: string): Pr
     console.error('[deleteReflection] Error deleting reflection:', error);
     throw error;
   }
-} 
+}

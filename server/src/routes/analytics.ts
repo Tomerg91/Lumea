@@ -31,4 +31,4 @@ router.get('/peak-usage', analyticsController.getPeakUsage);
 // Export analytics data
 router.post('/export', analyticsController.exportData);
 
-export default router; 
+export default router;

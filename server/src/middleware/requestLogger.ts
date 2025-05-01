@@ -11,12 +11,7 @@ interface RequestLoggerOptions {
 
 // Create a request logger middleware
 export const requestLogger = (options: RequestLoggerOptions = {}) => {
-  const {
-    logHeaders = false,
-    logBody = false,
-    logQuery = false,
-    logParams = false,
-  } = options;
+  const { logHeaders = false, logBody = false, logQuery = false, logParams = false } = options;
 
   return (req: Request, res: Response, next: NextFunction) => {
     // Log request details
@@ -85,4 +80,4 @@ export const uploadRequestLogger = () => {
     logQuery: true,
     logParams: true,
   });
-}; 
+};

@@ -29,4 +29,4 @@ export interface UpdateSessionDto {
   notes?: string;
   audioFile?: string;
   dateTime?: string;
-} 
+}

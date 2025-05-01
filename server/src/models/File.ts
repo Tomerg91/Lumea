@@ -47,4 +47,4 @@ const fileSchema = new mongoose.Schema<IFile>(
 // Index for faster queries
 fileSchema.index({ userId: 1, context: 1 });
 
-export const File = mongoose.model<IFile>('File', fileSchema); 
+export const File = mongoose.model<IFile>('File', fileSchema);

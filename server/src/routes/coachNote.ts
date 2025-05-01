@@ -22,4 +22,4 @@ router.put('/:id', isCoach, coachNoteController.updateCoachNote);
 // Delete a coach note
 router.delete('/:id', isCoach, coachNoteController.deleteCoachNote);
 
-export default router; 
+export default router;
