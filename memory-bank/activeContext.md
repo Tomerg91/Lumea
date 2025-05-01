@@ -11,7 +11,7 @@ Recent changes:
 *   Addressed React import issues and TypeScript errors in the AuthContext component
 *   Fixed CI/CD pipeline by adding ESLint as a dev dependency to the server package
 *   Enhanced GitHub Actions workflow with explicit ESLint installation steps
-*   Updated ESLint configuration to use the new eslint.config.js format required by ESLint v9
+*   Downgraded ESLint to v8.57.0 to maintain compatibility with existing .eslintrc.json configuration
 
 Next steps: 
 1. Implement database schema for roles (Client, Coach, Admin) & status (pending, active)

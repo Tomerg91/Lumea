@@ -23,7 +23,7 @@
 *   Added ESLint as a dev dependency in the server package to fix CI linting
 *   Fixed GitHub Actions workflow to properly run the linting step
 *   Added explicit ESLint installation step in GitHub Actions workflow before linting
-*   Updated ESLint configuration to use the new eslint.config.js format required by ESLint v9
+*   Downgraded ESLint to v8.57.0 to maintain compatibility with existing .eslintrc.json configuration
 
 ### Supabase Connection & Authentication Improvements
 *   Implemented a new Supabase URL and API key for the application
