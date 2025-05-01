@@ -1,7 +1,7 @@
 import React from 'react';
 import { Routes, Route, Link, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
-import ClientsPage from './pages/Dashboard/ClientsPage.tsx';
+import ClientsPage from './pages/Dashboard/ClientsPage';
 import AuthPage from './pages/Auth';
 import HomePage from './pages/Index'; // Import HomePage component
 import Dashboard from './pages/Dashboard'; // Import the Dashboard component
