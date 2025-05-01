@@ -13,7 +13,7 @@
     "check": "cd client && npm run typecheck && cd ../server && npm run typecheck",
     "ci-check": "echo 'CI check - skipping actual type checking to avoid declaration file issues'",
     "lint": "cd client && npm run lint && cd ../server && npm run lint",
-    "test": "cd client && npm run test && cd ../server && npm run test"
+    "test": "cd client && npm run test -- --reporter verbose && cd ../server && npm run test -- --verbose"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.2.0",
