@@ -20,15 +20,12 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci # Use npm ci for deterministic installs from package-lock.json
 
       - name: Update package-lock.json
         run: |
           npm install --package-lock-only
           git diff --quiet package-lock.json || echo "package-lock.json updated"
-
-      - name: Install explicit React type declarations
-        run: npm install --save-dev @types/react @types/react-dom @types/react-router-dom
 
       - name: Run type checking (CI mode)
         run: npm run ci-check || exit 1
@@ -66,7 +63,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci # Use npm ci for deterministic installs from package-lock.json
 
       - name: Build
         run: npm run build
