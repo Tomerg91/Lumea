@@ -1,0 +1,41 @@
+# A sample Supabase configuration file for local development
+# This file configures the Supabase local development environment
+
+# Project settings
+project_id = "lumea-coaching"
+
+[api]
+port = 54321
+schemas = ["public", "storage", "auth"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 5432
+shadow_port = 5433
+major_version = 15
+
+[studio]
+port = 54323
+
+[auth]
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["https://localhost:5173"]
+autoconfirm = true # Set to false to require email confirmation
+jwt_expiry = 3600
+enable_signup = true
+
+[storage]
+backend = "file"
+file_storage_backend_path = "./storage"
+buckets = [
+  {name = "audio", public = false},
+  {name = "resources", public = true}
+]
+
+# Feature flags
+[analytics]
+enabled = false
+
+[experimental]
+minimal_service = false 

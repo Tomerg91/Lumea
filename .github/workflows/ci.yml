@@ -41,6 +41,9 @@ jobs:
       - name: Run tests
         run: npm run test || exit 1
 
+      - name: Run RLS Tests
+        run: npm run test:rls
+
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         with:

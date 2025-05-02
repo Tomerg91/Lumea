@@ -84,6 +84,69 @@ npm run dev
 # Client runs on http://localhost:5173
 ```
 
+## Database
+
+The project uses Supabase PostgreSQL with Row-Level Security (RLS) for data access control.
+
+### Setting Up the Database
+
+1. Install the Supabase CLI and start the local Supabase instance:
+
+```bash
+npm install -g supabase
+supabase start
+```
+
+2. Run migrations to set up the database schema and RLS policies:
+
+```bash
+npm run db:migrate
+```
+
+3. Seed the database with initial data:
+
+```bash
+npm run db:seed
+```
+
+This will create:
+- Admin, coach, and client user roles
+- One user of each role type
+- A sample coaching session with a reflection and coach notes
+
+### Environment Variables for Seeding
+
+Create a `.env` file in the project root with the following variables (example values):
+
+```
+# Supabase Connection
+SUPABASE_URL=http://localhost:54321
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+
+# Seed Users (use secure passwords in your local environment)
+ADMIN_EMAIL=admin@lumea.com
+ADMIN_PASSWORD=securepassword1
+COACH_EMAIL=coach@lumea.com
+COACH_PASSWORD=securepassword2
+CLIENT_EMAIL=client@lumea.com
+CLIENT_PASSWORD=securepassword3
+```
+
+### Testing RLS Policies
+
+The project includes tests to verify that RLS policies are working correctly:
+
+```bash
+npm run test:rls
+```
+
+This runs a test suite that checks access permissions for different user roles:
+- Admin users can access and modify all data
+- Coaches can manage their own sessions and notes
+- Clients can only access their own sessions and reflections
+- Anonymous users have no access
+
 ## Environment Variables
 
 ### Server (.env)
