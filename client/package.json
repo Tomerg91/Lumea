@@ -13,7 +13,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "typecheck": "tsc --noEmit --skipLibCheck"
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@capacitor/core": "^7.2.0",
@@ -69,6 +69,7 @@
     "recharts": "^2.12.7",
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
+    "tailwindcss": "^3.4.11",
     "tailwindcss-animate": "^1.0.7",
     "tailwindcss-rtl": "^0.9.0",
     "vaul": "^0.9.3",
@@ -81,8 +82,8 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^22.5.5",
-    "@types/react": "^18.3.20",
-    "@types/react-dom": "^18.3.5",
+    "@types/react": "18.3.20",
+    "@types/react-dom": "18.3.7",
     "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "@vitest/ui": "^3.1.1",
@@ -94,8 +95,7 @@
     "jsdom": "^26.0.0",
     "lovable-tagger": "^1.1.7",
     "postcss": "^8.4.47",
-    "tailwindcss": "^3.4.11",
-    "typescript": "^5.5.3",
+    "typescript": "5.8.3",
     "typescript-eslint": "^8.0.1",
     "vite": "^5.4.1",
     "vitest": "^3.1.1"

@@ -103,48 +103,55 @@
 
 ## MVP - What's Left to Build (Current Focus)
 
-- **User Roles & Auth:**
+### User Roles & Auth:
   - ✅ Basic authentication with Supabase implemented
   - ✅ Error handling for authentication flows added
   - ✅ TypeScript integration with auth components completed
   - ✅ Role selection (client/coach) added to signup process
   - Implement DB schema for roles (Client, Coach, Admin) & status (pending, active).
   - Implement Client invitation mechanism (linked to Coach).
-  - Implement Admin creation/setup.
+  - Implement Admin creation/setup with pending coach approval flow.
   - Implement Password Reset flow.
-  - Refine Login/Signup based on roles.
-- **Coach View Clients (Current Slice):**
-  - Backend: API endpoint `GET /api/my-clients` (auth, role check, DB query).
-  - Frontend: `/dashboard/clients` page/component to display list.
-  - Database: Finalize `users` table schema with `coach_id` link.
-- **Session Management:**
+  - Refine Login/Signup UI and flow based on roles.
+
+### Coach View Clients (Current Slice):
+  - Design and implement `GET /api/my-clients` endpoint (auth checks, role-based access, DB query).
+  - Develop ClientsPage UI to fetch and display coach's clients.
+
+### Session Management:
   - Backend: CRUD API endpoints for sessions.
   - Frontend: UI for Coach to create/edit sessions.
   - Frontend: UI for Coach/Client to view session list.
   - Database: `sessions` table schema.
-- **Reflections (Text & Audio):**
+
+### Reflections (Text & Audio):
   - Backend: API endpoints for submitting/retrieving reflections (text/audio).
   - Backend: File upload handling (S3 integration).
   - Frontend: UI for Client to submit text/audio.
   - Frontend: UI for Client/Coach to view/listen to reflections.
   - Database: `reflections` table schema (link to session/client, text content, audio file reference).
-- **Private Coach Notes:**
+
+### Private Coach Notes:
   - Backend: API endpoints for CRUD operations on notes.
   - Frontend: UI for Coach to manage notes per session/client.
   - Database: `coach_notes` table schema (link to session/client, text content).
-- **Admin Coach Approval:**
+
+### Admin Coach Approval:
   - Backend: API endpoint for Admin to list pending coaches.
   - Backend: API endpoint for Admin to approve/reject coaches (update status).
   - Frontend: Simple Admin UI for listing and approving/rejecting.
-- **Essential Bilingual Support:**
+
+### Essential Bilingual Support:
   - ✅ Basic i18next integration implemented
   - Ensure all new UI components use i18next.
   - Verify/test RTL layout rendering for Hebrew.
-- **Native App Container (Capacitor):**
+
+### Native App Container (Capacitor):
   - Configure icons, splash screens.
   - Define and request necessary permissions (microphone, file access if needed).
   - Implement basic Service Worker caching strategy.
-- **Core UI/UX & Styling:**
+
+### Core UI/UX & Styling:
   - ✅ Custom color palette implemented with Tailwind
   - ✅ Basic responsive design for authentication pages
   - Apply minimalist styling consistently across MVP features.
@@ -183,11 +190,10 @@
 
 ## Known Issues
 
-- **ESLint Errors (4):** Parsing errors related to project configuration persist in `server/auth.ts`, `server/config/passport.ts`, and `server/middleware/auth.ts`.
+- **ESLint Errors (4):** Parsing errors in `server/auth.ts`, `server/config/passport.ts`, and `server/middleware/auth.ts`.
 - **ESLint Warnings (~170):** Numerous warnings, mostly `@typescript-eslint/no-explicit-any`.
-- Supabase project requires proper setup with correct schemas
-- Row Level Security (RLS) policies need to be implemented for all tables
-- Profile table must be created on the new Supabase project
+- Supabase project requires proper setup with correct schemas and RLS policies for all tables.
+- Profile table must be created on the new Supabase project.
 
 ## Evolution of Project Decisions
 

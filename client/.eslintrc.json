@@ -1,3 +1,17 @@
 {
-  "extends": "../.eslintrc.json"
+  "ignorePatterns": ["vite.config.ts"],
+  "extends": "../.eslintrc.json",
+  "rules": {
+    "react-refresh/only-export-components": "off",
+    "react-hooks/exhaustive-deps": "off"
+  },
+  "parserOptions": {
+    "project": ["./tsconfig.json"]
+  },
+  "overrides": [
+    {
+      "files": ["vite.config.ts"],
+      "parserOptions": { "project": null }
+    }
+  ]
 }

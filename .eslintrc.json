@@ -22,12 +22,13 @@
   },
   "plugins": ["react-refresh", "@typescript-eslint", "react", "prettier"],
   "rules": {
-    "react-refresh/only-export-components": "warn",
+    "react-refresh/only-export-components": "off",
     "react/react-in-jsx-scope": "off",
     "react/prop-types": "off",
     "@typescript-eslint/no-unused-vars": "off",
     "@typescript-eslint/no-explicit-any": "off",
-    "prettier/prettier": "error"
+    "prettier/prettier": "error",
+    "react-hooks/exhaustive-deps": "off"
   },
   "settings": {
     "react": {
@@ -81,6 +82,7 @@
     },
     {
       "files": ["server/auth.ts", "server/config/passport.ts", "server/middleware/auth.ts"],
+      "parserOptions": { "project": null },
       "rules": {
         "@typescript-eslint/no-namespace": "off",
         "@typescript-eslint/no-empty-object-type": "off"

@@ -201,172 +201,78 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const currentNavItems = profile?.role === 'coach' ? coachNavItems : navItems;
 
   return (
-    <div className="min-h-screen lumea-gradient lumea-pattern">
-      {/* Mobile Navigation */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 bg-white/80 dark:bg-lumea-stone/80 backdrop-blur-md z-30 border-b border-lumea-beige dark:border-lumea-taupe/20 px-4 py-3">
-        <div className="flex items-center justify-between">
+    <div className="flex min-h-screen w-full flex-col bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6">
+        {/* Mobile Menu Button */}
+        <button
+          className="md:hidden"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          <svg className="h-6 w-6" /* Menu Icon */ >...</svg>
+          <span className="sr-only">Toggle menu</span>
+        </button>
+
+        {/* Desktop Logo */}
+        <div className="hidden md:flex">
           <Logo size="sm" />
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-1"
-            >
-              {isMobileMenuOpen ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M18 6 6 18"></path>
-                  <path d="m6 6 12 12"></path>
-                </svg>
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="4" x2="20" y1="12" y2="12"></line>
-                  <line x1="4" x2="20" y1="6" y2="6"></line>
-                  <line x1="4" x2="20" y1="18" y2="18"></line>
-                </svg>
-              )}
-            </Button>
-          </div>
         </div>
 
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <nav className="absolute top-full left-0 right-0 bg-white/95 dark:bg-lumea-stone/95 backdrop-blur-md border-b border-lumea-beige dark:border-lumea-taupe/20 py-4 animate-fade-in">
-            <ul className="flex flex-col gap-1 px-4">
-              {currentNavItems.map((item) => (
-                <li key={item.path}>
-                  <Button
-                    variant={location.pathname === item.path ? 'secondary' : 'ghost'}
-                    className={`w-full justify-start ${location.pathname === item.path ? 'bg-lumea-beige/70 dark:bg-lumea-stone/40' : ''}`}
-                    onClick={() => {
-                      navigate(item.path);
-                      setIsMobileMenuOpen(false);
-                    }}
-                  >
-                    <span className="mr-3">{item.icon}</span>
-                    {item.label}
-                  </Button>
-                </li>
-              ))}
-              <li>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-red-600 mt-4"
-                  onClick={() => {
-                    handleSignOut();
-                    setIsMobileMenuOpen(false);
-                  }}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="mr-3"
-                  >
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                    <polyline points="16 17 21 12 16 7"></polyline>
-                    <line x1="21" y1="12" x2="9" y2="12"></line>
-                  </svg>
-                  Sign Out
-                </Button>
-              </li>
-            </ul>
-          </nav>
-        )}
+        {/* Header Right Section */}
+        <div className="flex items-center gap-4">
+          <ThemeToggle />
+          <Button variant="outline" size="sm" onClick={handleSignOut}>
+            Sign Out
+          </Button>
+        </div>
       </header>
 
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:block fixed top-0 left-0 h-full w-64 bg-white/80 dark:bg-lumea-stone/80 backdrop-blur-md border-r border-lumea-beige dark:border-lumea-taupe/20 p-4 z-20">
-        <div className="flex flex-col h-full">
-          <div className="pb-6 border-b border-lumea-beige/30 dark:border-lumea-taupe/20">
-            <Logo />
-          </div>
-
-          <nav className="flex-1 mt-6">
-            <ul className="space-y-2">
-              {currentNavItems.map((item) => (
-                <li key={item.path}>
-                  <Button
-                    variant={location.pathname === item.path ? 'secondary' : 'ghost'}
-                    className={`w-full justify-start ${location.pathname === item.path ? 'bg-lumea-beige/70 dark:bg-lumea-stone/40' : ''}`}
-                    onClick={() => navigate(item.path)}
-                  >
-                    <span className="mr-3">{item.icon}</span>
-                    {item.label}
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          <div className="mt-auto pt-4 border-t border-lumea-beige/30 dark:border-lumea-taupe/20">
-            <div className="flex justify-between items-center">
-              <TooltipProvider>
+      {/* Main Content Area */}
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        <aside className={`fixed inset-y-0 left-0 z-20 flex h-full flex-col border-r bg-background transition-all duration-300 md:static md:block ${isMobileMenuOpen ? 'w-64' : 'w-0 overflow-hidden md:w-20'}`}>
+          <nav className="flex flex-col items-center gap-4 px-2 py-5 md:items-stretch">
+            {currentNavItems.map((item) => (
+              <TooltipProvider key={item.path}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      onClick={handleSignOut}
-                      className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                    <button
+                      onClick={() => {
+                        navigate(item.path);
+                        if (isMobileMenuOpen) setIsMobileMenuOpen(false); // Close mobile menu on nav
+                      }}
+                      className={`flex h-10 items-center justify-center rounded-lg px-3 text-muted-foreground transition-colors hover:text-foreground md:justify-start md:px-4 ${location.pathname === item.path ? 'bg-accent text-accent-foreground' : ''} ${isMobileMenuOpen ? 'w-full justify-start' : 'md:w-full md:h-10'}`}
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                        <polyline points="16 17 21 12 16 7"></polyline>
-                        <line x1="21" y1="12" x2="9" y2="12"></line>
-                      </svg>
-                    </Button>
+                      {item.icon}
+                      <span className={`ml-3 ${isMobileMenuOpen ? 'inline' : 'hidden md:hidden'}`}>{item.label}</span>
+                      <span className="sr-only">{item.label}</span>
+                    </button>
                   </TooltipTrigger>
-                  <TooltipContent>Sign Out</TooltipContent>
+                  {/* Tooltip only for collapsed desktop view */}
+                  {!isMobileMenuOpen && (
+                    <TooltipContent side="right" className="hidden md:block">
+                      {item.label}
+                    </TooltipContent>
+                  )}
                 </Tooltip>
               </TooltipProvider>
+            ))}
+          </nav>
+        </aside>
 
-              <ThemeToggle />
-            </div>
-          </div>
-        </div>
-      </aside>
+        {/* Mobile Menu Overlay (closes menu on click) */}
+        {isMobileMenuOpen && (
+          <div
+            className="fixed inset-0 z-10 bg-black/30 md:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
 
-      {/* Main Content */}
-      <main className="pt-16 lg:pt-0 lg:pl-64 min-h-screen">
-        <div className="p-4 md:p-8">{children}</div>
-      </main>
+        {/* Main Content */}
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
+          {children}
+        </main>
+      </div>
     </div>
   );
 };
