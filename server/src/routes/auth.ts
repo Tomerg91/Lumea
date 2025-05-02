@@ -82,7 +82,14 @@ router.post('/signup', async (req, res) => {
     }
 
     console.log('[POST /api/auth/signup] Creating new user');
-    const user = await createUser(validatedData);
+    const user = await createUser(
+      validatedData as {
+        name: string;
+        email: string;
+        password: string;
+        role: 'coach' | 'client' | 'admin';
+      }
+    );
     console.log('[POST /api/auth/signup] User created successfully:', user._id);
 
     console.log('[POST /api/auth/signup] Attempting to log in user');

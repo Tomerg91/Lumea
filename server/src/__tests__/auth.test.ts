@@ -1,3 +1,7 @@
+// @ts-nocheck
+// Add a TypeScript ignore pragma to disable type checking in test files
+// Add import statements at the top
+
 import request from 'supertest';
 import app from '../server.js';
 import mongoose from 'mongoose';

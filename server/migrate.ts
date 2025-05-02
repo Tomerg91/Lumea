@@ -16,13 +16,14 @@ const dbPath = databaseUrl.replace('file:', '');
 const sqlite = new Database(dbPath);
 const db = drizzle(sqlite);
 
-// Run migrations
-migrate(db, { migrationsFolder: './migrations' })
-  .then(() => {
+// Run migrations (use async IIFE instead of promise chaining)
+(async () => {
+  try {
+    await migrate(db, { migrationsFolder: './migrations' });
     console.log('Migrations completed');
     process.exit(0);
-  })
-  .catch((err) => {
+  } catch (err) {
     console.error('Error running migrations:', err);
     process.exit(1);
-  });
+  }
+})();

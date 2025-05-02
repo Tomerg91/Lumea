@@ -44,11 +44,15 @@ const storage = s3Client
       metadata: (
         req: Request,
         file: Express.Multer.File,
-        cb: (error: any, metadata?: any) => void
+        cb: (error: Error | null, metadata?: Record<string, string>) => void
       ) => {
         cb(null, { fieldName: file.fieldname });
       },
-      key: (req: Request, file: Express.Multer.File, cb: (error: any, key?: string) => void) => {
+      key: (
+        req: Request,
+        file: Express.Multer.File,
+        cb: (error: Error | null, key?: string) => void
+      ) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         cb(null, `${file.fieldname}-${uniqueSuffix}`);
       },

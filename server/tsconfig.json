@@ -18,18 +18,22 @@
     "noUnusedParameters": false,
     "exactOptionalPropertyTypes": false,
     "noImplicitReturns": false,
+    "noPropertyAccessFromIndexSignature": false,
+    "noUncheckedIndexedAccess": false,
     "noImplicitOverride": false,
     "allowUnusedLabels": true,
     "allowUnreachableCode": true,
     "skipLibCheck": true,
     "outDir": "dist",
-    "rootDir": ".",
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
       "@shared/*": ["../shared/*"]
-    }
+    },
+    "noErrorTruncation": true,
+    "resolveJsonModule": true,
+    "typeRoots": ["./node_modules/@types", "./src/types"]
   },
-  "include": ["**/*.ts"],
+  "include": ["./**/*.ts", "../shared/**/*.ts", "./src/types/**/*.d.ts"],
   "exclude": ["node_modules", "dist"]
 }

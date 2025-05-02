@@ -59,7 +59,7 @@ router.post('/register', async (req: Request, res: Response, next: NextFunction)
   } catch (error) {
     console.error('Registration error:', error);
     // Handle potential Prisma unique constraint errors more gracefully if needed
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+    if (error instanceof Error && 'code' in error && error.code === 'P2002') {
       return res.status(409).json({ message: 'Email already in use.' });
     }
     next(error); // Pass other errors to the global error handler

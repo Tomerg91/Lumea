@@ -50,9 +50,14 @@ const ClientsPage: React.FC = () => {
         } else {
           setClients(data || []);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error fetching clients:', err);
-        setError(err.message || 'Failed to fetch clients.');
+        // Type guard to check if error has message property
+        if (err instanceof Error) {
+          setError(err.message || 'Failed to fetch clients.');
+        } else {
+          setError('Failed to fetch clients.');
+        }
       } finally {
         setLoadingClients(false);
       }

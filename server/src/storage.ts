@@ -262,7 +262,7 @@ export async function createUser({
   email: string;
   password: string;
   role: 'client' | 'coach' | 'admin';
-}): Promise<IUser> {
+}): Promise<Partial<IUser>> {
   try {
     console.log('[createUser] Starting user creation for email:', email);
 
@@ -279,8 +279,8 @@ export async function createUser({
       SCRYPT_p,
       SCRYPT_dkLen
     );
-    // Convert scrypt result to Buffer before toString
-    const passwordHash = (hashBuffer as any).toString('hex'); // Force type to any
+    // Using Buffer.from to convert unknown buffer safely
+    const passwordHash = Buffer.from(hashBuffer as unknown as Uint8Array).toString('hex');
 
     console.log('[createUser] Password hashed successfully');
 
@@ -297,12 +297,17 @@ export async function createUser({
     const savedUser = await user.save();
     console.log('[createUser] User saved successfully:', savedUser._id);
 
-    // Remove sensitive data before returning
-    const userObjectForReturn: any = savedUser.toObject();
-    delete userObjectForReturn.passwordHash;
-    delete userObjectForReturn.passwordSalt;
+    // Create a new object with only safe fields
+    const userForReturn = {
+      _id: String(savedUser._id),
+      id: String(savedUser._id),
+      name: savedUser.name,
+      email: savedUser.email,
+      role: savedUser.role,
+      status: savedUser.status,
+    };
 
-    return userObjectForReturn;
+    return userForReturn as Partial<IUser>;
   } catch (error) {
     console.error('[createUser] Error creating user:', error);
     throw new Error('Failed to create user');
@@ -351,8 +356,8 @@ export async function updateUserPassword(userId: string, newPassword: string): P
       SCRYPT_p,
       SCRYPT_dkLen
     );
-    // Convert scrypt result to Buffer before toString
-    const passwordHash = (hashBuffer as any).toString('hex'); // Force type to any
+    // Using Buffer.from to convert unknown buffer safely
+    const passwordHash = Buffer.from(hashBuffer as unknown as Uint8Array).toString('hex');
 
     await User.findByIdAndUpdate(userId, {
       passwordHash,
@@ -480,7 +485,7 @@ export async function updateReflection(
       throw new Error('Not authorized to update this reflection');
     }
 
-    const update: any = { ...updateData };
+    const update: Record<string, unknown> = { ...updateData };
 
     if (updateData.sessionId) {
       // Check if the session exists

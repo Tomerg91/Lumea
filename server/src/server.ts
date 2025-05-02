@@ -71,8 +71,8 @@ app.use('/api/oauth', oauthRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
 // Error handling middleware
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
+app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(err instanceof Error ? err.stack : err);
   res.status(500).json({ error: 'Something broke!' });
 });
 

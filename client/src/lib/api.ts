@@ -17,6 +17,26 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000
 // We might need a more complete User type later based on Prisma schema for other endpoints
 export type User = AuthenticatedUser;
 
+// Define type for sessions
+interface Session {
+  id: string;
+  date: string;
+  status: string;
+  clientId: string;
+  coachId: string;
+  [key: string]: unknown;
+}
+
+// Define type for resources
+interface Resource {
+  id: string;
+  title: string;
+  description: string;
+  fileId?: string;
+  coachId: string;
+  [key: string]: unknown;
+}
+
 /**
  * Performs a fetch request to the API.
  * Handles common headers, base URL, and basic error handling.
@@ -112,14 +132,12 @@ export const getCurrentUser = (): Promise<User> => {
 // --- Mock Session/Resource API Calls (Example) ---
 // We will use these later, pointing to the mock endpoints for now
 
-export const getClientSessions = (): Promise<any[]> => {
-  // Replace 'any' with Session type later
-  return apiFetch<any[]>('/sessions/client', { method: 'GET' });
+export const getClientSessions = (): Promise<Session[]> => {
+  return apiFetch<Session[]>('/sessions/client', { method: 'GET' });
 };
 
-export const getClientResources = (): Promise<any[]> => {
-  // Replace 'any' with Resource type later
-  return apiFetch<any[]>('/resources/client', { method: 'GET' });
+export const getClientResources = (): Promise<Resource[]> => {
+  return apiFetch<Resource[]>('/resources/client', { method: 'GET' });
 };
 
 // Add other API calls for sessions, resources, profile etc. as needed

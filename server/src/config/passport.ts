@@ -5,6 +5,15 @@ import { getUserByEmail, getUserById } from '../storage.js';
 import { User } from '../models/User.js';
 import { HydratedDocument } from 'mongoose';
 
+// Define an interface for an authenticated user
+interface AuthenticatedUser {
+  _id: string;
+  email: string;
+  name: string;
+  role: string;
+  [key: string]: unknown;
+}
+
 // Add these constants (should match the ones in storage.ts)
 const SCRYPT_N = 16384;
 const SCRYPT_r = 8;
@@ -26,7 +35,7 @@ export function configurePassport() {
 
           if (!user || !user.passwordSalt || !user.passwordHash) {
             console.log('[LocalStrategy] User not found or missing password data:', email);
-            return done(null, false, { message: 'Incorrect email or password.' });
+            return done(null, false);
           }
 
           // Hash the provided password with the user's salt
@@ -47,7 +56,7 @@ export function configurePassport() {
 
           if (!isValid) {
             console.log('[LocalStrategy] Invalid password for user:', email);
-            return done(null, false, { message: 'Incorrect email or password.' });
+            return done(null, false);
           }
 
           console.log('[LocalStrategy] Authentication successful for user:', email);
@@ -57,7 +66,8 @@ export function configurePassport() {
           delete userObject.passwordHash;
           delete userObject.passwordSalt;
 
-          return done(null, userObject);
+          // Cast to Express.User since we've defined the interface in express.d.ts
+          return done(null, userObject as Express.User);
         } catch (error) {
           console.error('[LocalStrategy] Error during authentication:', error);
           return done(error);
@@ -67,7 +77,7 @@ export function configurePassport() {
   );
 
   // Configure serialization
-  passport.serializeUser((user: any, done) => {
+  passport.serializeUser((user, done) => {
     console.log('[serializeUser] Serializing user:', user._id);
     done(null, user._id);
   });
@@ -88,7 +98,8 @@ export function configurePassport() {
       delete userObject.passwordSalt;
 
       console.log('[deserializeUser] Successfully deserialized user:', id);
-      done(null, userObject);
+      // Cast to Express.User since we've defined the interface in express.d.ts
+      done(null, userObject as Express.User);
     } catch (error) {
       console.error('[deserializeUser] Error deserializing user:', error);
       done(error);

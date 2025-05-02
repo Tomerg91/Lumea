@@ -11,27 +11,27 @@ interface UserProfile {
   email?: string;
   name?: string;
   role?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // Define the shape of the context value
 interface AuthContextType {
   session: TypeSession | null;
   user: TypeUser | null;
-  profile: Record<string, any> | null; // Or define a specific Profile type
+  profile: Record<string, unknown> | null; // Or define a specific Profile type
   loading: boolean; // Combined loading state
   authError: AuthError | null;
   signIn: (credentials: {
     email?: string;
     password?: string;
-    provider?: any;
-    options?: any;
-  }) => Promise<{ data: any; error: AuthError | null }>;
+    provider?: string;
+    options?: Record<string, unknown>;
+  }) => Promise<{ data: unknown; error: AuthError | null }>;
   signUp: (credentials: {
     email?: string;
     password?: string;
-    options?: any;
-  }) => Promise<{ data: any; error: AuthError | null }>;
+    options?: Record<string, unknown>;
+  }) => Promise<{ data: unknown; error: AuthError | null }>;
   signOut: () => Promise<void>;
   updateProfile?: (
     updates: Partial<UserProfile>
@@ -50,7 +50,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = React.useState<TypeSession | null>(null);
   const [user, setUser] = React.useState<TypeUser | null>(null);
-  const [profile, setProfile] = React.useState<Record<string, any> | null>(null); // To store role, name, etc.
+  const [profile, setProfile] = React.useState<Record<string, unknown> | null>(null); // To store role, name, etc.
   const [loadingSession, setLoadingSession] = React.useState<boolean>(true); // Loading state for session check
   const [loadingProfile, setLoadingProfile] = React.useState<boolean>(false); // Loading state for profile fetch
   const [authError, setAuthError] = React.useState<AuthError | null>(null); // Add state for auth errors
@@ -353,8 +353,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setAuthError(null);
     try {
       const { data, error } = await getSupabaseClient().auth.signInWithPassword({
-        email: email!, // Add non-null assertion or handle undefined
-        password: password!, // Add non-null assertion or handle undefined
+        email: email || '',
+        password: password || '',
       });
       if (error) throw error;
       // onAuthStateChange will handle setting user and triggering profile fetch
@@ -374,8 +374,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       // options can include { data: { name: 'Full Name' } } for metadata
       const { data, error } = await getSupabaseClient().auth.signUp({
-        email: email!,
-        password: password!,
+        email: email || '',
+        password: password || '',
         options,
       });
       if (error) throw error;

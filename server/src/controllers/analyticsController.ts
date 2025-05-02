@@ -226,7 +226,7 @@ export const analyticsController = {
   async exportData(req: Request, res: Response) {
     try {
       const { startDate, endDate, metrics } = req.body;
-      const data: Record<string, any> = {};
+      const data: Record<string, unknown> = {};
 
       if (metrics.includes('revenue')) {
         data.revenue = await prisma.payment.findMany({
@@ -287,19 +287,20 @@ export const analyticsController = {
     }
   },
 
-  convertToCSV(data: Record<string, any>): string {
+  convertToCSV(data: Record<string, unknown[]>): string {
     const headers: string[] = [];
     const rows: string[][] = [];
 
     // Extract headers and data from each metric
     Object.entries(data).forEach(([metric, items]) => {
       if (Array.isArray(items) && items.length > 0) {
-        const metricHeaders = Object.keys(items[0]).map((key) => `${metric}_${key}`);
+        const item = items[0] as Record<string, unknown>;
+        const metricHeaders = Object.keys(item).map((key) => `${metric}_${key}`);
         headers.push(...metricHeaders);
 
         items.forEach((item, index) => {
           if (!rows[index]) rows[index] = [];
-          const values = Object.values(item);
+          const values = Object.values(item as Record<string, unknown>);
           rows[index].push(
             ...values.map((value) =>
               value instanceof Date

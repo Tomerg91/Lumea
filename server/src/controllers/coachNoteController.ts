@@ -70,7 +70,9 @@ export const coachNoteController = {
       // Decrypt the text content if it's encrypted
       if (coachNote.isEncrypted) {
         const decryptedNote = coachNote.toObject();
-        decryptedNote.textContent = (coachNote as any).decryptText();
+        decryptedNote.textContent = (
+          coachNote as unknown as { decryptText(): string }
+        ).decryptText();
         res.json(decryptedNote);
       } else {
         res.json(coachNote);
@@ -104,7 +106,7 @@ export const coachNoteController = {
       const decryptedNotes = notes.map((note) => {
         const decryptedNote = note.toObject();
         if (note.isEncrypted) {
-          decryptedNote.textContent = (note as any).decryptText();
+          decryptedNote.textContent = (note as unknown as { decryptText(): string }).decryptText();
         }
         return decryptedNote;
       });
@@ -133,7 +135,7 @@ export const coachNoteController = {
       const decryptedNotes = notes.map((note) => {
         const decryptedNote = note.toObject();
         if (note.isEncrypted) {
-          decryptedNote.textContent = (note as any).decryptText();
+          decryptedNote.textContent = (note as unknown as { decryptText(): string }).decryptText();
         }
         return decryptedNote;
       });
@@ -173,7 +175,9 @@ export const coachNoteController = {
       // Decrypt the text content if it's encrypted
       if (updatedNote.isEncrypted) {
         const decryptedNote = updatedNote.toObject();
-        decryptedNote.textContent = (updatedNote as any).decryptText();
+        decryptedNote.textContent = (
+          updatedNote as unknown as { decryptText(): string }
+        ).decryptText();
         res.json(decryptedNote);
       } else {
         res.json(updatedNote);

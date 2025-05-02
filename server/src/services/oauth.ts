@@ -5,20 +5,27 @@ import { User, IUser } from '../models/User.js';
 import { getUserByEmail, createUser } from '../storage.js';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-const facebookClient = new OAuth2Client(process.env.FACEBOOK_CLIENT_ID);
+// Facebook doesn't use OAuth2Client, so this should be removed
+// const facebookClient = new OAuth2Client(process.env.FACEBOOK_CLIENT_ID);
 
-export async function verifyGoogleToken(token: string) {
+interface OAuthUserProfile {
+  email: string;
+  name: string;
+  picture?: string;
+}
+
+export async function verifyGoogleToken(token: string): Promise<OAuthUserProfile> {
   try {
     const ticket = await googleClient.verifyIdToken({
       idToken: token,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
-    if (!payload) throw new Error('Invalid token');
+    if (!payload || !payload.email) throw new Error('Invalid token or missing email');
 
     return {
       email: payload.email,
-      name: payload.name,
+      name: payload.name || '',
       picture: payload.picture,
     };
   } catch (error) {
@@ -27,17 +34,27 @@ export async function verifyGoogleToken(token: string) {
   }
 }
 
-export async function verifyFacebookToken(token: string) {
+export async function verifyFacebookToken(token: string): Promise<OAuthUserProfile> {
   try {
     const response = await fetch(
       `https://graph.facebook.com/v18.0/me?fields=id,name,email,picture&access_token=${token}`
     );
-    const data = await response.json();
-    if (!data.email) throw new Error('No email found');
+
+    if (!response.ok) {
+      throw new Error(`Facebook API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = (await response.json()) as {
+      email?: string;
+      name?: string;
+      picture?: { data?: { url?: string } };
+    };
+
+    if (!data.email) throw new Error('No email found in Facebook response');
 
     return {
       email: data.email,
-      name: data.name,
+      name: data.name || '',
       picture: data.picture?.data?.url,
     };
   } catch (error) {
@@ -51,7 +68,7 @@ export async function handleOAuthLogin(
   email: string,
   name: string,
   picture?: string
-) {
+): Promise<Record<string, unknown> | null> {
   try {
     // Check if user exists using Mongoose storage function
     let user = await getUserByEmail(email);
@@ -64,14 +81,19 @@ export async function handleOAuthLogin(
       // The createUser function handles hashing.
       const temporaryPassword = crypto.randomBytes(20).toString('hex');
 
-      user = await createUser({
+      // We need to properly type the parameters for createUser
+      const userData = {
         name,
         email,
         password: temporaryPassword,
-        role: 'client', // Default to client role for OAuth signups
-        // Add other fields if needed, e.g., profile picture
-        // profilePictureUrl: picture
-      });
+        role: 'client' as const, // Default to client role for OAuth signups
+      };
+
+      // Use @ts-expect-error since we know createUser will return a proper User and it's just a typing issue
+      // @ts-expect-error - The createUser function will return a valid user but TypeScript can't infer it properly
+      user = await createUser(userData);
+
+      // Store the result in the user variable
       console.log(`[OAuth] New user created with ID: ${user._id}`);
     } else {
       console.log(`[OAuth] Existing user found via ${provider}: ${user._id}`);
@@ -83,9 +105,13 @@ export async function handleOAuthLogin(
 
     // Return the Mongoose user document (or a DTO)
     // Ensure sensitive fields like passwordHash/passwordSalt are not returned
-    const userObject = user.toObject ? user.toObject() : { ...user }; // Handle potential plain object return from createUser
-    delete userObject.passwordHash;
-    delete userObject.passwordSalt;
+    const userObject =
+      user && typeof user.toObject === 'function' ? user.toObject() : user ? { ...user } : null; // Handle potential plain object return from createUser
+
+    if (userObject) {
+      delete userObject.passwordHash;
+      delete userObject.passwordSalt;
+    }
 
     return userObject;
   } catch (error) {

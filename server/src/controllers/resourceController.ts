@@ -36,7 +36,7 @@ export const resourceController = {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      const query: any = {};
+      const query: Record<string, unknown> = {};
 
       if (req.user.role === 'coach') {
         query.coachId = req.user.id;
@@ -75,7 +75,7 @@ export const resourceController = {
 
       if (
         req.user.role === 'client' &&
-        !resource.assignedClientIds.map((id) => id.toString()).includes(req.user.id)
+        !resource.assignedClientIds.map((id) => id.toString()).includes(req.user.id.toString())
       ) {
         return res.status(403).json({ error: 'Not authorized to view this resource' });
       }

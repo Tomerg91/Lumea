@@ -14,9 +14,9 @@ export const isCoach = (req: Request, res: Response, next: NextFunction) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: 'Unauthorized. Please log in.' });
   }
-  // Check if the user object exists and has the 'COACH' role
+  // Check if the user object exists and has the 'coach' role
   // Adjust 'req.user.role' based on your actual AuthenticatedUser structure
-  if (req.user && req.user.role === 'COACH') {
+  if (req.user && req.user.role === 'coach') {
     return next();
   }
   res.status(403).json({ message: 'Forbidden. Coach access required.' });

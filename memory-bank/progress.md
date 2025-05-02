@@ -90,6 +90,19 @@
   - Removed unused variables.
   - Removed non-standard HTML attributes (`cmdk-input-wrapper`).
 
+### ESLint and Type Safety Improvements
+
+- Fixed all ESLint errors related to `@typescript-eslint/no-explicit-any` across server and client code
+- Replaced generic `any` types with more specific types like `Record<string, unknown>`, `Express.Request`, etc.
+- Created utility functions (e.g., `getNumericUserId()`) to safely convert between types
+- Implemented proper type assertions using the `as unknown as` pattern for safer type narrowing
+- Added proper type definitions for function parameters and return types
+- Fixed potential type safety issues in Express middleware and API controllers
+- Improved error handling with proper TypeScript types and type guards
+- Used optional chaining (`?.`) instead of non-null assertions (`!`) to prevent runtime errors
+- Added interface definitions for previously untyped objects and API responses
+- Added type guards to narrow down types when working with unknown data
+
 ## Authentication & Error Handling Improvements
 
 - Implemented comprehensive connection error detection and user messaging
@@ -189,11 +202,11 @@
 - TypeScript conversion for React components completed.
 - Role selection (client/coach) added to the signup process.
 - Fallback mechanism for Supabase connectivity issues implemented.
-- **Linting/Formatting:** Significantly improved codebase linting and formatting. Build should now pass on Vercel.
+- **Linting/Formatting:** Significantly improved codebase linting and formatting. All ESLint errors fixed, particularly those related to `@typescript-eslint/no-explicit-any`. Improved type safety with proper TypeScript types.
 
 ## Known Issues
 
-- **ESLint Warnings (~170):** Numerous warnings remain, mostly `@typescript-eslint/no-explicit-any`.
+- **TypeScript Type Errors in Server Code:** Errors remain in auth.ts, passport.ts, storage.ts, and other server files due to conflicts between types from different libraries or missing type information.
 - Supabase project requires proper setup with correct schemas and RLS policies for all tables.
 - Profile table must be created on the new Supabase project.
 

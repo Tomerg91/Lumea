@@ -19,4 +19,4 @@ declare global {
   namespace Express {
     // Express specific augmentations - already defined in express.d.ts
   }
-} 
+}

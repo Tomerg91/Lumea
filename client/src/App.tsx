@@ -94,7 +94,7 @@ const App: React.FC = () => {
           ) : session ? (
             <>
               <span>
-                {profile?.email || 'User'} ({profile?.role})
+                {(profile?.email as string) || 'User'} ({profile?.role as string})
               </span>
               <button onClick={signOut} style={{ marginLeft: '10px' }}>
                 Sign Out

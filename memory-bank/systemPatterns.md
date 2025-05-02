@@ -37,6 +37,66 @@ Full-stack Progressive Web App (PWA) with a React TypeScript frontend, leveragin
 6. Clear loading states during async operations
 7. TypeScript typing for error objects for better error handling
 
+## TypeScript Type Safety Patterns
+
+1. **Avoid `any` Type:** Replace with more specific types:
+   ```typescript
+   // ❌ Avoid
+   function processData(data: any): any { ... }
+   
+   // ✅ Preferred
+   function processData(data: Record<string, unknown>): DataResult { ... }
+   ```
+
+2. **Safe Type Casting:** Use two-step casting with `unknown` as intermediate:
+   ```typescript
+   // ❌ Avoid
+   const result = data as ResultType;
+   
+   // ✅ Preferred 
+   const result = data as unknown as ResultType;
+   ```
+
+3. **Type Guarding:** Use type guards to narrow unknown types:
+   ```typescript
+   if (error instanceof Error) {
+     console.error(error.message);
+   } else {
+     console.error('Unknown error occurred');
+   }
+   ```
+
+4. **Utility Functions for Type Conversion:**
+   ```typescript
+   // Convert string IDs to numbers safely
+   function getNumericUserId(req: Request): number {
+     const id = req.user?.id;
+     return typeof id === 'string' ? parseInt(id, 10) : id;
+   }
+   ```
+
+5. **Optional Chaining:** Use `?.` instead of non-null assertions:
+   ```typescript
+   // ❌ Avoid
+   const role = req.user!.role;
+   
+   // ✅ Preferred
+   const role = req.user?.role;
+   ```
+
+6. **Dynamic Object Types:** Use `Record<string, unknown>` for objects with dynamic keys:
+   ```typescript
+   const query: Record<string, unknown> = {};
+   if (req.user?.role === 'coach') {
+     query.coachId = req.user.id;
+   }
+   ```
+
+7. **Proper Function Return Types:** Explicitly type function returns:
+   ```typescript
+   async function createUser(data: UserInput): Promise<Partial<IUser>> { ... }
+   ```
+
 ## UI Component Pattern
 
 1. Consistent use of shadcn/ui component library

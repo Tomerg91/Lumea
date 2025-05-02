@@ -46,7 +46,8 @@ const HomePage = () => {
         ) : (
           <div className="space-y-4">
             <p className="mb-4">
-              {t('home.welcomeBack', 'Welcome back')} {profile?.full_name || profile?.email}!
+              {t('home.welcomeBack', 'Welcome back')}{' '}
+              {(profile?.full_name as string) || (profile?.email as string)}!
             </p>
             <Button
               onClick={navigateToDashboard}

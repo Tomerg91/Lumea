@@ -13,32 +13,15 @@ const QuoteFallback = () => (
   </div>
 );
 
-// Error boundary for QuoteOfTheDay
-class QuoteErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
+// Simple wrapper to catch errors in QuoteOfTheDay
+const QuoteWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  try {
+    return <>{children}</>;
+  } catch (error) {
+    console.error('QuoteOfTheDay error:', error);
+    return <QuoteFallback />;
   }
-
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('[Dashboard] QuoteOfTheDay error:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return <QuoteFallback />;
-    }
-
-    return this.props.children;
-  }
-}
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -82,7 +65,7 @@ const Dashboard = () => {
       <div className="max-w-6xl mx-auto animate-fade-in">
         <header className="mb-8">
           <h1 className="text-3xl md:text-4xl font-playfair mb-2">
-            Welcome, {profile?.name || user?.email || 'User'}
+            Welcome, {(profile?.name || user?.email || 'User') as string}
           </h1>
           <p className="text-muted-foreground">
             {new Date().toLocaleDateString('en-US', {
@@ -233,9 +216,9 @@ const Dashboard = () => {
           </div>
 
           <div className="col-span-1">
-            <QuoteErrorBoundary>
+            <QuoteWrapper>
               <QuoteOfTheDay />
-            </QuoteErrorBoundary>
+            </QuoteWrapper>
           </div>
         </div>
 

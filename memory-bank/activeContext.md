@@ -1,9 +1,15 @@
 # Active Context
 
-Current work focus: Stabilizing the build and development environment after resolving persistent CI type-checking errors. Next focus will be addressing remaining ESLint warnings and proceeding with the development plan (implementing roles/auth enhancements).
+Current work focus: Addressing remaining TypeScript type errors after successfully resolving ESLint warnings related to `@typescript-eslint/no-explicit-any`.
 
 Recent changes:
 
+- **Fixed ESLint no-explicit-any errors:** Successfully addressed all ESLint errors related to the `@typescript-eslint/no-explicit-any` rule across the codebase. This improves type safety and code quality.
+    - Replaced `any` with proper type definitions like `Record<string, unknown>`, `Express.Request`, `Express.Response`.
+    - Used type assertions with `as unknown as` pattern for safer type narrowing.
+    - Added proper interface definitions for function parameters and return types.
+    - Fixed potential type safety issues in auth middleware and API controllers.
+    - Added better error handling with proper TypeScript types.
 - **Resolved CI Type-Checking Failures:** Successfully fixed persistent TypeScript errors (`Module 'react' has no exported member 'useState'`, etc.) in the `client` workspace.
 - **Implemented npm Workspaces:** Converted the monorepo to use npm workspaces (`client/`, `server/`) for unified dependency management.
 - **Unified Dependencies & Overrides:**
@@ -33,7 +39,7 @@ Recent changes:
 
 Next steps:
 
-- 1. Address ESLint warnings (~170): Review and fix warnings, primarily related to `@typescript-eslint/no-explicit-any`.
+- 1. Address remaining TypeScript type errors in server code: Focus on resolving the type conflicts in auth.ts, passport.ts, storage.ts, and other server files.
 - 2. Implement database schema for roles (Client, Coach, Admin) & status (pending, active), including RLS policies.
 - 3. Design and implement the `GET /api/my-clients` endpoint (auth checks, role-based access, DB query).
 - 4. Develop the `/dashboard/clients` ClientsPage UI to fetch and display the coach's clients.
@@ -54,6 +60,9 @@ Active decisions and considerations:
 - Developing with both online and poor-connectivity scenarios in mind
 - Ensuring proper TypeScript configuration for React components
 - Using targeted ESLint overrides in `.eslintrc.json` to handle specific file types (e.g., configs, declarations) and rule exceptions (`require`, `namespace`, `empty-interface`).
+- Choosing `Record<string, unknown>` over `any` for dynamic object properties to maintain type safety while allowing flexibility.
+- Using type assertions with `as unknown as` pattern when dealing with external libraries or APIs that don't have precise TypeScript definitions.
+- Using proper type checking with optional chaining (`?.`) instead of non-null assertions (`!`) to prevent potential runtime errors.
 
 Important patterns and preferences:
 
@@ -70,6 +79,9 @@ Important patterns and preferences:
 - Disabling `react/prop-types` ESLint rule in TypeScript projects.
 - Escaping HTML entities (like apostrophes, quotes) in JSX text nodes (`&apos;`, `&quot;`).
 - Avoiding empty interfaces in TypeScript where `type` aliases can be used, except in declaration merging scenarios (like module/namespace augmentation).
+- Using `Record<string, unknown>` for objects with dynamic properties instead of `any`.
+- Using type assertions with the `as unknown as` pattern for safer type conversions.
+- Using utility functions like `getNumericUserId()` to safely convert between types when necessary.
 
 Learnings and project insights:
 
@@ -89,7 +101,8 @@ Learnings and project insights:
 ## Development Plan
 
 1. Stabilization & Cleanup (1–2 days)
-   - Fix ESLint parsing errors and warnings
+   - ✅ Fix ESLint warnings related to `@typescript-eslint/no-explicit-any`
+   - Address remaining TypeScript errors in server code
    - Confirm clean Vercel build/deploy
 
 2. User Roles & Auth Enhancements (3–4 days)

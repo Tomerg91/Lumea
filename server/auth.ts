@@ -1,6 +1,6 @@
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
-import { Express } from 'express';
+import { Express, Request } from 'express';
 import session from 'express-session';
 import { scrypt, randomBytes, timingSafeEqual, createHash } from 'crypto';
 import { promisify } from 'util';
@@ -10,11 +10,7 @@ import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { getNumericUserId } from './utils';
 
-declare global {
-  namespace Express {
-    interface User extends SelectUser {}
-  }
-}
+// No need to redeclare Express.User interface here as it's defined in express.d.ts
 
 const scryptAsync = promisify(scrypt);
 
@@ -60,7 +56,15 @@ export function setupAuth(app: Express) {
           if (!user || !(await comparePasswords(password, user.password))) {
             return done(null, false);
           } else {
-            return done(null, user);
+            // Convert user to Express.User format
+            const userForSession: Express.User = {
+              _id: String(user.id),
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role,
+            };
+            return done(null, userForSession);
           }
         } catch (error) {
           return done(error);
@@ -70,10 +74,23 @@ export function setupAuth(app: Express) {
   );
 
   passport.serializeUser((user, done) => done(null, user.id));
-  passport.deserializeUser(async (id: number, done) => {
+  passport.deserializeUser(async (id: string | number, done) => {
     try {
-      const user = await storage.getUser(id);
-      done(null, user);
+      // Convert string id to number if needed
+      const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
+      const user = await storage.getUser(numericId);
+      if (!user) {
+        return done(null, false);
+      }
+      // Convert user to Express.User format
+      const userForSession: Express.User = {
+        _id: String(user.id),
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      };
+      done(null, userForSession);
     } catch (error) {
       done(error);
     }
@@ -82,10 +99,17 @@ export function setupAuth(app: Express) {
   // Registration endpoint
   app.post('/api/register', async (req, res, next) => {
     try {
-      // Validate the request body
-      const registerSchema = insertUserSchema
-        .extend({
+      // Define the registration schema using Zod
+      const registerSchema = z
+        .object({
+          name: z.string(),
+          email: z.string().email(),
+          password: z.string(),
           confirmPassword: z.string(),
+          role: z.enum(['coach', 'client', 'admin']).default('client'),
+          profilePicture: z.string().optional(),
+          phone: z.string().optional(),
+          bio: z.string().optional(),
         })
         .refine((data) => data.password === data.confirmPassword, {
           message: "Passwords don't match",
@@ -107,10 +131,19 @@ export function setupAuth(app: Express) {
       });
 
       // Remove sensitive data
-      const { password, ...userWithoutPassword } = user;
+      const { password, confirmPassword, ...userWithoutPassword } = validatedData;
+
+      // Convert to proper Express.User for login
+      const userForSession: Express.User = {
+        _id: String(user.id),
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      };
 
       // Log the user in
-      req.login(user, (err) => {
+      req.login(userForSession, (err) => {
         if (err) return next(err);
         res.status(201).json(userWithoutPassword);
       });
@@ -127,20 +160,23 @@ export function setupAuth(app: Express) {
 
   // Login endpoint
   app.post('/api/login', (req, res, next) => {
-    passport.authenticate('local', (err, user, info) => {
-      if (err) return next(err);
-      if (!user) {
-        return res.status(401).json({ message: 'Invalid credentials' });
-      }
-
-      req.login(user, (err) => {
+    passport.authenticate(
+      'local',
+      (err: Error | null, user: Express.User | false, info: { message: string }) => {
         if (err) return next(err);
+        if (!user) {
+          return res.status(401).json({ message: 'Invalid credentials' });
+        }
 
-        // Remove sensitive data
-        const { password, ...userWithoutPassword } = user;
-        res.json(userWithoutPassword);
-      });
-    })(req, res, next);
+        req.login(user, (err) => {
+          if (err) return next(err);
+
+          // Remove sensitive data
+          const { password, ...userWithoutPassword } = user;
+          res.json(userWithoutPassword);
+        });
+      }
+    )(req, res, next);
   });
 
   // Logout endpoint

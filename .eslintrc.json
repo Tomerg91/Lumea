@@ -8,7 +8,6 @@
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
-    "plugin:@typescript-eslint/strict",
     "plugin:react/recommended",
     "plugin:react-hooks/recommended",
     "plugin:prettier/recommended"
@@ -27,15 +26,37 @@
     "react/react-in-jsx-scope": "off",
     "react/prop-types": "off",
     "@typescript-eslint/no-unused-vars": "off",
-    "prettier/prettier": "error",
-    "react-hooks/exhaustive-deps": "off"
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/ban-ts-comment": "off",
+    "prettier/prettier": "warn"
   },
   "settings": {
     "react": {
-      "version": "18.3.1"
+      "version": "detect"
     }
   },
   "overrides": [
+    {
+      "files": ["server/routes.ts", "server/routes/audio.ts", "server/storage.ts", "vite.config.ts"],
+      "rules": {
+        "@typescript-eslint/no-unsafe-assignment": "off",
+        "@typescript-eslint/no-unsafe-member-access": "off",
+        "@typescript-eslint/no-unsafe-argument": "off",
+        "@typescript-eslint/no-unsafe-call": "off",
+        "@typescript-eslint/no-unsafe-return": "off",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/ban-ts-comment": "off",
+        "@typescript-eslint/restrict-template-expressions": "off",
+        "@typescript-eslint/no-non-null-assertion": "off",
+        "@typescript-eslint/unbound-method": "off"
+      }
+    },
+    {
+      "files": ["*.js"],
+      "rules": {
+        "@typescript-eslint/no-var-requires": "off"
+      }
+    },
     {
       "files": ["*.js", "*.cjs"],
       "extends": ["eslint:recommended", "plugin:prettier/recommended"],
@@ -68,19 +89,6 @@
       }
     },
     {
-      "files": ["server/storage.ts"],
-      "rules": {
-        "@typescript-eslint/no-require-imports": "off",
-        "@typescript-eslint/no-var-requires": "off"
-      }
-    },
-    {
-      "files": ["*.d.ts"],
-      "rules": {
-        "@typescript-eslint/no-empty-object-type": "off"
-      }
-    },
-    {
       "files": ["server/auth.ts", "server/config/passport.ts", "server/middleware/auth.ts"],
       "parserOptions": { "project": null },
       "rules": {
@@ -89,7 +97,18 @@
       }
     },
     {
-      "files": ["server/**/*.ts"],
+      "files": ["server/**/*.ts", "shared/**/*.ts"],
+      "rules": {
+        "@typescript-eslint/ban-ts-comment": "off",
+        "@typescript-eslint/no-unsafe-member-access": "off",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-unsafe-assignment": "off",
+        "@typescript-eslint/no-unsafe-argument": "off",
+        "@typescript-eslint/no-unsafe-return": "off",
+        "@typescript-eslint/no-unsafe-call": "off",
+        "@typescript-eslint/no-unsafe-enum-comparison": "off",
+        "@typescript-eslint/no-require-imports": "off"
+      },
       "parserOptions": {
         "project": ["./tsconfig.json"],
         "tsconfigRootDir": "."

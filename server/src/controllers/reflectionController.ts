@@ -102,7 +102,9 @@ export const reflectionController = {
       // Decrypt the text content if it's encrypted
       if (reflection.isEncrypted) {
         const decryptedReflection = reflection.toObject();
-        decryptedReflection.textContent = (reflection as any).decryptText();
+        decryptedReflection.textContent = (
+          reflection as unknown as { decryptText(): string }
+        ).decryptText();
         res.json(decryptedReflection);
       } else {
         res.json(reflection);
@@ -146,7 +148,9 @@ export const reflectionController = {
       const decryptedReflections = reflections.map((reflection) => {
         const decryptedReflection = reflection.toObject();
         if (reflection.isEncrypted) {
-          decryptedReflection.textContent = (reflection as any).decryptText();
+          decryptedReflection.textContent = (
+            reflection as unknown as { decryptText(): string }
+          ).decryptText();
         }
         return decryptedReflection;
       });
@@ -200,7 +204,7 @@ export const reflectionController = {
       }
 
       // Update the reflection
-      const updateData: any = { ...validatedData };
+      const updateData: Record<string, unknown> = { ...validatedData };
 
       if (validatedData.sessionId) {
         updateData.sessionId = new mongoose.Types.ObjectId(validatedData.sessionId);
@@ -227,7 +231,9 @@ export const reflectionController = {
       // Decrypt the text content if it's encrypted
       if (updatedReflection.isEncrypted) {
         const decryptedReflection = updatedReflection.toObject();
-        decryptedReflection.textContent = (updatedReflection as any).decryptText();
+        decryptedReflection.textContent = (
+          updatedReflection as unknown as { decryptText(): string }
+        ).decryptText();
         res.json(decryptedReflection);
       } else {
         res.json(updatedReflection);

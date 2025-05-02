@@ -166,7 +166,7 @@ export const sessionController = {
       }
 
       const now = new Date();
-      const query: any = {
+      const query: Record<string, unknown> = {
         dateTime: { $gte: now },
         status: 'scheduled',
       };
@@ -197,7 +197,7 @@ export const sessionController = {
       }
 
       const now = new Date();
-      const query: any = {
+      const query: Record<string, unknown> = {
         dateTime: { $lt: now },
         status: { $in: ['completed', 'cancelled'] },
       };
