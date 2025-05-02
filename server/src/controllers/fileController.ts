@@ -10,6 +10,7 @@ import {
 import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { S3Client } from '@aws-sdk/client-s3';
 import mongoose from 'mongoose';
+import { getNumericUserId } from '../../utils';
 
 // Initialize S3 client if AWS credentials are provided
 const s3Client =
@@ -95,13 +96,13 @@ export const fileController = {
       }
 
       const validatedData = fileContextSchema.parse(req.body);
+      const userId = getNumericUserId(req);
 
       const fileRecords = await Promise.all(
         req.files.map(async (file) => {
           let fileUrl: string;
           if (s3Client) {
-            // Use req.user!.id with non-null assertion
-            const key = `files/${req.user!.id}/${Date.now()}-${file.originalname}`;
+            const key = `files/${userId}/${Date.now()}-${file.originalname}`;
             await s3Client.send(
               new PutObjectCommand({
                 Bucket: process.env.AWS_S3_BUCKET || 'satya-coaching-files',
@@ -115,8 +116,7 @@ export const fileController = {
             fileUrl = `/uploads/${file.filename}`;
           }
 
-          // Use req.user!.id with non-null assertion
-          return createFileRecord(req.user!.id.toString(), {
+          return createFileRecord(userId.toString(), {
             url: fileUrl,
             filename: file.originalname,
             mimetype: file.mimetype,

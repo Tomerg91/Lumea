@@ -8,6 +8,7 @@ import { storage } from './storage';
 import { User as SelectUser, insertUserSchema } from '@shared/schema';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
+import { getNumericUserId } from './utils';
 
 declare global {
   namespace Express {
@@ -156,9 +157,23 @@ export function setupAuth(app: Express) {
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
-    // Remove sensitive data
-    const { password, ...userWithoutPassword } = req.user!;
-    res.json(userWithoutPassword);
+    // Create a user object without the password
+    // First, treat req.user as unknown to avoid type errors
+    const user = req.user as unknown;
+
+    // Check if user is an object with expected properties
+    if (user && typeof user === 'object') {
+      // Now we can safely destructure, as we've checked user exists and is an object
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...userWithoutPassword } = user as {
+        password?: unknown;
+        [key: string]: unknown;
+      };
+      res.json(userWithoutPassword);
+    } else {
+      // Fallback if structure doesn't match expectations
+      res.json(user);
+    }
   });
 
   // Request password reset endpoint

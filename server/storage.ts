@@ -23,6 +23,7 @@ import {
 } from '@shared/schema';
 import session from 'express-session';
 import createMemoryStore from 'memorystore';
+import type { Store as SessionStore } from 'express-session';
 
 const MemoryStore = createMemoryStore(session);
 
@@ -99,7 +100,7 @@ export interface IStorage {
   getResourceAccessByResourceId(resourceId: number): Promise<ResourceAccess[]>;
 
   // Session store for authentication
-  sessionStore: session.SessionStore;
+  sessionStore: SessionStore;
 }
 
 export class MemStorage implements IStorage {
@@ -122,7 +123,7 @@ export class MemStorage implements IStorage {
   private currentResourceId: number = 1;
   private currentResourceAccessId: number = 1;
 
-  sessionStore: session.SessionStore;
+  sessionStore: SessionStore;
 
   constructor() {
     this.usersData = new Map();
@@ -541,14 +542,16 @@ export class MemStorage implements IStorage {
 
     // Filter by duration
     if (filters.minDuration !== undefined) {
+      const minDuration = filters.minDuration;
       filteredResources = filteredResources.filter(
-        (r) => r.durationMinutes !== undefined && r.durationMinutes >= filters.minDuration!
+        (r) => r.durationMinutes !== undefined && r.durationMinutes >= minDuration
       );
     }
 
     if (filters.maxDuration !== undefined) {
+      const maxDuration = filters.maxDuration;
       filteredResources = filteredResources.filter(
-        (r) => r.durationMinutes !== undefined && r.durationMinutes <= filters.maxDuration!
+        (r) => r.durationMinutes !== undefined && r.durationMinutes <= maxDuration
       );
     }
 
@@ -593,7 +596,7 @@ const PostgresSessionStore = connectPgSimple(session);
 
 // Database storage implementation
 export class DatabaseStorage implements IStorage {
-  sessionStore: any; // Use 'any' to avoid TypeScript issues
+  sessionStore: SessionStore;
 
   constructor() {
     this.sessionStore = new PostgresSessionStore({
@@ -910,7 +913,10 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(resources).where(eq(resources.difficulty, difficulty));
   }
 
-  private applyFiltersToQuery(query: any, filters: ResourceFilters): any {
+  private applyFiltersToQuery(
+    query: ReturnType<typeof db.select>,
+    filters: ResourceFilters
+  ): ReturnType<typeof db.select> {
     if (filters.type) {
       if (Array.isArray(filters.type)) {
         query = query.where(inArray(resources.type, filters.type));
@@ -1002,14 +1008,16 @@ export class DatabaseStorage implements IStorage {
 
     // Filter by duration
     if (filters.minDuration !== undefined) {
+      const minDuration = filters.minDuration;
       filteredResources = filteredResources.filter(
-        (r) => r.durationMinutes !== undefined && r.durationMinutes >= filters.minDuration
+        (r) => r.durationMinutes !== undefined && r.durationMinutes >= minDuration
       );
     }
 
     if (filters.maxDuration !== undefined) {
+      const maxDuration = filters.maxDuration;
       filteredResources = filteredResources.filter(
-        (r) => r.durationMinutes !== undefined && r.durationMinutes <= filters.maxDuration
+        (r) => r.durationMinutes !== undefined && r.durationMinutes <= maxDuration
       );
     }
 

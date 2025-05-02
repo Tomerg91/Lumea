@@ -1,9 +1,23 @@
 # Active Context
 
-Current work focus: Fixing Supabase connectivity issues, implementing user role selection during signup, and ensuring proper authentication flow in the application.
+Current work focus: Stabilizing the build and development environment after resolving persistent CI type-checking errors. Next focus will be addressing remaining ESLint warnings and proceeding with the development plan (implementing roles/auth enhancements).
 
 Recent changes:
 
+- **Resolved CI Type-Checking Failures:** Successfully fixed persistent TypeScript errors (`Module 'react' has no exported member 'useState'`, etc.) in the `client` workspace.
+- **Implemented npm Workspaces:** Converted the monorepo to use npm workspaces (`client/`, `server/`) for unified dependency management.
+- **Unified Dependencies & Overrides:**
+    - Pinned TypeScript to exact version `5.8.3` across root, client, and server `package.json`.
+    - Pinned `@types/react` to `18.3.20` and `@types/react-dom` to `18.3.7` (exact versions) solely within `client/devDependencies`.
+    - Removed stray React types from root and server `package.json`.
+    - Added `overrides` to root `package.json` to enforce single versions of TypeScript and React types, resolving potential hoisting conflicts.
+- **Isolated Client TypeScript Config:**
+    - Created `client/tsconfig.base.json` for core compiler options (`moduleResolution: "node"`, `skipLibCheck: true`, etc.).
+    - Updated `client/tsconfig.json` to `extend` the base config, keeping only specific overrides (like `paths`, `lib`, `isolatedModules: false`). Removed `exclude` and `references`.
+- **Updated Type-Checking Scripts:**
+    - Modified `client/package.json`'s `typecheck` script to `tsc -p tsconfig.json --noEmit`.
+    - Updated `.github/workflows/typecheck.yml` CI workflow to run `npm --workspace client run typecheck` directly, removing the old root `ci-check`.
+- **Verified Fix:** Confirmed `npm --workspace client run typecheck` passes locally. Pushed changes and confirmed CI pipeline passes.
 - Fixed Supabase connectivity issues by implementing a new Supabase URL and API key
 - Added a fallback mechanism for development environments when the primary Supabase project is unreachable
 - Improved error handling for Supabase connection issues with clear user messaging
@@ -19,18 +33,21 @@ Recent changes:
 
 Next steps:
 
-- ✅ Address remaining ESLint errors (4): Parsing errors in `server/auth.ts`, `server/config/passport.ts`, and `server/middleware/auth.ts` have been resolved via ESLint overrides.
-- 2. Address ESLint warnings (~170): Review and fix warnings, primarily related to `@typescript-eslint/no-explicit-any`.
-- 3. Implement database schema for roles (Client, Coach, Admin) & status (pending, active), including RLS policies.
-4. Design and implement the `GET /api/my-clients` endpoint (auth checks, role-based access, DB query).
-5. Develop the `/dashboard/clients` ClientsPage UI to fetch and display the coach's clients.
-6. Implement Client invitation mechanism: backend API, email invites, and frontend invitation UI.
-7. Implement Admin creation and setup flows (pending coach approval, admin dashboard).
-8. Implement Password Reset flow with email and secure token handling.
-9. Refine Login/Signup UI and flow based on user roles, with dynamic redirects and tailored forms.
+- 1. Address ESLint warnings (~170): Review and fix warnings, primarily related to `@typescript-eslint/no-explicit-any`.
+- 2. Implement database schema for roles (Client, Coach, Admin) & status (pending, active), including RLS policies.
+- 3. Design and implement the `GET /api/my-clients` endpoint (auth checks, role-based access, DB query).
+- 4. Develop the `/dashboard/clients` ClientsPage UI to fetch and display the coach's clients.
+- 5. Implement Client invitation mechanism: backend API, email invites, and frontend invitation UI.
+- 6. Implement Admin creation and setup flows (pending coach approval, admin dashboard).
+- 7. Implement Password Reset flow with email and secure token handling.
+- 8. Refine Login/Signup UI and flow based on user roles, with dynamic redirects and tailored forms.
 
 Active decisions and considerations:
 
+- Using npm workspaces is the standard for managing dependencies in this monorepo.
+- Pinning critical dependencies (TypeScript, React types) to exact versions and using root `overrides` is crucial for stability.
+- Isolating the client's `tsconfig.json` using `extends` prevents interference from the root config or other workspaces during type checking.
+- The CI pipeline now targets the client's type check directly.
 - Using a new Supabase project with updated URL and API key
 - Implementing a fallback mechanism for development to ensure continuous productivity
 - Storing user roles in both user metadata and a profiles table/structure
@@ -40,6 +57,9 @@ Active decisions and considerations:
 
 Important patterns and preferences:
 
+- Manage monorepo dependencies using npm workspaces.
+- Use `overrides` in the root `package.json` to enforce consistent versions of critical shared dependencies like TypeScript and type definitions.
+- Structure `tsconfig.json` files with `extends` to create clear inheritance and isolation where needed (e.g., client vs. server vs. root).
 - Robust error handling for network and API operations
 - Clear user messaging for connection issues
 - Role-based user management from signup
@@ -53,6 +73,10 @@ Important patterns and preferences:
 
 Learnings and project insights:
 
+- Persistent TypeScript errors related to core library types (like React) in a workspace setup can often stem from multiple versions or conflicting type definitions being resolved due to hoisting or incorrect configurations.
+- `npm ls <package>` is useful for debugging dependency graph issues.
+- Enforcing single versions via `overrides` and exact version pinning is a robust solution for such conflicts.
+- Isolating `tsconfig.json` per workspace using `extends` helps prevent unexpected interference and makes type checking more reliable.
 - Supabase projects can become unavailable, requiring fallback mechanisms for development
 - User roles should be captured during signup for proper user management
 - Profile data can be stored in both user metadata and a dedicated profiles structure

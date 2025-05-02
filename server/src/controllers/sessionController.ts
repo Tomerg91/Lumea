@@ -13,6 +13,7 @@ import {
 import { Session } from '../models/Session.js';
 import { User } from '../models/User.js';
 import { IUser } from '../models/User.js';
+import { getNumericUserId } from '../../utils';
 
 export const sessionController = {
   // Create a new session
@@ -74,7 +75,8 @@ export const sessionController = {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      const sessions = await getSessionsByCoachId(req.user!.id.toString());
+      const userId = getNumericUserId(req);
+      const sessions = await getSessionsByCoachId(userId.toString());
       res.json(sessions);
     } catch (error) {
       console.error('Error fetching coach sessions:', error);
@@ -89,7 +91,8 @@ export const sessionController = {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      const sessions = await getSessionsByClientId(req.user!.id.toString());
+      const userId = getNumericUserId(req);
+      const sessions = await getSessionsByClientId(userId.toString());
       res.json(sessions);
     } catch (error) {
       console.error('Error fetching client sessions:', error);

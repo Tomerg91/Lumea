@@ -20,8 +20,10 @@
 
 ## Recent Development Progress
 
-### CI/CD Pipeline Fixes
+### CI/CD & Build System Fixes
 
+- **Resolved CI Type-Checking:** Fixed persistent TypeScript errors in the client workspace by implementing npm workspaces, unifying TS/React type versions, using root overrides, and isolating the client tsconfig.
+- **Updated CI Workflow:** Modified `.github/workflows/typecheck.yml` to run `npm --workspace client run typecheck`.
 - Added ESLint as a dev dependency in the server package to fix CI linting
 - Fixed GitHub Actions workflow to properly run the linting step
 - Added explicit ESLint installation step in GitHub Actions workflow before linting
@@ -175,6 +177,7 @@
 
 ## Current Status
 
+- **CI/CD pipeline working correctly:** Type checking for the client passes reliably using npm workspaces.
 - Defined MVP scope.
 - Basic authentication flows with error handling implemented.
 - UI components for login/signup created with responsive design.
@@ -190,13 +193,15 @@
 
 ## Known Issues
 
-- **ESLint Errors (4):** Parsing errors in `server/auth.ts`, `server/config/passport.ts`, and `server/middleware/auth.ts`.
-- **ESLint Warnings (~170):** Numerous warnings, mostly `@typescript-eslint/no-explicit-any`.
+- **ESLint Warnings (~170):** Numerous warnings remain, mostly `@typescript-eslint/no-explicit-any`.
 - Supabase project requires proper setup with correct schemas and RLS policies for all tables.
 - Profile table must be created on the new Supabase project.
 
 ## Evolution of Project Decisions
 
+- **Adopted npm workspaces:** Standardized monorepo dependency management.
+- **Enforced single dependency versions:** Using root `overrides` and exact pinning for critical libraries (TS, React types) ensures build stability.
+- **Isolated client tsconfig:** Using `extends` provides clearer separation and prevents root config interference.
 - Decision to use Supabase for authentication and database services.
 - Adopted an MVP approach with Vertical Slices for development.
 - Implemented robust error handling early in the development process.

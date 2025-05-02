@@ -31,8 +31,11 @@ morgan.token('body', (req: Request) => JSON.stringify(req.body));
 
 // Create a custom token for response body
 morgan.token('response-body', (req: Request, res: Response) => {
-  const responseBody = (res as any).responseBody;
-  return responseBody ? JSON.stringify(responseBody) : '';
+  interface ResponseWithBody extends Response {
+    responseBody?: unknown;
+  }
+  const responseWithBody = res as ResponseWithBody;
+  return responseWithBody.responseBody ? JSON.stringify(responseWithBody.responseBody) : '';
 });
 
 // Create the logging middleware

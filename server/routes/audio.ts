@@ -23,7 +23,7 @@ const audioStorage = multer.diskStorage({
 });
 
 // Filter to accept only audio files
-const audioFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const audioFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   if (file.mimetype.startsWith('audio/')) {
     cb(null, true);
   } else {
@@ -71,7 +71,7 @@ export function registerAudioRoutes(app: Express) {
       }
 
       // Check if the user owns this reflection
-      if (req.user && reflection.clientId === req.user.id) {
+      if (req.user && reflection.clientId.toString() === req.user.id.toString()) {
         const updatedReflection = await storage.updateReflection(reflectionId, {
           audioEntry: audioPath,
         });
@@ -102,7 +102,7 @@ export function registerAudioRoutes(app: Express) {
       }
 
       // Check if the user is the coach of this session
-      if (req.user && session.coachId === req.user.id) {
+      if (req.user && session.coachId.toString() === req.user.id.toString()) {
         const updatedSession = await storage.updateSession(sessionId, {
           audioNotes: audioPath,
         });

@@ -63,22 +63,25 @@ export const isOwner = (getResourceUserId: (resourceId: string) => Promise<strin
 // Middleware to handle passport authentication
 export const authenticate = (strategy: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    passport.authenticate(strategy, (err: any, user: any, info: any) => {
-      if (err) {
-        return next(err);
-      }
-
-      if (!user) {
-        throw new APIError(401, info?.message || 'Authentication failed');
-      }
-
-      req.logIn(user, (err) => {
+    passport.authenticate(
+      strategy,
+      (err: Error | null, user: Express.User | false, info: { message?: string } | undefined) => {
         if (err) {
           return next(err);
         }
-        next();
-      });
-    })(req, res, next);
+
+        if (!user) {
+          throw new APIError(401, info?.message || 'Authentication failed');
+        }
+
+        req.logIn(user, (err) => {
+          if (err) {
+            return next(err);
+          }
+          next();
+        });
+      }
+    )(req, res, next);
   };
 };
 

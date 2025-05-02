@@ -1,9 +1,10 @@
-import type { Express, Request, Response } from 'express';
+import type { Express, Request, Response, NextFunction } from 'express';
 import { createServer, type Server } from 'http';
 import { storage, ResourceFilters } from './storage';
 import { setupAuth } from './auth';
 import { registerAudioRoutes } from './routes/audio';
 import { z } from 'zod';
+import { getNumericUserId } from './utils';
 import {
   insertUserLinkSchema,
   insertSessionSchema,
@@ -14,7 +15,7 @@ import {
 } from '@shared/schema';
 
 // Middleware to check if user is authenticated
-const ensureAuthenticated = (req: any, res: any, next: any) => {
+const ensureAuthenticated = (req: Request, res: Response, next: NextFunction): void => {
   if (req.isAuthenticated()) {
     return next();
   }
@@ -22,16 +23,16 @@ const ensureAuthenticated = (req: any, res: any, next: any) => {
 };
 
 // Middleware to check if user is a coach
-const ensureCoach = (req: any, res: any, next: any) => {
-  if (req.isAuthenticated() && req.user.role === 'coach') {
+const ensureCoach = (req: Request, res: Response, next: NextFunction): void => {
+  if (req.isAuthenticated() && req.user?.role === 'coach') {
     return next();
   }
   res.status(403).json({ message: 'Coach access required' });
 };
 
 // Middleware to check if user is a client
-const ensureClient = (req: any, res: any, next: any) => {
-  if (req.isAuthenticated() && req.user.role === 'client') {
+const ensureClient = (req: Request, res: Response, next: NextFunction): void => {
+  if (req.isAuthenticated() && req.user?.role === 'client') {
     return next();
   }
   res.status(403).json({ message: 'Client access required' });
@@ -46,39 +47,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Endpoint to check for and send reflection reminders
   app.get('/api/sessions/reminders', ensureAuthenticated, async (req, res, next) => {
+    if (!req.user) {
+      return res.status(500).json({ message: 'Authentication error: User context missing.' });
+    }
+    const userId: number = getNumericUserId(req);
+    const userRole = req.user.role;
     try {
-      // Get all completed sessions that haven't had reflection reminders sent yet
       const allSessions =
-        req.user!.role === 'coach'
-          ? await storage.getSessionsByCoachId(req.user!.id)
-          : await storage.getSessionsByClientId(req.user!.id);
+        userRole === 'coach'
+          ? await storage.getSessionsByCoachId(userId)
+          : await storage.getSessionsByClientId(userId);
 
       const needsReminder = allSessions.filter(
         (session) =>
           session.status === 'completed' &&
-          ((req.user!.role === 'coach' && !session.coachReflectionReminderSent) ||
-            (req.user!.role === 'client' && !session.clientReflectionReminderSent))
+          ((userRole === 'coach' && !session.coachReflectionReminderSent) ||
+            (userRole === 'client' && !session.clientReflectionReminderSent))
       );
 
       if (needsReminder.length > 0) {
-        // Mark the most recent session as having had a reminder sent
         const mostRecentSession = needsReminder.reduce(
           (latest, session) =>
             new Date(session.dateTime) > new Date(latest.dateTime) ? session : latest,
           needsReminder[0]
         );
 
-        // Update the reminder status
         const reminderUpdate =
-          req.user!.role === 'coach'
+          userRole === 'coach'
             ? { coachReflectionReminderSent: true }
             : { clientReflectionReminderSent: true };
 
         await storage.updateSession(mostRecentSession.id, reminderUpdate);
 
-        // Include details about the other participant
         let participantInfo = null;
-        if (req.user!.role === 'coach') {
+        if (userRole === 'coach') {
           const client = await storage.getUser(mostRecentSession.clientId);
           if (client) {
             participantInfo = {
@@ -98,14 +100,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        // Send response with session that needs reflection and participant details
         res.json({
           needsReflection: true,
           session: mostRecentSession,
           participant: participantInfo,
         });
       } else {
-        // No sessions need reflection reminders
         res.json({
           needsReflection: false,
         });
@@ -117,6 +117,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // User Profile routes
   app.patch('/api/user', ensureAuthenticated, async (req, res, next) => {
+    if (!req.user) {
+      return res.status(500).json({ message: 'Authentication error: User context missing.' });
+    }
+    const userId: number = getNumericUserId(req);
+    const userEmail = req.user.email;
     try {
       const updateSchema = z.object({
         name: z.string().optional(),
@@ -128,21 +133,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const validatedData = updateSchema.parse(req.body);
 
-      // If trying to update email, check if it's already in use
-      if (validatedData.email && validatedData.email !== req.user!.email) {
+      if (validatedData.email && validatedData.email !== userEmail) {
         const existingUser = await storage.getUserByEmail(validatedData.email);
         if (existingUser) {
           return res.status(409).json({ message: 'Email already in use' });
         }
       }
 
-      const updatedUser = await storage.updateUser(req.user!.id, validatedData);
+      const updatedUser = await storage.updateUser(userId, validatedData);
 
       if (!updatedUser) {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      // Remove sensitive data
       const { password, ...userWithoutPassword } = updatedUser;
       res.json(userWithoutPassword);
     } catch (error) {
@@ -152,6 +155,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Password change endpoint
   app.post('/api/user/change-password', ensureAuthenticated, async (req, res, next) => {
+    if (!req.user) {
+      return res.status(500).json({ message: 'Authentication error: User context missing.' });
+    }
+    const userId: number = getNumericUserId(req);
     try {
       const passwordSchema = z
         .object({
@@ -166,20 +173,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const validatedData = passwordSchema.parse(req.body);
 
-      // Get current user with password
-      const user = await storage.getUser(req.user!.id);
+      const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      // Check if current password is correct
-      // In a real app, you would use a proper password hashing mechanism
       if (validatedData.currentPassword !== user.password) {
         return res.status(400).json({ message: 'Current password is incorrect' });
       }
 
-      // Update the password
-      const updatedUser = await storage.updateUser(req.user!.id, {
+      const updatedUser = await storage.updateUser(userId, {
         password: validatedData.newPassword,
       });
 
@@ -195,24 +198,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Coach-Client Link routes
   app.post('/api/links', ensureCoach, async (req, res, next) => {
+    if (!req.user) {
+      return res.status(500).json({ message: 'Authentication error: User context missing.' });
+    }
+    const coachId: number = getNumericUserId(req);
     try {
       const validatedData = insertUserLinkSchema.parse(req.body);
 
-      // Ensure the coach is creating links for themselves
-      if (validatedData.coachId !== req.user!.id) {
+      if (validatedData.coachId !== coachId) {
         return res
           .status(403)
           .json({ message: 'You can only create links for yourself as a coach' });
       }
 
-      // Check if client exists and is a client
       const client = await storage.getUser(validatedData.clientId);
       if (!client || client.role !== 'client') {
         return res.status(404).json({ message: 'Client not found' });
       }
 
-      // Check if link already exists
-      const existingLink = await storage.getUserLink(validatedData.coachId, validatedData.clientId);
+      const existingLink = await storage.getUserLink(coachId, validatedData.clientId);
       if (existingLink) {
         return res.status(409).json({ message: 'Link already exists' });
       }
@@ -225,10 +229,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/links/coach', ensureCoach, async (req, res, next) => {
+    if (!req.user) {
+      return res.status(500).json({ message: 'Authentication error: User context missing.' });
+    }
+    const coachId: number = getNumericUserId(req);
     try {
-      const links = await storage.getUserLinksByCoachId(req.user!.id);
+      const links = await storage.getUserLinksByCoachId(coachId);
 
-      // Fetch client details for each link
       const linksWithClientDetails = await Promise.all(
         links.map(async (link) => {
           const client = await storage.getUser(link.clientId);
@@ -255,9 +262,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/links/client', ensureClient, async (req, res, next) => {
     try {
-      const links = await storage.getUserLinksByClientId(req.user!.id);
+      const userId = getNumericUserId(req);
+      const links = await storage.getUserLinksByClientId(userId);
 
-      // Fetch coach details for each link
       const linksWithCoachDetails = await Promise.all(
         links.map(async (link) => {
           const coach = await storage.getUser(link.coachId);
@@ -287,15 +294,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertSessionSchema.parse(req.body);
 
-      // Ensure the coach is creating sessions for themselves
-      if (validatedData.coachId !== req.user!.id) {
+      if (validatedData.coachId !== getNumericUserId(req)) {
         return res
           .status(403)
           .json({ message: 'You can only create sessions for yourself as a coach' });
       }
 
-      // Check if client exists and is linked to this coach
-      const link = await storage.getUserLink(validatedData.coachId, validatedData.clientId);
+      const link = await storage.getUserLink(getNumericUserId(req), validatedData.clientId);
       if (!link) {
         return res.status(404).json({ message: 'Client not linked to this coach' });
       }
@@ -309,7 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/sessions/coach', ensureCoach, async (req, res, next) => {
     try {
-      const sessions = await storage.getSessionsByCoachId(req.user!.id);
+      const sessions = await storage.getSessionsByCoachId(getNumericUserId(req));
       res.json(sessions);
     } catch (error) {
       next(error);
@@ -318,7 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/sessions/client', ensureClient, async (req, res, next) => {
     try {
-      const sessions = await storage.getSessionsByClientId(req.user!.id);
+      const sessions = await storage.getSessionsByClientId(getNumericUserId(req));
       res.json(sessions);
     } catch (error) {
       next(error);
@@ -334,14 +339,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Session not found' });
       }
 
-      // Check if user is authorized to update this session
-      if (session.coachId !== req.user!.id && session.clientId !== req.user!.id) {
+      if (session.coachId !== getNumericUserId(req) && session.clientId !== getNumericUserId(req)) {
         return res.status(403).json({ message: 'Not authorized to update this session' });
       }
 
-      // Different update schemas based on role
       let validatedData;
-      if (req.user!.role === 'coach') {
+      const userRole = req.user?.role;
+      if (userRole === 'coach') {
         const updateSchema = z.object({
           dateTime: z.date().optional(),
           duration: z.number().optional(),
@@ -353,7 +357,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         validatedData = updateSchema.parse(req.body);
       } else {
-        // Clients can only update status (for accepting/declining)
         const updateSchema = z.object({
           status: z.enum(['scheduled', 'cancelled', 'rescheduled']).optional(),
           clientReflectionReminderSent: z.boolean().optional(),
@@ -361,8 +364,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         validatedData = updateSchema.parse(req.body);
       }
 
-      // Check if the session is being marked as completed
-      // If so, set both reflection reminder flags to false
       if (validatedData.status === 'completed' && session.status !== 'completed') {
         validatedData = {
           ...validatedData,
@@ -387,15 +388,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertReflectionSchema.parse(req.body);
 
-      // Ensure the client is creating reflections for themselves
-      if (validatedData.clientId !== req.user!.id) {
+      if (validatedData.clientId !== getNumericUserId(req)) {
         return res.status(403).json({ message: 'You can only create reflections for yourself' });
       }
 
-      // If a session is specified, validate that the client is part of that session
       if (validatedData.sessionId) {
         const session = await storage.getSessionById(validatedData.sessionId);
-        if (!session || session.clientId !== req.user!.id) {
+        if (!session || session.clientId !== getNumericUserId(req)) {
           return res
             .status(404)
             .json({ message: 'Session not found or not associated with this client' });
@@ -411,7 +410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/reflections/client', ensureClient, async (req, res, next) => {
     try {
-      const reflections = await storage.getReflectionsByClientId(req.user!.id);
+      const reflections = await storage.getReflectionsByClientId(getNumericUserId(req));
       res.json(reflections);
     } catch (error) {
       next(error);
@@ -420,9 +419,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/reflections/coach', ensureCoach, async (req, res, next) => {
     try {
-      const reflections = await storage.getSharedReflectionsForCoach(req.user!.id);
+      const reflections = await storage.getSharedReflectionsForCoach(getNumericUserId(req));
 
-      // Fetch client details for each reflection
       const reflectionsWithClientDetails = await Promise.all(
         reflections.map(async (reflection) => {
           const client = await storage.getUser(reflection.clientId);
@@ -451,15 +449,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertPaymentSchema.parse(req.body);
 
-      // Ensure the coach is creating payments for themselves
-      if (validatedData.coachId !== req.user!.id) {
+      if (validatedData.coachId !== getNumericUserId(req)) {
         return res
           .status(403)
           .json({ message: 'You can only create payments for yourself as a coach' });
       }
 
-      // Check if client exists and is linked to this coach
-      const link = await storage.getUserLink(validatedData.coachId, validatedData.clientId);
+      const link = await storage.getUserLink(getNumericUserId(req), validatedData.clientId);
       if (!link) {
         return res.status(404).json({ message: 'Client not linked to this coach' });
       }
@@ -473,9 +469,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/payments/coach', ensureCoach, async (req, res, next) => {
     try {
-      const payments = await storage.getPaymentsByCoachId(req.user!.id);
+      const payments = await storage.getPaymentsByCoachId(getNumericUserId(req));
 
-      // Fetch client details for each payment
       const paymentsWithClientDetails = await Promise.all(
         payments.map(async (payment) => {
           const client = await storage.getUser(payment.clientId);
@@ -501,9 +496,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/payments/client', ensureClient, async (req, res, next) => {
     try {
-      const payments = await storage.getPaymentsByClientId(req.user!.id);
+      const payments = await storage.getPaymentsByClientId(getNumericUserId(req));
 
-      // Fetch coach details for each payment
       const paymentsWithCoachDetails = await Promise.all(
         payments.map(async (payment) => {
           const coach = await storage.getUser(payment.coachId);
@@ -536,8 +530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Payment not found' });
       }
 
-      // Check if coach is authorized to update this payment
-      if (payment.coachId !== req.user!.id) {
+      if (payment.coachId !== getNumericUserId(req)) {
         return res.status(403).json({ message: 'Not authorized to update this payment' });
       }
 
@@ -567,8 +560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertResourceSchema.parse(req.body);
 
-      // Ensure the coach is creating resources for themselves
-      if (validatedData.coachId !== req.user!.id) {
+      if (validatedData.coachId !== getNumericUserId(req)) {
         return res
           .status(403)
           .json({ message: 'You can only create resources for yourself as a coach' });
@@ -583,7 +575,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/resources/coach', ensureCoach, async (req, res, next) => {
     try {
-      const resources = await storage.getResourcesByCoachId(req.user!.id);
+      const resources = await storage.getResourcesByCoachId(getNumericUserId(req));
       res.json(resources);
     } catch (error) {
       next(error);
@@ -592,9 +584,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/resources/client', ensureClient, async (req, res, next) => {
     try {
-      const resources = await storage.getVisibleResourcesForClient(req.user!.id);
+      const resources = await storage.getVisibleResourcesForClient(getNumericUserId(req));
 
-      // Fetch coach details for each resource
       const resourcesWithCoachDetails = await Promise.all(
         resources.map(async (resource) => {
           const coach = await storage.getUser(resource.coachId);
@@ -635,11 +626,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const validatedFilters = filterSchema.parse(req.body);
       const resources = await storage.getVisibleResourcesForClientByFilters(
-        req.user!.id,
+        getNumericUserId(req),
         validatedFilters
       );
 
-      // Fetch coach details for each resource
       const resourcesWithCoachDetails = await Promise.all(
         resources.map(async (resource) => {
           const coach = await storage.getUser(resource.coachId);
@@ -680,7 +670,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const validatedFilters = filterSchema.parse(req.body);
       const resources = await storage.getResourcesByCoachIdAndFilters(
-        req.user!.id,
+        getNumericUserId(req),
         validatedFilters
       );
       res.json(resources);
@@ -695,10 +685,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
       const resources = await storage.getFeaturedResources(limit);
 
-      // If client, filter only visible resources
       let filteredResources = resources;
-      if (req.user!.role === 'client') {
-        const visibleResources = await storage.getVisibleResourcesForClient(req.user!.id);
+      if (req.user?.role === 'client') {
+        const visibleResources = await storage.getVisibleResourcesForClient(getNumericUserId(req));
         const visibleIds = new Set(visibleResources.map((r) => r.id));
         filteredResources = resources.filter((r) => visibleIds.has(r.id));
       }
@@ -715,14 +704,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const category = req.params.category;
       let resources = await storage.getResourcesByCategory(category);
 
-      // If client, filter only visible resources
-      if (req.user!.role === 'client') {
-        const visibleResources = await storage.getVisibleResourcesForClient(req.user!.id);
+      if (req.user?.role === 'client') {
+        const visibleResources = await storage.getVisibleResourcesForClient(getNumericUserId(req));
         const visibleIds = new Set(visibleResources.map((r) => r.id));
         resources = resources.filter((r) => visibleIds.has(r.id));
-      } else if (req.user!.role === 'coach') {
-        // Coaches can only see their own resources
-        resources = resources.filter((r) => r.coachId === req.user!.id);
+      } else if (req.user?.role === 'coach') {
+        resources = resources.filter((r) => r.coachId === getNumericUserId(req));
       }
 
       res.json(resources);
@@ -737,14 +724,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tag = req.params.tag;
       let resources = await storage.getResourcesByTag(tag);
 
-      // If client, filter only visible resources
-      if (req.user!.role === 'client') {
-        const visibleResources = await storage.getVisibleResourcesForClient(req.user!.id);
+      if (req.user?.role === 'client') {
+        const visibleResources = await storage.getVisibleResourcesForClient(getNumericUserId(req));
         const visibleIds = new Set(visibleResources.map((r) => r.id));
         resources = resources.filter((r) => visibleIds.has(r.id));
-      } else if (req.user!.role === 'coach') {
-        // Coaches can only see their own resources
-        resources = resources.filter((r) => r.coachId === req.user!.id);
+      } else if (req.user?.role === 'coach') {
+        resources = resources.filter((r) => r.coachId === getNumericUserId(req));
       }
 
       res.json(resources);
@@ -757,14 +742,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertResourceAccessSchema.parse(req.body);
 
-      // Check if resource exists and belongs to the coach
       const resource = await storage.getResourceById(validatedData.resourceId);
-      if (!resource || resource.coachId !== req.user!.id) {
+      if (!resource || resource.coachId !== getNumericUserId(req)) {
         return res.status(404).json({ message: 'Resource not found or not owned by this coach' });
       }
 
-      // Check if client exists and is linked to this coach
-      const link = await storage.getUserLink(req.user!.id, validatedData.clientId);
+      const link = await storage.getUserLink(getNumericUserId(req), validatedData.clientId);
       if (!link) {
         return res.status(404).json({ message: 'Client not linked to this coach' });
       }
@@ -787,14 +770,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const validatedData = inviteSchema.parse(req.body);
 
-      // Check if user with that email already exists
       const existingUser = await storage.getUserByEmail(validatedData.email);
 
       if (existingUser) {
-        // If user exists and is already a client
         if (existingUser.role === 'client') {
-          // Check if already linked to this coach
-          const existingLink = await storage.getUserLink(req.user!.id, existingUser.id);
+          const existingLink = await storage.getUserLink(getNumericUserId(req), existingUser.id);
 
           if (existingLink) {
             return res.status(409).json({
@@ -803,9 +783,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           }
 
-          // Link the existing client to this coach
           const userLink = await storage.createUserLink({
-            coachId: req.user!.id,
+            coachId: getNumericUserId(req),
             clientId: existingUser.id,
             status: 'active',
           });
@@ -816,24 +795,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isNewUser: false,
           });
         } else {
-          // User exists but is not a client (probably another coach)
           return res.status(409).json({
             message: 'A user with this email already exists but is not a client',
           });
         }
       }
 
-      // In a real app, you would send an email invitation here
-      // For now, we'll just generate an invitation link
       const invitationId = Math.random().toString(36).substring(2, 15);
 
-      // Make the invitation URL relative to work in any environment
-      const invitationLink = `/join/${invitationId}?email=${encodeURIComponent(validatedData.email)}&name=${encodeURIComponent(validatedData.name)}&coach=${req.user!.id}&coachName=${encodeURIComponent(req.user!.name)}`;
+      const invitationLink = `/join/${invitationId}?email=${encodeURIComponent(validatedData.email)}&name=${encodeURIComponent(validatedData.name)}&coach=${getNumericUserId(req)}&coachName=${encodeURIComponent(req.user?.name || '')}`;
 
       res.status(200).json({
         message: 'Invitation created successfully',
         invitationLink,
-        coachId: req.user!.id,
+        coachId: getNumericUserId(req),
         email: validatedData.email,
         name: validatedData.name,
       });
@@ -854,20 +829,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const validatedData = joinSchema.parse(req.body);
 
-      // Check if user with that email already exists
       const existingUser = await storage.getUserByEmail(validatedData.email);
 
       if (existingUser) {
         return res.status(409).json({ message: 'Email already in use' });
       }
 
-      // Check if coach exists
       const coach = await storage.getUser(validatedData.coachId);
       if (!coach || coach.role !== 'coach') {
         return res.status(404).json({ message: 'Coach not found' });
       }
 
-      // Create the new client user
       const newUser = await storage.createUser({
         name: validatedData.name,
         email: validatedData.email,
@@ -875,7 +847,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: 'client',
       });
 
-      // Create the link to the coach
       const userLink = await storage.createUserLink({
         coachId: validatedData.coachId,
         clientId: newUser.id,

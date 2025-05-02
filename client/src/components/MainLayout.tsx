@@ -205,11 +205,8 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {/* Header */}
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6">
         {/* Mobile Menu Button */}
-        <button
-          className="md:hidden"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        >
-          <svg className="h-6 w-6" /* Menu Icon */ >...</svg>
+        <button className="md:hidden" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+          <svg className="h-6 w-6" /* Menu Icon */>...</svg>
           <span className="sr-only">Toggle menu</span>
         </button>
 
@@ -230,7 +227,9 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       {/* Main Content Area */}
       <div className="flex flex-1">
         {/* Sidebar */}
-        <aside className={`fixed inset-y-0 left-0 z-20 flex h-full flex-col border-r bg-background transition-all duration-300 md:static md:block ${isMobileMenuOpen ? 'w-64' : 'w-0 overflow-hidden md:w-20'}`}>
+        <aside
+          className={`fixed inset-y-0 left-0 z-20 flex h-full flex-col border-r bg-background transition-all duration-300 md:static md:block ${isMobileMenuOpen ? 'w-64' : 'w-0 overflow-hidden md:w-20'}`}
+        >
           <nav className="flex flex-col items-center gap-4 px-2 py-5 md:items-stretch">
             {currentNavItems.map((item) => (
               <TooltipProvider key={item.path}>
@@ -244,7 +243,9 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                       className={`flex h-10 items-center justify-center rounded-lg px-3 text-muted-foreground transition-colors hover:text-foreground md:justify-start md:px-4 ${location.pathname === item.path ? 'bg-accent text-accent-foreground' : ''} ${isMobileMenuOpen ? 'w-full justify-start' : 'md:w-full md:h-10'}`}
                     >
                       {item.icon}
-                      <span className={`ml-3 ${isMobileMenuOpen ? 'inline' : 'hidden md:hidden'}`}>{item.label}</span>
+                      <span className={`ml-3 ${isMobileMenuOpen ? 'inline' : 'hidden md:hidden'}`}>
+                        {item.label}
+                      </span>
                       <span className="sr-only">{item.label}</span>
                     </button>
                   </TooltipTrigger>
@@ -269,9 +270,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         )}
 
         {/* Main Content */}
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-          {children}
-        </main>
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">{children}</main>
       </div>
     </div>
   );

@@ -9,13 +9,25 @@ interface RequestLoggerOptions {
   logParams?: boolean;
 }
 
+// Request details interface
+interface RequestDetails {
+  method: string;
+  url: string;
+  ip: string;
+  userAgent: string | undefined;
+  headers?: unknown;
+  query?: unknown;
+  params?: unknown;
+  body?: unknown;
+}
+
 // Create a request logger middleware
 export const requestLogger = (options: RequestLoggerOptions = {}) => {
   const { logHeaders = false, logBody = false, logQuery = false, logParams = false } = options;
 
   return (req: Request, res: Response, next: NextFunction) => {
     // Log request details
-    const requestDetails: any = {
+    const requestDetails: RequestDetails = {
       method: req.method,
       url: req.url,
       ip: req.ip,

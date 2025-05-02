@@ -19,5 +19,5 @@
       "@components/*": ["src/components/*"]
     }
   },
-  "include": ["src/types", "*.config.ts"]
+  "include": ["src", "*.config.ts", "*.config.js"]
 }

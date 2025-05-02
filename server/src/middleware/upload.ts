@@ -1,6 +1,6 @@
 import multer from 'multer';
 import path from 'path';
-import { Request } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 
 // Define the allowed file types
@@ -52,7 +52,7 @@ export const upload = multer({
 });
 
 // Error handling middleware for multer
-export const handleMulterError = (err: any, req: Request, res: any, next: any) => {
+export const handleMulterError = (err: Error, req: Request, res: Response, next: NextFunction) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({ error: 'File size too large. Maximum size is 5MB.' });

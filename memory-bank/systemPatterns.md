@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Full-stack Progressive Web App (PWA) with a React TypeScript frontend, leveraging **Supabase for backend services (Auth, PostgreSQL DB, Storage, Realtime APIs)**. Node.js/Express backend for API endpoints and server-side logic.
+Full-stack Progressive Web App (PWA) with a React TypeScript frontend, leveraging **Supabase for backend services (Auth, PostgreSQL DB, Storage, Realtime APIs)**. Node.js/Express backend for API endpoints and server-side logic. **The project is structured as an npm monorepo using workspaces (`client/`, `server/`).**
 
 ## Component Implementation Pattern
 
@@ -67,11 +67,13 @@ Full-stack Progressive Web App (PWA) with a React TypeScript frontend, leveragin
 
 ## Development Workflow
 
-1. CI/CD pipeline with GitHub Actions for automated testing and deployment
-2. TypeScript type checking for maintaining code quality
-3. ESLint for code style enforcement
-4. Package scripts for common development tasks
-5. Environment-specific configurations (.env files)
+1. **Dependency Management:** Use npm workspaces. Enforce single versions of critical shared dependencies (like TS, React types) using root `package.json` `overrides` and exact version pinning in individual `package.json` files.
+2. **TypeScript Configuration:** Use separate `tsconfig.json` files for root, client, and server. Isolate client config using `extends "./tsconfig.base.json"` pattern to prevent root interference.
+3.  CI/CD pipeline with GitHub Actions for automated testing and deployment.
+4.  TypeScript type checking for maintaining code quality (`npm --workspace client run typecheck`).
+5.  ESLint for code style enforcement.
+6.  Package scripts for common development tasks.
+7.  Environment-specific configurations (.env files).
 
 ## Critical Implementation Paths
 
@@ -84,7 +86,7 @@ Full-stack Progressive Web App (PWA) with a React TypeScript frontend, leveragin
 
 Key technical decisions: Utilizing PWA features for app-like experience and offline capabilities. Choosing React with TypeScript for type safety and better developer experience. Using functional components/hooks for the frontend. Employing Tailwind CSS for utility-first styling. Using i18next for robust internationalization (Hebrew/RTL first). **Relying on Supabase Auth and Row Level Security (RLS) for secure data access.** RESTful principles applied via Supabase auto-generated APIs.
 
-Design patterns in use: MVC/MVVM patterns relevant to React frontend structure. Service Worker caching strategies (Cache First, Network First). State management patterns (Context API or libraries like Zustand/Redux Toolkit) needed for React frontend. TypeScript interface patterns for type safety.
+Design patterns in use: MVC/MVVM patterns relevant to React frontend structure. Service Worker caching strategies (Cache First, Network First). State management patterns (Context API or libraries like Zustand/Redux Toolkit) needed for React frontend. TypeScript interface patterns for type safety. **Monorepo workspace pattern.** **Isolated TypeScript configuration pattern (`extends`).**
 
 Component relationships: Clear data relationships managed in Supabase tables: Coach manages Clients (via `coach_id` FK); Sessions link Coach and Client; Reflections link to Sessions/Clients; Resources managed by Coaches. Admin role oversees Coaches. Supabase Auth (`auth.users`) links to user profile data.
 

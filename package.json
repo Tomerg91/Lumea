@@ -12,8 +12,9 @@
     "build": "cd client && npm run build && cd ../server && npm run build",
     "check": "cd client && npm run typecheck && cd ../server && npm run typecheck",
     "ci-check": "npm run check",
-    "lint": "cd client && npm run lint && cd ../server && npm run lint",
-    "test": "cd client && npm run test -- --reporter verbose && cd ../server && npm run test -- --verbose"
+    "lint": "eslint . --ext .ts,.tsx",
+    "test": "cd client && npm run test -- --reporter verbose && cd ../server && npm run test -- --verbose",
+    "ci-all": "npm run lint && npm run ci-check && npm run test"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.2.0",

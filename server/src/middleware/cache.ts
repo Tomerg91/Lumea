@@ -35,8 +35,8 @@ export const cacheMiddleware = (options: CacheOptions = {}) => {
 
     const originalSend = res.send; // Store original send function
 
-    res.send = (body: any): Response<any, Record<string, any>> => {
-      // Match return type and use arrow function
+    res.send = function (body: string | object | Buffer | boolean | number): Response {
+      // Match return type and use function for correct 'this' binding
       if (options.useCache) {
         cache.set(key, body, options.ttl ?? 60);
       }

@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
 import { z } from 'zod';
 import crypto from 'crypto';
@@ -86,7 +86,7 @@ router.post('/signup', async (req, res) => {
     console.log('[POST /api/auth/signup] User created successfully:', user._id);
 
     console.log('[POST /api/auth/signup] Attempting to log in user');
-    req.login(user as any, (err) => {
+    req.login(user as unknown as Express.User, (err) => {
       if (err) {
         console.error('[POST /api/auth/signup] Error during login:', err);
         return res.status(500).json({ message: 'Error logging in after signup' });
@@ -126,7 +126,7 @@ router.post('/login', (req, res, next) => {
         if (!user) {
           return res.status(401).json({ message: info.message });
         }
-        req.login(user as any, (err) => {
+        req.login(user as unknown as Express.User, (err) => {
           if (err) {
             return next(err);
           }
@@ -166,8 +166,27 @@ router.get('/current-user', ensureAuthenticated, (req, res) => {
     );
     return res.status(500).json({ message: 'Internal server error: User context missing' });
   }
-  console.log('[GET /api/auth/current-user] User found:', (req.user as any)._id);
-  const { password, ...userWithoutPassword } = (req.user as any).toObject();
+
+  // Get the MongoDB _id safely with type narrowing
+  let userId: string | undefined;
+  if ('_id' in req.user) {
+    userId = String(req.user._id);
+  } else {
+    userId = 'unknown';
+  }
+
+  console.log('[GET /api/auth/current-user] User found:', userId);
+
+  // Get a usable object
+  let userObject: Record<string, unknown>;
+  if ('toObject' in req.user && typeof req.user.toObject === 'function') {
+    userObject = req.user.toObject();
+  } else {
+    userObject = { ...req.user };
+  }
+
+  // Don't send password to client
+  const { password, ...userWithoutPassword } = userObject;
   res.json(userWithoutPassword);
 });
 

@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
+import { MongoServerError } from 'mongodb';
 
 // Custom error class for API errors
 export class APIError extends Error {
   constructor(
     public statusCode: number,
     message: string,
-    public errors?: any[]
+    public errors?: unknown[]
   ) {
     super(message);
     this.name = 'APIError';
@@ -58,7 +59,8 @@ export const errorHandler = (err: Error, req: Request, res: Response, next: Next
 
   // Handle mongoose errors
   if (err.name === 'MongoError' || err.name === 'MongoServerError') {
-    if ((err as any).code === 11000) {
+    const mongoError = err as MongoServerError;
+    if (mongoError.code === 11000) {
       return res.status(409).json({
         error: 'Duplicate key error',
       });
