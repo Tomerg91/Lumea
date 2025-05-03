@@ -1,19 +1,27 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { IReflection, Reflection } from '../models/Reflection.js';
-import { Session } from '../models/Session.js';
-import { File } from '../models/File.js';
 import mongoose from 'mongoose';
+import { getPresignedAudioUploadUrl } from '../utils/s3/getPresignedUrl.js';
+import { Session } from '../models/Session.js';
 
-// Validation schemas
+// Zod schema for creating a reflection
 const createReflectionSchema = z.object({
   sessionId: z.string(),
-  textContent: z.string(),
-  audioFileId: z.string().optional(),
-  tags: z.array(z.string()).optional(),
+  text: z.string().optional(),
+  audio: z
+    .object({
+      mimeType: z.string(),
+      size: z.number().int().positive(),
+    })
+    .optional(),
 });
 
-const updateReflectionSchema = createReflectionSchema.partial();
+// Zod schema for updating a reflection
+const updateReflectionSchema = z.object({
+  text: z.string().optional(),
+  audioUrl: z.string().optional(),
+});
 
 export const reflectionController = {
   // Create a new reflection
@@ -23,42 +31,65 @@ export const reflectionController = {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      const validatedData = createReflectionSchema.parse(req.body);
+      const { sessionId, text, audio } = createReflectionSchema.parse(req.body);
 
-      // Check if session exists and user has access
-      const session = await Session.findById(validatedData.sessionId);
+      // Validate that at least one of text or audio is provided
+      if (!text && !audio) {
+        return res.status(400).json({ error: 'Either text or audio must be provided' });
+      }
+
+      // Find the session
+      const session = await Session.findById(sessionId);
       if (!session) {
         return res.status(404).json({ error: 'Session not found' });
       }
 
-      if (session.clientId.toString() !== req.user.id.toString()) {
-        return res
-          .status(403)
-          .json({ error: 'Not authorized to create reflection for this session' });
+      // Check if the user is the client or coach of the session
+      const isClient = session.clientId.toString() === req.user._id;
+      const isCoach = session.coachId.toString() === req.user._id;
+
+      if (!isClient && !isCoach) {
+        return res.status(403).json({ error: 'Not authorized to create a reflection for this session' });
       }
 
-      // If audio file is provided, verify it exists and belongs to the user
-      if (validatedData.audioFileId) {
-        const audioFile = await File.findById(validatedData.audioFileId);
-        if (!audioFile || audioFile.userId.toString() !== req.user.id.toString()) {
-          return res.status(400).json({ error: 'Invalid audio file' });
-        }
-      }
-
+      // Create the reflection without audioUrl
       const reflection = new Reflection({
-        ...validatedData,
-        userId: req.user.id,
-        sessionId: new mongoose.Types.ObjectId(validatedData.sessionId),
-        audioFileId: validatedData.audioFileId
-          ? new mongoose.Types.ObjectId(validatedData.audioFileId)
-          : undefined,
-        tags: validatedData.tags
-          ? validatedData.tags.map((id) => new mongoose.Types.ObjectId(id))
-          : undefined,
+        sessionId: new mongoose.Types.ObjectId(sessionId),
+        clientId: session.clientId,
+        coachId: session.coachId,
+        text,
       });
 
       await reflection.save();
-      res.status(201).json(reflection);
+
+      // Generate presigned URL for audio upload if needed
+      let presignedUrl;
+      if (audio) {
+        try {
+          const { presignedUrl: url, objectKey } = await getPresignedAudioUploadUrl(
+            req.user._id,
+            audio.mimeType,
+            audio.size
+          );
+          presignedUrl = url;
+
+          // Update reflection with the S3 object key
+          reflection.audioUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${objectKey}`;
+          await reflection.save();
+        } catch (error) {
+          console.error('Error generating presigned URL:', error);
+          // If there's an error with S3, we still want to return the created reflection
+          return res.status(201).json({
+            reflection,
+            error: 'Failed to generate audio upload URL',
+          });
+        }
+      }
+
+      res.status(201).json({
+        reflectionId: reflection._id,
+        presignedUrl,
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: error.errors });
@@ -69,52 +100,6 @@ export const reflectionController = {
     }
   },
 
-  // Get a reflection by ID
-  async getReflection(req: Request, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
-      }
-
-      const reflection = await Reflection.findById(req.params.id)
-        .populate('sessionId')
-        .populate('audioFileId')
-        .populate('tags');
-
-      if (!reflection) {
-        return res.status(404).json({ error: 'Reflection not found' });
-      }
-
-      // Check if user has access to this reflection
-      const session = await Session.findById(reflection.sessionId);
-      if (!session) {
-        return res.status(404).json({ error: 'Associated session not found' });
-      }
-
-      if (req.user.role === 'client' && reflection.userId.toString() !== req.user.id.toString()) {
-        return res.status(403).json({ error: 'Not authorized to view this reflection' });
-      }
-
-      if (req.user.role === 'coach' && session.coachId.toString() !== req.user.id.toString()) {
-        return res.status(403).json({ error: 'Not authorized to view this reflection' });
-      }
-
-      // Decrypt the text content if it's encrypted
-      if (reflection.isEncrypted) {
-        const decryptedReflection = reflection.toObject();
-        decryptedReflection.textContent = (
-          reflection as unknown as { decryptText(): string }
-        ).decryptText();
-        res.json(decryptedReflection);
-      } else {
-        res.json(reflection);
-      }
-    } catch (error) {
-      console.error('Error getting reflection:', error);
-      res.status(500).json({ error: 'Failed to get reflection' });
-    }
-  },
-
   // Get all reflections for a session
   async getSessionReflections(req: Request, res: Response) {
     try {
@@ -122,43 +107,112 @@ export const reflectionController = {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      const session = await Session.findById(req.params.sessionId);
+      const sessionId = req.params.sessionId;
+
+      // Find the session to verify access
+      const session = await Session.findById(sessionId);
       if (!session) {
         return res.status(404).json({ error: 'Session not found' });
       }
 
-      // Check if user has access to this session
-      if (req.user.role === 'client' && session.clientId.toString() !== req.user.id.toString()) {
-        return res
-          .status(403)
-          .json({ error: 'Not authorized to view reflections for this session' });
+      // Check if the user is the client or coach of the session
+      const isClient = session.clientId.toString() === req.user._id;
+      const isCoach = session.coachId.toString() === req.user._id;
+
+      if (!isClient && !isCoach) {
+        return res.status(403).json({ error: 'Not authorized to view reflections for this session' });
       }
 
-      if (req.user.role === 'coach' && session.coachId.toString() !== req.user.id.toString()) {
-        return res
-          .status(403)
-          .json({ error: 'Not authorized to view reflections for this session' });
-      }
+      // Get reflections for the session
+      const reflections = await Reflection.find({ sessionId: new mongoose.Types.ObjectId(sessionId) })
+        .sort({ createdAt: -1 });
 
-      const reflections = await Reflection.find({ sessionId: req.params.sessionId })
-        .populate('audioFileId')
-        .populate('tags');
-
-      // Decrypt all reflections if they're encrypted
-      const decryptedReflections = reflections.map((reflection) => {
-        const decryptedReflection = reflection.toObject();
-        if (reflection.isEncrypted) {
-          decryptedReflection.textContent = (
-            reflection as unknown as { decryptText(): string }
-          ).decryptText();
-        }
-        return decryptedReflection;
-      });
-
-      res.json(decryptedReflections);
+      res.json(reflections);
     } catch (error) {
       console.error('Error getting session reflections:', error);
       res.status(500).json({ error: 'Failed to get session reflections' });
+    }
+  },
+
+  // Get all reflections
+  async getReflections(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      // Query parameter for sessionId
+      const sessionId = req.query.sessionId as string;
+
+      // Base query
+      let query: any = {};
+
+      // If sessionId is provided, filter by it
+      if (sessionId) {
+        query.sessionId = new mongoose.Types.ObjectId(sessionId);
+
+        // Verify session access
+        const session = await Session.findById(sessionId);
+        if (!session) {
+          return res.status(404).json({ error: 'Session not found' });
+        }
+
+        // Check if the user is the client or coach of the session
+        const isClient = session.clientId.toString() === req.user._id;
+        const isCoach = session.coachId.toString() === req.user._id;
+
+        if (!isClient && !isCoach) {
+          return res.status(403).json({ error: 'Not authorized to view reflections for this session' });
+        }
+      } else {
+        // If no sessionId, filter based on user role
+        if (req.user.roleName === 'client') {
+          // Clients can only see their own reflections
+          query.clientId = new mongoose.Types.ObjectId(req.user._id);
+        } else if (req.user.roleName === 'coach') {
+          // Coaches can only see reflections for their clients
+          query.coachId = new mongoose.Types.ObjectId(req.user._id);
+        } else if (req.user.roleName !== 'admin') {
+          return res.status(403).json({ error: 'Not authorized to view reflections' });
+        }
+      }
+
+      // Get reflections based on query
+      const reflections = await Reflection.find(query).sort({ createdAt: -1 });
+
+      res.json(reflections);
+    } catch (error) {
+      console.error('Error getting reflections:', error);
+      res.status(500).json({ error: 'Failed to get reflections' });
+    }
+  },
+
+  // Get a specific reflection
+  async getReflection(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const reflection = await Reflection.findById(req.params.id);
+
+      if (!reflection) {
+        return res.status(404).json({ error: 'Reflection not found' });
+      }
+
+      // Check if the user is the client or coach of the reflection
+      const isClient = reflection.clientId.toString() === req.user._id;
+      const isCoach = reflection.coachId.toString() === req.user._id;
+      const isAdmin = req.user.roleName === 'admin';
+
+      if (!isClient && !isCoach && !isAdmin) {
+        return res.status(403).json({ error: 'Not authorized to view this reflection' });
+      }
+
+      res.json(reflection);
+    } catch (error) {
+      console.error('Error getting reflection:', error);
+      res.status(500).json({ error: 'Failed to get reflection' });
     }
   },
 
@@ -174,70 +228,24 @@ export const reflectionController = {
         return res.status(404).json({ error: 'Reflection not found' });
       }
 
-      // Check if user is authorized to update this reflection
-      if (reflection.userId.toString() !== req.user.id.toString()) {
+      // Only the client or coach can update the reflection
+      const isClient = reflection.clientId.toString() === req.user._id;
+      const isCoach = reflection.coachId.toString() === req.user._id;
+
+      if (!isClient && !isCoach) {
         return res.status(403).json({ error: 'Not authorized to update this reflection' });
       }
 
-      const validatedData = updateReflectionSchema.parse(req.body);
+      const updateData = updateReflectionSchema.parse(req.body);
 
-      // If session ID is being updated, check if the new session exists and user has access
-      if (validatedData.sessionId) {
-        const session = await Session.findById(validatedData.sessionId);
-        if (!session) {
-          return res.status(404).json({ error: 'Session not found' });
-        }
+      // Update reflection
+      const updatedReflection = await Reflection.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        { new: true }
+      );
 
-        if (session.clientId.toString() !== req.user.id.toString()) {
-          return res
-            .status(403)
-            .json({ error: 'Not authorized to update reflection for this session' });
-        }
-      }
-
-      // If audio file is being updated, verify it exists and belongs to the user
-      if (validatedData.audioFileId) {
-        const audioFile = await File.findById(validatedData.audioFileId);
-        if (!audioFile || audioFile.userId.toString() !== req.user.id.toString()) {
-          return res.status(400).json({ error: 'Invalid audio file' });
-        }
-      }
-
-      // Update the reflection
-      const updateData: Record<string, unknown> = { ...validatedData };
-
-      if (validatedData.sessionId) {
-        updateData.sessionId = new mongoose.Types.ObjectId(validatedData.sessionId);
-      }
-
-      if (validatedData.audioFileId) {
-        updateData.audioFileId = new mongoose.Types.ObjectId(validatedData.audioFileId);
-      }
-
-      if (validatedData.tags) {
-        updateData.tags = validatedData.tags.map((id) => new mongoose.Types.ObjectId(id));
-      }
-
-      const updatedReflection = await Reflection.findByIdAndUpdate(req.params.id, updateData, {
-        new: true,
-      })
-        .populate('audioFileId')
-        .populate('tags');
-
-      if (!updatedReflection) {
-        return res.status(404).json({ error: 'Reflection not found' });
-      }
-
-      // Decrypt the text content if it's encrypted
-      if (updatedReflection.isEncrypted) {
-        const decryptedReflection = updatedReflection.toObject();
-        decryptedReflection.textContent = (
-          updatedReflection as unknown as { decryptText(): string }
-        ).decryptText();
-        res.json(decryptedReflection);
-      } else {
-        res.json(updatedReflection);
-      }
+      res.json(updatedReflection);
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: error.errors });
@@ -260,8 +268,11 @@ export const reflectionController = {
         return res.status(404).json({ error: 'Reflection not found' });
       }
 
-      // Check if user is authorized to delete this reflection
-      if (reflection.userId.toString() !== req.user.id.toString()) {
+      // Only the owner or an admin can delete
+      const isClient = reflection.clientId.toString() === req.user._id;
+      const isAdmin = req.user.roleName === 'admin';
+
+      if (!isClient && !isAdmin) {
         return res.status(403).json({ error: 'Not authorized to delete this reflection' });
       }
 
@@ -271,37 +282,5 @@ export const reflectionController = {
       console.error('Error deleting reflection:', error);
       res.status(500).json({ error: 'Failed to delete reflection' });
     }
-  },
-
-  // Share reflection with coach
-  async shareWithCoach(req: Request, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
-      }
-
-      const reflection = await Reflection.findById(req.params.id);
-      if (!reflection) {
-        return res.status(404).json({ error: 'Reflection not found' });
-      }
-
-      // Check if user is authorized to share this reflection
-      if (reflection.userId.toString() !== req.user.id.toString()) {
-        return res.status(403).json({ error: 'Not authorized to share this reflection' });
-      }
-
-      // Get the session to find the coach
-      const session = await Session.findById(reflection.sessionId);
-      if (!session) {
-        return res.status(404).json({ error: 'Associated session not found' });
-      }
-
-      // In a real implementation, you might want to notify the coach or update a status
-      // For now, we'll just return success
-      res.json({ message: 'Reflection shared with coach successfully' });
-    } catch (error) {
-      console.error('Error sharing reflection with coach:', error);
-      res.status(500).json({ error: 'Failed to share reflection with coach' });
-    }
-  },
+  }
 };

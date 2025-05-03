@@ -7,6 +7,9 @@ const router = express.Router();
 // Create a new reflection
 router.post('/', isAuthenticated, reflectionController.createReflection);
 
+// Get all reflections (with optional session filter via query param)
+router.get('/', isAuthenticated, reflectionController.getReflections);
+
 // Get a specific reflection
 router.get('/:id', isAuthenticated, reflectionController.getReflection);
 
