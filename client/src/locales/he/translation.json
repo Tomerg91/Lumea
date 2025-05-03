@@ -1,0 +1,48 @@
+{
+  "common": {
+    "cancel": "ביטול",
+    "save": "שמירה",
+    "delete": "מחיקה",
+    "edit": "עריכה",
+    "actions": "פעולות"
+  },
+  "clients": {
+    "title": "הלקוחות שלי",
+    "name": "שם",
+    "email": "אימייל",
+    "lastSession": "פגישה אחרונה",
+    "noSessions": "אין פגישות עדיין",
+    "invalidDate": "תאריך לא תקין",
+    "viewDetails": "פרטים",
+    "inviteClient": "הזמנת לקוח",
+    "inviteDescription": "שליחת הזמנה בדוא\"ל ללקוח חדש. הם יקבלו קישור להרשמה ויחוברו אוטומטית לחשבון שלך.",
+    "emailAddress": "כתובת אימייל",
+    "emailPlaceholder": "client@example.com",
+    "sendInvite": "שליחת הזמנה",
+    "noClientsYet": "אין לקוחות עדיין",
+    "noClientsMessage": "אין לך לקוחות עדיין. התחל על ידי הזמנת מישהו להצטרף."
+  },
+  "sessions": {
+    "title": "פגישות",
+    "createSession": "יצירת פגישה",
+    "selectClient": "בחירת לקוח",
+    "chooseClient": "בחר לקוח",
+    "sessionDate": "תאריך הפגישה",
+    "notes": "הערות",
+    "notesPlaceholder": "הזן הערות כלשהן לגבי פגישה זו...",
+    "create": "יצירה",
+    "viewDetails": "פרטים",
+    "noSessionsYet": "אין פגישות עדיין",
+    "noSessionsMessage": "אין לך פגישות עדיין. צור את הפגישה הראשונה שלך כדי להתחיל.",
+    "today": "היום",
+    "yesterday": "אתמול",
+    "thisWeek": "השבוע",
+    "thisMonth": "החודש",
+    "older": "ישן יותר",
+    "invalidDate": "תאריך לא תקין"
+  },
+  "validation": {
+    "required": "שדה זה הוא חובה",
+    "invalidEmail": "אנא הזן כתובת אימייל תקינה"
+  }
+} 

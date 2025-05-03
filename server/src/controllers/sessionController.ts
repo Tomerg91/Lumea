@@ -1,42 +1,132 @@
 import { Request, Response } from 'express';
+import { CoachingSession, ICoachingSession } from '../models/CoachingSession';
 import { z } from 'zod';
 import {
-  createSession,
   getSessionById,
   getSessionsByCoachId,
   getSessionsByClientId,
   updateSession,
   deleteSession,
-  createSessionSchema,
   updateSessionSchema,
 } from '../storage.js';
-import { Session } from '../models/Session.js';
 import { User } from '../models/User.js';
 import { IUser } from '../models/User.js';
 import { getNumericUserId } from '../../utils';
+import mongoose from 'mongoose';
+
+// Validation schema for creating a session
+const createSessionSchema = z.object({
+  clientId: z.string().min(1),
+  date: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: 'Invalid date format',
+  }),
+  notes: z.string().optional(),
+});
+
+// Validation schema for query parameters
+const getSessionsQuerySchema = z.object({
+  clientId: z.string().optional(),
+  limit: z.coerce.number().optional().default(10),
+  page: z.coerce.number().optional().default(1),
+});
 
 export const sessionController = {
-  // Create a new session
-  async createSession(req: Request, res: Response) {
+  // Get sessions for a coach, optionally filtered by clientId
+  getSessions: async (req: Request, res: Response): Promise<void> => {
     try {
       if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
+        res.status(401).json({ message: 'Unauthorized' });
+        return;
       }
 
-      const validatedData = createSessionSchema.parse({
-        ...req.body,
+      // Validate query parameters
+      try {
+        const validatedQuery = getSessionsQuerySchema.parse(req.query);
+        const { clientId, limit, page } = validatedQuery;
+
+        // Build query based on coach ID and optional client ID
+        const query: Record<string, unknown> = {
+          coachId: req.user.id,
+        };
+        
+        if (clientId) {
+          query.clientId = clientId;
+        }
+
+        // Calculate pagination
+        const skip = (page - 1) * limit;
+
+        // Query sessions
+        const sessions = await CoachingSession.find(query)
+          .sort({ date: -1 }) // Sort by date descending (newest first)
+          .skip(skip)
+          .limit(limit)
+          .populate('clientId', 'firstName lastName email')
+          .lean();
+
+        // Get total count for pagination
+        const total = await CoachingSession.countDocuments(query);
+
+        // Return sessions with pagination info
+        res.json({
+          sessions,
+          pagination: {
+            total,
+            page,
+            limit,
+            pages: Math.ceil(total / limit),
+          },
+        });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          res.status(400).json({ message: 'Invalid query parameters', errors: error.errors });
+          return;
+        }
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error getting sessions:', error);
+      res.status(500).json({ message: 'Failed to get sessions' });
+    }
+  },
+
+  // Create a new session
+  createSession: async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!req.user) {
+        res.status(401).json({ message: 'Unauthorized' });
+        return;
+      }
+
+      // Validate request body
+      try {
+        createSessionSchema.parse(req.body);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          res.status(400).json({ message: 'Invalid session data', errors: error.errors });
+          return;
+        }
+        throw error;
+      }
+
+      const { clientId, date, notes } = req.body;
+      
+      // Create session
+      const session = await CoachingSession.create({
         coachId: req.user.id,
+        clientId,
+        date: new Date(date),
+        notes: notes || '',
       });
 
-      const session = await createSession(validatedData);
-      res.status(201).json(session);
+      // Return created session
+      res.status(201).json({
+        message: 'Session created successfully',
+        session,
+      });
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: error.errors });
-      } else {
-        console.error('Error creating session:', error);
-        res.status(500).json({ error: 'Failed to create session' });
-      }
+      console.error('Error creating session:', error);
+      res.status(500).json({ message: 'Failed to create session' });
     }
   },
 
@@ -108,7 +198,7 @@ export const sessionController = {
       }
 
       const sessionId = req.params.id;
-      const session = await Session.findById(sessionId);
+      const session = await CoachingSession.findById(sessionId);
 
       if (!session) {
         return res.status(404).json({ error: 'Session not found' });
@@ -140,7 +230,7 @@ export const sessionController = {
       }
 
       const sessionId = req.params.id;
-      const session = await Session.findById(sessionId);
+      const session = await CoachingSession.findById(sessionId);
 
       if (!session) {
         return res.status(404).json({ error: 'Session not found' });
@@ -177,7 +267,7 @@ export const sessionController = {
         query.clientId = req.user.id;
       }
 
-      const sessions = await Session.find(query)
+      const sessions = await CoachingSession.find(query)
         .sort({ dateTime: 1 })
         .populate('coachId', 'name email')
         .populate('clientId', 'name email');
@@ -208,7 +298,7 @@ export const sessionController = {
         query.clientId = req.user.id;
       }
 
-      const sessions = await Session.find(query)
+      const sessions = await CoachingSession.find(query)
         .sort({ dateTime: -1 })
         .populate('coachId', 'name email')
         .populate('clientId', 'name email');
@@ -228,7 +318,7 @@ export const sessionController = {
       }
 
       const sessionId = req.params.id;
-      const session = await Session.findById(sessionId);
+      const session = await CoachingSession.findById(sessionId);
 
       if (!session) {
         return res.status(404).json({ error: 'Session not found' });
@@ -251,7 +341,7 @@ export const sessionController = {
       );
 
       // Update the session to mark that a reminder was sent
-      await Session.findByIdAndUpdate(sessionId, {
+      await CoachingSession.findByIdAndUpdate(sessionId, {
         $set: { clientReflectionReminderSent: true },
       });
 

@@ -401,3 +401,258 @@ Design patterns in use: MVC/MVVM patterns relevant to React frontend structure. 
 Component relationships: Clear data relationships managed in Supabase tables: Coach manages Clients (via `coach_id` FK); Sessions link Coach and Client; Reflections link to Sessions/Clients; Resources managed by Coaches. Admin role oversees Coaches. Supabase Auth (`auth.users`) links to user profile data.
 
 Critical implementation paths: Defining robust Supabase RLS policies for all tables. Implementing comprehensive Hebrew/RTL support across the entire UI. Setting up Supabase Storage and policies for secure file uploads. Encrypting sensitive data at rest (potentially using Supabase features or application-level encryption if needed). Implementing functional offline capabilities via Service Worker (primarily for UI shell and read-only data). Ensuring TypeScript type safety throughout the codebase.
+
+## Coach Dashboard Pattern
+
+### API Structure
+1. **Coach's Clients Endpoint:**
+   ```typescript
+   // GET /api/my-clients - Role-protected endpoint
+   router.get('/my-clients', isAuthenticated, isCoach, clientController.getMyClients);
+   ```
+
+2. **Client-Specific Authorization:**
+   ```typescript
+   // Only return clients associated with the authenticated coach
+   const clients = await User.find({
+     coach: req.user._id,
+     role: 'client'
+   })
+   .sort({ createdAt: -1 })
+   .skip(skip)
+   .limit(limit);
+   ```
+
+3. **Session Management:**
+   ```typescript
+   // GET /api/sessions - With optional client filtering
+   router.get('/sessions', isAuthenticated, isCoach, sessionController.getSessions);
+
+   // POST /api/sessions - Create new session
+   router.post('/sessions', isAuthenticated, isCoach, sessionController.createSession);
+   ```
+
+### Data Fetching Pattern
+
+1. **TanStack Query Hooks:**
+   ```typescript
+   // Custom hook with pagination, filtering and polling
+   export const useClientsData = (page = 1, limit = 10, search = '') => {
+     const queryClient = useQueryClient();
+     
+     // Query for fetching data with automatic polling
+     const { data, isLoading, error } = useQuery({
+       queryKey: ['clients', page, limit, search],
+       queryFn: () => fetchClients(page, limit, search),
+       refetchInterval: 30000, // Poll every 30 seconds
+     });
+     
+     // Mutation for creating/updating data
+     const mutation = useMutation({
+       mutationFn: createData,
+       onSuccess: () => {
+         // Invalidate and refetch
+         queryClient.invalidateQueries({ queryKey: ['clients'] });
+       },
+     });
+     
+     return {
+       clients: data?.clients || [],
+       pagination: data?.pagination,
+       isLoading,
+       error,
+       createData: mutation.mutate,
+       isCreating: mutation.isPending,
+     };
+   };
+   ```
+
+2. **Optimistic Updates Pattern:**
+   ```typescript
+   const createMutation = useMutation({
+     mutationFn: createSession,
+     onMutate: async (newSession) => {
+       // Cancel outgoing refetches
+       await queryClient.cancelQueries({ queryKey: ['sessions'] });
+       
+       // Snapshot the previous value
+       const previousSessions = queryClient.getQueryData(['sessions']);
+       
+       // Optimistically update the cache
+       queryClient.setQueryData(['sessions'], (old) => ({
+         ...old,
+         sessions: [
+           { _id: `temp-${Date.now()}`, ...newSession },
+           ...old.sessions
+         ],
+       }));
+       
+       return { previousSessions };
+     },
+     onError: (err, newSession, context) => {
+       // If there's an error, roll back
+       queryClient.setQueryData(['sessions'], context.previousSessions);
+     },
+     onSettled: () => {
+       // Always refetch to synchronize
+       queryClient.invalidateQueries({ queryKey: ['sessions'] });
+     },
+   });
+   ```
+
+### UI Component Patterns
+
+1. **Empty State Pattern:**
+   ```tsx
+   if (items.length === 0) {
+     return (
+       <div className="flex flex-col items-center justify-center p-8 text-center">
+         <div className="illustration-container">
+           {/* Illustration SVG */}
+         </div>
+         <h3 className="text-xl font-semibold mb-2">{t('noItemsYet')}</h3>
+         <p className="text-gray-600 mb-6">{t('noItemsMessage')}</p>
+         <button
+           onClick={onActionClick}
+           className="bg-primary text-white px-6 py-3 rounded-lg"
+         >
+           {t('actionButton')}
+         </button>
+       </div>
+     );
+   }
+   ```
+
+2. **Modal Dialog Pattern:**
+   ```tsx
+   <Dialog open={isOpen} onClose={handleClose} className="relative z-50">
+     {/* Backdrop */}
+     <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+     
+     {/* Dialog positioning */}
+     <div className="fixed inset-0 flex items-center justify-center p-4">
+       <Dialog.Panel className="w-full max-w-md rounded-lg bg-white p-6">
+         <Dialog.Title className="text-lg font-semibold">
+           {t('dialogTitle')}
+         </Dialog.Title>
+         
+         {/* Dialog content */}
+         <form onSubmit={handleSubmit}>
+           {/* Form fields */}
+           
+           {/* Action buttons */}
+           <div className="flex justify-end space-x-3">
+             <button type="button" onClick={handleClose}>
+               {t('cancel')}
+             </button>
+             <button type="submit" disabled={isLoading}>
+               {isLoading ? <LoadingSpinner /> : t('submit')}
+             </button>
+           </div>
+         </form>
+       </Dialog.Panel>
+     </div>
+   </Dialog>
+   ```
+
+3. **RTL Support Pattern:**
+   ```tsx
+   // In component
+   const { t, i18n } = useTranslation();
+   const isRTL = i18n.language === 'he';
+   const locale = isRTL ? he : undefined;
+   
+   // In JSX
+   <div dir={isRTL ? 'rtl' : 'ltr'}>
+     <span className={`text-align: ${isRTL ? 'right' : 'left'}`}>
+       {t('label')}
+     </span>
+   </div>
+   
+   // In date formatting
+   format(date, 'PPP', { locale });
+   ```
+
+4. **Date Grouping Pattern:**
+   ```typescript
+   // Group items by date categories
+   const groupByDate = (items) => {
+     const today = new Date();
+     const grouped = {
+       today: [],
+       yesterday: [],
+       thisWeek: [],
+       thisMonth: [],
+       older: [],
+     };
+
+     items.forEach((item) => {
+       const itemDate = new Date(item.date);
+       
+       if (isToday(itemDate)) {
+         grouped.today.push(item);
+       } else if (isYesterday(itemDate)) {
+         grouped.yesterday.push(item);
+       } else if (isSameWeek(itemDate, today)) {
+         grouped.thisWeek.push(item);
+       } else if (isSameMonth(itemDate, today)) {
+         grouped.thisMonth.push(item);
+       } else {
+         grouped.older.push(item);
+       }
+     });
+
+     return grouped;
+   };
+   ```
+
+### Testing Patterns
+
+1. **Component Test Pattern:**
+   ```typescript
+   describe('ComponentName', () => {
+     // Mock translations
+     vi.mock('react-i18next', () => ({
+       useTranslation: () => ({
+         t: (key) => translationsMap[key] || key,
+         i18n: { language: 'en' },
+       }),
+     }));
+     
+     it('renders empty state when no data', () => {
+       render(<Component items={[]} />);
+       expect(screen.getByText('No items yet')).toBeInTheDocument();
+     });
+     
+     it('renders items when data exists', () => {
+       const mockItems = [/* mock data */];
+       render(<Component items={mockItems} />);
+       expect(screen.getByText(mockItems[0].name)).toBeInTheDocument();
+     });
+   });
+   ```
+
+2. **E2E Test Pattern:**
+   ```typescript
+   test('Happy path flow', async ({ page }) => {
+     // Set mobile viewport
+     await page.setViewportSize({ width: 375, height: 812 });
+     
+     // Login
+     await page.goto('/login');
+     await page.fill('input[type="email"]', 'coach@example.com');
+     await page.fill('input[type="password"]', 'password123');
+     await page.click('button[type="submit"]');
+     
+     // Navigate to feature
+     await page.click('text=Clients');
+     
+     // Perform action
+     await page.click('button:has-text("Invite")');
+     await page.fill('input[type="email"]', 'new@example.com');
+     await page.click('button:has-text("Send")');
+     
+     // Verify result
+     await expect(page.locator('text=new@example.com')).toBeVisible();
+   });
+   ```

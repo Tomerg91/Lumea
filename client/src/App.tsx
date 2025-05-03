@@ -7,6 +7,7 @@ import HomePage from './pages/Index'; // Import HomePage component
 import Dashboard from './pages/Dashboard'; // Import the Dashboard component
 import TestPage from './pages/Test'; // Import TestPage component
 import DebugPage from './pages/Debug'; // Import DebugPage component
+import SessionsPage from './pages/SessionsPage';
 import './App.css';
 
 interface ProtectedRouteProps {
@@ -117,7 +118,7 @@ const App: React.FC = () => {
           <Route element={<ProtectedRoute allowedRoles={['coach']} />}>
             <Route path="/coach/dashboard" element={<Dashboard />} />
             <Route path="/coach/clients" element={<ClientsPage />} />
-            <Route path="/coach/sessions" element={<div>Coach Sessions Page</div>} />
+            <Route path="/coach/sessions" element={<SessionsPage />} />
             <Route path="/coach/reflections" element={<div>Coach Reflections Page</div>} />
             <Route path="/coach/resources" element={<div>Coach Resources Page</div>} />
             <Route path="/coach/profile" element={<div>Coach Profile Page</div>} />
@@ -130,7 +131,7 @@ const App: React.FC = () => {
           {/* Client Protected Routes */}
           <Route element={<ProtectedRoute allowedRoles={['client']} />}>
             <Route path="/client/dashboard" element={<Dashboard />} />
-            <Route path="/client/sessions" element={<div>Client Sessions Page</div>} />
+            <Route path="/client/sessions" element={<SessionsPage />} />
             <Route path="/client/reflections" element={<div>Client Reflections Page</div>} />
             <Route path="/client/resources" element={<div>Client Resources Page</div>} />
             <Route path="/client/profile" element={<div>Client Profile Page</div>} />

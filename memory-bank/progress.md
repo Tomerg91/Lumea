@@ -169,20 +169,25 @@
 - ✅ RLS policies added for security
 - ✅ Implement Client invitation mechanism (linked to Coach)
 - ✅ Implement Password Reset flow
-- Implement Admin creation/setup with pending coach approval flow.
+- ✅ Implement Admin creation/setup with pending coach approval flow.
 - Refine Login/Signup UI and flow based on roles.
 
 ### Coach View Clients (Current Slice):
 
-- Design and implement `GET /api/my-clients` endpoint (auth checks, role-based access, DB query).
-- Develop ClientsPage UI to fetch and display coach's clients.
+- ✅ Design and implement `GET /api/my-clients` endpoint (auth checks, role-based access, DB query).
+- ✅ Develop ClientsPage UI to fetch and display coach's clients.
+- ✅ Implement "Invite Client" functionality with modal dialog.
+- ✅ Add empty state illustrations for better UX.
+- ✅ Support RTL Hebrew with i18next and date-fns localization.
 
 ### Session Management:
 
 - ✅ Database: `sessions` table schema implemented.
-- Backend: CRUD API endpoints for sessions.
-- Frontend: UI for Coach to create/edit sessions.
-- Frontend: UI for Coach/Client to view session list.
+- ✅ Backend: CRUD API endpoints for sessions.
+- ✅ Frontend: UI for Coach to create/edit sessions.
+- ✅ Frontend: UI for Coach to view session list grouped by date.
+- ✅ Implement optimistic UI updates for immediate feedback.
+- Frontend: UI for Client to view session list.
 
 ### Reflections (Text & Audio):
 
@@ -251,6 +256,10 @@
 - **Role-based API access control:** Implemented middleware for protected routes with role-based access control.
 - **Token validation and security:** Added token validation and invalidation utilities with proper error handling.
 - **Email notification system:** Created email sending functionality for invitations and password resets with RTL Hebrew support.
+- **Coach dashboard implemented:** Built interface for coaches to manage clients and sessions with full RTL support.
+- **Client management:** Added client listing with last session date and invitation functionality.
+- **Session management:** Implemented session creation and viewing grouped by date categories.
+- **Testing coverage:** Added Vitest component tests and Playwright E2E tests for coach dashboard features.
 - Defined MVP scope.
 - Basic authentication flows with error handling implemented.
 - UI components for login/signup created with responsive design.

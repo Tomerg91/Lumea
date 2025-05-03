@@ -13,6 +13,7 @@ A modern, bilingual (Hebrew-first) coaching platform built for 1-on-1 Satya Meth
 - **Payment Tracking**: Monitor session payments and send reminders
 - **File Storage**: Secure storage for session recordings and resources
 - **Mobile Responsive**: Fully responsive design for all devices
+- **Coach Dashboard**: Manage clients, sessions, and invitations
 
 ## Tech Stack
 
@@ -110,6 +111,7 @@ npm run db:seed
 ```
 
 This will create:
+
 - Admin, coach, and client user roles
 - One user of each role type
 - A sample coaching session with a reflection and coach notes
@@ -142,6 +144,7 @@ npm run test:rls
 ```
 
 This runs a test suite that checks access permissions for different user roles:
+
 - Admin users can access and modify all data
 - Coaches can manage their own sessions and notes
 - Clients can only access their own sessions and reflections
@@ -258,3 +261,50 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Support
 
 For support, please contact [your-contact-info]
+
+## Coach Dashboard Slice
+
+The Coach Dashboard provides an efficient workspace for coaches to manage their clients and sessions.
+
+### Key Features
+
+- **Client Management**: 
+  - View a list of all clients with their basic information
+  - See when each client had their last session
+  - Send invitations to new clients via email
+  - Responsive design with empty state illustrations
+
+- **Session Management**:
+  - Create new coaching sessions with notes
+  - View sessions grouped by date (Today, Yesterday, This Week, etc.)
+  - Automatic client association with each session
+  - Optimistic UI updates for immediate feedback
+
+### Technical Implementation
+
+- **API Endpoints**:
+  - `GET /api/my-clients` - List clients with pagination and last session date
+  - `GET /api/sessions` - Get sessions with optional client filtering
+  - `POST /api/sessions` - Create a new session
+
+- **React Components**:
+  - ClientsTable - Displays clients with RTL support
+  - InviteClientModal - Modal for sending client invitations
+  - SessionList - Groups and displays sessions by date
+  - SessionModal - Form for creating new sessions
+
+- **Data Management**:
+  - TanStack Query hooks for data fetching and caching
+  - Optimistic updates for immediate UI feedback
+  - Real-time polling (every 30 seconds)
+
+- **Internationalization**:
+  - Full RTL Hebrew support
+  - Bilingual interfaces with i18next
+  - Localized date formatting with date-fns
+
+### Testing
+
+- Vitest component tests for critical UI components
+- Playwright E2E tests for the complete coach workflow
+- Mobile viewport testing (375×812) for responsive design

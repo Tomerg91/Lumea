@@ -1,0 +1,48 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "actions": "Actions"
+  },
+  "clients": {
+    "title": "My Clients",
+    "name": "Name",
+    "email": "Email",
+    "lastSession": "Last Session",
+    "noSessions": "No sessions yet",
+    "invalidDate": "Invalid date",
+    "viewDetails": "View Details",
+    "inviteClient": "Invite Client",
+    "inviteDescription": "Send an invitation email to a new client. They will receive a link to register and will be automatically connected to your account.",
+    "emailAddress": "Email Address",
+    "emailPlaceholder": "client@example.com",
+    "sendInvite": "Send Invite",
+    "noClientsYet": "No clients yet",
+    "noClientsMessage": "You don't have any clients yet. Start by inviting someone to join."
+  },
+  "sessions": {
+    "title": "Sessions",
+    "createSession": "Create Session",
+    "selectClient": "Select Client",
+    "chooseClient": "Choose a client",
+    "sessionDate": "Session Date",
+    "notes": "Notes",
+    "notesPlaceholder": "Enter any notes about this session...",
+    "create": "Create",
+    "viewDetails": "View Details",
+    "noSessionsYet": "No sessions yet",
+    "noSessionsMessage": "You don't have any sessions yet. Create your first session to get started.",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "older": "Older",
+    "invalidDate": "Invalid date"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidEmail": "Please enter a valid email address"
+  }
+} 

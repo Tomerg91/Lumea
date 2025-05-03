@@ -1,8 +1,33 @@
 # Active Context
 
-Current work focus: Successfully implemented client registration with invitation token and password reset functionality for the Satya coaching platform.
+Current work focus: Successfully implemented the coach dashboard with client management and session features for the Satya coaching platform.
 
 Recent changes:
+
+- **Implemented Coach Dashboard with Client Management:**
+  - Created GET /api/my-clients endpoint for coaches to view their clients
+  - Implemented ClientsTable component for displaying clients with their last session date
+  - Added empty state illustrations for better UX
+  - Built InviteClientModal component for sending client invitations
+  - Implemented RTL Hebrew support with i18next and date-fns localization
+
+- **Implemented Session Management:**
+  - Created CoachingSession database model with appropriate schema
+  - Developed GET /api/sessions and POST /api/sessions endpoints
+  - Built SessionList component with date-based grouping (Today, Yesterday, This Week, etc.)
+  - Implemented SessionModal for creating new sessions with client selection
+  - Added optimistic UI updates for immediate feedback when creating sessions
+  - Created TanStack Query hooks for data fetching with polling
+
+- **Added Component Testing:**
+  - Implemented Vitest component tests for ClientsTable and SessionModal
+  - Added E2E tests with Playwright for testing the coach dashboard flow
+  - Created mobile viewport tests (375×812) to ensure responsive design
+
+- **Enhanced Internationalization:**
+  - Added comprehensive translations for client and session management
+  - Implemented proper RTL styling and layout for Hebrew language
+  - Used date-fns with localization for properly formatting dates
 
 - **Implemented Client Registration with Invitation Token System:**
   - Created InviteToken model schema with TTL index for automatic token expiration
@@ -108,8 +133,12 @@ Next steps:
 - 4. ✅ Implement Client invitation mechanism: backend API, email invites, and frontend invitation UI.
 - 5. ✅ Implement Password Reset flow with email and secure token handling.
 - 6. ✅ Implement Admin creation and setup flows (pending coach approval, admin dashboard).
-- 7. Develop the `/dashboard/clients` ClientsPage UI to fetch and display the coach's clients.
-- 8. Refine Login/Signup UI and flow based on user roles, with dynamic redirects and tailored forms.
+- 7. ✅ Develop the `/dashboard/clients` ClientsPage UI to fetch and display the coach's clients.
+- 8. ✅ Create the coach session management UI with SessionModal and SessionList components.
+- 9. ✅ Add comprehensive test coverage for the new dashboard features.
+- 10. Implement Frontend UI for Client to view their own session history.
+- 11. Develop the reflections feature for clients to submit text/audio reflections on sessions.
+- 12. Build private coach notes UI for coaches to add notes to sessions.
 
 Active decisions and considerations:
 
@@ -140,6 +169,14 @@ Active decisions and considerations:
 - Role-based middleware controlling access to protected routes
 - Coach view of clients supports pagination for scalability
 - Admin-only routes for approving coaches to ensure proper onboarding
+- Using TanStack Query for data fetching with automatic polling every 30 seconds
+- Implementing optimistic updates for immediate feedback when creating sessions
+- Grouping sessions by date categories (Today, Yesterday, This Week, This Month, Older)
+- Using Dialog component from Headless UI for modal implementations
+- Creating empty state illustrations for better UX when no data is present
+- Supporting mobile viewport layouts (375×812) for all dashboard components
+- Using Vitest for component testing and Playwright for E2E tests
+- Implementing RTL Hebrew support throughout the coach dashboard
 
 Important patterns and preferences:
 
