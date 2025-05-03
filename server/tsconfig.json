@@ -32,7 +32,8 @@
     },
     "noErrorTruncation": true,
     "resolveJsonModule": true,
-    "typeRoots": ["./node_modules/@types", "./src/types"]
+    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "allowSyntheticDefaultImports": true
   },
   "include": ["./**/*.ts", "../shared/**/*.ts", "./src/types/**/*.d.ts"],
   "exclude": ["node_modules", "dist"]

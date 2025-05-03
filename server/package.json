@@ -12,7 +12,8 @@
     "start": "node dist/index.js",
     "create-admin": "ts-node scripts/create-admin.ts",
     "lint": "eslint . --ext ts",
-    "typecheck": "tsc --noEmit --skipLibCheck"
+    "typecheck": "tsc --noEmit --skipLibCheck",
+    "typecheck-loose": "tsc --noEmit --skipLibCheck --noPropertyAccessFromIndexSignature true --noStrictGenericChecks true"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.779.0",
