@@ -8,7 +8,21 @@ import { Encryption } from '../../utils/encryption';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Reflection } from '../../types/reflection';
+
+// Define the Reflection interface here instead of importing it
+interface Reflection {
+  id: string;
+  sessionId: string;
+  text: string;
+  audioUrl?: string;
+  createdAt: string;
+  isOffline?: boolean;
+  encryptionMetadata?: {
+    version: string;
+    algorithm: string;
+    [key: string]: string;
+  };
+}
 
 interface ReflectionTimelineProps {
   sessionId: string;
@@ -22,7 +36,7 @@ export default function ReflectionTimeline({
   const { t } = useTranslation();
 
   // Fetch reflections for the session
-  const { data, isLoading, isError, error } = useQuery<Reflection[]>(
+  const { data, status, error } = useQuery<Reflection[]>(
     ['reflections', sessionId],
     async () => {
       const response = await fetch(`/api/reflections?sessionId=${sessionId}`);
@@ -33,11 +47,18 @@ export default function ReflectionTimeline({
     }
   );
 
+  // Derived loading and error states
+  const isLoading = status === 'loading';
+  const isError = status === 'error';
+
   // Group reflections by date
   const reflectionsByDate = useMemo(() => {
     if (!data) return {};
 
-    return data.reduce<Record<string, Reflection[]>>((acc, reflection) => {
+    // Cast to ensure TypeScript recognizes array methods
+    const reflectionsArray = data as Reflection[];
+    
+    return reflectionsArray.reduce<Record<string, Reflection[]>>((acc, reflection) => {
       const date = format(parseISO(reflection.createdAt), 'yyyy-MM-dd');
       if (!acc[date]) {
         acc[date] = [];
@@ -118,7 +139,7 @@ export default function ReflectionTimeline({
   }
 
   // Display empty state
-  if (!data || data.length === 0) {
+  if (!data || (data as Reflection[]).length === 0) {
     return (
       <Card className="w-full">
         <CardHeader>
@@ -137,6 +158,9 @@ export default function ReflectionTimeline({
       </Card>
     );
   }
+
+  // Cast data to array type for TypeScript
+  const reflectionsArray = data as Reflection[];
 
   // Display timeline
   return (

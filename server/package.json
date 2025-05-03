@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.779.0",
+    "@aws-sdk/s3-request-presigner": "3.802.0",
     "@prisma/client": "^5.10.2",
     "@types/compression": "^1.7.5",
     "@types/date-fns": "^2.5.3",
@@ -47,6 +48,7 @@
     "node-cache": "^5.1.2",
     "nodemailer": "^6.10.0",
     "passport": "^0.7.0",
+    "passport-jwt": "4.0.1",
     "passport-local": "^1.0.0",
     "sanitize-html": "^2.15.0",
     "winston": "^3.17.0",

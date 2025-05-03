@@ -64,8 +64,12 @@ export default function useOfflineReflection({
               
               // If it was a reflection, invalidate queries
               if (item.reflectionId) {
-                queryClient.invalidateQueries(['reflections']);
-                queryClient.invalidateQueries(['reflections', item.reflectionId]);
+                queryClient.invalidateQueries({
+                  queryKey: ['reflections']
+                });
+                queryClient.invalidateQueries({
+                  queryKey: ['reflections', item.reflectionId]
+                });
               }
               
               toast({
@@ -164,8 +168,12 @@ export default function useOfflineReflection({
             }
 
             // Invalidate queries
-            queryClient.invalidateQueries(['reflections']);
-            queryClient.invalidateQueries(['reflections', reflectionId]);
+            queryClient.invalidateQueries({
+              queryKey: ['reflections']
+            });
+            queryClient.invalidateQueries({
+              queryKey: ['reflections', reflectionId]
+            });
 
             toast({
               title: t('success.reflectionSubmitted', 'Reflection submitted'),
@@ -246,8 +254,12 @@ export default function useOfflineReflection({
             }
 
             // Invalidate queries
-            queryClient.invalidateQueries(['reflections']);
-            queryClient.invalidateQueries(['reflections', reflectionId]);
+            queryClient.invalidateQueries({
+              queryKey: ['reflections']
+            });
+            queryClient.invalidateQueries({
+              queryKey: ['reflections', reflectionId]
+            });
 
             toast({
               title: t('success.reflectionSubmitted', 'Reflection submitted'),
