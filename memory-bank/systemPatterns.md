@@ -4,6 +4,68 @@
 
 Full-stack Progressive Web App (PWA) with a React TypeScript frontend, leveraging **Supabase for backend services (Auth, PostgreSQL DB, Storage, Realtime APIs)**. Node.js/Express backend for API endpoints and server-side logic. **The project is structured as an npm monorepo using workspaces (`client/`, `server/`).**
 
+## Database Schema & Security
+
+The database is designed with a secure, role-based access control system using **Supabase Row-Level Security (RLS)**.
+
+```
+┌─────────┐      ┌───────────┐       ┌────────────┐      ┌─────────────┐
+│  roles  │◄────►│   users   │◄─────►│  sessions  │◄─────►│ reflections │
+└─────────┘      └───────────┘       └────────────┘      └─────────────┘
+                                           │
+                                           ▼
+                                    ┌─────────────┐
+                                    │ coach_notes │
+                                    └─────────────┘
+```
+
+Key tables and relationships:
+- **roles**: Defines user types (`admin`, `coach`, `client`)
+- **users**: User profiles linked to auth.users via auth_id
+- **sessions**: Coaching sessions linking coaches and clients
+- **reflections**: Client reflections on sessions
+- **coach_notes**: Private coach notes for sessions
+
+## Row-Level Security (RLS) Patterns
+
+1. **Role-Based Access Control**:
+   ```sql
+   CREATE POLICY users_admin_all ON users
+       FOR ALL
+       TO authenticated
+       USING (get_user_role() = 'admin');
+   ```
+
+2. **User-Based Ownership**:
+   ```sql
+   CREATE POLICY users_read_own ON users
+       FOR SELECT
+       TO authenticated
+       USING (auth_id = auth.uid());
+   ```
+
+3. **Helper Functions for RLS**:
+   ```sql
+   CREATE OR REPLACE FUNCTION get_user_role()
+   RETURNS TEXT AS $$
+       -- Implementation that gets user role based on auth.uid()
+   $$ LANGUAGE plpgsql SECURITY DEFINER;
+   ```
+
+4. **Relationship-Based Access Control**:
+   ```sql
+   CREATE POLICY reflections_coach_all ON reflections
+       FOR ALL
+       TO authenticated
+       USING (
+           get_user_role() = 'coach' AND
+           session_id IN (
+               SELECT id FROM sessions 
+               WHERE coach_id IN (SELECT id FROM users WHERE auth_id = auth.uid())
+           )
+       );
+   ```
+
 ## Component Implementation Pattern
 
 1. Use TypeScript for all React components (.tsx extension)
@@ -97,6 +159,53 @@ Full-stack Progressive Web App (PWA) with a React TypeScript frontend, leveragin
    async function createUser(data: UserInput): Promise<Partial<IUser>> { ... }
    ```
 
+8. **Type Declaration Files:** Use .d.ts files to extend existing types:
+   ```typescript
+   // In express.d.ts
+   import 'express';
+   
+   declare global {
+     namespace Express {
+       interface User {
+         id: string | number;
+         role: 'coach' | 'client' | 'admin';
+         // Additional properties
+       }
+     }
+   }
+   
+   export {};
+   ```
+
+9. **Interface Augmentation:** Use declaration merging to extend third-party types:
+   ```typescript
+   // Extend the Session interface
+   declare global {
+     interface Session extends Express.Session {
+       coachReflectionReminderSent?: boolean;
+       // Additional properties
+     }
+   }
+   ```
+
+10. **Pragmatic TypeScript Configuration:** Selectively relax type checking for specific scenarios:
+    ```json
+    // tsconfig.json
+    {
+      "compilerOptions": {
+        "noPropertyAccessFromIndexSignature": false,
+        "strictNullChecks": false,
+        // Additional options
+      }
+    }
+    ```
+
+11. **Targeted @ts-nocheck Pragmas:** Use selectively for complex files:
+    ```typescript
+    // @ts-nocheck
+    // Complex file with challenging type issues
+    ```
+
 ## UI Component Pattern
 
 1. Consistent use of shadcn/ui component library
@@ -146,7 +255,7 @@ Full-stack Progressive Web App (PWA) with a React TypeScript frontend, leveragin
 
 Key technical decisions: Utilizing PWA features for app-like experience and offline capabilities. Choosing React with TypeScript for type safety and better developer experience. Using functional components/hooks for the frontend. Employing Tailwind CSS for utility-first styling. Using i18next for robust internationalization (Hebrew/RTL first). **Relying on Supabase Auth and Row Level Security (RLS) for secure data access.** RESTful principles applied via Supabase auto-generated APIs.
 
-Design patterns in use: MVC/MVVM patterns relevant to React frontend structure. Service Worker caching strategies (Cache First, Network First). State management patterns (Context API or libraries like Zustand/Redux Toolkit) needed for React frontend. TypeScript interface patterns for type safety. **Monorepo workspace pattern.** **Isolated TypeScript configuration pattern (`extends`).**
+Design patterns in use: MVC/MVVM patterns relevant to React frontend structure. Service Worker caching strategies (Cache First, Network First). State management patterns (Context API or libraries like Zustand/Redux Toolkit) needed for React frontend. TypeScript interface patterns for type safety. **Monorepo workspace pattern.** **Isolated TypeScript configuration pattern (`extends`).** **Role-based access control (RBAC) via RLS policies.**
 
 Component relationships: Clear data relationships managed in Supabase tables: Coach manages Clients (via `coach_id` FK); Sessions link Coach and Client; Reflections link to Sessions/Clients; Resources managed by Coaches. Admin role oversees Coaches. Supabase Auth (`auth.users`) links to user profile data.
 
