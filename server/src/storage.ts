@@ -284,8 +284,14 @@ export async function createUser({
 
     console.log('[createUser] Password hashed successfully');
 
+    // Split name into firstName and lastName
+    const nameParts = name.split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
     const user = new User({
-      name,
+      firstName,
+      lastName,
       email,
       passwordHash,
       passwordSalt: salt,
@@ -301,7 +307,8 @@ export async function createUser({
     const userForReturn = {
       _id: String(savedUser._id),
       id: String(savedUser._id),
-      name: savedUser.name,
+      firstName: savedUser.firstName,
+      lastName: savedUser.lastName,
       email: savedUser.email,
       role: savedUser.role,
       status: savedUser.status,

@@ -1,0 +1,93 @@
+name: Mobile Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Mobile Apps
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+      
+      - name: Install dependencies
+        run: pnpm install
+      
+      - name: Build web app
+        run: pnpm build
+      
+      - name: Setup Java for Android build
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Capacitor sync
+        run: npx cap sync
+      
+      - name: Build Android AAB
+        run: |
+          cd android
+          ./gradlew bundle
+      
+      - name: Setup iOS certificates
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: echo "iOS certificate setup would go here in production workflow"
+        # In a real workflow, you would use a GitHub Action to setup certificates
+        # such as https://github.com/Apple-Actions/import-codesigning-certs
+      
+      - name: Build iOS Archive
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          cd ios
+          xcodebuild -workspace App/App.xcworkspace -scheme App -configuration Release archive -archivePath App/build/App.xcarchive -allowProvisioningUpdates
+      
+      - name: Upload Android AAB
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+      
+      - name: Upload iOS Archive
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v3
+        with:
+          name: ios-archive
+          path: ios/App/build/App.xcarchive
+      
+      - name: Prepare release notes
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          echo "Release notes for version ${GITHUB_REF#refs/tags/}" > release-notes.md
+          echo "" >> release-notes.md
+          echo "## What's New" >> release-notes.md
+          echo "- Feature 1" >> release-notes.md
+          echo "- Feature 2" >> release-notes.md
+      
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            android/app/build/outputs/bundle/release/app-release.aab
+          body_path: release-notes.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

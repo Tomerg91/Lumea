@@ -132,8 +132,8 @@ export const adminController = {
       await emailService.sendEmail({
         to: coach.email,
         subject: 'Coach Application Status',
-        text: `Dear ${coach.name},\n\nThank you for your interest in becoming a coach. After careful review, we regret to inform you that we cannot approve your application at this time.\n\nBest regards,\nSatya Coaching Team`,
-        html: `<p>Dear ${coach.name},</p><p>Thank you for your interest in becoming a coach. After careful review, we regret to inform you that we cannot approve your application at this time.</p><p>Best regards,<br>Satya Coaching Team</p>`,
+        text: `Dear ${coach.firstName} ${coach.lastName},\n\nThank you for your interest in becoming a coach. After careful review, we regret to inform you that we cannot approve your application at this time.\n\nBest regards,\nSatya Coaching Team`,
+        html: `<p>Dear ${coach.firstName} ${coach.lastName},</p><p>Thank you for your interest in becoming a coach. After careful review, we regret to inform you that we cannot approve your application at this time.</p><p>Best regards,<br>Satya Coaching Team</p>`,
       });
 
       res.json({ message: 'Coach rejected successfully' });
@@ -155,7 +155,7 @@ export const adminController = {
       // Get all active users
       const users = await User.find({
         status: 'active',
-      }).select('email name');
+      }).select('email firstName lastName');
 
       // Send announcement email to all users
       await Promise.all(
@@ -163,8 +163,8 @@ export const adminController = {
           emailService.sendEmail({
             to: user.email,
             subject: 'Platform Announcement',
-            text: `Dear ${user.name},\n\n${message}\n\nBest regards,\nSatya Coaching Team`,
-            html: `<p>Dear ${user.name},</p><p>${message}</p><p>Best regards,<br>Satya Coaching Team</p>`,
+            text: `Dear ${user.firstName} ${user.lastName},\n\n${message}\n\nBest regards,\nSatya Coaching Team`,
+            html: `<p>Dear ${user.firstName} ${user.lastName},</p><p>${message}</p><p>Best regards,<br>Satya Coaching Team</p>`,
           })
         )
       );
