@@ -656,3 +656,165 @@ Critical implementation paths: Defining robust Supabase RLS policies for all tab
      await expect(page.locator('text=new@example.com')).toBeVisible();
    });
    ```
+
+## Reflections Feature Patterns
+
+1. **Client-Side Encryption Pattern**:
+   ```typescript
+   // Initialize encryption library
+   await Encryption.init();
+   
+   // Generate a unique encryption key
+   const encryptionKey = Encryption.generateKey();
+   
+   // Encrypt data before transmission
+   const encryptedBlob = await Encryption.encryptFile(audioBlob, encryptionKey);
+   
+   // Store encryption key in IndexedDB
+   await saveEncryptionKey(reflectionId, encryptionKey);
+   ```
+
+2. **Offline Queue Pattern**:
+   ```typescript
+   // Check connectivity status before API call
+   if (isOnline) {
+     // Send data directly to the server
+     const response = await fetch('/api/reflections', { ... });
+   } else {
+     // Queue for later synchronization
+     await addToOfflineQueue({
+       url: '/api/reflections',
+       method: 'POST',
+       body: requestData,
+       timestamp: Date.now(),
+       reflectionId: tempReflectionId
+     });
+     
+     // Add optimistic update
+     queryClient.setQueryData(['reflections'], (old = []) => [newReflection, ...old]);
+   }
+   ```
+
+3. **Background Sync Pattern**:
+   ```typescript
+   // Monitor network status
+   useEffect(() => {
+     if (isOnline) {
+       // Process offline queue when connectivity returns
+       const queue = await getOfflineQueue();
+       
+       for (const item of queue) {
+         try {
+           const response = await fetch(item.url, { ... });
+           if (response.ok) {
+             await removeFromOfflineQueue(item.id);
+             queryClient.invalidateQueries(['reflections']);
+           }
+         } catch (error) {
+           // Keep in queue for retry
+         }
+       }
+     }
+   }, [isOnline]);
+   ```
+
+4. **S3 Presigned URL Pattern**:
+   ```typescript
+   // Generate presigned URL for secure upload
+   const command = new PutObjectCommand({
+     Bucket: BUCKET_NAME,
+     Key: objectKey,
+     ContentType: mimeType,
+   });
+   
+   const presignedUrl = await getSignedUrl(s3Client, command, {
+     expiresIn: EXPIRATION_TIME,
+   });
+   
+   // Client uploads directly to S3
+   const uploadResponse = await fetch(presignedUrl, {
+     method: 'PUT',
+     headers: { 'Content-Type': mimeType },
+     body: encryptedBlob,
+   });
+   ```
+
+5. **Multi-Step UI Pattern**:
+   ```typescript
+   const [step, setStep] = useState<'text' | 'audio' | 'review'>('text');
+   
+   // Render different UI based on current step
+   {step === 'text' && (
+     <TextInputComponent onNext={() => setStep('audio')} />
+   )}
+   
+   {step === 'audio' && (
+     <AudioRecorderComponent
+       onBack={() => setStep('text')}
+       onNext={() => setStep('review')}
+     />
+   )}
+   
+   {step === 'review' && (
+     <ReviewComponent
+       onBack={() => setStep('audio')}
+       onSubmit={handleSubmit}
+     />
+   )}
+   ```
+
+6. **Timeline Visualization Pattern**:
+   ```typescript
+   // Group reflections by date
+   const reflectionsByDate = useMemo(() => {
+     if (!data) return {};
+     
+     return data.reduce<Record<string, Reflection[]>>((acc, reflection) => {
+       const date = format(parseISO(reflection.createdAt), 'yyyy-MM-dd');
+       if (!acc[date]) acc[date] = [];
+       acc[date].push(reflection);
+       return acc;
+     }, {});
+   }, [data]);
+   
+   // Render timeline by date groups
+   {Object.entries(reflectionsByDate)
+     .sort((a, b) => (a[0] > b[0] ? -1 : 1))
+     .map(([date, reflections]) => (
+       <DateGroup key={date} date={date} reflections={reflections} />
+     ))}
+   ```
+
+7. **Mobile Platform Integration Pattern**:
+   ```typescript
+   // Check platform
+   const isNative = Capacitor.isNativePlatform();
+   
+   // Request permissions based on platform
+   const requestMicrophonePermissions = async (): Promise<boolean> => {
+     if (!isNative) return true; // Browser handles permissions
+     
+     const { microphone } = await Permissions.query({
+       name: Capacitor.getPlatform() === 'ios' 
+         ? 'microphone' 
+         : 'android.permission.RECORD_AUDIO',
+     });
+     
+     return microphone.state === 'granted';
+   };
+   
+   // Save files using platform-specific methods
+   const saveFile = async (blob: Blob, fileName: string): Promise<string> => {
+     if (!isNative) return URL.createObjectURL(blob);
+     
+     // Convert to base64 and save to filesystem
+     const base64Data = await blobToBase64(blob);
+     const result = await Filesystem.writeFile({
+       path: fileName,
+       data: base64Data,
+       directory: Directory.Cache,
+     });
+     
+     return result.uri;
+   };
+   ```

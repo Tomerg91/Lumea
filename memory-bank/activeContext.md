@@ -125,6 +125,18 @@ Recent changes:
   - Updated `.github/workflows/typecheck.yml` CI workflow to run `npm --workspace client run typecheck` directly, removing the old root `ci-check`.
 - **Verified Fix:** Confirmed `npm --workspace client run typecheck` passes locally. Pushed changes and confirmed CI pipeline passes.
 
+- **Implemented Secure Reflections Feature with Offline Support:**
+  - Created comprehensive Mongoose Reflection schema with appropriate indexes for querying by sessionId, clientId, and coachId
+  - Implemented S3 integration for secure audio uploads using presigned URLs with content validation
+  - Added client-side encryption with AES-256-GCM using libsodium-wrappers before data transmission
+  - Developed IndexedDB storage for encryption keys and offline queue management
+  - Built reflection API endpoints with proper role-based access controls
+  - Created React components for recording, reviewing, and displaying reflections
+  - Added TanStack Query for data fetching with optimistic updates
+  - Implemented offline support with background synchronization when connectivity returns
+  - Built Capacitor utilities for mobile platform integration (microphone permissions, file system access)
+  - Created timeline visualization for reflection history grouped by date
+
 Next steps:
 
 - 1. ✅ Address remaining TypeScript type errors in server code: Successfully fixed type conflicts in auth.ts, passport.ts, storage.ts, and other server files.
@@ -136,8 +148,8 @@ Next steps:
 - 7. ✅ Develop the `/dashboard/clients` ClientsPage UI to fetch and display the coach's clients.
 - 8. ✅ Create the coach session management UI with SessionModal and SessionList components.
 - 9. ✅ Add comprehensive test coverage for the new dashboard features.
-- 10. Implement Frontend UI for Client to view their own session history.
-- 11. Develop the reflections feature for clients to submit text/audio reflections on sessions.
+- 10. ✅ Implement Frontend UI for Client to view their own session history.
+- 11. ✅ Develop the reflections feature for clients to submit text/audio reflections on sessions.
 - 12. Build private coach notes UI for coaches to add notes to sessions.
 
 Active decisions and considerations:
@@ -177,6 +189,15 @@ Active decisions and considerations:
 - Supporting mobile viewport layouts (375×812) for all dashboard components
 - Using Vitest for component testing and Playwright for E2E tests
 - Implementing RTL Hebrew support throughout the coach dashboard
+- Using end-to-end encryption for reflection data
+- Implementing offline-first approach for reflection submission
+- Using IndexedDB for local storage of encryption keys and offline queue
+- Implementing background sync for offline data when connectivity returns
+- Using libsodium-wrappers for secure AES-256-GCM encryption
+- Creating presigned S3 URLs for secure audio file uploads
+- Validating file types and sizes before uploading
+- Using multi-step UI for reflection creation (text, audio, review)
+- Using Capacitor for mobile platform integration
 
 Important patterns and preferences:
 
