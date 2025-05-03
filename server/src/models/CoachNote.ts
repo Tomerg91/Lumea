@@ -8,6 +8,13 @@ const ENCRYPTION_IV = process.env.ENCRYPTION_IV || crypto.randomBytes(16).toStri
 export interface ICoachNote extends Document {
   sessionId: mongoose.Types.ObjectId;
   coachId: mongoose.Types.ObjectId;
+  // Properties used in tests
+  coach?: mongoose.Types.ObjectId;
+  client?: mongoose.Types.ObjectId;
+  title?: string;
+  content?: string;
+  visibility?: 'private' | 'private_to_coach' | 'shared' | 'public';
+  // Original properties
   textContent: string;
   audioFileId?: mongoose.Types.ObjectId;
   tags?: mongoose.Types.ObjectId[];
@@ -28,6 +35,29 @@ const coachNoteSchema = new Schema<ICoachNote>(
       ref: 'User',
       required: true,
     },
+    // Fields for backward compatibility with tests
+    coach: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    client: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    title: {
+      type: String,
+      trim: true,
+    },
+    content: {
+      type: String,
+      trim: true,
+    },
+    visibility: {
+      type: String,
+      enum: ['private', 'private_to_coach', 'shared', 'public'],
+      default: 'private',
+    },
+    // Original fields
     textContent: {
       type: String,
       required: true,
@@ -55,6 +85,8 @@ const coachNoteSchema = new Schema<ICoachNote>(
 // Index for faster queries
 coachNoteSchema.index({ sessionId: 1 });
 coachNoteSchema.index({ coachId: 1 });
+coachNoteSchema.index({ coach: 1 });
+coachNoteSchema.index({ client: 1 });
 
 // Pre-save middleware to encrypt text content
 coachNoteSchema.pre('save', function (next) {

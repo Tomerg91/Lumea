@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
-import { User } from '../models/User.js';
+import { User } from '../models/User';
 import { Session } from '../models/Session.js';
 import { EmailService } from '../services/emailService.js';
 
@@ -10,17 +10,28 @@ export const adminController = {
   // Get pending coaches
   getPendingCoaches: async (req: Request, res: Response) => {
     try {
-      const pendingCoaches = await User.find({
-        role: 'coach',
-        status: 'pending',
-      })
-        .select('_id name email createdAt')
-        .sort({ createdAt: -1 });
+      // Check if the requester is an admin
+      if (!req.user || req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
 
-      res.json(pendingCoaches);
+      // Find all coaches with pending status
+      const pendingCoaches = await User.find({
+        status: 'pending'
+      }).select('_id email firstName lastName createdAt');
+
+      // Filter coaches based on role
+      const filteredCoaches = pendingCoaches.filter(coach => {
+        const roleValue = typeof coach.role === 'object' && coach.role !== null && 'name' in coach.role 
+          ? coach.role.name 
+          : String(coach.role);
+        return roleValue === 'coach';
+      });
+
+      return res.status(200).json({ coaches: filteredCoaches });
     } catch (error) {
-      console.error('Error fetching pending coaches:', error);
-      res.status(500).json({ message: 'Failed to fetch pending coaches' });
+      console.error('Error getting pending coaches:', error);
+      return res.status(500).json({ message: 'Internal server error' });
     }
   },
 
@@ -52,37 +63,47 @@ export const adminController = {
 
   // Approve coach
   approveCoach: async (req: Request, res: Response) => {
-    const { id } = req.params;
-
     try {
-      const coach = await User.findOneAndUpdate(
-        {
-          _id: id,
-          role: 'coach',
-          status: 'pending',
-        },
-        {
-          status: 'active',
-        },
-        { new: true }
-      );
+      const { id } = req.params;
+
+      // Check if the requester is an admin
+      if (!req.user || req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+
+      // Find the coach by ID
+      const coach = await User.findById(id);
 
       if (!coach) {
         return res.status(404).json({ message: 'Coach not found' });
       }
 
-      // Send approval email
-      await emailService.sendEmail({
-        to: coach.email,
-        subject: 'Coach Application Approved',
-        text: `Dear ${coach.name},\n\nYour coach application has been approved. You can now log in and start using the platform.\n\nBest regards,\nSatya Coaching Team`,
-        html: `<p>Dear ${coach.name},</p><p>Your coach application has been approved. You can now log in and start using the platform.</p><p>Best regards,<br>Satya Coaching Team</p>`,
-      });
+      // Check if user has coach role - handling different role formats
+      const roleValue = typeof coach.role === 'object' && coach.role !== null && 'name' in coach.role 
+        ? coach.role.name 
+        : String(coach.role);
+      
+      if (roleValue !== 'coach') {
+        return res.status(400).json({ message: 'User is not a coach' });
+      }
 
-      res.json({ message: 'Coach approved successfully' });
+      // Update coach status to active
+      coach.status = 'active';
+      await coach.save();
+
+      return res.status(200).json({ 
+        message: 'Coach approved successfully',
+        coach: {
+          id: coach._id,
+          email: coach.email,
+          firstName: coach.firstName,
+          lastName: coach.lastName,
+          status: coach.status
+        }
+      });
     } catch (error) {
       console.error('Error approving coach:', error);
-      res.status(500).json({ message: 'Failed to approve coach' });
+      return res.status(500).json({ message: 'Internal server error' });
     }
   },
 

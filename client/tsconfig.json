@@ -17,7 +17,8 @@
       "@shared/*": ["../shared/*"],
       "@context/*": ["src/contexts/*"],
       "@components/*": ["src/components/*"]
-    }
+    },
+    "typeRoots": ["node_modules/@types", "src/types"]
   },
-  "include": ["src", "*.config.ts", "*.config.js"]
+  "include": ["src", "*.config.ts", "*.config.js", "src/types/*.d.ts"]
 }

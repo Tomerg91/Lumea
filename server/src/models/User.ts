@@ -3,11 +3,13 @@ import bcrypt from 'bcryptjs';
 
 // User interface definition
 export interface IUser extends Document {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   passwordHash: string;
   passwordSalt: string;
-  role: 'client' | 'coach' | 'admin';
+  role: mongoose.Types.ObjectId | { name: string } | null;
+  isActive: boolean;
   status: 'active' | 'pending' | 'inactive';
   profilePicture?: string;
   resetPasswordToken?: string;
@@ -21,15 +23,19 @@ export interface IUser extends Document {
 // Define schema with encryption methods
 const userSchema = new Schema<IUser>(
   {
-    name: { type: String, required: true, trim: true },
+    firstName: { type: String, required: true, trim: true },
+    lastName: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, trim: true, lowercase: true },
     passwordHash: { type: String, required: true },
     passwordSalt: { type: String, required: true },
     role: {
-      type: String,
-      required: true,
-      enum: ['client', 'coach', 'admin'],
-      default: 'client',
+      type: Schema.Types.ObjectId,
+      ref: 'Role',
+      required: false,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
     },
     status: {
       type: String,

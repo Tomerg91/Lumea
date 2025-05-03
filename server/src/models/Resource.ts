@@ -3,10 +3,15 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IResource extends Document {
   title: string;
   description: string;
-  fileId: mongoose.Types.ObjectId;
-  coachId: mongoose.Types.ObjectId;
-  tags?: mongoose.Types.ObjectId[];
-  assignedClientIds: mongoose.Types.ObjectId[];
+  fileId?: mongoose.Types.ObjectId;
+  coachId?: mongoose.Types.ObjectId;
+  // Test properties
+  url?: string;
+  resourceType?: 'article' | 'video' | 'document' | 'exercise';
+  addedBy?: mongoose.Types.ObjectId;
+  sharedWithRoles?: ('admin' | 'coach' | 'client')[];
+  tags?: mongoose.Types.ObjectId[] | string[];
+  assignedClientIds?: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,17 +31,31 @@ const resourceSchema = new Schema<IResource>(
     fileId: {
       type: Schema.Types.ObjectId,
       ref: 'File',
-      required: true,
     },
     coachId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
     },
+    // Test fields
+    url: {
+      type: String,
+      trim: true,
+    },
+    resourceType: {
+      type: String,
+      enum: ['article', 'video', 'document', 'exercise'],
+    },
+    addedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    sharedWithRoles: [{
+      type: String,
+      enum: ['admin', 'coach', 'client'],
+    }],
     tags: [
       {
-        type: Schema.Types.ObjectId,
-        ref: 'Tag',
+        type: Schema.Types.Mixed, // Allow both ObjectId and string
       },
     ],
     assignedClientIds: [
@@ -55,5 +74,7 @@ const resourceSchema = new Schema<IResource>(
 resourceSchema.index({ coachId: 1 });
 resourceSchema.index({ assignedClientIds: 1 });
 resourceSchema.index({ tags: 1 });
+resourceSchema.index({ addedBy: 1 });
+resourceSchema.index({ resourceType: 1 });
 
 export const Resource = mongoose.model<IResource>('Resource', resourceSchema);

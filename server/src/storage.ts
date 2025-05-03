@@ -406,7 +406,8 @@ export async function createReflection(
     const reflection = new Reflection({
       ...data,
       sessionId: new mongoose.Types.ObjectId(data.sessionId),
-      userId: new mongoose.Types.ObjectId(userId),
+      clientId: new mongoose.Types.ObjectId(userId),
+      coachId: session.coachId,
       audioFileId: data.audioFileId ? new mongoose.Types.ObjectId(data.audioFileId) : undefined,
     });
 
@@ -458,7 +459,7 @@ export async function getReflectionBySessionId(sessionId: string): Promise<IRefl
 export async function getReflectionsByUserId(userId: string): Promise<IReflection[]> {
   try {
     console.log('[getReflectionsByUserId] Fetching reflections for user:', userId);
-    const reflections = await Reflection.find({ userId: new mongoose.Types.ObjectId(userId) });
+    const reflections = await Reflection.find({ clientId: new mongoose.Types.ObjectId(userId) });
     console.log('[getReflectionsByUserId] Successfully found reflections for user:', userId);
     return reflections;
   } catch (error) {
@@ -481,7 +482,7 @@ export async function updateReflection(
     }
 
     // Check if the user is authorized to update this reflection
-    if (reflection.userId.toString() !== userId) {
+    if (reflection.clientId.toString() !== userId) {
       throw new Error('Not authorized to update this reflection');
     }
 
@@ -528,7 +529,7 @@ export async function deleteReflection(reflectionId: string, userId: string): Pr
     }
 
     // Check if the user is authorized to delete this reflection
-    if (reflection.userId.toString() !== userId) {
+    if (reflection.clientId.toString() !== userId) {
       throw new Error('Not authorized to delete this reflection');
     }
 

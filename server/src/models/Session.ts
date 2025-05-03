@@ -13,6 +13,13 @@ export interface ISession extends Document {
   isRecurring: boolean;
   recurrenceRule?: string;
   recurrenceEndDate?: Date;
+  // Fields from auth session
+  user?: mongoose.Types.ObjectId;
+  refreshToken?: string;
+  expiresAt?: Date;
+  issuedAt?: Date;
+  ipAddress?: string;
+  userAgent?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -73,6 +80,26 @@ const sessionSchema = new Schema<ISession>(
     recurrenceEndDate: {
       type: Date,
     },
+    // Fields for auth session
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    refreshToken: {
+      type: String,
+    },
+    expiresAt: {
+      type: Date,
+    },
+    issuedAt: {
+      type: Date,
+    },
+    ipAddress: {
+      type: String,
+    },
+    userAgent: {
+      type: String,
+    },
   },
   {
     timestamps: true,
@@ -83,5 +110,6 @@ const sessionSchema = new Schema<ISession>(
 sessionSchema.index({ coachId: 1, dateTime: 1 });
 sessionSchema.index({ clientId: 1, dateTime: 1 });
 sessionSchema.index({ paymentStatus: 1 });
+sessionSchema.index({ user: 1, refreshToken: 1 });
 
 export const Session = mongoose.model<ISession>('Session', sessionSchema);

@@ -23,6 +23,11 @@ const updateReflectionSchema = z.object({
   audioUrl: z.string().optional(),
 });
 
+// Zod schema for sharing a reflection
+const shareReflectionSchema = z.object({
+  shareWithCoach: z.boolean(),
+});
+
 export const reflectionController = {
   // Create a new reflection
   async createReflection(req: Request, res: Response) {
@@ -281,6 +286,45 @@ export const reflectionController = {
     } catch (error) {
       console.error('Error deleting reflection:', error);
       res.status(500).json({ error: 'Failed to delete reflection' });
+    }
+  },
+
+  // Share a reflection with the coach
+  async shareWithCoach(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const reflectionId = req.params.id;
+      const { shareWithCoach } = shareReflectionSchema.parse(req.body);
+
+      // Find the reflection
+      const reflection = await Reflection.findById(reflectionId);
+      if (!reflection) {
+        return res.status(404).json({ error: 'Reflection not found' });
+      }
+
+      // Only the client who created the reflection can share it
+      if (reflection.clientId.toString() !== req.user._id) {
+        return res.status(403).json({ error: 'Not authorized to share this reflection' });
+      }
+
+      // Update the reflection sharing status
+      reflection.sharedWithCoach = shareWithCoach;
+      await reflection.save();
+
+      res.json({
+        message: shareWithCoach ? 'Reflection shared with coach' : 'Reflection unshared with coach',
+        reflection
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: error.errors });
+      } else {
+        console.error('Error sharing reflection:', error);
+        res.status(500).json({ error: 'Failed to share reflection' });
+      }
     }
   }
 };
