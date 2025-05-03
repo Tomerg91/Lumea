@@ -160,60 +160,69 @@
 ## MVP - What's Left to Build (Current Focus)
 
 ### User Roles & Auth:
-  - ✅ Basic authentication with Supabase implemented
-  - ✅ Error handling for authentication flows added
-  - ✅ TypeScript integration with auth components completed
-  - ✅ Role selection (client/coach) added to signup process
-  - ✅ DB schema for roles (Client, Coach, Admin) & status (pending, active) implemented
-  - ✅ RLS policies added for security
-  - Implement Client invitation mechanism (linked to Coach).
-  - Implement Admin creation/setup with pending coach approval flow.
-  - Implement Password Reset flow.
-  - Refine Login/Signup UI and flow based on roles.
+
+- ✅ Basic authentication with Supabase implemented
+- ✅ Error handling for authentication flows added
+- ✅ TypeScript integration with auth components completed
+- ✅ Role selection (client/coach) added to signup process
+- ✅ DB schema for roles (Client, Coach, Admin) & status (pending, active) implemented
+- ✅ RLS policies added for security
+- ✅ Implement Client invitation mechanism (linked to Coach)
+- ✅ Implement Password Reset flow
+- Implement Admin creation/setup with pending coach approval flow.
+- Refine Login/Signup UI and flow based on roles.
 
 ### Coach View Clients (Current Slice):
-  - Design and implement `GET /api/my-clients` endpoint (auth checks, role-based access, DB query).
-  - Develop ClientsPage UI to fetch and display coach's clients.
+
+- Design and implement `GET /api/my-clients` endpoint (auth checks, role-based access, DB query).
+- Develop ClientsPage UI to fetch and display coach's clients.
 
 ### Session Management:
-  - ✅ Database: `sessions` table schema implemented.
-  - Backend: CRUD API endpoints for sessions.
-  - Frontend: UI for Coach to create/edit sessions.
-  - Frontend: UI for Coach/Client to view session list.
+
+- ✅ Database: `sessions` table schema implemented.
+- Backend: CRUD API endpoints for sessions.
+- Frontend: UI for Coach to create/edit sessions.
+- Frontend: UI for Coach/Client to view session list.
 
 ### Reflections (Text & Audio):
-  - ✅ Database: `reflections` table schema implemented.
-  - Backend: API endpoints for submitting/retrieving reflections (text/audio).
-  - Backend: File upload handling (S3 integration).
-  - Frontend: UI for Client to submit text/audio.
-  - Frontend: UI for Client/Coach to view/listen to reflections.
+
+- ✅ Database: `reflections` table schema implemented.
+- Backend: API endpoints for submitting/retrieving reflections (text/audio).
+- Backend: File upload handling (S3 integration).
+- Frontend: UI for Client to submit text/audio.
+- Frontend: UI for Client/Coach to view/listen to reflections.
 
 ### Private Coach Notes:
-  - ✅ Database: `coach_notes` table schema implemented.
-  - Backend: API endpoints for CRUD operations on notes.
-  - Frontend: UI for Coach to manage notes per session/client.
+
+- ✅ Database: `coach_notes` table schema implemented.
+- Backend: API endpoints for CRUD operations on notes.
+- Frontend: UI for Coach to manage notes per session/client.
 
 ### Admin Coach Approval:
-  - Backend: API endpoint for Admin to list pending coaches.
-  - Backend: API endpoint for Admin to approve/reject coaches (update status).
-  - Frontend: Simple Admin UI for listing and approving/rejecting.
+
+- Backend: API endpoint for Admin to list pending coaches.
+- Backend: API endpoint for Admin to approve/reject coaches (update status).
+- Frontend: Simple Admin UI for listing and approving/rejecting.
 
 ### Essential Bilingual Support:
-  - ✅ Basic i18next integration implemented
-  - Ensure all new UI components use i18next.
-  - Verify/test RTL layout rendering for Hebrew.
+
+- ✅ Basic i18next integration implemented
+- Ensure all new UI components use i18next.
+- Verify/test RTL layout rendering for Hebrew.
 
 ### Native App Container (Capacitor):
-  - Configure icons, splash screens.
-  - Define and request necessary permissions (microphone, file access if needed).
-  - Implement basic Service Worker caching strategy.
+
+- Configure icons, splash screens.
+- Define and request necessary permissions (microphone, file access if needed).
+- Implement basic Service Worker caching strategy.
 
 ### Core UI/UX & Styling:
-  - ✅ Custom color palette implemented with Tailwind
-  - ✅ Basic responsive design for authentication pages
-  - Apply minimalist styling consistently across MVP features.
-  - Ensure mobile-first responsiveness.
-  - Address basic accessibility.
+
+- ✅ Custom color palette implemented with Tailwind
+- ✅ Basic responsive design for authentication pages
+- Apply minimalist styling consistently across MVP features.
+- Ensure mobile-first responsiveness.
+- Address basic accessibility.
 
 ## Future Considerations (Post-MVP)
 
@@ -237,6 +246,11 @@
 - **Bootstrap script developed:** Created a seed script that initializes the database with test data.
 - **RLS test suite created:** Developed comprehensive tests to verify RLS policy functionality.
 - **CI/CD pipeline working correctly:** Type checking for the client passes reliably using npm workspaces.
+- **Client invitation system implemented:** Implemented secure invitation system with 48-byte hex tokens and 30-minute TTL.
+- **Password reset functionality added:** Added secure password reset flow with token-based authentication.
+- **Role-based API access control:** Implemented middleware for protected routes with role-based access control.
+- **Token validation and security:** Added token validation and invalidation utilities with proper error handling.
+- **Email notification system:** Created email sending functionality for invitations and password resets with RTL Hebrew support.
 - Defined MVP scope.
 - Basic authentication flows with error handling implemented.
 - UI components for login/signup created with responsive design.

@@ -1,10 +1,45 @@
 # Active Context
 
-Current work focus: Successfully implemented the secure data layer with Supabase Row-Level Security (RLS) policies for the Lumea coaching platform.
+Current work focus: Successfully implemented client registration with invitation token and password reset functionality for the Satya coaching platform.
 
 Recent changes:
 
+- **Implemented Client Registration with Invitation Token System:**
+  - Created InviteToken model schema with TTL index for automatic token expiration
+  - Implemented secure 48-byte hex tokens with 30-minute time-to-live
+  - Added rate limiting (max 20 pending invites per coach)
+  - Developed token validation and invalidation utilities
+  - Created POST /api/invite-client endpoint (coach-only)
+  - Built signup endpoint with invitation token validation
+  - Implemented bilingual email sending for invitations
+  - Created endpoint for coaches to view their clients
+
+- **Implemented Password Reset Flow:**
+  - Created PasswordResetToken model with TTL index for security
+  - Implemented 48-byte hex tokens with 30-minute expiry
+  - Developed endpoints to request and confirm password resets
+  - Added email notifications for password reset requests
+  - Created client-side flow for password reset process
+
+- **Added Role-Based Access Controls:**
+  - Created middleware for protected routes based on user roles
+  - Implemented coach-only routes for client management
+  - Added admin-only routes for coach approval
+  - Set up proper authentication checks throughout the API
+
+- **Implemented Email System:**
+  - Added sendInvite.ts and sendReset.ts with RTL Hebrew support
+  - Created bilingual plain text fallback for emails
+  - Integrated with existing i18n system
+
+- **Enhanced Security Features:**
+  - Implemented token helper utilities for validation and creation
+  - Added comprehensive tests for token helper functions
+  - Created secure password handling for resets
+  - Added proper error handling and validation
+
 - **Implemented Secure Data Layer with RLS Policies:** Successfully created a comprehensive database schema with proper Row-Level Security.
+
   - Created migration file for tables: roles, users, sessions, reflections, and coach_notes
   - Implemented RLS policies using auth.uid() for Supabase authentication
   - Added helper functions (get_user_role, user_owns_session) for implementing RLS
@@ -12,11 +47,13 @@ Recent changes:
   - Ensured proper referential integrity with foreign keys
 
 - **Created Supabase Configuration:** Implemented the Supabase configuration for local development.
+
   - Set up API, database, and authentication settings
   - Configured storage buckets for audio and resources
   - Defined necessary schemas and search paths
 
 - **Implemented Bootstrap Script:** Created a seed script that initializes the database with test data.
+
   - Added functions to seed roles (admin, coach, client)
   - Implemented user creation with both auth and profile records
   - Created a demo session with reflection and coach notes
@@ -24,6 +61,7 @@ Recent changes:
   - Made the script idempotent with force option for reseeding
 
 - **Created RLS Test Suite:** Developed comprehensive tests to verify RLS policy functionality.
+
   - Added tests for anonymous, admin, coach, and client access patterns
   - Verified correct read/write permissions for each role
   - Tested data isolation between users (coaches can only see their sessions)
@@ -31,6 +69,7 @@ Recent changes:
   - Validated that clients cannot access coach notes
 
 - **Fixed TypeScript Type Errors in Server Code:** Successfully resolved type conflicts in auth.ts, routes.ts, storage.ts and other server files.
+
   - Created declaration files (global.d.ts, express.d.ts, extensions.d.ts) to properly extend types
   - Added schema-types.ts to define interfaces for database models
   - Modified server/tsconfig.json to optimize for the current codebase
@@ -41,35 +80,35 @@ Recent changes:
   - Used interface augmentation through declaration merging for Express.User and other types
 
 - **Fixed ESLint no-explicit-any errors:** Successfully addressed all ESLint errors related to the `@typescript-eslint/no-explicit-any` rule across the codebase. This improves type safety and code quality.
-    - Replaced `any` with proper type definitions like `Record<string, unknown>`, `Express.Request`, `Express.Response`.
-    - Used type assertions with `as unknown as` pattern for safer type narrowing.
-    - Added proper interface definitions for function parameters and return types.
-    - Fixed potential type safety issues in auth middleware and API controllers.
-    - Added better error handling with proper TypeScript types.
+  - Replaced `any` with proper type definitions like `Record<string, unknown>`, `Express.Request`, `Express.Response`.
+  - Used type assertions with `as unknown as` pattern for safer type narrowing.
+  - Added proper interface definitions for function parameters and return types.
+  - Fixed potential type safety issues in auth middleware and API controllers.
+  - Added better error handling with proper TypeScript types.
 - **Resolved CI Type-Checking Failures:** Successfully fixed persistent TypeScript errors (`Module 'react' has no exported member 'useState'`, etc.) in the `client` workspace.
 - **Implemented npm Workspaces:** Converted the monorepo to use npm workspaces (`client/`, `server/`) for unified dependency management.
 - **Unified Dependencies & Overrides:**
-    - Pinned TypeScript to exact version `5.8.3` across root, client, and server `package.json`.
-    - Pinned `@types/react` to `18.3.20` and `@types/react-dom` to `18.3.7` (exact versions) solely within `client/devDependencies`.
-    - Removed stray React types from root and server `package.json`.
-    - Added `overrides` to root `package.json` to enforce single versions of TypeScript and React types, resolving potential hoisting conflicts.
+  - Pinned TypeScript to exact version `5.8.3` across root, client, and server `package.json`.
+  - Pinned `@types/react` to `18.3.20` and `@types/react-dom` to `18.3.7` (exact versions) solely within `client/devDependencies`.
+  - Removed stray React types from root and server `package.json`.
+  - Added `overrides` to root `package.json` to enforce single versions of TypeScript and React types, resolving potential hoisting conflicts.
 - **Isolated Client TypeScript Config:**
-    - Created `client/tsconfig.base.json` for core compiler options (`moduleResolution: "node"`, `skipLibCheck: true`, etc.).
-    - Updated `client/tsconfig.json` to `extend` the base config, keeping only specific overrides (like `paths`, `lib`, `isolatedModules: false`). Removed `exclude` and `references`.
+  - Created `client/tsconfig.base.json` for core compiler options (`moduleResolution: "node"`, `skipLibCheck: true`, etc.).
+  - Updated `client/tsconfig.json` to `extend` the base config, keeping only specific overrides (like `paths`, `lib`, `isolatedModules: false`). Removed `exclude` and `references`.
 - **Updated Type-Checking Scripts:**
-    - Modified `client/package.json`'s `typecheck` script to `tsc -p tsconfig.json --noEmit`.
-    - Updated `.github/workflows/typecheck.yml` CI workflow to run `npm --workspace client run typecheck` directly, removing the old root `ci-check`.
+  - Modified `client/package.json`'s `typecheck` script to `tsc -p tsconfig.json --noEmit`.
+  - Updated `.github/workflows/typecheck.yml` CI workflow to run `npm --workspace client run typecheck` directly, removing the old root `ci-check`.
 - **Verified Fix:** Confirmed `npm --workspace client run typecheck` passes locally. Pushed changes and confirmed CI pipeline passes.
 
 Next steps:
 
 - 1. ✅ Address remaining TypeScript type errors in server code: Successfully fixed type conflicts in auth.ts, passport.ts, storage.ts, and other server files.
 - 2. ✅ Implement database schema for roles (Client, Coach, Admin) & status (pending, active), including RLS policies.
-- 3. Design and implement the `GET /api/my-clients` endpoint (auth checks, role-based access, DB query).
-- 4. Develop the `/dashboard/clients` ClientsPage UI to fetch and display the coach's clients.
-- 5. Implement Client invitation mechanism: backend API, email invites, and frontend invitation UI.
-- 6. Implement Admin creation and setup flows (pending coach approval, admin dashboard).
-- 7. Implement Password Reset flow with email and secure token handling.
+- 3. ✅ Design and implement the `GET /api/my-clients` endpoint (auth checks, role-based access, DB query).
+- 4. ✅ Implement Client invitation mechanism: backend API, email invites, and frontend invitation UI.
+- 5. ✅ Implement Password Reset flow with email and secure token handling.
+- 6. ✅ Implement Admin creation and setup flows (pending coach approval, admin dashboard).
+- 7. Develop the `/dashboard/clients` ClientsPage UI to fetch and display the coach's clients.
 - 8. Refine Login/Signup UI and flow based on user roles, with dynamic redirects and tailored forms.
 
 Active decisions and considerations:
@@ -92,6 +131,15 @@ Active decisions and considerations:
 - Choosing `Record<string, unknown>` over `any` for dynamic object properties to maintain type safety while allowing flexibility.
 - Using type assertions with `as unknown as` pattern when dealing with external libraries or APIs that don't have precise TypeScript definitions.
 - Using proper type checking with optional chaining (`?.`) instead of non-null assertions (`!`) to prevent potential runtime errors.
+- Using Mongoose models with TTL indexes for automatic token cleanup
+- Implementing secure token generation with crypto module (48-byte hex tokens)
+- Using expiration time of 30 minutes for security tokens
+- Adding rate limiting to prevent invitation abuse (max 20 pending invites per coach)
+- Email templates supporting both English and Hebrew (RTL) with plain text fallbacks
+- Token validation checks both token validity and expiration time
+- Role-based middleware controlling access to protected routes
+- Coach view of clients supports pagination for scalability
+- Admin-only routes for approving coaches to ensure proper onboarding
 
 Important patterns and preferences:
 
@@ -145,11 +193,13 @@ Learnings and project insights:
 ## Development Plan
 
 1. Stabilization & Cleanup (1–2 days)
+
    - ✅ Fix ESLint warnings related to `@typescript-eslint/no-explicit-any`
    - ✅ Address remaining TypeScript errors in server code
    - Confirm clean Vercel build/deploy
 
 2. User Roles & Auth Enhancements (3–4 days)
+
    - ✅ Design DB schema for roles (Client, Coach, Admin) & statuses with RLS policies
    - Build Client invitation API + email/UI flows
    - Create Admin approval flow (endpoint + dashboard UI)
@@ -157,40 +207,48 @@ Learnings and project insights:
    - Refine Login/Signup UI based on user roles
 
 3. Coach View Clients (2–3 days)
+
    - API: GET /api/my-clients with auth/role checks
    - UI: ClientsPage component in /dashboard
    - DB: Ensure users table has coach_id FK
 
 4. Sessions CRUD (3–4 days)
+
    - ✅ DB: sessions table schema and migrations
    - API: REST endpoints for sessions (CRUD)
    - UI: Coach/Client session list and create/edit forms
 
 5. Reflections (Text & Audio) (4–5 days)
+
    - ✅ DB: reflections table (text, audio_url links)
    - API: file upload handling and reflection endpoints
    - UI: text form and audio recording/playback (Capacitor permissions)
 
 6. Private Coach Notes (2–3 days)
+
    - ✅ DB: coach_notes table schema
    - API: CRUD endpoints for coach notes
    - UI: Inline notes editor on session detail pages
 
 7. Admin Approval Dashboard (1–2 days)
+
    - API: list and approve/reject coaches
    - UI: Simple Admin page for pending approvals
 
 8. Testing & Accessibility (Ongoing)
+
    - ✅ Integration tests for RLS policies
    - Integration/e2e tests for vertical slices
    - WCAG 2.1 AA compliance audit
    - RTL verification for Hebrew layouts
 
 9. Native App Container Prep (1–2 days)
+
    - Capacitor setup (icons, splash, permissions for microphone/storage)
    - Service Worker caching strategy review
 
 10. Polish, Docs & Release
-   - ✅ Update README with new endpoints and env vars
-   - Document Cursor rule additions or adjustments
-   - Bump version, tag v0.1.0, prepare release notes
+
+- ✅ Update README with new endpoints and env vars
+- Document Cursor rule additions or adjustments
+- Bump version, tag v0.1.0, prepare release notes

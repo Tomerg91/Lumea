@@ -20,6 +20,7 @@ The database is designed with a secure, role-based access control system using *
 ```
 
 Key tables and relationships:
+
 - **roles**: Defines user types (`admin`, `coach`, `client`)
 - **users**: User profiles linked to auth.users via auth_id
 - **sessions**: Coaching sessions linking coaches and clients
@@ -29,6 +30,7 @@ Key tables and relationships:
 ## Row-Level Security (RLS) Patterns
 
 1. **Role-Based Access Control**:
+
    ```sql
    CREATE POLICY users_admin_all ON users
        FOR ALL
@@ -37,6 +39,7 @@ Key tables and relationships:
    ```
 
 2. **User-Based Ownership**:
+
    ```sql
    CREATE POLICY users_read_own ON users
        FOR SELECT
@@ -45,6 +48,7 @@ Key tables and relationships:
    ```
 
 3. **Helper Functions for RLS**:
+
    ```sql
    CREATE OR REPLACE FUNCTION get_user_role()
    RETURNS TEXT AS $$
@@ -60,7 +64,7 @@ Key tables and relationships:
        USING (
            get_user_role() = 'coach' AND
            session_id IN (
-               SELECT id FROM sessions 
+               SELECT id FROM sessions
                WHERE coach_id IN (SELECT id FROM users WHERE auth_id = auth.uid())
            )
        );
@@ -82,12 +86,139 @@ Key tables and relationships:
 
 ## Authentication Flow
 
-1. User enters credentials on the Auth page
-2. Application performs connectivity checks before authentication attempts
-3. Authentication request is sent to Supabase Auth API
-4. On success, user session is stored and profile is fetched from the database
-5. Role-based redirection occurs (coach vs client dashboard)
-6. Role-Based Access Control (RBAC) is enforced via Supabase RLS policies
+1. **Regular User Authentication:**
+   - User enters credentials on the Auth page
+   - Application performs connectivity checks before authentication attempts
+   - Authentication request is sent to Supabase Auth API
+   - On success, user session is stored and profile is fetched from the database
+   - Role-based redirection occurs (coach vs client dashboard)
+   - Role-Based Access Control (RBAC) is enforced via Supabase RLS policies
+
+2. **Client Invitation and Registration:**
+   - Coach invites client via POST /api/invite-client (email required)
+   - System creates secure 48-byte hex token with 30-minute TTL
+   - Invitation email sent to client with unique link containing token
+   - Client follows link and submits registration details
+   - System validates token and email match
+   - On success, client account is created, linked to coach
+   - Used token is invalidated to prevent reuse
+
+3. **Password Reset Flow:**
+   - User requests password reset via POST /api/password-reset (email required)
+   - System creates secure 48-byte hex token with 30-minute TTL
+   - Reset email sent to user with unique link containing token
+   - User follows link and submits new password
+   - System validates token before allowing password update
+   - On success, password is updated and token is invalidated
+
+4. **Admin Approval Flow:**
+   - Coach registers an account (status: pending, isApproved: false)
+   - Admin views pending coaches via admin dashboard
+   - Admin approves coach via PATCH /api/coach/:id/approve
+   - Coach status updated to active, isApproved set to true
+
+## Token Security Patterns
+
+1. **Secure Token Generation:**
+   ```typescript
+   export const generateToken = async (): Promise<string> => {
+     // Generate 48 bytes (96 hex characters) of random data
+     const buffer = await promisify(crypto.randomBytes)(48);
+     return buffer.toString('hex');
+   };
+   ```
+
+2. **Token Storage with TTL:**
+   ```typescript
+   const InviteTokenSchema = new Schema<IInviteToken>({
+     token: { type: String, required: true, unique: true },
+     coachId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+     email: { type: String, required: true },
+     expires: { type: Date, required: true },
+   });
+   
+   // Create TTL index for automatic cleanup
+   InviteTokenSchema.index({ expires: 1 }, { expireAfterSeconds: 0 });
+   ```
+
+3. **Token Validation:**
+   ```typescript
+   export const validateInviteToken = async (token: string): Promise<IInviteToken | null> => {
+     const inviteToken = await InviteToken.findOne({ token });
+     
+     if (!inviteToken) {
+       return null;
+     }
+     
+     // Check if token is expired
+     if (inviteToken.expires < new Date()) {
+       await InviteToken.deleteOne({ _id: inviteToken._id });
+       return null;
+     }
+     
+     return inviteToken;
+   };
+   ```
+
+4. **Token Invalidation:**
+   ```typescript
+   export const invalidateInviteToken = async (token: string): Promise<boolean> => {
+     const result = await InviteToken.deleteOne({ token });
+     return result.deletedCount > 0;
+   };
+   ```
+
+5. **Rate Limiting:**
+   ```typescript
+   // Check if coach has reached the maximum number of pending invites
+   const pendingInvitesCount = await InviteToken.countDocuments({
+     coachId: coachId,
+   });
+   
+   if (pendingInvitesCount >= MAX_PENDING_INVITES) {
+     return res.status(429).json({
+       message: `Maximum pending invites (${MAX_PENDING_INVITES}) reached. Please wait for clients to respond or delete existing invites.`,
+     });
+   }
+   ```
+
+## Role-Based Authorization Pattern
+
+1. **Authentication Middleware:**
+   ```typescript
+   export const isAuthenticated = (req: Request, res: Response, next: NextFunction): void => {
+     if (req.isAuthenticated()) {
+       return next();
+     }
+     res.status(401).json({ message: 'Unauthorized' });
+   };
+   ```
+
+2. **Role-Based Access Control:**
+   ```typescript
+   export const isCoach = (req: Request, res: Response, next: NextFunction): void => {
+     if (req.isAuthenticated() && req.user?.role === 'coach') {
+       return next();
+     }
+     res.status(403).json({ message: 'Access denied' });
+   };
+   
+   export const isAdmin = (req: Request, res: Response, next: NextFunction): void => {
+     if (req.isAuthenticated() && req.user?.role === 'admin') {
+       return next();
+     }
+     res.status(403).json({ message: 'Access denied' });
+   };
+   ```
+
+3. **Middleware Chaining for Protected Routes:**
+   ```typescript
+   // Coach-only route
+   router.post('/invite-client', isAuthenticated, isCoach, inviteController.inviteClient);
+   
+   // Admin-only route
+   router.patch('/coach/:id/approve', isAuthenticated, isAdmin, adminController.approveCoach);
+   ```
 
 ## Error Handling Pattern
 
@@ -102,24 +233,27 @@ Key tables and relationships:
 ## TypeScript Type Safety Patterns
 
 1. **Avoid `any` Type:** Replace with more specific types:
+
    ```typescript
    // ❌ Avoid
    function processData(data: any): any { ... }
-   
+
    // ✅ Preferred
    function processData(data: Record<string, unknown>): DataResult { ... }
    ```
 
 2. **Safe Type Casting:** Use two-step casting with `unknown` as intermediate:
+
    ```typescript
    // ❌ Avoid
    const result = data as ResultType;
-   
-   // ✅ Preferred 
+
+   // ✅ Preferred
    const result = data as unknown as ResultType;
    ```
 
 3. **Type Guarding:** Use type guards to narrow unknown types:
+
    ```typescript
    if (error instanceof Error) {
      console.error(error.message);
@@ -129,6 +263,7 @@ Key tables and relationships:
    ```
 
 4. **Utility Functions for Type Conversion:**
+
    ```typescript
    // Convert string IDs to numbers safely
    function getNumericUserId(req: Request): number {
@@ -138,15 +273,17 @@ Key tables and relationships:
    ```
 
 5. **Optional Chaining:** Use `?.` instead of non-null assertions:
+
    ```typescript
    // ❌ Avoid
    const role = req.user!.role;
-   
+
    // ✅ Preferred
    const role = req.user?.role;
    ```
 
 6. **Dynamic Object Types:** Use `Record<string, unknown>` for objects with dynamic keys:
+
    ```typescript
    const query: Record<string, unknown> = {};
    if (req.user?.role === 'coach') {
@@ -155,15 +292,17 @@ Key tables and relationships:
    ```
 
 7. **Proper Function Return Types:** Explicitly type function returns:
+
    ```typescript
    async function createUser(data: UserInput): Promise<Partial<IUser>> { ... }
    ```
 
 8. **Type Declaration Files:** Use .d.ts files to extend existing types:
+
    ```typescript
    // In express.d.ts
    import 'express';
-   
+
    declare global {
      namespace Express {
        interface User {
@@ -173,11 +312,12 @@ Key tables and relationships:
        }
      }
    }
-   
+
    export {};
    ```
 
 9. **Interface Augmentation:** Use declaration merging to extend third-party types:
+
    ```typescript
    // Extend the Session interface
    declare global {
@@ -189,12 +329,13 @@ Key tables and relationships:
    ```
 
 10. **Pragmatic TypeScript Configuration:** Selectively relax type checking for specific scenarios:
+
     ```json
     // tsconfig.json
     {
       "compilerOptions": {
         "noPropertyAccessFromIndexSignature": false,
-        "strictNullChecks": false,
+        "strictNullChecks": false
         // Additional options
       }
     }
@@ -238,11 +379,11 @@ Key tables and relationships:
 
 1. **Dependency Management:** Use npm workspaces. Enforce single versions of critical shared dependencies (like TS, React types) using root `package.json` `overrides` and exact version pinning in individual `package.json` files.
 2. **TypeScript Configuration:** Use separate `tsconfig.json` files for root, client, and server. Isolate client config using `extends "./tsconfig.base.json"` pattern to prevent root interference.
-3.  CI/CD pipeline with GitHub Actions for automated testing and deployment.
-4.  TypeScript type checking for maintaining code quality (`npm --workspace client run typecheck`).
-5.  ESLint for code style enforcement.
-6.  Package scripts for common development tasks.
-7.  Environment-specific configurations (.env files).
+3. CI/CD pipeline with GitHub Actions for automated testing and deployment.
+4. TypeScript type checking for maintaining code quality (`npm --workspace client run typecheck`).
+5. ESLint for code style enforcement.
+6. Package scripts for common development tasks.
+7. Environment-specific configurations (.env files).
 
 ## Critical Implementation Paths
 
