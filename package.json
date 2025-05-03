@@ -46,7 +46,7 @@
     "typescript": "5.8.3",
     "typescript-eslint": "8.31.1",
     "ts-node": "^10.9.2",
-    "vitest": "^1.8.0",
+    "vitest": "^3.1.1",
     "dotenv": "^16.3.1",
     "@supabase/supabase-js": "^2.39.8"
   },
