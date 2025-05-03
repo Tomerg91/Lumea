@@ -818,3 +818,722 @@ Critical implementation paths: Defining robust Supabase RLS policies for all tab
      return result.uri;
    };
    ```
+
+## Performance Optimization Patterns
+
+### Server-Side Caching
+
+We use a node-cache based caching system to improve API response times for frequently accessed endpoints.
+
+Key components:
+- **Cache Utility (`server/src/utils/cache.ts`)**: Provides a central cache service with configurable TTLs and namespacing.
+- **Cache Middleware (`server/src/middleware/cache.ts`)**: Express middleware for caching responses and clearing cache when data changes.
+- **Implementation Pattern**:
+  ```typescript
+  // In route definition
+  router.get(
+    '/sessions', 
+    isAuthenticated, 
+    isCoach, 
+    cacheResponse({ ttl: SESSION_CACHE_TTL, keyPrefix: SESSION_CACHE_PREFIX }), 
+    sessionController.getSessions
+  );
+
+  // For POST/PUT/DELETE operations that modify data, clear the related cache
+  router.post(
+    '/sessions', 
+    isAuthenticated, 
+    isCoach, 
+    clearCache(SESSION_CACHE_PREFIX), 
+    sessionController.createSession
+  );
+  ```
+
+### Database Query Optimization
+
+MongoDB query optimizations to reduce response times and improve scalability.
+
+Key patterns:
+- **Database Indexes**: Created for frequently queried fields like User.email, CoachingSession.coachId, and CoachingSession.date.
+- **Selective Field Projection**: Use `.select()` to retrieve only needed fields.
+- **Lean Queries**: Use `.lean()` to return plain JavaScript objects instead of Mongoose documents when appropriate.
+- **Parallel Queries**: Use `Promise.all()` to execute independent queries in parallel.
+- **Implementation Pattern**:
+  ```typescript
+  // Example from sessionController.getSessions
+  const [sessions, total] = await Promise.all([
+    CoachingSession.find(query)
+      .sort({ date: -1 }) // Sort by date descending (newest first)
+      .skip(skip)
+      .limit(limit)
+      .select('clientId date notes status') // Select only needed fields
+      .populate('clientId', 'firstName lastName email') // Select only needed fields from client
+      .lean(), // Use lean() for better performance
+    
+    CoachingSession.countDocuments(query)
+  ]);
+  ```
+
+### React Performance Optimizations
+
+Client-side performance optimizations to improve initial load time and runtime performance.
+
+Key patterns:
+- **Code Splitting**: Using React.lazy() for component-based code splitting.
+- **Lazy Loading**: Loading components only when needed with Suspense.
+- **Consistent Loading Indicators**: Using a standardized LoadingFallback component.
+- **Conditional StrictMode**: Disabling React StrictMode in production to prevent double rendering.
+- **Asset Preloading**: Preloading critical fonts and assets for better perceived performance.
+- **Implementation Pattern**:
+  ```typescript
+  // Code splitting with React.lazy
+  const HomePage = lazy(() => import('./pages/Index'));
+  const AuthPage = lazy(() => import('./pages/Auth'));
+  const Dashboard = lazy(() => import('./pages/Dashboard'));
+
+  // Suspense with fallback
+  <Suspense fallback={<LoadingFallback />}>
+    <Routes>
+      {/* Routes here */}
+    </Routes>
+  </Suspense>
+  ```
+
+### Performance Monitoring
+
+Middleware for monitoring and tracking application performance.
+
+Key components:
+- **Performance Monitoring Middleware**: Tracks request processing time and logs slow requests.
+- **Response Time Headers**: Adds X-Response-Time header to responses.
+- **Memory Usage Tracking**: Monitors and logs server memory usage.
+- **Implementation Pattern**:
+  ```typescript
+  // In app.ts
+  app.use(performanceMonitor({
+    slowThreshold: 500, // Log requests taking more than 500ms
+  }));
+  ```
+
+## Authentication and Authorization Patterns
+
+### Role-Based Access Control
+
+We use middleware to restrict access to routes based on user roles.
+
+```javascript
+// Middleware to check if user is authenticated
+export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Authentication required' });
+  }
+  next();
+};
+
+// Middleware to check if user is a coach
+export const isCoach = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user || req.user.role !== 'coach') {
+    return res.status(403).json({ message: 'Coach access required' });
+  }
+  next();
+};
+
+// Usage in routes
+router.get('/my-clients', isAuthenticated, isCoach, clientController.getMyClients);
+```
+
+### Supabase Row-Level Security
+
+Database-level security using RLS policies to control access to data.
+
+```sql
+-- Example RLS policy that allows users to view only their own sessions
+CREATE POLICY "Users can view their own sessions"
+  ON sessions
+  FOR SELECT
+  USING (
+    auth.uid() = coachId OR
+    auth.uid() = clientId
+  );
+```
+
+Helper functions to simplify RLS policies:
+
+```sql
+-- Function to check if a user owns a session
+CREATE FUNCTION user_owns_session(session_id BIGINT)
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM sessions
+    WHERE id = session_id
+    AND (coachId = auth.uid() OR clientId = auth.uid())
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
+```
+
+### Token-Based Secure Systems
+
+We use secure token generation for operations like password reset and client invitations.
+
+```javascript
+// Generate a secure token (48 bytes hex = 96 hex characters)
+export const generateToken = (): string => {
+  return crypto.randomBytes(48).toString('hex');
+};
+
+// Create an invitation token with expiration
+const token = generateToken();
+const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
+
+await InviteToken.create({
+  token,
+  coachId,
+  email,
+  expiresAt,
+});
+
+// Validate a token
+export const validateToken = async (token: string): Promise<IToken | null> => {
+  const inviteToken = await Token.findOne({ token });
+  
+  if (!inviteToken) {
+    return null;
+  }
+  
+  if (inviteToken.expiresAt < new Date()) {
+    // Token has expired, delete it
+    await Token.deleteOne({ _id: inviteToken._id });
+    return null;
+  }
+  
+  return inviteToken;
+};
+```
+
+## Database Schema and Query Patterns
+
+### Relational Schema with MongoDB
+
+MongoDB schema design with proper relationships and indexes.
+
+```typescript
+// CoachingSession model
+const CoachingSessionSchema = new Schema<ICoachingSession>({
+  coachId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  clientId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  date: { type: Date, required: true, index: true },
+  notes: { type: String, default: '' },
+  status: { type: String, enum: ['scheduled', 'completed', 'cancelled'], default: 'scheduled' },
+});
+
+// Create compound indexes for common query patterns
+CoachingSessionSchema.index({ coachId: 1, date: -1 });
+CoachingSessionSchema.index({ clientId: 1, date: -1 });
+```
+
+## Component Architecture Patterns
+
+### Form Handling
+
+We use a combination of React Hook Form and controlled components for form handling.
+
+```tsx
+import { useForm } from 'react-hook-form';
+
+const SignupForm = () => {
+  const { register, handleSubmit, formState: { errors } } = useForm();
+  
+  const onSubmit = async (data) => {
+    // Handle form submission
+  };
+  
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input 
+        {...register('email', { 
+          required: 'Email is required',
+          pattern: {
+            value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+            message: 'Invalid email format'
+          }
+        })}
+      />
+      {errors.email && <span>{errors.email.message}</span>}
+      
+      {/* Other form fields */}
+      
+      <button type="submit">Submit</button>
+    </form>
+  );
+};
+```
+
+### Error Handling
+
+We use a consistent approach to error handling across the application.
+
+```tsx
+// API request with error handling
+const handleLogin = async () => {
+  setLoading(true);
+  setError(null);
+  
+  try {
+    // Attempt to login
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (error) throw error;
+    
+    // Handle successful login
+  } catch (err) {
+    // Format error message for display
+    setError(formatErrorMessage(err));
+  } finally {
+    setLoading(false);
+  }
+};
+
+// In the UI
+{error && <div className="error-message">{error}</div>}
+{loading && <LoadingSpinner />}
+```
+
+### Data Fetching
+
+We use TanStack Query (React Query) for data fetching with proper caching and loading states.
+
+```tsx
+// Define a query hook
+export const useClients = () => {
+  return useQuery({
+    queryKey: ['clients'],
+    queryFn: async () => {
+      const response = await fetch('/api/my-clients');
+      if (!response.ok) {
+        throw new Error('Failed to fetch clients');
+      }
+      return response.json();
+    },
+    // Refetch every 30 seconds
+    refetchInterval: 30000,
+  });
+};
+
+// Use the query in a component
+const ClientsPage = () => {
+  const { data, isLoading, error } = useClients();
+  
+  if (isLoading) return <LoadingSpinner />;
+  if (error) return <ErrorDisplay error={error} />;
+  
+  return (
+    <div>
+      <h1>My Clients</h1>
+      <ClientsList clients={data} />
+    </div>
+  );
+};
+```
+
+## Backend API Patterns
+
+### Controller Pattern
+
+We use the controller pattern for organizing API endpoints.
+
+```typescript
+// Controller definitions
+export const sessionController = {
+  getSessions: async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Implementation
+    } catch (error) {
+      console.error('Error getting sessions:', error);
+      res.status(500).json({ message: 'Failed to get sessions' });
+    }
+  },
+  
+  createSession: async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Implementation
+    } catch (error) {
+      console.error('Error creating session:', error);
+      res.status(500).json({ message: 'Failed to create session' });
+    }
+  },
+  
+  // Other methods
+};
+
+// Route definitions
+const router = express.Router();
+router.get('/sessions', isAuthenticated, isCoach, sessionController.getSessions);
+router.post('/sessions', isAuthenticated, isCoach, sessionController.createSession);
+```
+
+### Input Validation
+
+We use zod for input validation throughout the API.
+
+```typescript
+import { z } from 'zod';
+
+// Validation schema for creating a session
+const createSessionSchema = z.object({
+  clientId: z.string().min(1),
+  date: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: 'Invalid date format',
+  }),
+  notes: z.string().optional(),
+});
+
+// In the controller
+try {
+  createSessionSchema.parse(req.body);
+} catch (error) {
+  if (error instanceof z.ZodError) {
+    res.status(400).json({ message: 'Invalid session data', errors: error.errors });
+    return;
+  }
+  throw error;
+}
+```
+
+## CSS and Styling Patterns
+
+### Tailwind CSS with Custom Configuration
+
+We use Tailwind CSS with a custom color palette for styling.
+
+```js
+// tailwind.config.js
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        'lumea-blue': '#007AFF',
+        'lumea-dark-blue': '#0056B3',
+        'lumea-green': '#34C759',
+        'lumea-red': '#FF3B30',
+        'lumea-gray': '#8E8E93',
+        'lumea-light-gray': '#F2F2F7',
+        'lumea-dark-gray': '#3A3A3C',
+      },
+    },
+  },
+  plugins: [],
+};
+```
+
+### Responsive Design Pattern
+
+We use a mobile-first approach to responsive design.
+
+```jsx
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  {/* Content */}
+</div>
+```
+
+### RTL Support
+
+We support right-to-left languages (Hebrew) throughout the application.
+
+```tsx
+<div className={`${isRTL ? 'text-right' : 'text-left'}`}>
+  <h1>{t('dashboard.title')}</h1>
+  <p>{t('dashboard.subtitle')}</p>
+</div>
+```
+
+## Internationalization Pattern
+
+We use i18next for internationalization support.
+
+```tsx
+// i18n.js
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+
+i18n
+  .use(initReactI18next)
+  .init({
+    resources: {
+      en: {
+        translation: {
+          // English translations
+        }
+      },
+      he: {
+        translation: {
+          // Hebrew translations
+        }
+      }
+    },
+    lng: 'en',
+    fallbackLng: 'en',
+    interpolation: {
+      escapeValue: false
+    }
+  });
+
+// In components
+import { useTranslation } from 'react-i18next';
+
+const Component = () => {
+  const { t } = useTranslation();
+  
+  return (
+    <div>
+      <h1>{t('title')}</h1>
+      <p>{t('description')}</p>
+    </div>
+  );
+};
+```
+
+## Testing Patterns
+
+### Component Testing with Vitest
+
+We use Vitest for component testing.
+
+```tsx
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import ClientsTable from './ClientsTable';
+
+describe('ClientsTable', () => {
+  it('renders clients correctly', () => {
+    const mockClients = [
+      { id: '1', firstName: 'John', lastName: 'Doe', email: 'john@example.com' }
+    ];
+    
+    render(<ClientsTable clients={mockClients} />);
+    
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
+    expect(screen.getByText('john@example.com')).toBeInTheDocument();
+  });
+});
+```
+
+### E2E Testing with Playwright
+
+We use Playwright for end-to-end testing.
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test('coach can log in and view clients', async ({ page }) => {
+  await page.goto('/auth');
+  
+  // Fill in login form
+  await page.fill('input[name="email"]', 'coach@example.com');
+  await page.fill('input[name="password"]', 'password123');
+  await page.click('button[type="submit"]');
+  
+  // Verify navigation to dashboard
+  await expect(page).toHaveURL(/dashboard/);
+  
+  // Navigate to clients page
+  await page.click('a[href="/coach/clients"]');
+  
+  // Verify clients page loads
+  await expect(page.locator('h1')).toContainText('My Clients');
+});
+```
+
+## Error Handling Patterns
+
+### API Error Handling
+
+Consistent error handling pattern in API endpoints.
+
+```typescript
+try {
+  // API logic here
+} catch (error) {
+  console.error('Descriptive error message:', error);
+  res.status(500).json({ message: 'User-friendly error message' });
+}
+```
+
+### Client-Side Error Handling
+
+Consistent error handling in client-side components.
+
+```tsx
+const [error, setError] = useState(null);
+
+const handleAction = async () => {
+  try {
+    setError(null);
+    // Action logic here
+  } catch (err) {
+    setError(formatErrorMessage(err));
+  }
+};
+
+// In the JSX
+{error && <ErrorMessage message={error} />}
+```
+
+## TypeScript Patterns
+
+### Type Safety with Validation
+
+We combine TypeScript types with runtime validation using zod.
+
+```typescript
+// Define TypeScript interface
+interface CreateSessionDto {
+  clientId: string;
+  date: string;
+  notes?: string;
+}
+
+// Define zod schema for runtime validation
+const createSessionSchema = z.object({
+  clientId: z.string().min(1),
+  date: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: 'Invalid date format',
+  }),
+  notes: z.string().optional(),
+});
+
+// Type the request body and validate it
+const { clientId, date, notes } = createSessionSchema.parse(req.body) as CreateSessionDto;
+```
+
+## Mobile Integration Patterns
+
+### Capacitor Configuration
+
+We use Capacitor for mobile app builds.
+
+```typescript
+// capacitor.config.ts
+import { CapacitorConfig } from '@capacitor/cli';
+
+const config: CapacitorConfig = {
+  appId: 'com.satyacoaching.app',
+  appName: 'Satya Coaching',
+  webDir: 'dist',
+  server: {
+    androidScheme: 'https',
+    iosScheme: 'https'
+  },
+  plugins: {
+    // Plugin configuration
+  }
+};
+
+export default config;
+```
+
+## Feature-Specific Patterns
+
+### Session Management Pattern
+
+The pattern for creating and retrieving coaching sessions.
+
+```typescript
+// Create a session
+const session = await CoachingSession.create({
+  coachId: req.user.id,
+  clientId,
+  date: new Date(date),
+  notes: notes || '',
+});
+
+// Get sessions with filtering and pagination
+const query = {
+  coachId: req.user.id,
+  ...(clientId && { clientId }),
+  ...(dateQuery && { date: dateQuery })
+};
+
+const sessions = await CoachingSession.find(query)
+  .sort({ date: -1 })
+  .skip(skip)
+  .limit(limit)
+  .select('clientId date notes status')
+  .populate('clientId', 'firstName lastName email')
+  .lean();
+```
+
+### Reflection System Pattern
+
+The pattern for creating and storing reflection data.
+
+```typescript
+// Store encrypted reflection
+const reflection = await Reflection.create({
+  sessionId,
+  clientId: req.user.id,
+  text: encryptedText,
+  audioUrl: audioFileUrl || null,
+  encryptionMetadata: {
+    version: '1.0',
+    algorithm: 'AES-256-GCM',
+    // Store IV and other encryption metadata
+  }
+});
+
+// Retrieve and decrypt reflections
+const reflections = await Reflection.find({ clientId: req.user.id })
+  .sort({ createdAt: -1 })
+  .populate('sessionId')
+  .lean();
+
+const decryptedReflections = reflections.map(reflection => ({
+  ...reflection,
+  text: decryptText(reflection.text, keyFromStorage, reflection.encryptionMetadata)
+}));
+```
+
+## Deployment and CI/CD Patterns
+
+### GitHub Actions Workflow
+
+Pattern for CI/CD using GitHub Actions.
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Run linting
+      run: npm run lint
+      
+    - name: Run type checking
+      run: npm run typecheck
+      
+    - name: Run tests
+      run: npm test
+      
+    - name: Build
+      run: npm run build
+```

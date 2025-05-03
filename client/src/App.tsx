@@ -1,14 +1,25 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Link, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
-import ClientsPage from './pages/Dashboard/ClientsPage';
-import AuthPage from './pages/Auth';
-import HomePage from './pages/Index'; // Import HomePage component
-import Dashboard from './pages/Dashboard'; // Import the Dashboard component
-import TestPage from './pages/Test'; // Import TestPage component
-import DebugPage from './pages/Debug'; // Import DebugPage component
-import SessionsPage from './pages/SessionsPage';
+import usePageTracking from './hooks/usePageTracking'; // Import page tracking hook
 import './App.css';
+
+// Implement lazy loading for all page components
+const HomePage = lazy(() => import('./pages/Index'));
+const AuthPage = lazy(() => import('./pages/Auth'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const ClientsPage = lazy(() => import('./pages/Dashboard/ClientsPage'));
+const SessionsPage = lazy(() => import('./pages/SessionsPage'));
+const TestPage = lazy(() => import('./pages/Test'));
+const DebugPage = lazy(() => import('./pages/Debug'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="loading-spinner">
+    <div>Loading...</div>
+  </div>
+);
 
 interface ProtectedRouteProps {
   allowedRoles: string[];
@@ -28,7 +39,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
 
   if (loading) {
     console.log('[ProtectedRoute] Rendering Loading state');
-    return <div>Loading session...</div>;
+    return <LoadingFallback />;
   }
 
   if (!session) {
@@ -42,7 +53,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
     console.log('[ProtectedRoute] Session exists, but profile not yet loaded. Rendering loading.');
     // It's possible to be authenticated but profile hasn't loaded yet
     // Render loading or a placeholder, DO NOT redirect to /auth here
-    return <div>Loading profile...</div>; // Or null, or a spinner
+    return <LoadingFallback />; // Use the consistent loading component
   }
 
   // Check if the user's role is in the allowedRoles array
@@ -70,6 +81,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
 
 const App: React.FC = () => {
   const { session, profile, signOut, loading } = useAuth();
+  usePageTracking(); // Initialize page tracking
 
   return (
     <div>
@@ -86,6 +98,11 @@ const App: React.FC = () => {
         {session && profile?.role === 'client' && (
           <>
             | <Link to="/client/dashboard">My Dashboard</Link>
+          </>
+        )}
+        {session && profile?.role === 'admin' && (
+          <>
+            | <Link to="/admin">Admin Console</Link>
           </>
         )}
         {/* Add links for other roles/pages */}
@@ -108,48 +125,59 @@ const App: React.FC = () => {
       </nav>
 
       <main style={{ paddingTop: '20px' }}>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<HomePage />} /> {/* Use HomePage component */}
-          <Route path="/auth" element={<AuthPage />} /> {/* Route for Auth component */}
-          <Route path="/test" element={<TestPage />} /> {/* New Test Page Route */}
-          <Route path="/debug" element={<DebugPage />} /> {/* Debug Page Route */}
-          {/* Coach Protected Routes */}
-          <Route element={<ProtectedRoute allowedRoles={['coach']} />}>
-            <Route path="/coach/dashboard" element={<Dashboard />} />
-            <Route path="/coach/clients" element={<ClientsPage />} />
-            <Route path="/coach/sessions" element={<SessionsPage />} />
-            <Route path="/coach/reflections" element={<div>Coach Reflections Page</div>} />
-            <Route path="/coach/resources" element={<div>Coach Resources Page</div>} />
-            <Route path="/coach/profile" element={<div>Coach Profile Page</div>} />
-          </Route>
-          {/* Coach Protected Routes (legacy paths) */}
-          <Route element={<ProtectedRoute allowedRoles={['coach']} />}>
-            <Route path="/dashboard" element={<Navigate to="/coach/dashboard" replace />} />
-            <Route path="/clients" element={<Navigate to="/coach/clients" replace />} />
-          </Route>
-          {/* Client Protected Routes */}
-          <Route element={<ProtectedRoute allowedRoles={['client']} />}>
-            <Route path="/client/dashboard" element={<Dashboard />} />
-            <Route path="/client/sessions" element={<SessionsPage />} />
-            <Route path="/client/reflections" element={<div>Client Reflections Page</div>} />
-            <Route path="/client/resources" element={<div>Client Resources Page</div>} />
-            <Route path="/client/profile" element={<div>Client Profile Page</div>} />
-          </Route>
-          {/* Fallback 404 route */}
-          <Route
-            path="*"
-            element={
-              <div style={{ padding: '2rem', textAlign: 'center' }}>
-                <h2>404 Not Found</h2>
-                <p>The page you&apos;re looking for doesn&apos;t exist.</p>
-                <div style={{ marginTop: '1rem' }}>
-                  <Link to="/">Go Home</Link>
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<HomePage />} /> {/* Use HomePage component */}
+            <Route path="/auth" element={<AuthPage />} /> {/* Route for Auth component */}
+            <Route path="/test" element={<TestPage />} /> {/* New Test Page Route */}
+            <Route path="/debug" element={<DebugPage />} /> {/* Debug Page Route */}
+            
+            {/* Admin Protected Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+              <Route path="/admin" element={<AdminDashboard />} />
+            </Route>
+            
+            {/* Coach Protected Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['coach']} />}>
+              <Route path="/coach/dashboard" element={<Dashboard />} />
+              <Route path="/coach/clients" element={<ClientsPage />} />
+              <Route path="/coach/sessions" element={<SessionsPage />} />
+              <Route path="/coach/reflections" element={<div>Coach Reflections Page</div>} />
+              <Route path="/coach/resources" element={<div>Coach Resources Page</div>} />
+              <Route path="/coach/profile" element={<div>Coach Profile Page</div>} />
+            </Route>
+            
+            {/* Coach Protected Routes (legacy paths) */}
+            <Route element={<ProtectedRoute allowedRoles={['coach']} />}>
+              <Route path="/dashboard" element={<Navigate to="/coach/dashboard" replace />} />
+              <Route path="/clients" element={<Navigate to="/coach/clients" replace />} />
+            </Route>
+            
+            {/* Client Protected Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['client']} />}>
+              <Route path="/client/dashboard" element={<Dashboard />} />
+              <Route path="/client/sessions" element={<SessionsPage />} />
+              <Route path="/client/reflections" element={<div>Client Reflections Page</div>} />
+              <Route path="/client/resources" element={<div>Client Resources Page</div>} />
+              <Route path="/client/profile" element={<div>Client Profile Page</div>} />
+            </Route>
+            
+            {/* Fallback 404 route */}
+            <Route
+              path="*"
+              element={
+                <div style={{ padding: '2rem', textAlign: 'center' }}>
+                  <h2>404 Not Found</h2>
+                  <p>The page you&apos;re looking for doesn&apos;t exist.</p>
+                  <div style={{ marginTop: '1rem' }}>
+                    <Link to="/">Go Home</Link>
+                  </div>
                 </div>
-              </div>
-            }
-          />
-        </Routes>
+              }
+            />
+          </Routes>
+        </Suspense>
       </main>
     </div>
   );
