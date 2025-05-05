@@ -20,6 +20,8 @@ jobs:
       - run: npm run lint || true # Don't fail the build for linting issues
       - name: Run type checking (CI mode)
         run: npm run ci-check || true # Don't fail the build for type checking issues
+      - name: Install visualization plugin explicitly
+        run: npm install --no-save rollup-plugin-visualizer
       - run: npm run build --if-present
 
   test:

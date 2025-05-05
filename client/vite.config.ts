@@ -2,151 +2,175 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import path from 'path';
 import { componentTagger } from 'lovable-tagger';
-import { visualizer } from 'rollup-plugin-visualizer';
 import { compression } from 'vite-plugin-compression2';
+
+// Try to import visualizer, but continue if it fails
+let visualizerPlugin = null;
+try {
+  // Dynamic import to avoid build failures if the package is missing
+  const visualizerImport = require('rollup-plugin-visualizer');
+  visualizerPlugin = visualizerImport.visualizer;
+} catch (error) {
+  console.warn('Warning: rollup-plugin-visualizer not available. Bundle analysis will be skipped.');
+}
 
 // Add this import for vitest types
 /// <reference types="vitest" />
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  plugins: [
+export default defineConfig(({ mode }) => {
+  // Create safe plugins array with only available plugins
+  const plugins = [
     react(),
+    // Only include plugins that are available and relevant for the current mode
     mode === 'development' && componentTagger(),
-    // Generate bundle analysis in production
-    mode === 'production' && visualizer({
-      open: false,
-      gzipSize: true,
-      brotliSize: true,
-      filename: 'dist/stats.html',
-    }),
-    // Compress assets in production
-    mode === 'production' && compression({
-      algorithm: 'brotliCompress',
-      exclude: [/\.(br)$/, /\.(gz)$/, /\.(png|jpe?g|gif|webp)$/i],
-      threshold: 1024, // Only compress files larger than 1KB
-    }),
-    // Generate gzip files too
-    mode === 'production' && compression({
-      algorithm: 'gzip',
-      exclude: [/\.(br)$/, /\.(gz)$/, /\.(png|jpe?g|gif|webp)$/i],
-      threshold: 1024,
-    }),
-  ].filter(Boolean),
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
-  },
-  build: {
-    // Enable minification
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-        pure_funcs: ['console.log', 'console.debug', 'console.trace'],
-      },
-      output: {
-        comments: false, // Remove all comments
-      },
-    },
-    // Configure code splitting
-    rollupOptions: {
-      output: {
-        manualChunks: (id) => {
-          // Create vendor chunks based on node_modules
-          if (id.includes('node_modules')) {
-            // React and core dependencies
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-              return 'vendor-react';
-            }
-            // UI component libraries
-            if (id.includes('@headlessui') || id.includes('@radix-ui')) {
-              return 'vendor-ui';
-            }
-            // Data handling and API libraries
-            if (id.includes('axios') || id.includes('swr') || id.includes('zustand')) {
-              return 'vendor-data';
-            }
-            // Utilities
-            if (id.includes('date-fns') || id.includes('lodash') || id.includes('uuid')) {
-              return 'vendor-utils';
-            }
-            // Fallback for other node_modules
-            return 'vendor-other';
-          }
-          
-          // Group application code by directory
-          if (id.includes('/src/components/')) {
-            return 'app-components';
-          }
-          if (id.includes('/src/pages/')) {
-            return 'app-pages';
-          }
-          if (id.includes('/src/utils/')) {
-            return 'app-utils';
-          }
-          if (id.includes('/src/hooks/')) {
-            return 'app-hooks';
-          }
-          // Default chunk for other app code
-          return 'app-core';
-        },
-        // Ensure chunk size is reasonable
-        chunkFileNames: 'assets/[name]-[hash].js',
-        entryFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]',
-      },
-    },
-    // Improve tree-shaking with module mode
-    cssCodeSplit: true,
-    // Source maps in development, none in production
-    sourcemap: mode !== 'production',
-    // Create assets manifest
-    manifest: true,
-    // Chunk naming strategy
-    chunkSizeWarningLimit: 1000, // 1MB warning limit
-    // Emit the correct CSS sourcemaps in production
-    cssMinify: true,
-  },
-  server: {
-    host: '::',
-    port: 8080,
-    hmr: {
-      overlay: true,
-    },
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
-  },
-  // Add test configuration
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/setupTests.ts',
-    // Optional: Enable CSS processing if needed for tests
-    // css: true,
-  },
-  // Optimize dependencies prebuilding
-  optimizeDeps: {
-    include: [
-      'react',
-      'react-dom',
-      'react-router-dom',
-      '@headlessui/react',
-      'axios',
-      'date-fns',
-    ],
-    // Force excluded modules to be fine-grained optimized
-    exclude: [],
-  },
-  // Enable top-level await support
-  esbuild: {
-    target: ['es2020']
+  ];
+
+  // Add visualizer only if available
+  if (mode === 'production' && visualizerPlugin) {
+    plugins.push(
+      visualizerPlugin({
+        open: false,
+        gzipSize: true,
+        brotliSize: true,
+        filename: 'dist/stats.html',
+      })
+    );
   }
-}));
+
+  // Add compression plugins for production
+  if (mode === 'production') {
+    plugins.push(
+      compression({
+        algorithm: 'brotliCompress',
+        exclude: [/\.(br)$/, /\.(gz)$/, /\.(png|jpe?g|gif|webp)$/i],
+        threshold: 1024, // Only compress files larger than 1KB
+      }),
+      compression({
+        algorithm: 'gzip',
+        exclude: [/\.(br)$/, /\.(gz)$/, /\.(png|jpe?g|gif|webp)$/i],
+        threshold: 1024,
+      })
+    );
+  }
+
+  return {
+    plugins: plugins.filter(Boolean),
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
+    },
+    build: {
+      // Enable minification
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: true,
+          drop_debugger: true,
+          pure_funcs: ['console.log', 'console.debug', 'console.trace'],
+        },
+        output: {
+          comments: false, // Remove all comments
+        },
+      },
+      // Configure code splitting
+      rollupOptions: {
+        output: {
+          manualChunks: (id) => {
+            // Create vendor chunks based on node_modules
+            if (id.includes('node_modules')) {
+              // React and core dependencies
+              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+                return 'vendor-react';
+              }
+              // UI component libraries
+              if (id.includes('@headlessui') || id.includes('@radix-ui')) {
+                return 'vendor-ui';
+              }
+              // Data handling and API libraries
+              if (id.includes('axios') || id.includes('swr') || id.includes('zustand')) {
+                return 'vendor-data';
+              }
+              // Utilities
+              if (id.includes('date-fns') || id.includes('lodash') || id.includes('uuid')) {
+                return 'vendor-utils';
+              }
+              // Fallback for other node_modules
+              return 'vendor-other';
+            }
+            
+            // Group application code by directory
+            if (id.includes('/src/components/')) {
+              return 'app-components';
+            }
+            if (id.includes('/src/pages/')) {
+              return 'app-pages';
+            }
+            if (id.includes('/src/utils/')) {
+              return 'app-utils';
+            }
+            if (id.includes('/src/hooks/')) {
+              return 'app-hooks';
+            }
+            // Default chunk for other app code
+            return 'app-core';
+          },
+          // Ensure chunk size is reasonable
+          chunkFileNames: 'assets/[name]-[hash].js',
+          entryFileNames: 'assets/[name]-[hash].js',
+          assetFileNames: 'assets/[name]-[hash].[ext]',
+        },
+      },
+      // Improve tree-shaking with module mode
+      cssCodeSplit: true,
+      // Source maps in development, none in production
+      sourcemap: mode !== 'production',
+      // Create assets manifest
+      manifest: true,
+      // Chunk naming strategy
+      chunkSizeWarningLimit: 1000, // 1MB warning limit
+      // Emit the correct CSS sourcemaps in production
+      cssMinify: true,
+    },
+    server: {
+      host: '::',
+      port: 8080,
+      hmr: {
+        overlay: true,
+      },
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+          secure: false,
+        },
+      },
+    },
+    // Add test configuration
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: './src/setupTests.ts',
+      // Optional: Enable CSS processing if needed for tests
+      // css: true,
+    },
+    // Optimize dependencies prebuilding
+    optimizeDeps: {
+      include: [
+        'react',
+        'react-dom',
+        'react-router-dom',
+        '@headlessui/react',
+        'axios',
+        'date-fns',
+      ],
+      // Force excluded modules to be fine-grained optimized
+      exclude: [],
+    },
+    // Enable top-level await support
+    esbuild: {
+      target: ['es2020']
+    }
+  };
+});

@@ -25,6 +25,9 @@ Recent changes:
   - Updated .eslintignore to exclude files that don't need linting
   - Modified GitHub workflow files to be non-blocking for TypeScript and linting errors
   - Fixed spacing and formatting issues in various files
+  - Fixed build failures with missing rollup-plugin-visualizer dependency
+  - Improved vite.config.ts to handle optional dependencies with robust error handling
+  - Updated CI workflow to explicitly install visualization dependencies
 
 - **Supabase Profiles Table Issue:**
   - Created the missing `profiles` table in Supabase that was causing login failures
