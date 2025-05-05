@@ -1,21 +1,22 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import App from './App';
 import './index.css';
-// Import i18n configuration
+import App from './App';
 import './i18n';
+import { initPerformanceMonitoring } from './utils/performanceMonitoring';
+import mobileOptimizations from './utils/mobileOptimizations';
 
-const rootElement = document.getElementById('root');
-if (!rootElement) throw new Error('Failed to find the root element');
+// Initialize performance monitoring
+initPerformanceMonitoring();
 
-ReactDOM.createRoot(rootElement).render(
+// Apply mobile-specific optimizations
+mobileOptimizations.applyOptimizedStyles();
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
+      <App />
     </BrowserRouter>
   </React.StrictMode>
 );

@@ -2,7 +2,209 @@
 
 ## Architecture
 
-Full-stack Progressive Web App (PWA) with a React TypeScript frontend, leveraging **Supabase for backend services (Auth, PostgreSQL DB, Storage, Realtime APIs)**. Node.js/Express backend for API endpoints and server-side logic. **The project is structured as an npm monorepo using workspaces (`client/`, `server/`).**
+Full-stack Progressive Web App (PWA) with a React TypeScript frontend, leveraging **Supabase for backend services (Auth, PostgreSQL DB, Storage, Realtime APIs)**. Node.js/Express backend for API endpoints and server-side logic. **The project is structured as an npm monorepo using workspaces (`client/`, `server/`).** Redis is used for server-side caching of API responses and session data.
+
+## UI Component Styling Patterns
+
+The UI system uses **Tailwind CSS with ShadCN components**, following a consistent pattern for component styling and variants.
+
+### Design Token System
+
+The application uses a refined design token system with the Lumea color palette:
+
+```tsx
+// In tailwind.config.ts
+theme: {
+  extend: {
+    colors: {
+      // Base semantic colors
+      border: 'hsl(var(--border))',
+      input: 'hsl(var(--input))',
+      // ...
+      
+      // Lumea palette
+      lumea: {
+        stone: {
+          DEFAULT: '#60574D',
+          // Color variations...
+        },
+        beige: {
+          DEFAULT: '#F1EDE4',
+          // Color variations...
+        },
+        sage: {
+          DEFAULT: '#8FAAA5',
+          // Color variations...
+        },
+        taupe: {
+          DEFAULT: '#C8B6A6',
+          // Color variations...
+        },
+        bone: {
+          DEFAULT: '#DAD3C8',
+          // Color variations...
+        }
+      }
+    },
+    // Consistent shadow system
+    boxShadow: {
+      'lumea-sm': '0 1px 2px 0 rgba(96, 87, 77, 0.05)',
+      'lumea-md': '0 4px 6px -1px rgba(96, 87, 77, 0.07), 0 2px 4px -2px rgba(96, 87, 77, 0.05)',
+      'lumea-lg': '0 10px 15px -3px rgba(96, 87, 77, 0.08), 0 4px 6px -4px rgba(96, 87, 77, 0.03)',
+      // ...
+    }
+  }
+}
+```
+
+### Component Variant Pattern
+
+All UI components follow a consistent pattern using class-variance-authority for variant definitions:
+
+```tsx
+// Example pattern for component variants
+const buttonVariants = cva(
+  'base-component-classes',
+  {
+    variants: {
+      variant: {
+        default: 'default-variant-classes',
+        secondary: 'secondary-variant-classes',
+        // Additional variants...
+      },
+      size: {
+        sm: 'small-size-classes',
+        default: 'default-size-classes',
+        lg: 'large-size-classes',
+        // Additional sizes...
+      },
+      rounded: {
+        default: 'default-radius-classes',
+        full: 'full-radius-classes',
+        // Additional radius options...
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+      size: 'default',
+      rounded: 'default',
+    },
+  }
+);
+
+// Component implementation
+export interface ButtonProps 
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+    asChild?: boolean;
+}
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, rounded, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button";
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, rounded, className }))}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
+);
+```
+
+### Common Component Patterns
+
+1. **Consistent Variant Structure:**
+   - All components support `variant`, `size`, and shape (`rounded`, `radius`) options
+   - Common variants include: `default`, `secondary`, `outline`, `ghost`, `destructive`, `accent`, `lumea`
+   - Common sizes include: `sm`, `default`, `lg`, `xl`
+
+2. **Design Token Integration:**
+   - Using CSS variables via Tailwind's hsl notation: `hsl(var(--primary))`
+   - Components use theme tokens instead of hard-coded colors
+
+3. **Brand-specific Styling:**
+   - Brand-specific `lumea` variant for all components
+   - Usage of specific colors from the Lumea palette with `theme(colors.lumea.stone.DEFAULT)`
+
+4. **Consistent Animation:**
+   - Transition durations (200-300ms) for hover/focus states
+   - Same easing functions across components
+
+5. **Accessibility Focus States:**
+   - Focus rings using `ring-2 ring-ring ring-offset-2` pattern
+   - Consistent disabled states with `disabled:opacity-50 disabled:pointer-events-none`
+
+6. **Shadow System:**
+   - Consistent shadow tokens: `shadow-lumea-sm`, `shadow-lumea-md`, `shadow-lumea-lg`
+   - Hover shadow enhancement with `hover:shadow-lumea-md`
+
+7. **Icon Integration:**
+   - Helper classes for icons within components: `[&_svg]:size-4`
+   - Consistent spacing with icons: `gap-2`
+
+### CSS Variable Pattern
+
+CSS variables are defined in index.css with light/dark mode variations:
+
+```css
+@layer base {
+  :root {
+    /* Base colors */
+    --background: 40 33% 98%;
+    --foreground: 33 12% 34%;
+
+    /* Primary: Lumea Stone */
+    --primary: 33 12% 34%;
+    --primary-foreground: 40 33% 95%;
+    --primary-light: 33 12% 44%;
+    --primary-dark: 33 12% 24%;
+
+    /* Secondary: Lumea Beige */
+    --secondary: 38 33% 92%;
+    --secondary-foreground: 33 12% 34%;
+    
+    /* Other variables... */
+  }
+
+  .dark {
+    /* Dark mode variables... */
+  }
+}
+```
+
+### Design System Showcase Pattern
+
+A dedicated DesignSystemShowcase component displays all UI components with their variants:
+
+```tsx
+const DesignSystemShowcase = () => {
+  return (
+    <div className="p-8 max-w-5xl mx-auto space-y-12">
+      {/* Typography Section */}
+      <section>
+        <h2 className="text-3xl font-serif border-b pb-2">Typography</h2>
+        {/* Typography examples... */}
+      </section>
+      
+      {/* Color Palette Section */}
+      <section>
+        <h2 className="text-3xl font-serif border-b pb-2">Lumea Color Palette</h2>
+        {/* Color samples... */}
+      </section>
+      
+      {/* Component Sections */}
+      <section>
+        <h2 className="text-3xl font-serif border-b pb-2">Buttons</h2>
+        {/* Button variants... */}
+      </section>
+      
+      {/* Additional component sections... */}
+    </div>
+  );
+};
+```
 
 ## Database Schema & Security
 
@@ -821,719 +1023,552 @@ Critical implementation paths: Defining robust Supabase RLS policies for all tab
 
 ## Performance Optimization Patterns
 
+The application implements several performance optimization patterns to ensure fast loading times and efficient resource usage across different devices and network conditions.
+
 ### Server-Side Caching
 
-We use a node-cache based caching system to improve API response times for frequently accessed endpoints.
-
-Key components:
-- **Cache Utility (`server/src/utils/cache.ts`)**: Provides a central cache service with configurable TTLs and namespacing.
-- **Cache Middleware (`server/src/middleware/cache.ts`)**: Express middleware for caching responses and clearing cache when data changes.
-- **Implementation Pattern**:
-  ```typescript
-  // In route definition
-  router.get(
-    '/sessions', 
-    isAuthenticated, 
-    isCoach, 
-    cacheResponse({ ttl: SESSION_CACHE_TTL, keyPrefix: SESSION_CACHE_PREFIX }), 
-    sessionController.getSessions
-  );
-
-  // For POST/PUT/DELETE operations that modify data, clear the related cache
-  router.post(
-    '/sessions', 
-    isAuthenticated, 
-    isCoach, 
-    clearCache(SESSION_CACHE_PREFIX), 
-    sessionController.createSession
-  );
-  ```
-
-### Database Query Optimization
-
-MongoDB query optimizations to reduce response times and improve scalability.
-
-Key patterns:
-- **Database Indexes**: Created for frequently queried fields like User.email, CoachingSession.coachId, and CoachingSession.date.
-- **Selective Field Projection**: Use `.select()` to retrieve only needed fields.
-- **Lean Queries**: Use `.lean()` to return plain JavaScript objects instead of Mongoose documents when appropriate.
-- **Parallel Queries**: Use `Promise.all()` to execute independent queries in parallel.
-- **Implementation Pattern**:
-  ```typescript
-  // Example from sessionController.getSessions
-  const [sessions, total] = await Promise.all([
-    CoachingSession.find(query)
-      .sort({ date: -1 }) // Sort by date descending (newest first)
-      .skip(skip)
-      .limit(limit)
-      .select('clientId date notes status') // Select only needed fields
-      .populate('clientId', 'firstName lastName email') // Select only needed fields from client
-      .lean(), // Use lean() for better performance
-    
-    CoachingSession.countDocuments(query)
-  ]);
-  ```
-
-### React Performance Optimizations
-
-Client-side performance optimizations to improve initial load time and runtime performance.
-
-Key patterns:
-- **Code Splitting**: Using React.lazy() for component-based code splitting.
-- **Lazy Loading**: Loading components only when needed with Suspense.
-- **Consistent Loading Indicators**: Using a standardized LoadingFallback component.
-- **Conditional StrictMode**: Disabling React StrictMode in production to prevent double rendering.
-- **Asset Preloading**: Preloading critical fonts and assets for better perceived performance.
-- **Implementation Pattern**:
-  ```typescript
-  // Code splitting with React.lazy
-  const HomePage = lazy(() => import('./pages/Index'));
-  const AuthPage = lazy(() => import('./pages/Auth'));
-  const Dashboard = lazy(() => import('./pages/Dashboard'));
-
-  // Suspense with fallback
-  <Suspense fallback={<LoadingFallback />}>
-    <Routes>
-      {/* Routes here */}
-    </Routes>
-  </Suspense>
-  ```
-
-### Performance Monitoring
-
-Middleware for monitoring and tracking application performance.
-
-Key components:
-- **Performance Monitoring Middleware**: Tracks request processing time and logs slow requests.
-- **Response Time Headers**: Adds X-Response-Time header to responses.
-- **Memory Usage Tracking**: Monitors and logs server memory usage.
-- **Implementation Pattern**:
-  ```typescript
-  // In app.ts
-  app.use(performanceMonitor({
-    slowThreshold: 500, // Log requests taking more than 500ms
-  }));
-  ```
-
-## Authentication and Authorization Patterns
-
-### Role-Based Access Control
-
-We use middleware to restrict access to routes based on user roles.
-
-```javascript
-// Middleware to check if user is authenticated
-export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.user) {
-    return res.status(401).json({ message: 'Authentication required' });
-  }
-  next();
-};
-
-// Middleware to check if user is a coach
-export const isCoach = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.user || req.user.role !== 'coach') {
-    return res.status(403).json({ message: 'Coach access required' });
-  }
-  next();
-};
-
-// Usage in routes
-router.get('/my-clients', isAuthenticated, isCoach, clientController.getMyClients);
-```
-
-### Supabase Row-Level Security
-
-Database-level security using RLS policies to control access to data.
-
-```sql
--- Example RLS policy that allows users to view only their own sessions
-CREATE POLICY "Users can view their own sessions"
-  ON sessions
-  FOR SELECT
-  USING (
-    auth.uid() = coachId OR
-    auth.uid() = clientId
-  );
-```
-
-Helper functions to simplify RLS policies:
-
-```sql
--- Function to check if a user owns a session
-CREATE FUNCTION user_owns_session(session_id BIGINT)
-RETURNS BOOLEAN AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM sessions
-    WHERE id = session_id
-    AND (coachId = auth.uid() OR clientId = auth.uid())
-  );
-$$ LANGUAGE sql SECURITY DEFINER;
-```
-
-### Token-Based Secure Systems
-
-We use secure token generation for operations like password reset and client invitations.
-
-```javascript
-// Generate a secure token (48 bytes hex = 96 hex characters)
-export const generateToken = (): string => {
-  return crypto.randomBytes(48).toString('hex');
-};
-
-// Create an invitation token with expiration
-const token = generateToken();
-const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
-
-await InviteToken.create({
-  token,
-  coachId,
-  email,
-  expiresAt,
-});
-
-// Validate a token
-export const validateToken = async (token: string): Promise<IToken | null> => {
-  const inviteToken = await Token.findOne({ token });
-  
-  if (!inviteToken) {
-    return null;
-  }
-  
-  if (inviteToken.expiresAt < new Date()) {
-    // Token has expired, delete it
-    await Token.deleteOne({ _id: inviteToken._id });
-    return null;
-  }
-  
-  return inviteToken;
-};
-```
-
-## Database Schema and Query Patterns
-
-### Relational Schema with MongoDB
-
-MongoDB schema design with proper relationships and indexes.
+1. **Redis Cache Implementation:**
 
 ```typescript
-// CoachingSession model
-const CoachingSessionSchema = new Schema<ICoachingSession>({
-  coachId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-  clientId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-  date: { type: Date, required: true, index: true },
-  notes: { type: String, default: '' },
-  status: { type: String, enum: ['scheduled', 'completed', 'cancelled'], default: 'scheduled' },
-});
-
-// Create compound indexes for common query patterns
-CoachingSessionSchema.index({ coachId: 1, date: -1 });
-CoachingSessionSchema.index({ clientId: 1, date: -1 });
+// Cache utility with TTL support
+export class Cache {
+  private readonly client: RedisClient;
+  private readonly namespace: string;
+  
+  constructor(namespace: string = 'default') {
+    this.namespace = namespace;
+    this.client = createRedisClient();
+  }
+  
+  // Store value with optional TTL (in seconds)
+  async set(key: string, value: any, ttl?: number): Promise<void> {
+    const cacheKey = this.getNamespacedKey(key);
+    
+    if (ttl) {
+      await this.client.setEx(cacheKey, ttl, JSON.stringify(value));
+    } else {
+      await this.client.set(cacheKey, JSON.stringify(value));
+    }
+  }
+  
+  // Retrieve cached value
+  async get<T>(key: string): Promise<T | null> {
+    const cacheKey = this.getNamespacedKey(key);
+    const result = await this.client.get(cacheKey);
+    
+    if (!result) return null;
+    return JSON.parse(result) as T;
+  }
+  
+  // Invalidate cache entry
+  async invalidate(key: string): Promise<void> {
+    const cacheKey = this.getNamespacedKey(key);
+    await this.client.del(cacheKey);
+  }
+  
+  // Helper to generate namespaced keys
+  private getNamespacedKey(key: string): string {
+    return `${this.namespace}:${key}`;
+  }
+}
 ```
 
-## Component Architecture Patterns
+2. **Static Resource Caching:**
 
-### Form Handling
+```typescript
+// Middleware for caching static resources with appropriate headers
+export const staticCache = (req: Request, res: Response, next: NextFunction) => {
+  // Skip for non-GET requests or API endpoints
+  if (req.method !== 'GET' || req.path.startsWith('/api/')) {
+    return next();
+  }
+  
+  // Set cache headers based on file type
+  const fileExt = path.extname(req.path).toLowerCase();
+  
+  if (fileExt.match(/\.(jpg|jpeg|png|gif|webp|svg|ico|woff2|woff|ttf|otf)$/)) {
+    // Images and fonts - cache for 7 days, immutable
+    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+  } else if (fileExt.match(/\.(css|js)$/)) {
+    // CSS and JS - cache for 1 day
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+  } else if (fileExt.match(/\.(json|xml)$/)) {
+    // Data files - cache for 1 hour
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+  } else {
+    // Other static files - cache for 4 hours
+    res.setHeader('Cache-Control', 'public, max-age=14400');
+  }
+  
+  next();
+};
+```
 
-We use a combination of React Hook Form and controlled components for form handling.
+### Database Optimization
+
+1. **Query Optimization with Field Projection:**
+
+```typescript
+// Query optimizer utility
+export const queryOptimizer = {
+  // Project only needed fields
+  selectFields: <T>(query: any, fields: (keyof T)[]): any => {
+    if (!fields || fields.length === 0) return query;
+    
+    const projection = fields.reduce((acc, field) => {
+      acc[field as string] = 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return query.select(projection);
+  },
+  
+  // Apply pagination
+  paginate: (query: any, page: number = 1, limit: number = 20): any => {
+    const skip = (page - 1) * limit;
+    return query.skip(skip).limit(limit);
+  },
+  
+  // Optimize query with lean() for better performance
+  optimize: (query: any): any => {
+    return query.lean();
+  }
+};
+```
+
+2. **MongoDB Indexing Strategy:**
+
+```typescript
+// Function to create required indexes
+export async function createIndexes() {
+  // User indexes
+  await db.collection('users').createIndex({ email: 1 }, { unique: true });
+  await db.collection('users').createIndex({ username: 1 }, { unique: true });
+  await db.collection('users').createIndex({ role: 1 }); // For role-based queries
+  
+  // Session indexes
+  await db.collection('sessions').createIndex({ userId: 1 }); // Find sessions by user
+  await db.collection('sessions').createIndex({ coachId: 1 }); // Find sessions by coach
+  await db.collection('sessions').createIndex({ clientId: 1 }); // Find sessions by client
+  await db.collection('sessions').createIndex({ date: -1 }); // Sort by date descending
+  await db.collection('sessions').createIndex({ 
+    coachId: 1, 
+    date: -1 
+  }); // Compound index for coach's sessions by date
+  
+  // Performance metrics indexes
+  await db.collection('performanceMetrics').createIndex({ timestamp: -1 });
+  await db.collection('performanceMetrics').createIndex({ 
+    userId: 1, 
+    timestamp: -1 
+  });
+  
+  console.log('Database indexes created successfully');
+}
+```
+
+### Client-Side Optimizations
+
+1. **Lazy Loading Components:**
 
 ```tsx
-import { useForm } from 'react-hook-form';
+// LazyLoad utility with ErrorBoundary
+import React, { Suspense, lazy, ComponentType } from 'react';
 
-const SignupForm = () => {
-  const { register, handleSubmit, formState: { errors } } = useForm();
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-[200px] p-8">
+    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+  </div>
+);
+
+// Error boundary for graceful failures
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode }, 
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-4 border border-red-300 bg-red-50 rounded-md text-red-700">
+          Failed to load component
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// LazyLoad function for React components
+export function lazyLoad<T extends ComponentType<any>>(
+  importFunc: () => Promise<{ default: T }>,
+  loadingComponent: React.ReactNode = <LoadingFallback />
+) {
+  const LazyComponent = lazy(importFunc);
   
-  const onSubmit = async (data) => {
-    // Handle form submission
+  return (props: React.ComponentProps<T>) => (
+    <ErrorBoundary>
+      <Suspense fallback={loadingComponent}>
+        <LazyComponent {...props} />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+```
+
+2. **Memory Leak Prevention:**
+
+```tsx
+// Cleanup utilities for React components
+import { useEffect, useRef } from 'react';
+
+// Abort signal hook for fetch requests
+export function useAbortSignal() {
+  const abortControllerRef = useRef<AbortController>(new AbortController());
+  
+  useEffect(() => {
+    const controller = abortControllerRef.current;
+    return () => {
+      controller.abort();
+    };
+  }, []);
+  
+  return abortControllerRef.current.signal;
+}
+
+// Safe timeout hook that cleans up automatically
+export function useSafeTimeout() {
+  const timeoutIds = useRef<number[]>([]);
+  
+  const setSafeTimeout = (callback: () => void, delay: number) => {
+    const id = window.setTimeout(callback, delay);
+    timeoutIds.current.push(id);
+    return id;
   };
   
-  return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <input 
-        {...register('email', { 
-          required: 'Email is required',
-          pattern: {
-            value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-            message: 'Invalid email format'
-          }
-        })}
-      />
-      {errors.email && <span>{errors.email.message}</span>}
-      
-      {/* Other form fields */}
-      
-      <button type="submit">Submit</button>
-    </form>
-  );
-};
-```
-
-### Error Handling
-
-We use a consistent approach to error handling across the application.
-
-```tsx
-// API request with error handling
-const handleLogin = async () => {
-  setLoading(true);
-  setError(null);
-  
-  try {
-    // Attempt to login
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+  const clearSafeTimeout = (id: number) => {
+    timeoutIds.current = timeoutIds.current.filter(timeoutId => {
+      if (timeoutId === id) {
+        window.clearTimeout(id);
+        return false;
+      }
+      return true;
     });
-    
-    if (error) throw error;
-    
-    // Handle successful login
-  } catch (err) {
-    // Format error message for display
-    setError(formatErrorMessage(err));
-  } finally {
-    setLoading(false);
-  }
-};
+  };
+  
+  useEffect(() => {
+    const ids = timeoutIds.current;
+    return () => {
+      ids.forEach(id => window.clearTimeout(id));
+    };
+  }, []);
+  
+  return { setSafeTimeout, clearSafeTimeout };
+}
 
-// In the UI
-{error && <div className="error-message">{error}</div>}
-{loading && <LoadingSpinner />}
+// General cleanup effect hook
+export function useCleanup(cleanup: () => void) {
+  useEffect(() => {
+    return cleanup;
+  }, [cleanup]);
+}
 ```
 
-### Data Fetching
-
-We use TanStack Query (React Query) for data fetching with proper caching and loading states.
+3. **Optimized Image Component:**
 
 ```tsx
-// Define a query hook
-export const useClients = () => {
-  return useQuery({
-    queryKey: ['clients'],
-    queryFn: async () => {
-      const response = await fetch('/api/my-clients');
-      if (!response.ok) {
-        throw new Error('Failed to fetch clients');
-      }
-      return response.json();
-    },
-    // Refetch every 30 seconds
-    refetchInterval: 30000,
-  });
-};
+// Optimized image component with responsive srcset
+import React from 'react';
 
-// Use the query in a component
-const ClientsPage = () => {
-  const { data, isLoading, error } = useClients();
+interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+  src: string;
+  alt: string;
+  sizes?: string;
+  widths?: number[];
+  className?: string;
+  lazyLoad?: boolean;
+}
+
+export const OptimizedImage: React.FC<OptimizedImageProps> = ({
+  src,
+  alt,
+  sizes = '100vw',
+  widths = [320, 640, 960, 1280, 1920],
+  className = '',
+  lazyLoad = true,
+  ...props
+}) => {
+  // Generate srcset based on provided widths
+  const generateSrcSet = () => {
+    // No srcset for SVG images
+    if (src.endsWith('.svg')) return undefined;
+    
+    // Split path and extension for url construction
+    const lastDot = src.lastIndexOf('.');
+    const path = lastDot > 0 ? src.substring(0, lastDot) : src;
+    const ext = lastDot > 0 ? src.substring(lastDot) : '';
+    
+    // Generate srcset with different resolutions
+    return widths
+      .map(width => `${path}-${width}w${ext} ${width}w`)
+      .join(', ');
+  };
   
-  if (isLoading) return <LoadingSpinner />;
-  if (error) return <ErrorDisplay error={error} />;
+  const srcSet = generateSrcSet();
   
   return (
-    <div>
-      <h1>My Clients</h1>
-      <ClientsList clients={data} />
-    </div>
+    <img
+      src={src}
+      alt={alt}
+      sizes={sizes}
+      srcSet={srcSet}
+      loading={lazyLoad ? 'lazy' : undefined}
+      decoding="async"
+      className={className}
+      {...props}
+    />
   );
 };
 ```
 
-## Backend API Patterns
-
-### Controller Pattern
-
-We use the controller pattern for organizing API endpoints.
+4. **Performance Monitoring:**
 
 ```typescript
-// Controller definitions
-export const sessionController = {
-  getSessions: async (req: Request, res: Response): Promise<void> => {
-    try {
-      // Implementation
-    } catch (error) {
-      console.error('Error getting sessions:', error);
-      res.status(500).json({ message: 'Failed to get sessions' });
-    }
-  },
-  
-  createSession: async (req: Request, res: Response): Promise<void> => {
-    try {
-      // Implementation
-    } catch (error) {
-      console.error('Error creating session:', error);
-      res.status(500).json({ message: 'Failed to create session' });
-    }
-  },
-  
-  // Other methods
-};
-
-// Route definitions
-const router = express.Router();
-router.get('/sessions', isAuthenticated, isCoach, sessionController.getSessions);
-router.post('/sessions', isAuthenticated, isCoach, sessionController.createSession);
-```
-
-### Input Validation
-
-We use zod for input validation throughout the API.
-
-```typescript
-import { z } from 'zod';
-
-// Validation schema for creating a session
-const createSessionSchema = z.object({
-  clientId: z.string().min(1),
-  date: z.string().refine((val) => !isNaN(Date.parse(val)), {
-    message: 'Invalid date format',
-  }),
-  notes: z.string().optional(),
-});
-
-// In the controller
-try {
-  createSessionSchema.parse(req.body);
-} catch (error) {
-  if (error instanceof z.ZodError) {
-    res.status(400).json({ message: 'Invalid session data', errors: error.errors });
-    return;
-  }
-  throw error;
-}
-```
-
-## CSS and Styling Patterns
-
-### Tailwind CSS with Custom Configuration
-
-We use Tailwind CSS with a custom color palette for styling.
-
-```js
-// tailwind.config.js
-module.exports = {
-  theme: {
-    extend: {
-      colors: {
-        'lumea-blue': '#007AFF',
-        'lumea-dark-blue': '#0056B3',
-        'lumea-green': '#34C759',
-        'lumea-red': '#FF3B30',
-        'lumea-gray': '#8E8E93',
-        'lumea-light-gray': '#F2F2F7',
-        'lumea-dark-gray': '#3A3A3C',
-      },
-    },
-  },
-  plugins: [],
-};
-```
-
-### Responsive Design Pattern
-
-We use a mobile-first approach to responsive design.
-
-```jsx
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-  {/* Content */}
-</div>
-```
-
-### RTL Support
-
-We support right-to-left languages (Hebrew) throughout the application.
-
-```tsx
-<div className={`${isRTL ? 'text-right' : 'text-left'}`}>
-  <h1>{t('dashboard.title')}</h1>
-  <p>{t('dashboard.subtitle')}</p>
-</div>
-```
-
-## Internationalization Pattern
-
-We use i18next for internationalization support.
-
-```tsx
-// i18n.js
-import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
-
-i18n
-  .use(initReactI18next)
-  .init({
-    resources: {
-      en: {
-        translation: {
-          // English translations
-        }
-      },
-      he: {
-        translation: {
-          // Hebrew translations
-        }
+// Client-side performance monitoring
+export const performanceMonitoring = {
+  metrics: {
+    // Collect Core Web Vitals
+    collectWebVitals: () => {
+      if ('web-vitals' in window) {
+        const webVitals = (window as any)['web-vitals'];
+        
+        webVitals.getCLS((metric: any) => {
+          sendMetric('CLS', metric.value);
+        });
+        
+        webVitals.getFID((metric: any) => {
+          sendMetric('FID', metric.value);
+        });
+        
+        webVitals.getLCP((metric: any) => {
+          sendMetric('LCP', metric.value);
+        });
+        
+        webVitals.getFCP((metric: any) => {
+          sendMetric('FCP', metric.value);
+        });
+        
+        webVitals.getTTFB((metric: any) => {
+          sendMetric('TTFB', metric.value);
+        });
       }
     },
-    lng: 'en',
-    fallbackLng: 'en',
-    interpolation: {
-      escapeValue: false
+    
+    // Track API request durations
+    trackApiRequest: async (url: string, startTime: number) => {
+      const duration = performance.now() - startTime;
+      sendMetric('ApiDuration', duration, { url });
     }
-  });
-
-// In components
-import { useTranslation } from 'react-i18next';
-
-const Component = () => {
-  const { t } = useTranslation();
-  
-  return (
-    <div>
-      <h1>{t('title')}</h1>
-      <p>{t('description')}</p>
-    </div>
-  );
+  }
 };
-```
 
-## Testing Patterns
-
-### Component Testing with Vitest
-
-We use Vitest for component testing.
-
-```tsx
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import ClientsTable from './ClientsTable';
-
-describe('ClientsTable', () => {
-  it('renders clients correctly', () => {
-    const mockClients = [
-      { id: '1', firstName: 'John', lastName: 'Doe', email: 'john@example.com' }
-    ];
+// Initialize performance monitoring
+export function initPerformanceMonitoring() {
+  // Start collecting web vitals
+  performanceMonitoring.metrics.collectWebVitals();
+  
+  // Add API request tracking
+  const originalFetch = window.fetch;
+  window.fetch = async (input, init) => {
+    const startTime = performance.now();
+    const response = await originalFetch(input, init);
     
-    render(<ClientsTable clients={mockClients} />);
+    // Only track API requests
+    const url = typeof input === 'string' ? input : input.url;
+    if (url.includes('/api/')) {
+      performanceMonitoring.metrics.trackApiRequest(url, startTime);
+    }
     
-    expect(screen.getByText('John Doe')).toBeInTheDocument();
-    expect(screen.getByText('john@example.com')).toBeInTheDocument();
-  });
-});
-```
-
-### E2E Testing with Playwright
-
-We use Playwright for end-to-end testing.
-
-```typescript
-import { test, expect } from '@playwright/test';
-
-test('coach can log in and view clients', async ({ page }) => {
-  await page.goto('/auth');
-  
-  // Fill in login form
-  await page.fill('input[name="email"]', 'coach@example.com');
-  await page.fill('input[name="password"]', 'password123');
-  await page.click('button[type="submit"]');
-  
-  // Verify navigation to dashboard
-  await expect(page).toHaveURL(/dashboard/);
-  
-  // Navigate to clients page
-  await page.click('a[href="/coach/clients"]');
-  
-  // Verify clients page loads
-  await expect(page.locator('h1')).toContainText('My Clients');
-});
-```
-
-## Error Handling Patterns
-
-### API Error Handling
-
-Consistent error handling pattern in API endpoints.
-
-```typescript
-try {
-  // API logic here
-} catch (error) {
-  console.error('Descriptive error message:', error);
-  res.status(500).json({ message: 'User-friendly error message' });
+    return response;
+  };
 }
-```
 
-### Client-Side Error Handling
-
-Consistent error handling in client-side components.
-
-```tsx
-const [error, setError] = useState(null);
-
-const handleAction = async () => {
+// Send metric to backend
+async function sendMetric(name: string, value: number, metadata: Record<string, any> = {}) {
   try {
-    setError(null);
-    // Action logic here
-  } catch (err) {
-    setError(formatErrorMessage(err));
+    await fetch('/api/metrics', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        value,
+        timestamp: Date.now(),
+        ...metadata
+      })
+    });
+  } catch (error) {
+    console.error('Failed to send metric:', error);
   }
-};
-
-// In the JSX
-{error && <ErrorMessage message={error} />}
+}
 ```
 
-## TypeScript Patterns
-
-### Type Safety with Validation
-
-We combine TypeScript types with runtime validation using zod.
+5. **Mobile Optimizations:**
 
 ```typescript
-// Define TypeScript interface
-interface CreateSessionDto {
-  clientId: string;
-  date: string;
-  notes?: string;
+// Mobile device detection and optimization
+interface DeviceInfo {
+  isMobile: boolean;
+  isTablet: boolean;
+  isLowEnd: boolean;
+  isIOS: boolean;
+  isAndroid: boolean;
+  connectionType?: string;
+  connectionSpeed?: 'slow' | 'medium' | 'fast';
 }
 
-// Define zod schema for runtime validation
-const createSessionSchema = z.object({
-  clientId: z.string().min(1),
-  date: z.string().refine((val) => !isNaN(Date.parse(val)), {
-    message: 'Invalid date format',
-  }),
-  notes: z.string().optional(),
-});
+// Detect device capabilities
+function detectDevice(): DeviceInfo {
+  const ua = navigator.userAgent || '';
+  const connection = (navigator as any).connection;
+  
+  // Basic device detection
+  const isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  const isTablet = /iPad|Android(?!.*Mobile)/i.test(ua);
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  const isAndroid = /Android/i.test(ua);
+  
+  // Detect if device is low-end
+  const isLowEnd = detectLowEndDevice();
+  
+  // Connection quality
+  let connectionType = connection?.type || 'unknown';
+  let connectionSpeed: 'slow' | 'medium' | 'fast' = 'medium';
+  
+  if (connection) {
+    if (connection.downlink < 1 || connection.rtt > 500) {
+      connectionSpeed = 'slow';
+    } else if (connection.downlink > 5 && connection.rtt < 100) {
+      connectionSpeed = 'fast';
+    }
+  }
+  
+  return {
+    isMobile,
+    isTablet,
+    isLowEnd,
+    isIOS,
+    isAndroid,
+    connectionType,
+    connectionSpeed
+  };
+}
 
-// Type the request body and validate it
-const { clientId, date, notes } = createSessionSchema.parse(req.body) as CreateSessionDto;
+// Apply optimizations based on device capabilities
+function applyOptimizedStyles() {
+  const device = detectDevice();
+  const htmlElement = document.documentElement;
+  
+  if (device.isMobile) {
+    htmlElement.classList.add('mobile-device');
+  }
+  
+  if (device.isLowEnd) {
+    htmlElement.classList.add('low-end-device');
+  }
+  
+  if (device.connectionSpeed === 'slow') {
+    htmlElement.classList.add('slow-connection');
+  }
+}
 ```
 
-## Mobile Integration Patterns
+### Vite Build Optimization
 
-### Capacitor Configuration
-
-We use Capacitor for mobile app builds.
+1. **Enhanced Build Configuration:**
 
 ```typescript
-// capacitor.config.ts
-import { CapacitorConfig } from '@capacitor/cli';
+// vite.config.ts
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react-swc';
+import path from 'path';
+import { componentTagger } from 'lovable-tagger';
+import { visualizer } from 'rollup-plugin-visualizer';
+import { compression } from 'vite-plugin-compression2';
 
-const config: CapacitorConfig = {
-  appId: 'com.satyacoaching.app',
-  appName: 'Satya Coaching',
-  webDir: 'dist',
-  server: {
-    androidScheme: 'https',
-    iosScheme: 'https'
+export default defineConfig(({ mode }) => ({
+  plugins: [
+    react(),
+    mode === 'development' && componentTagger(),
+    // Generate bundle analysis in production
+    mode === 'production' && visualizer({
+      open: false,
+      gzipSize: true,
+      brotliSize: true,
+      filename: 'dist/stats.html',
+    }),
+    // Compress assets in production
+    mode === 'production' && compression({
+      algorithm: 'brotliCompress',
+      exclude: [/\.(br)$/, /\.(gz)$/],
+      threshold: 512,
+    }),
+    // Additional gzip compression for browsers without brotli support
+    mode === 'production' && compression({
+      algorithm: 'gzip',
+      exclude: [/\.(br)$/, /\.(gz)$/],
+      threshold: 512,
+    }),
+  ],
+  
+  // Resolve aliases for cleaner imports
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@components': path.resolve(__dirname, './src/components'),
+      '@utils': path.resolve(__dirname, './src/utils'),
+    },
   },
-  plugins: {
-    // Plugin configuration
-  }
-};
-
-export default config;
-```
-
-## Feature-Specific Patterns
-
-### Session Management Pattern
-
-The pattern for creating and retrieving coaching sessions.
-
-```typescript
-// Create a session
-const session = await CoachingSession.create({
-  coachId: req.user.id,
-  clientId,
-  date: new Date(date),
-  notes: notes || '',
-});
-
-// Get sessions with filtering and pagination
-const query = {
-  coachId: req.user.id,
-  ...(clientId && { clientId }),
-  ...(dateQuery && { date: dateQuery })
-};
-
-const sessions = await CoachingSession.find(query)
-  .sort({ date: -1 })
-  .skip(skip)
-  .limit(limit)
-  .select('clientId date notes status')
-  .populate('clientId', 'firstName lastName email')
-  .lean();
-```
-
-### Reflection System Pattern
-
-The pattern for creating and storing reflection data.
-
-```typescript
-// Store encrypted reflection
-const reflection = await Reflection.create({
-  sessionId,
-  clientId: req.user.id,
-  text: encryptedText,
-  audioUrl: audioFileUrl || null,
-  encryptionMetadata: {
-    version: '1.0',
-    algorithm: 'AES-256-GCM',
-    // Store IV and other encryption metadata
-  }
-});
-
-// Retrieve and decrypt reflections
-const reflections = await Reflection.find({ clientId: req.user.id })
-  .sort({ createdAt: -1 })
-  .populate('sessionId')
-  .lean();
-
-const decryptedReflections = reflections.map(reflection => ({
-  ...reflection,
-  text: decryptText(reflection.text, keyFromStorage, reflection.encryptionMetadata)
+  
+  // Optimized build settings
+  build: {
+    target: 'es2015',
+    outDir: 'dist',
+    assetsDir: 'assets',
+    cssCodeSplit: true,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split vendor libs into separate chunks
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-ui': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-popover',
+            'class-variance-authority',
+            'clsx',
+            'tailwind-merge'
+          ],
+          'vendor-utils': ['date-fns', 'i18next', 'zod'],
+        },
+      },
+    },
+  },
 }));
 ```
 
-## Deployment and CI/CD Patterns
-
-### GitHub Actions Workflow
-
-Pattern for CI/CD using GitHub Actions.
-
-```yaml
-name: CI
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        
-    - name: Install dependencies
-      run: npm install
-      
-    - name: Run linting
-      run: npm run lint
-      
-    - name: Run type checking
-      run: npm run typecheck
-      
-    - name: Run tests
-      run: npm test
-      
-    - name: Build
-      run: npm run build
-```
+These patterns collectively improve application performance across various dimensions including server response time, data loading speed, client-side rendering, and user perception of speed.
