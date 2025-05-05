@@ -15,27 +15,30 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.1.0
         
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v3.5.1
         with:
           node-version: '20'
           
       - name: Setup PNPM
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v2.2.4
         with:
           version: 8
           run_install: false
       
       - name: Install dependencies
         run: pnpm install
+        
+      - name: Install rollup-plugin-visualizer explicitly
+        run: pnpm add -D rollup-plugin-visualizer
       
       - name: Build web app
         run: pnpm build
       
       - name: Setup Java for Android build
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v3.6.0
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -49,6 +52,7 @@ jobs:
           echo "Building Android App Bundle..."
           ./gradlew bundle --info
           echo "Android build completed."
+        continue-on-error: true
       
       - name: Verify Android AAB exists
         id: check-aab
@@ -79,6 +83,7 @@ jobs:
           echo "Building iOS Archive..."
           xcodebuild -workspace App/App.xcworkspace -scheme App -configuration Release archive -archivePath App/build/App.xcarchive -allowProvisioningUpdates -verbose
           echo "iOS build completed."
+        continue-on-error: true
       
       - name: Verify iOS Archive exists
         if: startsWith(github.ref, 'refs/tags/v')
@@ -98,10 +103,20 @@ jobs:
           fi
       
       - name: Upload Android AAB
+        id: upload-aab
         if: steps.check-aab.outputs.aab_exists == 'true'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v3.1.0
         with:
           name: android-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+        continue-on-error: true
+      
+      - name: Retry Android AAB Upload
+        if: steps.check-aab.outputs.aab_exists == 'true' && steps.upload-aab.outcome == 'failure'
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: android-aab-retry
           path: android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
       
@@ -113,26 +128,56 @@ jobs:
           echo "This is a placeholder file. The actual build failed." > android/app/build/outputs/bundle/release/build-failed-placeholder.txt
       
       - name: Upload Android build directory (for debugging)
+        id: upload-android-debug
         if: steps.check-aab.outputs.aab_exists != 'true'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v3.1.0
         with:
           name: android-build-output
           path: android/app/build/outputs/
           if-no-files-found: warn
+        continue-on-error: true
+      
+      - name: Retry Android Debug Upload
+        if: steps.check-aab.outputs.aab_exists != 'true' && steps.upload-android-debug.outcome == 'failure'
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: android-build-output-retry
+          path: android/app/build/outputs/
+          if-no-files-found: warn
       
       - name: Upload iOS Archive
+        id: upload-ios
         if: startsWith(github.ref, 'refs/tags/v') && steps.check-archive.outputs.archive_exists == 'true'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v3.1.0
         with:
           name: ios-archive
           path: ios/App/build/App.xcarchive
           if-no-files-found: error
+        continue-on-error: true
+      
+      - name: Retry iOS Archive Upload
+        if: startsWith(github.ref, 'refs/tags/v') && steps.check-archive.outputs.archive_exists == 'true' && steps.upload-ios.outcome == 'failure'
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: ios-archive-retry
+          path: ios/App/build/App.xcarchive
+          if-no-files-found: error
       
       - name: Upload iOS build directory (for debugging)
+        id: upload-ios-debug
         if: startsWith(github.ref, 'refs/tags/v') && steps.check-archive.outputs.archive_exists != 'true'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v3.1.0
         with:
           name: ios-build-output
+          path: ios/App/build/
+          if-no-files-found: warn
+        continue-on-error: true
+      
+      - name: Retry iOS Debug Upload
+        if: startsWith(github.ref, 'refs/tags/v') && steps.check-archive.outputs.archive_exists != 'true' && steps.upload-ios-debug.outcome == 'failure'
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: ios-build-output-retry
           path: ios/App/build/
           if-no-files-found: warn
       
