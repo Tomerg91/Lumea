@@ -46,7 +46,25 @@ jobs:
       - name: Build Android AAB
         run: |
           cd android
-          ./gradlew bundle
+          echo "Building Android App Bundle..."
+          ./gradlew bundle --info
+          echo "Android build completed."
+      
+      - name: Verify Android AAB exists
+        id: check-aab
+        run: |
+          AAB_PATH="android/app/build/outputs/bundle/release/app-release.aab"
+          echo "Checking for Android AAB at: $AAB_PATH"
+          if [ -f "$AAB_PATH" ]; then
+            echo "Android AAB file found!"
+            echo "aab_exists=true" >> $GITHUB_OUTPUT
+            ls -la "$AAB_PATH"
+          else
+            echo "WARNING: Android AAB file not found!"
+            echo "Checking directory contents:"
+            ls -la android/app/build/outputs/bundle/release/ || echo "Release directory doesn't exist"
+            echo "aab_exists=false" >> $GITHUB_OUTPUT
+          fi
       
       - name: Setup iOS certificates
         if: startsWith(github.ref, 'refs/tags/v')
@@ -58,20 +76,65 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
           cd ios
-          xcodebuild -workspace App/App.xcworkspace -scheme App -configuration Release archive -archivePath App/build/App.xcarchive -allowProvisioningUpdates
+          echo "Building iOS Archive..."
+          xcodebuild -workspace App/App.xcworkspace -scheme App -configuration Release archive -archivePath App/build/App.xcarchive -allowProvisioningUpdates -verbose
+          echo "iOS build completed."
+      
+      - name: Verify iOS Archive exists
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: check-archive
+        run: |
+          ARCHIVE_PATH="ios/App/build/App.xcarchive"
+          echo "Checking for iOS Archive at: $ARCHIVE_PATH"
+          if [ -d "$ARCHIVE_PATH" ]; then
+            echo "iOS Archive found!"
+            echo "archive_exists=true" >> $GITHUB_OUTPUT
+            ls -la "$ARCHIVE_PATH"
+          else
+            echo "WARNING: iOS Archive not found!"
+            echo "Checking directory contents:"
+            ls -la ios/App/build/ || echo "Build directory doesn't exist"
+            echo "archive_exists=false" >> $GITHUB_OUTPUT
+          fi
       
       - name: Upload Android AAB
+        if: steps.check-aab.outputs.aab_exists == 'true'
         uses: actions/upload-artifact@v3
         with:
           name: android-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+      
+      - name: Create empty AAB placeholder (for debugging)
+        if: steps.check-aab.outputs.aab_exists != 'true'
+        run: |
+          echo "Creating placeholder for debugging. Real build failed to generate AAB."
+          mkdir -p android/app/build/outputs/bundle/release/
+          echo "This is a placeholder file. The actual build failed." > android/app/build/outputs/bundle/release/build-failed-placeholder.txt
+      
+      - name: Upload Android build directory (for debugging)
+        if: steps.check-aab.outputs.aab_exists != 'true'
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-build-output
+          path: android/app/build/outputs/
+          if-no-files-found: warn
       
       - name: Upload iOS Archive
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') && steps.check-archive.outputs.archive_exists == 'true'
         uses: actions/upload-artifact@v3
         with:
           name: ios-archive
           path: ios/App/build/App.xcarchive
+          if-no-files-found: error
+      
+      - name: Upload iOS build directory (for debugging)
+        if: startsWith(github.ref, 'refs/tags/v') && steps.check-archive.outputs.archive_exists != 'true'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ios-build-output
+          path: ios/App/build/
+          if-no-files-found: warn
       
       - name: Prepare release notes
         if: startsWith(github.ref, 'refs/tags/v')
@@ -83,7 +146,7 @@ jobs:
           echo "- Feature 2" >> release-notes.md
       
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') && steps.check-aab.outputs.aab_exists == 'true'
         uses: softprops/action-gh-release@v1
         with:
           files: |
