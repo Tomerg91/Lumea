@@ -1,16 +1,24 @@
-import 'express';
 import { IUser } from '../models/User';
+import mongoose from 'mongoose';
 
-// Properly augment the Express namespace
 declare global {
   namespace Express {
+    // Define a proper User interface that matches our model
     interface User {
-      id: string | number;
-      _id?: string;
-      name: string;
+      id: string; // Force id to be string
+      firstName: string;
+      lastName: string;
       email: string;
-      role: 'coach' | 'client' | 'admin';
-      [key: string]: unknown;
+      role: string | mongoose.Types.ObjectId | { name: string } | null;
+      isActive: boolean;
+      status: string;
+      profilePicture?: string;
+      [key: string]: any; // Allow other properties
+    }
+
+    // Explicitly augment the Request interface
+    interface Request {
+      user?: User;
     }
   }
 }

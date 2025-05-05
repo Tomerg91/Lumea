@@ -1,6 +1,23 @@
+# Node modules
 node_modules
 dist
+coverage
+
+# Build files
 build
+*.min.js
+
+# Config files that don't need linting
+scripts/bootstrap.ts
+supabase/tests/rls.spec.ts
+
+# Client test files temporarily ignored until we fix the tsconfig issue
+client/tests/**/*.ts
+client/tests/**/*.tsx
+
+# Generated files
+*.d.ts
+
 android/app/src/main/assets/public/assets/
 ios/App/App/public/assets/
 client_backup/

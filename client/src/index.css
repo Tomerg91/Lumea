@@ -6,81 +6,114 @@
 
 @layer base {
   :root {
+    /* Base colors */
     --background: 40 33% 98%;
-    --foreground: 30 10% 34%;
+    --foreground: 33 12% 34%;
 
+    /* Card */
     --card: 40 33% 98%;
-    --card-foreground: 30 10% 34%;
+    --card-foreground: 33 12% 34%;
 
+    /* Popover */
     --popover: 40 33% 98%;
-    --popover-foreground: 30 10% 34%;
+    --popover-foreground: 33 12% 34%;
 
+    /* Primary: Lumea Stone */
     --primary: 33 12% 34%;
     --primary-foreground: 40 33% 95%;
+    --primary-light: 33 12% 44%;
+    --primary-dark: 33 12% 24%;
 
+    /* Secondary: Lumea Beige */
     --secondary: 38 33% 92%;
-    --secondary-foreground: 30 10% 30%;
+    --secondary-foreground: 33 12% 34%;
+    --secondary-light: 38 33% 97%;
+    --secondary-dark: 38 33% 87%;
 
+    /* Muted */
     --muted: 38 15% 92%;
-    --muted-foreground: 30 5% 50%;
+    --muted-foreground: 33 5% 50%;
 
+    /* Accent: Lumea Sage */
     --accent: 158 15% 62%;
-    --accent-foreground: 30 10% 25%;
+    --accent-foreground: 33 12% 25%;
+    --accent-light: 158 15% 72%;
+    --accent-dark: 158 15% 52%;
 
-    --destructive: 0 84.2% 60.2%;
+    /* Destructive */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 40 33% 98%;
 
-    --border: 30 15% 85%;
-    --input: 30 10% 85%;
+    /* Border, Input, Ring */
+    --border: 33 15% 85%;
+    --input: 33 15% 85%;
     --ring: 33 12% 30%;
 
+    /* Border Radius */
     --radius: 1rem;
 
+    /* Sidebar (Dark on Light) */
     --sidebar-background: 33 12% 34%;
     --sidebar-foreground: 40 33% 95%;
     --sidebar-primary: 40 33% 95%;
     --sidebar-primary-foreground: 33 12% 34%;
-    --sidebar-accent: 35 15% 45%;
+    --sidebar-accent: 158 15% 62%;
     --sidebar-accent-foreground: 40 33% 95%;
     --sidebar-border: 35 10% 42%;
     --sidebar-ring: 38 30% 91%;
   }
 
   .dark {
-    --background: 30 15% 15%;
+    /* Base colors - Dark mode */
+    --background: 33 15% 15%;
     --foreground: 38 33% 92%;
 
-    --card: 30 15% 18%;
+    /* Card - Dark mode */
+    --card: 33 15% 18%;
     --card-foreground: 38 33% 92%;
 
-    --popover: 30 15% 15%;
+    /* Popover - Dark mode */
+    --popover: 33 15% 15%;
     --popover-foreground: 38 33% 92%;
 
-    --primary: 40 33% 92%;
-    --primary-foreground: 30 10% 25%;
+    /* Primary: Lumea Beige - Dark mode */
+    --primary: 38 33% 92%;
+    --primary-foreground: 33 10% 25%;
+    --primary-light: 38 33% 97%;
+    --primary-dark: 38 33% 87%;
 
-    --secondary: 30 10% 25%;
-    --secondary-foreground: 40 33% 92%;
+    /* Secondary: Lumea Stone - Dark mode */
+    --secondary: 33 10% 25%;
+    --secondary-foreground: 38 33% 92%;
+    --secondary-light: 33 10% 30%;
+    --secondary-dark: 33 10% 20%;
 
-    --muted: 30 10% 25%;
-    --muted-foreground: 30 5% 70%;
+    /* Muted - Dark mode */
+    --muted: 33 10% 25%;
+    --muted-foreground: 38 5% 70%;
 
+    /* Accent: Lumea Sage - Dark mode */
     --accent: 158 12% 40%;
-    --accent-foreground: 40 33% 92%;
+    --accent-foreground: 38 33% 92%;
+    --accent-light: 158 12% 50%;
+    --accent-dark: 158 12% 30%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 40 33% 92%;
+    /* Destructive - Dark mode */
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 38 33% 92%;
 
-    --border: 30 10% 28%;
-    --input: 30 10% 28%;
+    /* Border, Input, Ring - Dark mode */
+    --border: 33 10% 28%;
+    --input: 33 10% 28%;
     --ring: 38 33% 92%;
 
-    --sidebar-background: 30 15% 20%;
+    /* Sidebar (Light on Dark) - Dark mode */
+    --sidebar-background: 33 15% 20%;
     --sidebar-foreground: 38 33% 92%;
     --sidebar-primary: 38 33% 92%;
-    --sidebar-primary-foreground: 30 15% 20%;
-    --sidebar-accent: 35 10% 30%;
-    --sidebar-accent-foreground: 40 33% 95%;
+    --sidebar-primary-foreground: 33 15% 20%;
+    --sidebar-accent: 158 12% 40%;
+    --sidebar-accent-foreground: 38 33% 92%;
     --sidebar-border: 35 10% 28%;
     --sidebar-ring: 38 30% 91%;
   }
@@ -103,6 +136,47 @@
   h6 {
     @apply font-serif;
   }
+
+  h1 {
+    @apply text-4xl md:text-5xl font-semibold leading-tight;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl font-semibold leading-tight;
+  }
+
+  h3 {
+    @apply text-2xl md:text-3xl font-medium leading-snug;
+  }
+
+  h4 {
+    @apply text-xl md:text-2xl font-medium leading-snug;
+  }
+
+  h5 {
+    @apply text-lg md:text-xl font-medium;
+  }
+
+  h6 {
+    @apply text-base md:text-lg font-medium;
+  }
+}
+
+@layer utilities {
+  .shadow-lumea-sm {
+    box-shadow: var(--shadow-lumea-sm);
+  }
+  
+  .shadow-lumea-md {
+    box-shadow: var(--shadow-lumea-md);
+  }
+  
+  .shadow-lumea-lg {
+    box-shadow: var(--shadow-lumea-lg);
+  }
+  .shadow-lumea-xl {
+    box-shadow: 0 12px 32px -4px rgba(96, 87, 77, 0.25);
+  }
 }
 
 @layer components {
@@ -111,19 +185,23 @@
   }
 
   .lumea-gradient {
-    @apply bg-gradient-to-br from-[theme(colors.lumea.beige)] via-white to-[theme(colors.lumea.bone)] dark:from-[theme(colors.lumea.stone/30)] dark:via-background dark:to-[theme(colors.lumea.stone/10)];
+    @apply bg-gradient-to-br from-lumea-beige-DEFAULT via-white to-lumea-bone-DEFAULT dark:from-lumea-stone-700/30 dark:via-background dark:to-lumea-stone-800/10;
   }
 
   .lumea-card {
-    @apply bg-white/70 dark:bg-[theme(colors.lumea.stone/10)] backdrop-blur-sm border border-[theme(colors.lumea.bone)] dark:border-[theme(colors.lumea.stone/20)] shadow-md rounded-2xl transition-all duration-300 hover:shadow-lg;
+    @apply bg-white/70 dark:bg-lumea-stone-700/10 backdrop-blur-sm border border-lumea-bone-DEFAULT dark:border-lumea-stone-600/20 shadow-lumea-sm rounded-xl transition-all duration-300 hover:shadow-lumea-md;
   }
 
   .organic-shadow {
-    box-shadow: 0 10px 30px -10px rgba(96, 87, 77, 0.1);
+    @apply shadow-lumea-md;
   }
 
   .floating {
     animation: floating 3s ease-in-out infinite;
+  }
+
+  .elegant-input {
+    @apply bg-white/80 dark:bg-lumea-stone-700/20 border-lumea-taupe-300 dark:border-lumea-stone-600/30 focus:border-lumea-sage-400 dark:focus:border-lumea-sage-600 focus:shadow-[0_0_0_1px_rgba(143,170,165,0.4)] dark:focus:shadow-[0_0_0_1px_rgba(143,170,165,0.6)] rounded-lg;
   }
 
   @keyframes floating {

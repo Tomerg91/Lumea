@@ -41,6 +41,77 @@ interface AuthContextType {
 // Create the context with an explicit type (or null initially)
 const AuthContext = React.createContext<AuthContextType | null>(null);
 
+// Utility function for rate limit handling
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Simple debounce implementation
+const debounce = <T extends (...args: any[]) => Promise<any>>(
+  fn: T,
+  wait = 300
+): ((...args: Parameters<T>) => Promise<ReturnType<T>>) => {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let pendingPromise: Promise<ReturnType<T>> | null = null;
+
+  return async (...args: Parameters<T>): Promise<ReturnType<T>> => {
+    if (timer) clearTimeout(timer);
+
+    // If we already have a pending promise for this call, return it
+    if (pendingPromise) return pendingPromise;
+
+    // Create a new promise that resolves after the debounce period
+    const promise = new Promise<ReturnType<T>>((resolve) => {
+      timer = setTimeout(async () => {
+        const result = await fn(...args);
+        pendingPromise = null;
+        resolve(result);
+      }, wait);
+    });
+
+    pendingPromise = promise;
+    return promise;
+  };
+};
+
+// Retry function with exponential backoff
+const retryWithBackoff = async <T,>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  baseDelayMs = 300
+): Promise<T> => {
+  let retries = 0;
+
+  while (retries < maxRetries) {
+    try {
+      return await fn();
+    } catch (error) {
+      retries++;
+
+      // If it's not a rate limit error or we've exhausted retries, throw the error
+      if (
+        !(
+          error instanceof Error &&
+          (error.message.includes('rate limit') ||
+            error.message.includes('429') ||
+            error.message.includes('Too Many Requests'))
+        ) ||
+        retries >= maxRetries
+      ) {
+        throw error;
+      }
+
+      // Calculate exponential backoff delay
+      const delay = baseDelayMs * Math.pow(2, retries);
+      console.log(
+        `[AuthContext] Rate limit hit. Retrying in ${delay}ms (attempt ${retries}/${maxRetries})`
+      );
+      await sleep(delay);
+    }
+  }
+
+  // This will only be reached if all retries have failed
+  throw new Error(`Max retries (${maxRetries}) exceeded`);
+};
+
 // Define props for the provider
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -189,6 +260,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []); // Runs only once on mount
 
+  // Debounced updateUser function to avoid rate limits
+  const debouncedUpdateUser = React.useCallback(
+    debounce(async (metadata: Record<string, any>) => {
+      return retryWithBackoff(
+        async () => {
+          const client = getSupabaseClient();
+          const result = await client.auth.updateUser({ data: metadata });
+          return result;
+        },
+        3,
+        500
+      ); // 3 retries with 500ms base delay
+    }, 300), // 300ms debounce
+    []
+  );
+
   // Update the fetchProfile function to handle missing table
   const fetchProfile = async (userId: string) => {
     console.log('[AuthContext] fetchProfile called for user:', userId);
@@ -198,43 +285,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return null;
     }
 
+    // Use the ref to track in-progress fetches
+    // If we already have a fetch for this user in progress, don't start another
+    if (profileFetchInProgress.current === userId) {
+      console.log(
+        `[AuthContext] fetchProfile for user ${userId} already in progress, returning null`
+      );
+      return null;
+    }
+
+    // Mark that we're starting a fetch for this user
+    profileFetchInProgress.current = userId;
     setLoadingProfile(true);
 
     try {
-      console.log(
-        "[AuthContext] fetchProfile: >>> Preparing to call supabase.from('profiles').select()"
-      );
-      console.log(
-        '[AuthContext] fetchProfile: Inspecting supabase client object:',
-        getSupabaseClient().constructor.name
-      );
-      console.log(
-        '[AuthContext] fetchProfile: >>> Attempting Supabase query for profile of user:',
-        userId
-      );
+      console.log('[AuthContext] Attempting to fetch profile for user:', userId);
+
+      // Use the appropriate client based on availability
+      const client = getSupabaseClient();
 
       // Try to fetch the profile
-      const { data, error, status } = await getSupabaseClient()
+      const { data, error } = await client
         .from('profiles')
-        .select()
+        .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
-      console.log(
-        '[AuthContext] fetchProfile: <<< Supabase query completed for user:',
-        userId,
-        'Status:',
-        status
-      );
+      // If we got a legitimate PostgreSQL error (not 'not found'), throw it
+      if (error && error.code !== 'PGRST116') {
+        console.error('[AuthContext] Error fetching profile:', error);
+        throw error;
+      }
 
-      // If the table doesn't exist or there's no profile, create a new one
-      if (
-        (error && status === 404) ||
-        (error && error.message?.includes('relation "public.profiles" does not exist')) ||
-        !data
-      ) {
+      // If we didn't find a profile, we need to create one
+      if (!data) {
         console.log(
-          '[AuthContext] No profile found for user or profiles table does not exist. Creating profile directly...'
+          '[AuthContext] Profile not found for user, will create from auth metadata:',
+          userId
         );
 
         // Get user details from auth to create profile
@@ -248,14 +335,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           try {
             // Create a new profile directly in the user's metadata
             // This is a workaround since we can't create tables without admin rights
-            const { data: userMetadata, error: metadataError } =
-              await getSupabaseClient().auth.updateUser({
-                data: {
-                  name: currentUser.user_metadata?.name || '',
-                  role: currentUser.user_metadata?.role || 'client',
-                  is_profile_created: true,
-                },
-              });
+            const { data: userMetadata, error: metadataError } = await debouncedUpdateUser({
+              name: currentUser.user_metadata?.name || '',
+              role: currentUser.user_metadata?.role || 'client',
+              is_profile_created: true,
+            });
 
             if (metadataError) {
               console.error('[AuthContext] Error updating user metadata:', metadataError);
@@ -309,6 +393,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('[AuthContext] fetchProfile finally block for user:', userId);
       setLoadingProfile(false);
       console.log('[AuthContext] fetchProfile finished for user:', userId);
+      // Clear the in-progress tracker
+      profileFetchInProgress.current = null;
     }
   };
 

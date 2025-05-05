@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, ComponentType } from 'react';
+import React, { Component, Suspense, lazy, ComponentType } from 'react';
 
 /**
  * Loading component to display while lazy-loaded components are loading
@@ -20,12 +20,15 @@ export function lazyLoad<T extends ComponentType<any>>(
   loadingComponent: React.ReactNode = <LoadingFallback />
 ) {
   const LazyComponent = lazy(importFunc);
-  
-  return (props: React.ComponentProps<T>) => (
+
+  const LazyLoadWrapper = (props: React.ComponentProps<T>) => (
     <Suspense fallback={loadingComponent}>
       <LazyComponent {...props} />
     </Suspense>
   );
+
+  LazyLoadWrapper.displayName = `LazyLoad(${importFunc.name || 'Component'})`;
+  return LazyLoadWrapper;
 }
 
 /**
@@ -51,7 +54,9 @@ interface ErrorBoundaryState {
 /**
  * Simple error boundary component
  */
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundaryComponent extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  static displayName = 'ErrorBoundary';
+
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
@@ -83,14 +88,17 @@ export function withLazyLoading<T extends ComponentType<any>>(
   importFunc: () => Promise<{ default: T }>
 ) {
   const LazyLoadedComponent = lazyLoad(importFunc);
-  
-  return (props: React.ComponentProps<T>) => {
+
+  const WithErrorBoundary = (props: React.ComponentProps<T>) => {
     return (
-      <ErrorBoundary fallback={<ErrorFallback />}>
+      <ErrorBoundaryComponent fallback={<ErrorFallback />}>
         <LazyLoadedComponent {...props} />
-      </ErrorBoundary>
+      </ErrorBoundaryComponent>
     );
   };
+
+  WithErrorBoundary.displayName = `WithErrorBoundary(${importFunc.name || 'Component'})`;
+  return WithErrorBoundary;
 }
 
-export default lazyLoad; 
+export default lazyLoad;
