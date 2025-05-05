@@ -1,10 +1,26 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import path from 'path';
-import { componentTagger } from 'lovable-tagger';
-import { compression } from 'vite-plugin-compression2';
 
-// Try to import visualizer, but continue if it fails
+// Safely import componentTagger
+let componentTaggerPlugin = null;
+try {
+  const { componentTagger } = require('lovable-tagger');
+  componentTaggerPlugin = componentTagger;
+} catch (error) {
+  console.warn('Warning: lovable-tagger not available. Component tagging will be skipped.');
+}
+
+// Safely import compression
+let compressionPlugin = null;
+try {
+  const { compression } = require('vite-plugin-compression2');
+  compressionPlugin = compression;
+} catch (error) {
+  console.warn('Warning: vite-plugin-compression2 not available. Compression will be skipped.');
+}
+
+// Safely import visualizer
 let visualizerPlugin = null;
 try {
   // Dynamic import to avoid build failures if the package is missing
@@ -23,7 +39,7 @@ export default defineConfig(({ mode }) => {
   const plugins = [
     react(),
     // Only include plugins that are available and relevant for the current mode
-    mode === 'development' && componentTagger(),
+    mode === 'development' && componentTaggerPlugin && componentTaggerPlugin(),
   ];
 
   // Add visualizer only if available
@@ -38,15 +54,20 @@ export default defineConfig(({ mode }) => {
     );
   }
 
-  // Add compression plugins for production
-  if (mode === 'production') {
+  // Add compression plugins for production if available
+  if (mode === 'production' && compressionPlugin) {
+    // Add brotli compression
     plugins.push(
-      compression({
+      compressionPlugin({
         algorithm: 'brotliCompress',
         exclude: [/\.(br)$/, /\.(gz)$/, /\.(png|jpe?g|gif|webp)$/i],
         threshold: 1024, // Only compress files larger than 1KB
-      }),
-      compression({
+      })
+    );
+    
+    // Add gzip compression
+    plugins.push(
+      compressionPlugin({
         algorithm: 'gzip',
         exclude: [/\.(br)$/, /\.(gz)$/, /\.(png|jpe?g|gif|webp)$/i],
         threshold: 1024,

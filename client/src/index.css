@@ -189,7 +189,7 @@
   }
 
   .lumea-card {
-    @apply bg-white/70 dark:bg-lumea-stone-700/10 backdrop-blur-sm border border-lumea-bone border-opacity-100 dark:border-lumea-stone-600 dark:border-opacity-20 shadow-lumea-sm rounded-xl transition-all duration-300 hover:shadow-lumea-md;
+    @apply bg-white/70 dark:bg-lumea-stone-700/10 backdrop-blur-sm border border-lumea-bone-DEFAULT dark:border-lumea-stone-600/20 shadow-lumea-sm rounded-xl transition-all duration-300 hover:shadow-lumea-md;
   }
 
   .organic-shadow {

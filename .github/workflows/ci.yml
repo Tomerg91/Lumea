@@ -17,19 +17,22 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci --workspaces --if-present
-      - run: npm run lint || true # Don't fail the build for linting issues
-      - name: Run type checking (CI mode)
-        run: npm run ci-check || true # Don't fail the build for type checking issues
-      - name: Install visualization plugin explicitly
-        run: npm install --no-save rollup-plugin-visualizer
-      - name: Modify Tailwind configuration to ignore non-standard theme references
-        run: |
-          # Create a temporary file for client/package.json build script modification
-          cd client
-          jq '.scripts.build = "DISABLE_POSTCSS_WARNINGS=true vite build || true"' package.json > temp.json
-          mv temp.json package.json
-          cd ..
-      - run: npm run build --if-present
+      
+      # Install required dependencies explicitly
+      - name: Install required dependencies
+        run: npm install --save-dev vite-plugin-compression2 rollup-plugin-visualizer
+      
+      # Run linting without suppressing errors
+      - name: Run linting
+        run: npm run lint
+      
+      # Run type checking without suppressing errors
+      - name: Run type checking
+        run: npm run ci-check
+      
+      # Build the application
+      - name: Build application
+        run: npm run build --if-present
 
   test:
     runs-on: ubuntu-latest
@@ -42,4 +45,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci --workspaces --if-present
-      - run: npm test || true # Don't fail the build for test issues for now
+      
+      # Run tests without suppressing errors
+      - name: Run tests
+        run: npm test
