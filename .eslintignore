@@ -1,10 +1,29 @@
+# Build outputs
+dist/
+build/
+
 # Node modules
-node_modules
-dist
-coverage
+node_modules/
+
+# Config files
+*.config.js
+*.config.ts
+vite.config.ts
+tailwind.config.ts
+capacitor.config.ts
+
+# Type definitions
+**/*.d.ts
+
+# Generated files
+coverage/
+.nyc_output/
+public/
+
+# Environment files
+.env*
 
 # Build files
-build
 *.min.js
 
 # Config files that don't need linting
@@ -14,9 +33,6 @@ supabase/tests/rls.spec.ts
 # Client test files temporarily ignored until we fix the tsconfig issue
 client/tests/**/*.ts
 client/tests/**/*.tsx
-
-# Generated files
-*.d.ts
 
 android/app/src/main/assets/public/assets/
 ios/App/App/public/assets/

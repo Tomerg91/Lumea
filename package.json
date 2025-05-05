@@ -13,11 +13,18 @@
     "check": "cd client && npm run typecheck && cd ../server && npm run typecheck",
     "ci-check": "npm run check",
     "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "test": "cd client && npm run test -- --reporter verbose && cd ../server && npm run test -- --verbose",
     "ci-all": "npm run lint && npm run ci-check && npm run test",
     "db:migrate": "supabase db reset",
     "db:seed": "ts-node scripts/bootstrap.ts",
-    "test:rls": "vitest run supabase/tests/rls.spec.ts"
+    "test:rls": "vitest run supabase/tests/rls.spec.ts",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix"
+    ]
   },
   "devDependencies": {
     "@capacitor/cli": "^7.2.0",
@@ -27,9 +34,13 @@
     "@testing-library/jest-dom": "6.6.3",
     "@types/bcryptjs": "2.4.6",
     "@types/connect-pg-simple": "7.0.3",
+    "@types/connect-redis": "0.0.23",
     "@types/jest": "29.5.14",
     "@types/libsodium-wrappers": "0.7.14",
+    "@types/mongoose": "5.11.96",
     "@types/pg": "8.11.14",
+    "@types/redis": "4.0.10",
+    "@types/scrypt-js": "2.0.4",
     "@types/testing-library__react": "10.0.1",
     "@typescript-eslint/parser": "^8.29.0",
     "bcryptjs": "3.0.2",
@@ -43,13 +54,18 @@
     "eslint-plugin-react": "7.37.5",
     "eslint-plugin-react-hooks": "5.2.0",
     "eslint-plugin-react-refresh": "0.4.20",
+    "husky": "9.1.7",
+    "lint-staged": "15.5.1",
     "memorystore": "1.6.7",
+    "mongoose": "8.14.1",
     "pg": "8.15.6",
     "postgres": "3.4.5",
     "prettier": "3.5.3",
+    "scrypt-js": "3.0.1",
     "ts-node": "^10.9.2",
     "typescript": "5.8.3",
     "typescript-eslint": "8.31.1",
+    "vite-plugin-compression2": "1.3.3",
     "vitest": "^3.1.1"
   },
   "dependencies": {
@@ -60,6 +76,7 @@
     "@radix-ui/react-icons": "1.3.2",
     "@testing-library/react": "16.3.0",
     "axios": "1.9.0",
+    "connect-redis": "8.0.3",
     "date-fns": "2.30.0",
     "express-validator": "^7.2.1",
     "i18next": "^23.10.1",
@@ -67,6 +84,7 @@
     "i18next-http-backend": "^2.5.0",
     "libsodium-wrappers": "0.7.15",
     "react-i18next": "^14.1.0",
+    "redis": "5.0.0",
     "task-master-ai": "^0.12.1"
   },
   "workspaces": [

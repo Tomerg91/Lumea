@@ -28,13 +28,13 @@ export const getPaginationParams = (
   // Parse page and limit from query params
   const page = Math.max(1, parseInt(req.query.page as string) || 1);
   let limit = parseInt(req.query.limit as string) || defaultLimit;
-  
+
   // Ensure limit doesn't exceed maximum
   limit = Math.min(limit, maxLimit);
-  
+
   // Calculate skip value for pagination
   const skip = (page - 1) * limit;
-  
+
   return { page, limit, skip };
 };
 
@@ -52,14 +52,14 @@ export const getSortParams = (
   defaultOrder: 'asc' | 'desc' = 'asc',
   allowedFields: string[] = []
 ): SortParams => {
-  let field = (req.query.sortBy as string) || defaultField;
-  let order = ((req.query.order as string)?.toLowerCase() === 'desc') ? 'desc' : defaultOrder;
-  
+  const field = (req.query.sortBy as string) || defaultField;
+  const order = (req.query.order as string)?.toLowerCase() === 'desc' ? 'desc' : defaultOrder;
+
   // Validate sort field if allowedFields is provided
   if (allowedFields.length > 0 && !allowedFields.includes(field)) {
-    field = defaultField;
+    return { field: defaultField, order };
   }
-  
+
   return { field, order };
 };
 
@@ -77,22 +77,23 @@ export const getFieldSelection = (
 ): Record<string, boolean> => {
   // Parse fields from query parameter (e.g., fields=id,name,email)
   const requestedFields = (req.query.fields as string)?.split(',').filter(Boolean) || [];
-  
+
   // If no fields requested, use defaults
   if (requestedFields.length === 0) {
     return defaultFields.reduce((acc, field) => ({ ...acc, [field]: true }), {});
   }
-  
+
   // Filter requested fields against allowed fields if provided
-  const fieldsToSelect = allowedFields.length > 0
-    ? requestedFields.filter(field => allowedFields.includes(field))
-    : requestedFields;
-  
+  const fieldsToSelect =
+    allowedFields.length > 0
+      ? requestedFields.filter((field) => allowedFields.includes(field))
+      : requestedFields;
+
   // If all requested fields were invalid, fall back to defaults
   if (fieldsToSelect.length === 0) {
     return defaultFields.reduce((acc, field) => ({ ...acc, [field]: true }), {});
   }
-  
+
   // Create projection object for Prisma
   return fieldsToSelect.reduce((acc, field) => ({ ...acc, [field]: true }), {});
 };
@@ -103,20 +104,17 @@ export const getFieldSelection = (
  * @param pagination - Pagination parameters
  * @returns Pagination metadata object
  */
-export const getPaginationMetadata = (
-  total: number,
-  pagination: PaginationParams
-) => {
+export const getPaginationMetadata = (total: number, pagination: PaginationParams) => {
   const { page, limit } = pagination;
   const totalPages = Math.ceil(total / limit);
-  
+
   return {
     page,
     limit,
     totalItems: total,
     totalPages,
     hasNextPage: page < totalPages,
-    hasPrevPage: page > 1
+    hasPrevPage: page > 1,
   };
 };
 
@@ -134,6 +132,6 @@ export const createPaginatedResponse = <T>(
 ) => {
   return {
     data,
-    pagination: getPaginationMetadata(total, pagination)
+    pagination: getPaginationMetadata(total, pagination),
   };
-}; 
+};
