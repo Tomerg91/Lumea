@@ -7,10 +7,10 @@ import { Request, Response, NextFunction } from 'express';
 export const staticCacheMiddleware = (req: Request, res: Response, next: NextFunction) => {
   // Get the URL path to determine file type
   const path = req.path;
-  
+
   // Set common cache headers
   res.setHeader('Vary', 'Accept-Encoding');
-  
+
   // Different cache durations based on file type
   if (path.match(/\.(jpg|jpeg|png|gif|webp|ico|svg)$/i)) {
     // Images - cache for 7 days
@@ -28,8 +28,8 @@ export const staticCacheMiddleware = (req: Request, res: Response, next: NextFun
     // Default for other static files - cache for 4 hours
     res.setHeader('Cache-Control', 'public, max-age=14400');
   }
-  
+
   next();
 };
 
-export default staticCacheMiddleware; 
+export default staticCacheMiddleware;

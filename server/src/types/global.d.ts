@@ -20,13 +20,13 @@ declare global {
     audioNotes?: string;
     dateTime?: Date;
   }
-  
+
   // Augment the Reflection type
   interface Reflection {
     sharedWithCoach?: boolean;
     audioEntry?: string;
   }
-  
+
   // Augment the Resource type
   interface Resource {
     visibleToClients?: boolean;
@@ -39,4 +39,4 @@ declare global {
   }
 }
 
-export {}; 
+export {};

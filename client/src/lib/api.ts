@@ -7,10 +7,35 @@ export interface AuthenticatedUser {
   role: string;
 }
 
-// Define the base URL for the backend API
-// Ensure this matches the port your backend server is running on (e.g., 3001)
-// Use import.meta.env for Vite environment variables
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+// Ensure VITE_API_URL is defined in your .env files (e.g., .env.development, .env.production)
+// Vercel will use environment variables set in the project settings.
+const vercelDeploymentUrl = import.meta.env.VITE_VERCEL_URL && `https://${import.meta.env.VITE_VERCEL_URL}`;
+const customApiUrl = import.meta.env.VITE_API_URL;
+
+let determinedApiBaseUrl: string;
+
+if (customApiUrl) {
+  // If a specific VITE_API_URL is provided (e.g. for local dev against a separate staging API, or if Vercel URL is not the API host)
+  determinedApiBaseUrl = customApiUrl.endsWith('/api') ? customApiUrl : `${customApiUrl}/api`;
+} else if (vercelDeploymentUrl) {
+  // If deployed on Vercel and VITE_VERCEL_URL is available (Vercel injects this)
+  // We assume the API is served from the same domain, under /api path
+  determinedApiBaseUrl = `${vercelDeploymentUrl}/api`;
+} else {
+  // Fallback for other local development scenarios or if VITE_API_URL is not set
+  determinedApiBaseUrl = 'http://localhost:3000/api';
+}
+
+if (import.meta.env.DEV) {
+  console.log('Using API_BASE_URL:', determinedApiBaseUrl);
+}
+
+if (!determinedApiBaseUrl && import.meta.env.PROD) {
+  console.error("FATAL ERROR: API_BASE_URL could not be determined for production. Ensure VITE_API_URL or Vercel system env vars are available.");
+  // Consider throwing an error or showing a user-friendly message on the client
+}
+
+export const API_BASE_URL = determinedApiBaseUrl;
 
 // Interface for the user object returned by login/me
 // Based on server/config/passport.ts AuthenticatedUser

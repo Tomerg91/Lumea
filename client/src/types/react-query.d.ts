@@ -35,4 +35,4 @@ declare module '@tanstack/react-query' {
     isSuccess: boolean;
     // Add other properties as needed
   }
-} 
+}

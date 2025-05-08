@@ -1,7 +1,7 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction, Application } from 'express';
 import cors from 'cors';
 import { config } from 'dotenv';
-import session from 'express-session';
+import session, { SessionOptions } from 'express-session';
 import passport from 'passport';
 import './config/passport.js';
 import authRoutes from './routes/auth.js';
@@ -16,47 +16,94 @@ import coachNoteRoutes from './routes/coachNote.js';
 import userRoutes from './routes/user.js';
 import analyticsRoutes from './routes/analytics.js';
 import http from 'http';
+import connectPgSimple from 'connect-pg-simple';
+import pg from 'pg';
+import { logger } from './services/logger';
+import './services/monitoring'; // Initialize Monitoring Service early
 
 config();
 
-const app = express();
-const port = process.env.PORT || 5000;
+// Environment Variable Validation
+const validateEnvVariables = () => {
+  const requiredEnvVars = [
+    'NODE_ENV',
+    'PORT',
+    'CLIENT_URL',
+    'DATABASE_URL',
+    'JWT_SECRET',
+    'SESSION_SECRET',
+    // Add other critical variables, e.g., SMTP, Supabase, AWS keys if essential for startup
+  ];
+
+  if (process.env.NODE_ENV !== 'test') { // Skip for test environment or adjust as needed
+    requiredEnvVars.forEach((varName) => {
+      if (!process.env[varName]) {
+        console.error(`FATAL ERROR: Environment variable ${varName} is not set.`);
+        process.exit(1); // Exit if a required variable is missing
+      }
+    });
+  }
+
+  // Validate specific values if necessary
+  if (process.env.NODE_ENV && !['development', 'production', 'test'].includes(process.env.NODE_ENV!)) {
+    console.error(`FATAL ERROR: Invalid NODE_ENV: ${process.env.NODE_ENV}`);
+    process.exit(1);
+  }
+
+  // Example: Validate SMTP settings if email is crucial
+  // if (process.env.ENABLE_EMAIL === 'true') {
+  //   const smtpVars = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM'];
+  //   smtpVars.forEach(varName => {
+  //     if (!process.env[varName]) {
+  //       console.error(`FATAL ERROR: Email enabled, but SMTP variable ${varName} is not set.`);
+  //       process.exit(1);
+  //     }
+  //   });
+  // }
+};
+
+validateEnvVariables(); // Call validation at startup
+
+const app: Application = express();
+const port = parseInt(process.env.PORT || "5000", 10);
 app.set('port', port);
 
 app.use(
   cors({
-    origin: [
-      'http://localhost:8080',
-      'http://localhost:5173',
-      'http://localhost:5174',
-      'http://localhost:5175',
-      'http://localhost:5176',
-      'http://localhost:5177',
-      'http://localhost:5178',
-      'http://localhost:5179',
-      process.env.FRONTEND_URL || '',
-    ].filter(Boolean),
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
     credentials: true,
   })
 );
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-if (!process.env.SESSION_SECRET) {
-  console.warn('WARNING: SESSION_SECRET environment variable is not set. Using default secret.');
-}
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || 'fallback-insecure-secret-key',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true,
-      sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'none',
-      maxAge: 24 * 60 * 60 * 1000,
-    },
-  })
-);
+// Session Configuration
+const PgStore = connectPgSimple(session);
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+  // Add SSL config for production if connecting to external DB
+  // ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
+
+const sessionStore = new PgStore({
+  pool: pool,
+  tableName: 'user_sessions', // Or your preferred table name
+  createTableIfMissing: true,
+});
+
+const sessionOptions: SessionOptions = {
+  secret: process.env.SESSION_SECRET!,
+  resave: false,
+  saveUninitialized: false,
+  store: sessionStore,
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'none',
+  },
+};
+app.use(session(sessionOptions));
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -74,24 +121,51 @@ app.use('/api/users', userRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
 app.get('/api/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok' });
+  res.status(200).json({ status: 'UP', message: 'Server is healthy' });
 });
 
+// Global Error Handler (Must be defined AFTER all other app.use() and routes calls)
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('[Global Error Handler]:', err.stack);
-  res.status(500).json({ message: err.message || 'Internal server error' });
+  // Use the logger for error reporting
+  logger.error(err.message, err, { 
+    path: req.path,
+    method: req.method,
+    ip: req.ip,
+    // Add other relevant request context if needed
+  });
+
+  const statusCode = (err as any).status || 500;
+  const responseMessage = process.env.NODE_ENV === 'production' && statusCode === 500 ? 'Internal Server Error' : err.message;
+  
+  res.status(statusCode).json({ error: responseMessage });
 });
+
+// Default route for unhandled paths (optional, place before error handler if used)
+// app.use((req, res) => {
+//   res.status(404).json({ error: 'Not Found' });
+// });
 
 // Create HTTP server
 const server = http.createServer(app);
 
 // Listen on specified port
-server.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-  
-  // Log environment information in development only
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`Environment: ${process.env.NODE_ENV}`);
-    console.log(`API URL: ${process.env.REACT_APP_API_URL || 'Not specified'}`);
-  }
-});
+if (process.env.NODE_ENV !== 'test') {
+  server.listen(port, () => {
+    console.log(`Server is running on port ${port} in ${process.env.NODE_ENV} mode`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Client URL (server expects): ${process.env.CLIENT_URL}`);
+      // VITE_API_URL is a client-side variable, usually not logged on server startup this way.
+      // It's what the client uses to talk to this server.
+    }
+  });
+}
+
+// Ensure SESSION_SECRET handling is robust
+if (!process.env.SESSION_SECRET && process.env.NODE_ENV !== 'test') {
+  console.error(
+    'FATAL ERROR: SESSION_SECRET is not defined. Please set it in your .env file or Vercel environment variables.'
+  );
+  process.exit(1);
+}
+
+export default app;

@@ -43,23 +43,23 @@ const SessionModal: React.FC<SessionModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate form
     const newErrors: { clientId?: string; date?: string } = {};
-    
+
     if (!clientId) {
       newErrors.clientId = t('validation.required');
     }
-    
+
     if (!date) {
       newErrors.date = t('validation.required');
     }
-    
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-    
+
     // Submit the form
     onCreateSession({
       clientId,
@@ -71,7 +71,7 @@ const SessionModal: React.FC<SessionModalProps> = ({
   return (
     <Dialog open={isOpen} onClose={handleClose} className="relative z-50">
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-      
+
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <Dialog.Panel className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
           <div className="flex items-center justify-between mb-4">
@@ -85,7 +85,7 @@ const SessionModal: React.FC<SessionModalProps> = ({
               <Cross2Icon className="h-4 w-4" />
             </button>
           </div>
-          
+
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <label htmlFor="client" className="block mb-2 font-medium">
@@ -107,11 +107,9 @@ const SessionModal: React.FC<SessionModalProps> = ({
                   </option>
                 ))}
               </select>
-              {errors.clientId && (
-                <p className="mt-1 text-red-500 text-sm">{errors.clientId}</p>
-              )}
+              {errors.clientId && <p className="mt-1 text-red-500 text-sm">{errors.clientId}</p>}
             </div>
-            
+
             <div className="mb-4">
               <label htmlFor="date" className="block mb-2 font-medium">
                 {t('sessions.sessionDate')}
@@ -125,11 +123,9 @@ const SessionModal: React.FC<SessionModalProps> = ({
                   errors.date ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
-              {errors.date && (
-                <p className="mt-1 text-red-500 text-sm">{errors.date}</p>
-              )}
+              {errors.date && <p className="mt-1 text-red-500 text-sm">{errors.date}</p>}
             </div>
-            
+
             <div className="mb-6">
               <label htmlFor="notes" className="block mb-2 font-medium">
                 {t('sessions.notes')}
@@ -144,7 +140,7 @@ const SessionModal: React.FC<SessionModalProps> = ({
                 placeholder={t('sessions.notesPlaceholder')}
               />
             </div>
-            
+
             <div className="flex justify-end space-x-3">
               <button
                 type="button"
@@ -173,4 +169,4 @@ const SessionModal: React.FC<SessionModalProps> = ({
   );
 };
 
-export default SessionModal; 
+export default SessionModal;

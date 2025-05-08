@@ -24,7 +24,7 @@ const transporter = nodemailer.createTransport({
 
 /**
  * Send a password reset email
- * 
+ *
  * @param email The recipient's email address
  * @param token The password reset token
  * @param userName The name of the user (optional)
@@ -32,7 +32,7 @@ const transporter = nodemailer.createTransport({
 export async function sendReset(email: string, token: string, userName?: string): Promise<void> {
   const resetLink = `${APP_URL}/reset-password/${token}`;
   const greeting = userName ? userName : 'שלום | Hello';
-  
+
   // Hebrew RTL content
   const hebrewHtml = `
     <div dir="rtl" style="text-align: right; font-family: Arial, sans-serif;">
@@ -46,7 +46,7 @@ export async function sendReset(email: string, token: string, userName?: string)
       <p>בברכה,<br>צוות סאטיה קואצ'ינג</p>
     </div>
   `;
-  
+
   // Plain text fallback (bilingual)
   const plainText = `
 איפוס סיסמה לחשבון סאטיה קואצ'ינג
@@ -79,13 +79,13 @@ If you did not request a password reset, please ignore this email.
 Best regards,
 The Satya Coaching Team
   `;
-  
+
   // Send the email
   await transporter.sendMail({
     from: `"Satya Coaching" <${FROM_EMAIL}>`,
     to: email,
-    subject: "איפוס סיסמה | Password Reset - Satya Coaching",
+    subject: 'איפוס סיסמה | Password Reset - Satya Coaching',
     text: plainText,
     html: hebrewHtml,
   });
-} 
+}

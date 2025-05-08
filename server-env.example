@@ -1,0 +1,51 @@
+# Server Environment Variables
+# Rename this file to .env.example and move it to the server/ directory
+
+# Database Connection URL (MongoDB or PostgreSQL via Supabase)
+DATABASE_URL=
+
+# JWT Secret Key for signing tokens
+JWT_SECRET=
+
+# Port the server will listen on
+PORT=3000
+
+# Node environment (development, production, test)
+NODE_ENV=development
+
+# URL of the frontend client (for CORS)
+CLIENT_URL=http://localhost:5173
+
+# Email Service Configuration (SMTP)
+SMTP_HOST=
+SMTP_PORT=
+SMTP_SECURE=false # true for SSL, false for TLS/none
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM= # Email address to send from
+
+# OAuth Configuration (ensure these match client-side IDs)
+GOOGLE_CLIENT_ID=
+# FACEBOOK_CLIENT_ID=
+# FACEBOOK_CLIENT_SECRET=
+
+# Encryption Key and IV for sensitive data (generate securely)
+# Generate ENCRYPTION_KEY (32 bytes hex): node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+ENCRYPTION_KEY=
+# Generate ENCRYPTION_IV (16 bytes hex): node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"
+ENCRYPTION_IV=
+
+# AWS S3 Configuration (Optional - if used for file storage)
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=
+AWS_S3_BUCKET=
+
+# Supabase Configuration (if using Supabase for DB and Auth)
+# Public URL and Anon Key are usually for client-side, but service key is for backend.
+SUPABASE_URL=
+SUPABASE_ANON_KEY= # Often same as VITE_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_KEY= # For admin-level backend operations
+
+# Session Secret
+SESSION_SECRET= 

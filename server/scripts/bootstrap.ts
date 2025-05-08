@@ -1,6 +1,6 @@
 /**
  * Bootstrap script to initialize the database with roles and sample users
- * 
+ *
  * Usage: npm run bootstrap
  */
 import mongoose from 'mongoose';
@@ -19,18 +19,18 @@ const SALT_ROUNDS = 10;
  */
 async function seedRoles() {
   console.log('Seeding roles...');
-  
+
   const roles = [
     { name: 'admin', description: 'Administrator with full access' },
     { name: 'coach', description: 'Coach with access to client data and coaching tools' },
-    { name: 'client', description: 'Client with limited access to their own data' }
+    { name: 'client', description: 'Client with limited access to their own data' },
   ];
-  
+
   // Create roles
   for (const role of roles) {
     try {
       const existingRole = await Role.findOne({ name: role.name });
-      
+
       if (!existingRole) {
         await Role.create(role);
         console.log(`Created role: ${role.name}`);
@@ -48,17 +48,17 @@ async function seedRoles() {
  */
 async function seedUsers() {
   console.log('Seeding users...');
-  
+
   // First, get role IDs
   const adminRole = await Role.findOne({ name: 'admin' });
   const coachRole = await Role.findOne({ name: 'coach' });
   const clientRole = await Role.findOne({ name: 'client' });
-  
+
   if (!adminRole || !coachRole || !clientRole) {
     console.error('Required roles not found. Make sure to run seedRoles() first.');
     return;
   }
-  
+
   const users = [
     {
       email: 'admin@example.com',
@@ -80,26 +80,28 @@ async function seedUsers() {
       firstName: 'Client',
       lastName: 'User',
       role: clientRole._id,
-    }
+    },
   ];
-  
+
   // Create users
   for (const userData of users) {
     try {
       const existingUser = await User.findOne({ email: userData.email });
-      
+
       if (!existingUser) {
         // Hash password - normally this would be handled by the User model pre-save hook,
         // but we're setting it explicitly for clarity
         const passwordHash = await bcrypt.hash(userData.password, SALT_ROUNDS);
-        
+
         // Create user with hashed password
         const user = await User.create({
           ...userData,
           passwordHash,
         });
-        
-        console.log(`Created user: ${user.email} (${userData.firstName} ${userData.lastName}) with role: ${userData.role}`);
+
+        console.log(
+          `Created user: ${user.email} (${userData.firstName} ${userData.lastName}) with role: ${userData.role}`
+        );
       } else {
         console.log(`User ${userData.email} already exists`);
       }
@@ -118,11 +120,11 @@ async function bootstrap() {
     console.log(`Connecting to MongoDB at ${MONGODB_URI}...`);
     await mongoose.connect(MONGODB_URI);
     console.log('Connected to MongoDB');
-    
+
     // Seed roles and users
     await seedRoles();
     await seedUsers();
-    
+
     console.log('Bootstrap completed successfully');
   } catch (error) {
     console.error('Bootstrap failed:', error);
@@ -134,4 +136,4 @@ async function bootstrap() {
 }
 
 // Run the bootstrap function
-bootstrap(); 
+bootstrap();

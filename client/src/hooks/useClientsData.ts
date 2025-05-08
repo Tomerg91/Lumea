@@ -22,14 +22,14 @@ const fetchClients = async (page = 1, limit = 10, search = ''): Promise<ClientsR
   params.append('page', page.toString());
   params.append('limit', limit.toString());
   if (search) params.append('search', search);
-  
-  const response = await axios.get<ClientsResponse>(`${API_URL}/my-clients`, { 
+
+  const response = await axios.get<ClientsResponse>(`${API_URL}/my-clients`, {
     params,
     headers: {
       'Content-Type': 'application/json',
     },
   });
-  
+
   return response.data;
 };
 
@@ -42,20 +42,15 @@ const inviteClient = async (email: string): Promise<{ message: string }> => {
 // Hook for fetching and managing clients
 export const useClientsData = (page = 1, limit = 10, search = '') => {
   const queryClient = useQueryClient();
-  
+
   // Query for fetching clients
-  const {
-    data,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['clients', page, limit, search],
     queryFn: () => fetchClients(page, limit, search),
     // Poll every 30 seconds for any updates
     refetchInterval: 30000,
   });
-  
+
   // Mutation for inviting a client
   const inviteMutation = useMutation({
     mutationFn: inviteClient,
@@ -64,7 +59,7 @@ export const useClientsData = (page = 1, limit = 10, search = '') => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
     },
   });
-  
+
   return {
     clients: data?.clients || [],
     pagination: data?.pagination,
@@ -77,4 +72,4 @@ export const useClientsData = (page = 1, limit = 10, search = '') => {
   };
 };
 
-export default useClientsData; 
+export default useClientsData;

@@ -1,130 +1,132 @@
-import NodeCache from 'node-cache';
+import { createClient } from 'redis';
+
+// Initialize Redis client
+const redisClient = createClient({
+  url: process.env.REDIS_URL || 'redis://localhost:6379',
+});
+
+redisClient.on('error', (err) => {
+  console.error('Redis error:', err);
+  // Don't crash the application on Redis connection failure
+});
+
+// Connect to Redis on startup
+(async () => {
+  try {
+    await redisClient.connect();
+    console.log('Connected to Redis');
+  } catch (err) {
+    console.error('Failed to connect to Redis:', err);
+  }
+})();
 
 /**
- * Cache configuration options
+ * Cache middleware for Express routes
+ * @param keyPrefix - Prefix for cache key (e.g., 'user:', 'session:')
+ * @param ttl - Time to live in seconds
  */
-interface CacheOptions {
-  stdTTL: number;         // Standard time-to-live in seconds
-  checkperiod: number;    // Time in seconds to check for expired keys
-  useClones: boolean;     // Deep clone objects when saving/retrieving
-  deleteOnExpire: boolean; // Delete expired items automatically
-}
+export const cacheMiddleware = (keyPrefix: string, ttl = 3600) => {
+  return async (req: any, res: any, next: any) => {
+    if (!redisClient.isReady) {
+      return next(); // Skip caching if Redis is not connected
+    }
 
-// Default cache configuration
-const defaultOptions: CacheOptions = {
-  stdTTL: 300,           // 5 minutes default cache duration
-  checkperiod: 120,      // Check for expired keys every 2 minutes
-  useClones: false,      // Use references instead of clones for better performance
-  deleteOnExpire: true,  // Automatically delete expired items
+    try {
+      const key = `${keyPrefix}:${req.originalUrl}`;
+
+      // Try to get data from cache
+      const cachedData = await redisClient.get(key);
+
+      if (cachedData) {
+        // Return cached data
+        return res.json(JSON.parse(cachedData.toString()));
+      }
+
+      // Store original send method
+      const originalSend = res.send;
+
+      // Override send method to cache response
+      res.send = function (body: any) {
+        if (res.statusCode === 200 && body) {
+          try {
+            // Cache the response
+            const dataToCache = typeof body === 'string' ? body : JSON.stringify(body);
+            redisClient.setEx(key, ttl, dataToCache).catch((err) => {
+              console.error('Redis cache set error:', err);
+            });
+          } catch (err) {
+            console.error('Error caching response:', err);
+          }
+        }
+
+        // Call original send method
+        return originalSend.call(this, body);
+      };
+
+      next();
+    } catch (err) {
+      console.error('Cache middleware error:', err);
+      next();
+    }
+  };
 };
 
 /**
- * Cache manager class for handling application caching
+ * Clear cache for a specific prefix
+ * @param keyPrefix - Prefix for cache keys to clear
  */
-class CacheManager {
-  private cache: NodeCache;
-  private readonly defaultNamespace: string = 'app';
-
-  /**
-   * Create a new cache manager instance
-   * @param options Cache configuration options
-   */
-  constructor(options: Partial<CacheOptions> = {}) {
-    this.cache = new NodeCache({
-      ...defaultOptions,
-      ...options,
-    });
-
-    // Log cache errors
-    this.cache.on('error', (err) => {
-      console.error('Cache error:', err);
-    });
+export const clearCache = async (keyPrefix: string) => {
+  if (!redisClient.isReady) {
+    return; // Skip if Redis is not connected
   }
 
-  /**
-   * Get an item from the cache
-   * @param key Cache key
-   * @param namespace Optional namespace to organize cache keys
-   * @returns The cached value or undefined if not found
-   */
-  get<T>(key: string, namespace: string = this.defaultNamespace): T | undefined {
-    const namespacedKey = this.getNamespacedKey(key, namespace);
-    return this.cache.get<T>(namespacedKey);
-  }
-
-  /**
-   * Set an item in the cache
-   * @param key Cache key
-   * @param value Value to cache
-   * @param ttl Time-to-live in seconds (optional, uses default if not specified)
-   * @param namespace Optional namespace to organize cache keys
-   * @returns True if successfully stored
-   */
-  set<T>(key: string, value: T, ttl?: number, namespace: string = this.defaultNamespace): boolean {
-    const namespacedKey = this.getNamespacedKey(key, namespace);
-    return this.cache.set(namespacedKey, value, ttl);
-  }
-
-  /**
-   * Check if a key exists in the cache
-   * @param key Cache key
-   * @param namespace Optional namespace to organize cache keys
-   * @returns True if the key exists
-   */
-  has(key: string, namespace: string = this.defaultNamespace): boolean {
-    const namespacedKey = this.getNamespacedKey(key, namespace);
-    return this.cache.has(namespacedKey);
-  }
-
-  /**
-   * Delete an item from the cache
-   * @param key Cache key
-   * @param namespace Optional namespace to organize cache keys
-   * @returns True if the key was deleted, false if it didn't exist
-   */
-  delete(key: string, namespace: string = this.defaultNamespace): boolean {
-    const namespacedKey = this.getNamespacedKey(key, namespace);
-    return this.cache.del(namespacedKey) > 0;
-  }
-
-  /**
-   * Clear all items from a namespace or the entire cache
-   * @param namespace Optional namespace to clear (clears entire cache if not specified)
-   */
-  clear(namespace?: string): void {
-    if (namespace) {
-      const keys = this.cache.keys().filter(key => key.startsWith(`${namespace}:`));
-      this.cache.del(keys);
-    } else {
-      this.cache.flushAll();
+  try {
+    const keys = await redisClient.keys(`${keyPrefix}:*`);
+    if (keys.length > 0) {
+      await redisClient.del(keys);
+      console.log(`Cleared ${keys.length} cache keys for prefix: ${keyPrefix}`);
     }
+  } catch (err) {
+    console.error('Error clearing cache:', err);
+  }
+};
+
+/**
+ * Cache a value directly
+ * @param key - Cache key
+ * @param value - Value to cache
+ * @param ttl - Time to live in seconds
+ */
+export const cacheSet = async (key: string, value: any, ttl = 3600) => {
+  if (!redisClient.isReady) {
+    return; // Skip if Redis is not connected
   }
 
-  /**
-   * Get cache statistics
-   * @returns Object with cache statistics
-   */
-  getStats() {
-    return {
-      keys: this.cache.keys().length,
-      hits: this.cache.getStats().hits,
-      misses: this.cache.getStats().misses,
-      ksize: this.cache.getStats().ksize,
-      vsize: this.cache.getStats().vsize,
-    };
+  try {
+    const dataToCache = typeof value === 'string' ? value : JSON.stringify(value);
+    await redisClient.setEx(key, ttl, dataToCache);
+  } catch (err) {
+    console.error('Error setting cache:', err);
+  }
+};
+
+/**
+ * Get a cached value
+ * @param key - Cache key
+ * @returns The cached value, or null if not found
+ */
+export const cacheGet = async (key: string) => {
+  if (!redisClient.isReady) {
+    return null; // Skip if Redis is not connected
   }
 
-  /**
-   * Get namespaced key
-   * @param key Original key
-   * @param namespace Namespace
-   * @returns Namespaced key string
-   */
-  private getNamespacedKey(key: string, namespace: string): string {
-    return `${namespace}:${key}`;
+  try {
+    const data = await redisClient.get(key);
+    return data ? JSON.parse(data.toString()) : null;
+  } catch (err) {
+    console.error('Error getting from cache:', err);
+    return null;
   }
-}
+};
 
-// Create and export a singleton instance
-const cacheManager = new CacheManager();
-export default cacheManager; 
+export default redisClient;

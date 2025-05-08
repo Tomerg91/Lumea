@@ -25,4 +25,4 @@ export const usePageTracking = (): void => {
   }, [location.pathname, location.search, profile?.role]);
 };
 
-export default usePageTracking; 
+export default usePageTracking;

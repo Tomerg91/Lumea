@@ -33,4 +33,7 @@ const PasswordResetTokenSchema = new Schema<IPasswordResetToken>({
 PasswordResetTokenSchema.index({ token: 1 });
 PasswordResetTokenSchema.index({ expires: 1 }, { expireAfterSeconds: 0 }); // TTL index
 
-export const PasswordResetToken = mongoose.model<IPasswordResetToken>('PasswordResetToken', PasswordResetTokenSchema); 
+export const PasswordResetToken = mongoose.model<IPasswordResetToken>(
+  'PasswordResetToken',
+  PasswordResetTokenSchema
+);

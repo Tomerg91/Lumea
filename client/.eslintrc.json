@@ -12,6 +12,12 @@
     {
       "files": ["vite.config.ts"],
       "parserOptions": { "project": null }
+    },
+    {
+      "files": ["tests/**/*.ts", "tests/**/*.tsx"],
+      "parserOptions": { 
+        "project": "./tests/tsconfig.json"
+      }
     }
   ]
 }

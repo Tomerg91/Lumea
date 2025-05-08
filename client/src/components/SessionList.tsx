@@ -34,7 +34,7 @@ const groupSessionsByDate = (sessions: Session[]) => {
 
   sessions.forEach((session) => {
     const sessionDate = new Date(session.date);
-    
+
     if (isToday(sessionDate)) {
       grouped.today.push(session);
     } else if (isYesterday(sessionDate)) {
@@ -55,7 +55,7 @@ const SessionList: React.FC<SessionListProps> = ({ sessions, isLoading, onCreate
   const { t, i18n } = useTranslation();
   const isRTL = i18n.language === 'he';
   const locale = isRTL ? he : undefined;
-  
+
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -77,8 +77,19 @@ const SessionList: React.FC<SessionListProps> = ({ sessions, isLoading, onCreate
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center">
         <div className="w-64 h-64 bg-lumea-light rounded-full mb-4 flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-32 w-32 text-lumea-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-32 w-32 text-lumea-primary"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
           </svg>
         </div>
         <h3 className="text-xl font-semibold mb-2">{t('sessions.noSessionsYet')}</h3>
@@ -106,10 +117,12 @@ const SessionList: React.FC<SessionListProps> = ({ sessions, isLoading, onCreate
     <div className="space-y-8">
       {Object.entries(groupedSessions).map(([group, groupSessions]) => {
         if (groupSessions.length === 0) return null;
-        
+
         return (
           <div key={group} className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <h3 className="px-6 py-3 bg-gray-50 font-medium">{groupTitles[group as keyof typeof groupTitles]}</h3>
+            <h3 className="px-6 py-3 bg-gray-50 font-medium">
+              {groupTitles[group as keyof typeof groupTitles]}
+            </h3>
             <ul className="divide-y divide-gray-200">
               {groupSessions.map((session) => (
                 <li key={session._id} className="p-4 hover:bg-gray-50">
@@ -119,10 +132,13 @@ const SessionList: React.FC<SessionListProps> = ({ sessions, isLoading, onCreate
                       <div className="flex items-center mt-1">
                         <div className="h-6 w-6 rounded-full bg-lumea-light flex items-center justify-center mr-2">
                           <span className="text-lumea-primary text-xs font-semibold">
-                            {session.client.firstName.charAt(0)}{session.client.lastName.charAt(0)}
+                            {session.client.firstName.charAt(0)}
+                            {session.client.lastName.charAt(0)}
                           </span>
                         </div>
-                        <span className="text-gray-700">{session.client.firstName} {session.client.lastName}</span>
+                        <span className="text-gray-700">
+                          {session.client.firstName} {session.client.lastName}
+                        </span>
                       </div>
                     </div>
                     <div className="md:text-right">
@@ -146,4 +162,4 @@ const SessionList: React.FC<SessionListProps> = ({ sessions, isLoading, onCreate
   );
 };
 
-export default SessionList; 
+export default SessionList;

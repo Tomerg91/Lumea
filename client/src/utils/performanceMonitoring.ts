@@ -12,20 +12,20 @@ export interface PerformanceMetrics {
   firstContentfulPaint?: number;
   largestContentfulPaint?: number;
   firstInputDelay?: number;
-  
+
   // Runtime metrics
   memoryUsage?: {
     jsHeapSizeLimit?: number;
     totalJSHeapSize?: number;
     usedJSHeapSize?: number;
   };
-  
+
   // Custom timing marks
   marks?: Record<string, number>;
-  
+
   // Custom measurements
   measures?: Record<string, number>;
-  
+
   // Additional context
   url?: string;
   userAgent?: string;
@@ -39,7 +39,7 @@ export interface PerformanceMetrics {
 
 /**
  * Create a mark in the performance timeline
- * 
+ *
  * @param name Name of the mark
  */
 export function mark(name: string): void {
@@ -52,7 +52,7 @@ export function mark(name: string): void {
 
 /**
  * Create a measure between two marks
- * 
+ *
  * @param name Name of the measure
  * @param startMark Start mark name
  * @param endMark End mark name
@@ -71,7 +71,7 @@ export function measure(name: string, startMark: string, endMark: string): numbe
 
 /**
  * Clear performance marks and measures
- * 
+ *
  * @param markName Optional specific mark to clear
  */
 export function clearMarks(markName?: string): void {
@@ -100,7 +100,7 @@ export function collectWebVitals(): Partial<PerformanceMetrics> {
   // Basic navigation timing
   if (window.performance && window.performance.timing) {
     const timing = window.performance.timing;
-    
+
     metrics.navigationStart = timing.navigationStart;
     metrics.loadTime = timing.loadEventEnd - timing.navigationStart;
     metrics.domContentLoaded = timing.domContentLoadedEventEnd - timing.navigationStart;
@@ -115,7 +115,7 @@ export function collectWebVitals(): Partial<PerformanceMetrics> {
         metrics.firstContentfulPaint = entry.startTime;
       }
     }
-    
+
     // Navigation metrics
     const navigationEntries = performance.getEntriesByType('navigation');
     if (navigationEntries.length > 0) {
@@ -148,21 +148,21 @@ export function collectWebVitals(): Partial<PerformanceMetrics> {
   // Custom marks and measures
   const marks: Record<string, number> = {};
   const measures: Record<string, number> = {};
-  
+
   const markEntries = performance.getEntriesByType('mark');
   for (const entry of markEntries) {
     marks[entry.name] = entry.startTime;
   }
-  
+
   const measureEntries = performance.getEntriesByType('measure');
   for (const entry of measureEntries) {
     measures[entry.name] = entry.duration;
   }
-  
+
   if (Object.keys(marks).length > 0) {
     metrics.marks = marks;
   }
-  
+
   if (Object.keys(measures).length > 0) {
     metrics.measures = measures;
   }
@@ -198,27 +198,27 @@ export async function reportPerformanceMetrics(): Promise<void> {
 export function initPerformanceMonitoring(): void {
   // Mark navigation start
   mark('app:init');
-  
+
   // Report metrics when page finishes loading
   window.addEventListener('load', () => {
     mark('app:loaded');
     measure('app:initialization', 'app:init', 'app:loaded');
-    
+
     // Delay reporting slightly to include load metrics
     setTimeout(() => {
       reportPerformanceMetrics();
     }, 1000);
   });
-  
+
   // Report metrics on page unload
   window.addEventListener('beforeunload', () => {
     mark('app:unload');
     reportPerformanceMetrics();
   });
-  
+
   // Setup periodic reporting
   const REPORTING_INTERVAL = 60000; // 1 minute
   setInterval(() => {
     reportPerformanceMetrics();
   }, REPORTING_INTERVAL);
-} 
+}

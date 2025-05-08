@@ -36,16 +36,13 @@ export default function ReflectionTimeline({
   const { t } = useTranslation();
 
   // Fetch reflections for the session
-  const { data, status, error } = useQuery<Reflection[]>(
-    ['reflections', sessionId],
-    async () => {
-      const response = await fetch(`/api/reflections?sessionId=${sessionId}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch reflections');
-      }
-      return response.json();
+  const { data, status, error } = useQuery<Reflection[]>(['reflections', sessionId], async () => {
+    const response = await fetch(`/api/reflections?sessionId=${sessionId}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch reflections');
     }
-  );
+    return response.json();
+  });
 
   // Derived loading and error states
   const isLoading = status === 'loading';
@@ -57,7 +54,7 @@ export default function ReflectionTimeline({
 
     // Cast to ensure TypeScript recognizes array methods
     const reflectionsArray = data as Reflection[];
-    
+
     return reflectionsArray.reduce<Record<string, Reflection[]>>((acc, reflection) => {
       const date = format(parseISO(reflection.createdAt), 'yyyy-MM-dd');
       if (!acc[date]) {
@@ -131,9 +128,7 @@ export default function ReflectionTimeline({
         <p className="text-lg font-medium">
           {t('errors.failedToLoad', 'Failed to load reflections')}
         </p>
-        <p className="text-sm">
-          {error instanceof Error ? error.message : String(error)}
-        </p>
+        <p className="text-sm">{error instanceof Error ? error.message : String(error)}</p>
       </div>
     );
   }
@@ -181,23 +176,16 @@ export default function ReflectionTimeline({
               <div key={date} className="space-y-4">
                 <div className="flex items-center">
                   <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <h3 className="text-sm font-medium">
-                    {format(parseISO(date), 'PPPP')}
-                  </h3>
+                  <h3 className="text-sm font-medium">{format(parseISO(date), 'PPPP')}</h3>
                 </div>
 
                 <div className="space-y-4 pl-6 border-l">
                   {reflections
                     .sort(
-                      (a, b) =>
-                        new Date(b.createdAt).getTime() -
-                        new Date(a.createdAt).getTime()
+                      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
                     )
                     .map((reflection) => (
-                      <div
-                        key={reflection.id}
-                        className="relative p-4 bg-card border rounded-md"
-                      >
+                      <div key={reflection.id} className="relative p-4 bg-card border rounded-md">
                         {/* Time indicator */}
                         <div className="absolute left-0 w-3 h-3 bg-primary rounded-full -translate-x-[calc(0.5rem+1.5px)]" />
 
@@ -216,9 +204,7 @@ export default function ReflectionTimeline({
 
                         {/* Text content */}
                         {reflection.text && (
-                          <div className="mt-2 whitespace-pre-wrap text-sm">
-                            {reflection.text}
-                          </div>
+                          <div className="mt-2 whitespace-pre-wrap text-sm">{reflection.text}</div>
                         )}
 
                         {/* Audio */}
@@ -242,4 +228,4 @@ export default function ReflectionTimeline({
       </CardContent>
     </Card>
   );
-} 
+}

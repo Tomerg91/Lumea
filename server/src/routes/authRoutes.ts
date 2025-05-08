@@ -6,4 +6,4 @@ const router = express.Router();
 // POST /api/signup/:token - Register a client with an invitation token
 router.post('/signup/:token', authController.registerWithInvite);
 
-export default router; 
+export default router;

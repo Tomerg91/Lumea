@@ -1,5 +1,6 @@
 import { IUser } from '../models/User';
 import mongoose from 'mongoose';
+import { AuthenticatedUserPayload } from './user';
 
 declare global {
   namespace Express {
@@ -18,7 +19,7 @@ declare global {
 
     // Explicitly augment the Request interface
     interface Request {
-      user?: User;
+      user?: AuthenticatedUserPayload;
     }
   }
 }

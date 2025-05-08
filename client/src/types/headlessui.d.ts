@@ -33,4 +33,4 @@ declare module '@headlessui/react' {
     Panels: React.FC<{ className?: string; children?: ReactNode }>;
     Panel: React.FC<{ className?: string; children?: ReactNode }>;
   };
-} 
+}

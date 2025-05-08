@@ -21,21 +21,17 @@ port = 54323
 [auth]
 site_url = "http://localhost:5173"
 additional_redirect_urls = ["https://localhost:5173"]
-autoconfirm = true # Set to false to require email confirmation
+# autoconfirm = true # Set to false to require email confirmation
 jwt_expiry = 3600
 enable_signup = true
 
-[storage]
-backend = "file"
-file_storage_backend_path = "./storage"
-buckets = [
-  {name = "audio", public = false},
-  {name = "resources", public = true}
-]
+# Comment out storage section to avoid parsing errors
+# [storage]
+# Define buckets properly
 
 # Feature flags
 [analytics]
 enabled = false
 
-[experimental]
-minimal_service = false 
+# [experimental]
+# minimal_service = false 

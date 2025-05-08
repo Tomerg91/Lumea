@@ -8,12 +8,12 @@ declare global {
     audioNotes?: string;
     dateTime?: Date;
   }
-  
+
   interface Reflection {
     sharedWithCoach?: boolean;
     audioEntry?: string;
   }
-  
+
   interface Resource {
     visibleToClients?: boolean;
     featured?: boolean;
@@ -25,4 +25,4 @@ declare global {
   }
 }
 
-export {}; 
+export {};

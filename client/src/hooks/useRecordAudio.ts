@@ -171,7 +171,9 @@ export default function useRecordAudio({
         }
       } catch (error) {
         console.error('Error pausing recording:', error);
-        handleError(t('errors.pauseUnsupported', 'Pausing recordings is not supported in your browser.'));
+        handleError(
+          t('errors.pauseUnsupported', 'Pausing recordings is not supported in your browser.')
+        );
       }
     }
   }, [t, handleError]);
@@ -203,7 +205,9 @@ export default function useRecordAudio({
         }, 1000);
       } catch (error) {
         console.error('Error resuming recording:', error);
-        handleError(t('errors.resumeUnsupported', 'Resuming recordings is not supported in your browser.'));
+        handleError(
+          t('errors.resumeUnsupported', 'Resuming recordings is not supported in your browser.')
+        );
       }
     }
   }, [maxDuration, t, handleError]);
@@ -269,4 +273,4 @@ export default function useRecordAudio({
     resetRecording,
     formattedDuration,
   };
-} 
+}

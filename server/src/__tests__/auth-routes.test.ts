@@ -65,12 +65,10 @@ describe('Authentication Routes', () => {
       (generateTokens as any).mockResolvedValue(mockTokens);
 
       // Perform request
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: 'test@example.com',
-          password: 'password123',
-        });
+      const response = await request(app).post('/api/auth/login').send({
+        email: 'test@example.com',
+        password: 'password123',
+      });
 
       // Assertions
       expect(response.status).toBe(200);
@@ -78,15 +76,15 @@ describe('Authentication Routes', () => {
       expect(response.body).toHaveProperty('refreshToken', mockTokens.refreshToken);
       expect(response.body).toHaveProperty('user');
       expect(response.body.user).toHaveProperty('email', mockUser.email);
-      
+
       // Verify that proper methods were called
       expect(User.findOne).toHaveBeenCalledWith({ email: 'test@example.com' });
       expect(mockUser.comparePassword).toHaveBeenCalledWith('password123');
       expect(generateTokens).toHaveBeenCalledWith(
-        mockUser._id, 
+        mockUser._id,
         mockUser.role.name,
         expect.any(String), // IP address
-        expect.any(String)  // User agent
+        expect.any(String) // User agent
       );
     });
 
@@ -95,12 +93,10 @@ describe('Authentication Routes', () => {
       (User.findOne as any).mockResolvedValue(null);
 
       // Perform request
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: 'nonexistent@example.com',
-          password: 'password123',
-        });
+      const response = await request(app).post('/api/auth/login').send({
+        email: 'nonexistent@example.com',
+        password: 'password123',
+      });
 
       // Assertions
       expect(response.status).toBe(401);
@@ -115,12 +111,10 @@ describe('Authentication Routes', () => {
       mockUser.comparePassword.mockResolvedValue(false);
 
       // Perform request
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: 'test@example.com',
-          password: 'wrongpassword',
-        });
+      const response = await request(app).post('/api/auth/login').send({
+        email: 'test@example.com',
+        password: 'wrongpassword',
+      });
 
       // Assertions
       expect(response.status).toBe(401);
@@ -155,11 +149,9 @@ describe('Authentication Routes', () => {
       (generateTokens as any).mockResolvedValue(mockTokens);
 
       // Perform request
-      const response = await request(app)
-        .post('/api/auth/refresh')
-        .send({
-          refreshToken: 'valid-refresh-token',
-        });
+      const response = await request(app).post('/api/auth/refresh').send({
+        refreshToken: 'valid-refresh-token',
+      });
 
       // Assertions
       expect(response.status).toBe(200);
@@ -179,11 +171,9 @@ describe('Authentication Routes', () => {
       });
 
       // Perform request
-      const response = await request(app)
-        .post('/api/auth/refresh')
-        .send({
-          refreshToken: 'invalid-refresh-token',
-        });
+      const response = await request(app).post('/api/auth/refresh').send({
+        refreshToken: 'invalid-refresh-token',
+      });
 
       // Assertions
       expect(response.status).toBe(401);
@@ -209,11 +199,9 @@ describe('Authentication Routes', () => {
       (Session.updateOne as any).mockResolvedValue({ modifiedCount: 1 });
 
       // Perform request
-      const response = await request(app)
-        .post('/api/auth/logout')
-        .send({
-          refreshToken: 'valid-refresh-token',
-        });
+      const response = await request(app).post('/api/auth/logout').send({
+        refreshToken: 'valid-refresh-token',
+      });
 
       // Assertions
       expect(response.status).toBe(200);
@@ -224,9 +212,7 @@ describe('Authentication Routes', () => {
 
     it('should return 400 when refresh token is missing', async () => {
       // Perform request without refresh token
-      const response = await request(app)
-        .post('/api/auth/logout')
-        .send({});
+      const response = await request(app).post('/api/auth/logout').send({});
 
       // Assertions
       expect(response.status).toBe(400);
@@ -245,8 +231,8 @@ describe('Authentication Routes', () => {
       // Perform request with Authentication header
       const response = await request(app)
         .get('/api/auth/me')
-        .set('Authorization', 'Bearer valid-access-token')
-        // Mocked passport will set req.user to mockUser
+        .set('Authorization', 'Bearer valid-access-token');
+      // Mocked passport will set req.user to mockUser
 
       // Assertions based on how your route should respond
       expect(response.status).toBe(200);
@@ -256,12 +242,11 @@ describe('Authentication Routes', () => {
 
     it('should return 401 when not authenticated', async () => {
       // Perform request without Authentication header
-      const response = await request(app)
-        .get('/api/auth/me');
+      const response = await request(app).get('/api/auth/me');
 
       // Assertions
       expect(response.status).toBe(401);
       expect(response.body).toHaveProperty('error');
     });
   });
-}); 
+});

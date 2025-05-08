@@ -49,7 +49,7 @@ const UsersList: React.FC = () => {
       params.append('page', page.toString());
       params.append('limit', limit.toString());
       if (roleFilter) params.append('role', roleFilter);
-      
+
       const { data } = await axios.get(`/api/admin/users?${params.toString()}`);
       return data;
     },
@@ -100,7 +100,7 @@ const UsersList: React.FC = () => {
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
         <h2 className="text-xl font-semibold">{t('admin.users')}</h2>
-        
+
         {/* Role filter */}
         <div className="relative">
           <select
@@ -115,13 +115,17 @@ const UsersList: React.FC = () => {
             ))}
           </select>
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+            <svg
+              className="fill-current h-4 w-4"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+            >
               <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
             </svg>
           </div>
         </div>
       </div>
-      
+
       {!data?.users.length ? (
         <EmptyState
           title={t('admin.noUsersFound')}
@@ -147,15 +151,20 @@ const UsersList: React.FC = () => {
                     <td className="py-3 px-4">{user.name}</td>
                     <td className="py-3 px-4">{user.email}</td>
                     <td className="py-3 px-4">
-                      <span className={`px-2 py-1 text-xs rounded-full ${getRoleBadgeColor(user.role)}`}>
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${getRoleBadgeColor(user.role)}`}
+                      >
                         {t(`admin.role_${user.role}`)}
                       </span>
                     </td>
                     <td className="py-3 px-4">
                       {user.role === 'coach' && (
-                        <span className={`px-2 py-1 text-xs rounded-full ${user.isApproved 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                          : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}`}
+                        <span
+                          className={`px-2 py-1 text-xs rounded-full ${
+                            user.isApproved
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                          }`}
                         >
                           {user.isApproved ? t('admin.approved') : t('admin.pending')}
                         </span>
@@ -196,4 +205,4 @@ const UsersList: React.FC = () => {
   );
 };
 
-export default UsersList; 
+export default UsersList;

@@ -17,4 +17,4 @@ export interface CreateReflectionDto {
     mimeType: string;
     size: number;
   };
-} 
+}

@@ -54,7 +54,9 @@ export const reflectionController = {
       const isCoach = session.coachId.toString() === req.user._id;
 
       if (!isClient && !isCoach) {
-        return res.status(403).json({ error: 'Not authorized to create a reflection for this session' });
+        return res
+          .status(403)
+          .json({ error: 'Not authorized to create a reflection for this session' });
       }
 
       // Create the reflection without audioUrl
@@ -125,12 +127,15 @@ export const reflectionController = {
       const isCoach = session.coachId.toString() === req.user._id;
 
       if (!isClient && !isCoach) {
-        return res.status(403).json({ error: 'Not authorized to view reflections for this session' });
+        return res
+          .status(403)
+          .json({ error: 'Not authorized to view reflections for this session' });
       }
 
       // Get reflections for the session
-      const reflections = await Reflection.find({ sessionId: new mongoose.Types.ObjectId(sessionId) })
-        .sort({ createdAt: -1 });
+      const reflections = await Reflection.find({
+        sessionId: new mongoose.Types.ObjectId(sessionId),
+      }).sort({ createdAt: -1 });
 
       res.json(reflections);
     } catch (error) {
@@ -150,7 +155,7 @@ export const reflectionController = {
       const sessionId = req.query.sessionId as string;
 
       // Base query
-      let query: any = {};
+      const query: any = {};
 
       // If sessionId is provided, filter by it
       if (sessionId) {
@@ -167,7 +172,9 @@ export const reflectionController = {
         const isCoach = session.coachId.toString() === req.user._id;
 
         if (!isClient && !isCoach) {
-          return res.status(403).json({ error: 'Not authorized to view reflections for this session' });
+          return res
+            .status(403)
+            .json({ error: 'Not authorized to view reflections for this session' });
         }
       } else {
         // If no sessionId, filter based on user role
@@ -244,11 +251,9 @@ export const reflectionController = {
       const updateData = updateReflectionSchema.parse(req.body);
 
       // Update reflection
-      const updatedReflection = await Reflection.findByIdAndUpdate(
-        req.params.id,
-        updateData,
-        { new: true }
-      );
+      const updatedReflection = await Reflection.findByIdAndUpdate(req.params.id, updateData, {
+        new: true,
+      });
 
       res.json(updatedReflection);
     } catch (error) {
@@ -316,7 +321,7 @@ export const reflectionController = {
 
       res.json({
         message: shareWithCoach ? 'Reflection shared with coach' : 'Reflection unshared with coach',
-        reflection
+        reflection,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -326,5 +331,5 @@ export const reflectionController = {
         res.status(500).json({ error: 'Failed to share reflection' });
       }
     }
-  }
+  },
 };

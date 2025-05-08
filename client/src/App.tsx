@@ -13,6 +13,7 @@ const SessionsPage = lazy(() => import('./pages/SessionsPage'));
 const TestPage = lazy(() => import('./pages/Test'));
 const DebugPage = lazy(() => import('./pages/Debug'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const DesignSystemPage = lazy(() => import('./pages/DesignSystem'));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -87,7 +88,7 @@ const App: React.FC = () => {
     <div>
       <nav>
         <Link to="/">Home</Link> | <Link to="/test">Test Page</Link> |{' '}
-        <Link to="/debug">Debug</Link>
+        <Link to="/debug">Debug</Link> | <Link to="/design-system">Design System</Link>
         {/* Show different links based on auth state and role */}
         {session && profile?.role === 'coach' && (
           <>
@@ -132,12 +133,12 @@ const App: React.FC = () => {
             <Route path="/auth" element={<AuthPage />} /> {/* Route for Auth component */}
             <Route path="/test" element={<TestPage />} /> {/* New Test Page Route */}
             <Route path="/debug" element={<DebugPage />} /> {/* Debug Page Route */}
-            
+            <Route path="/design-system" element={<DesignSystemPage />} />{' '}
+            {/* Design System Route */}
             {/* Admin Protected Routes */}
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
               <Route path="/admin" element={<AdminDashboard />} />
             </Route>
-            
             {/* Coach Protected Routes */}
             <Route element={<ProtectedRoute allowedRoles={['coach']} />}>
               <Route path="/coach/dashboard" element={<Dashboard />} />
@@ -147,13 +148,11 @@ const App: React.FC = () => {
               <Route path="/coach/resources" element={<div>Coach Resources Page</div>} />
               <Route path="/coach/profile" element={<div>Coach Profile Page</div>} />
             </Route>
-            
             {/* Coach Protected Routes (legacy paths) */}
             <Route element={<ProtectedRoute allowedRoles={['coach']} />}>
               <Route path="/dashboard" element={<Navigate to="/coach/dashboard" replace />} />
               <Route path="/clients" element={<Navigate to="/coach/clients" replace />} />
             </Route>
-            
             {/* Client Protected Routes */}
             <Route element={<ProtectedRoute allowedRoles={['client']} />}>
               <Route path="/client/dashboard" element={<Dashboard />} />
@@ -162,7 +161,6 @@ const App: React.FC = () => {
               <Route path="/client/resources" element={<div>Client Resources Page</div>} />
               <Route path="/client/profile" element={<div>Client Profile Page</div>} />
             </Route>
-            
             {/* Fallback 404 route */}
             <Route
               path="*"

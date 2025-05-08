@@ -7,15 +7,15 @@ import { z } from 'zod';
  */
 export function getNumericUserId(req: any): number {
   const id = req.user?.id;
-  
+
   if (typeof id === 'number') {
     return id;
   }
-  
+
   if (typeof id === 'string') {
     return parseInt(id, 10);
   }
-  
+
   throw new Error('User ID not found or invalid');
 }
 

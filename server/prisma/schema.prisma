@@ -26,6 +26,7 @@ model User {
   updatedAt          DateTime    @updatedAt @map("updated_at")
 
   @@map("users")
+  @@index([role])
 }
 
 model Session {
@@ -45,6 +46,11 @@ model Session {
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
   @@map("sessions")
+  @@index([clientId])
+  @@index([coachId])
+  @@index([date])
+  @@index([status])
+  @@index([paymentId])
 }
 
 model Payment {
@@ -63,6 +69,10 @@ model Payment {
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
   @@map("payments")
+  @@index([clientId])
+  @@index([coachId])
+  @@index([status])
+  @@index([dueDate])
 }
 
 model Reflection {
@@ -74,6 +84,8 @@ model Reflection {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("reflections")
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model Resource {
@@ -86,6 +98,8 @@ model Resource {
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
   @@map("resources")
+  @@index([type])
+  @@index([title])
 }
 
 model ResourceUser {
@@ -98,4 +112,21 @@ model ResourceUser {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("resource_users")
+  @@index([userId])
+  @@index([resourceId])
+}
+
+model PerformanceMetric {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String?   @db.ObjectId @map("user_id")
+  url         String?
+  userAgent   String?   @map("user_agent")
+  ipAddress   String?   @map("ip_address")
+  timestamp   DateTime  @default(now())
+  metrics     Json      // Store all metrics as JSON
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@map("performance_metrics")
+  @@index([userId])
+  @@index([timestamp])
 } 

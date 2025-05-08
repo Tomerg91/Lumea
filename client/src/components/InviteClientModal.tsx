@@ -22,13 +22,13 @@ const InviteClientModal: React.FC<InviteClientModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Basic email validation
     if (!email || !email.includes('@')) {
       setError(t('validation.invalidEmail'));
       return;
     }
-    
+
     setError(null);
     onInvite(email);
   };
@@ -42,7 +42,7 @@ const InviteClientModal: React.FC<InviteClientModalProps> = ({
   return (
     <Dialog open={isOpen} onClose={handleClose} className="relative z-50">
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-      
+
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <Dialog.Panel className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
           <div className="flex items-center justify-between mb-4">
@@ -56,11 +56,11 @@ const InviteClientModal: React.FC<InviteClientModalProps> = ({
               <Cross2Icon className="h-4 w-4" />
             </button>
           </div>
-          
+
           <Dialog.Description className="text-gray-600 mb-4">
             {t('clients.inviteDescription')}
           </Dialog.Description>
-          
+
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
               <label htmlFor="email" className="block mb-2 font-medium">
@@ -75,11 +75,9 @@ const InviteClientModal: React.FC<InviteClientModalProps> = ({
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lumea-primary"
                 required
               />
-              {error && (
-                <p className="mt-1 text-red-500 text-sm">{error}</p>
-              )}
+              {error && <p className="mt-1 text-red-500 text-sm">{error}</p>}
             </div>
-            
+
             <div className="flex justify-end space-x-3">
               <button
                 type="button"
@@ -108,4 +106,4 @@ const InviteClientModal: React.FC<InviteClientModalProps> = ({
   );
 };
 
-export default InviteClientModal; 
+export default InviteClientModal;

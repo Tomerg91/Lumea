@@ -48,4 +48,4 @@ const SessionsPage: React.FC = () => {
   );
 };
 
-export default SessionsPage; 
+export default SessionsPage;

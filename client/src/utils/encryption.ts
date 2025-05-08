@@ -36,22 +36,22 @@ export class Encryption {
    */
   public static async encryptFile(file: Blob, key: Uint8Array): Promise<Blob> {
     this.ensureInitialized();
-    
+
     // Convert Blob to ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
     const fileData = new Uint8Array(arrayBuffer);
-    
+
     // Generate a random nonce
     const nonce = this.sodium.randombytes_buf(this.sodium.crypto_secretbox_NONCEBYTES);
-    
+
     // Encrypt the file data
     const encryptedData = this.sodium.crypto_secretbox_easy(fileData, nonce, key);
-    
+
     // Combine nonce and encrypted data
     const combined = new Uint8Array(nonce.length + encryptedData.length);
     combined.set(nonce);
     combined.set(encryptedData, nonce.length);
-    
+
     // Convert back to Blob
     return new Blob([combined]);
   }
@@ -64,18 +64,18 @@ export class Encryption {
    */
   public static async decryptFile(encryptedFile: Blob, key: Uint8Array): Promise<Blob> {
     this.ensureInitialized();
-    
+
     // Convert Blob to ArrayBuffer
     const arrayBuffer = await encryptedFile.arrayBuffer();
     const combinedData = new Uint8Array(arrayBuffer);
-    
+
     // Extract nonce and encrypted data
     const nonce = combinedData.slice(0, this.sodium.crypto_secretbox_NONCEBYTES);
     const encryptedData = combinedData.slice(this.sodium.crypto_secretbox_NONCEBYTES);
-    
+
     // Decrypt the data
     const decryptedData = this.sodium.crypto_secretbox_open_easy(encryptedData, nonce, key);
-    
+
     // Convert back to Blob
     return new Blob([decryptedData]);
   }
@@ -88,21 +88,21 @@ export class Encryption {
    */
   public static encryptText(text: string, key: Uint8Array): string {
     this.ensureInitialized();
-    
+
     // Convert text to Uint8Array
     const textData = this.sodium.from_string(text);
-    
+
     // Generate a random nonce
     const nonce = this.sodium.randombytes_buf(this.sodium.crypto_secretbox_NONCEBYTES);
-    
+
     // Encrypt the text data
     const encryptedData = this.sodium.crypto_secretbox_easy(textData, nonce, key);
-    
+
     // Combine nonce and encrypted data
     const combined = new Uint8Array(nonce.length + encryptedData.length);
     combined.set(nonce);
     combined.set(encryptedData, nonce.length);
-    
+
     // Return as Base64 string
     return this.sodium.to_base64(combined);
   }
@@ -115,17 +115,17 @@ export class Encryption {
    */
   public static decryptText(encryptedText: string, key: Uint8Array): string {
     this.ensureInitialized();
-    
+
     // Convert Base64 string to Uint8Array
     const combinedData = this.sodium.from_base64(encryptedText);
-    
+
     // Extract nonce and encrypted data
     const nonce = combinedData.slice(0, this.sodium.crypto_secretbox_NONCEBYTES);
     const encryptedData = combinedData.slice(this.sodium.crypto_secretbox_NONCEBYTES);
-    
+
     // Decrypt the data
     const decryptedData = this.sodium.crypto_secretbox_open_easy(encryptedData, nonce, key);
-    
+
     // Convert Uint8Array to string
     return this.sodium.to_string(decryptedData);
   }
@@ -139,4 +139,4 @@ export class Encryption {
       throw new Error('Encryption not initialized. Call Encryption.init() first.');
     }
   }
-} 
+}

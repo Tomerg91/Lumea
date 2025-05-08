@@ -10,4 +10,4 @@ router.patch('/coach/:id/approve', isAuthenticated, approveCoach);
 // GET /api/admin/pending-coaches - Get coaches pending approval (admin only)
 router.get('/admin/pending-coaches', isAuthenticated, getPendingCoaches);
 
-export default router; 
+export default router;

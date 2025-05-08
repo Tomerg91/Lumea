@@ -1,5 +1,56 @@
 # Active Context
 
+## Current Focus
+
+**Deployment Readiness for Vercel:** The primary goal is to ensure the application can be successfully built and deployed to Vercel. This involves configuring deployment settings, standardizing repository practices, and resolving build errors.
+
+## Recent Activity & Decisions
+
+*   **Vercel Configuration Added:** Created `vercel.json` with build settings, routing rules for client/server, and security/caching headers (including CSP).
+*   **GitHub Repository Improvements:**
+    *   Added `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`.
+    *   Added `PULL_REQUEST_TEMPLATE.md` and issue templates (`bug_report.md`, `feature_request.md`).
+    *   Added Deployment section to `README.md`.
+    *   Updated GitHub Actions CI (`.github/workflows/ci.yml`) with dependency caching.
+    *   Updated Mobile Release workflow (`.github/workflows/release-mobile.yml`) with artifact validation.
+*   **Tailwind CSS Refinement:**
+    *   Removed duplicate `client/tailwind.config.cjs`.
+    *   Updated `content` paths in `client/tailwind.config.ts`.
+    *   Adjusted `safelist` (requires further manual review).
+*   **Environment Variable Management:**
+    *   Created `.env.example` templates (need moving to `client/` and `server/`).
+    *   Updated `client/src/lib/api.ts` for better API URL handling.
+    *   Added environment variable validation and logging/monitoring placeholders in `server/src/index.ts`.
+*   **Build Dependency Fixed:** Added `terser` to `client/package.json` devDependencies.
+*   **Vercel Serverless Structure:** Created `server/api/index.ts` as the Vercel entry point for the backend API.
+*   **TypeScript Type Definitions:** Created `server/src/types/user.ts` (for `AuthenticatedUserPayload`) and updated `server/src/types/express.d.ts` to augment `req.user` type.
+
+## Key Pending Issues & Next Steps
+
+1.  **Server Build Errors (Critical):** The `npm run build` command fails during the server `tsc` step due to numerous TypeScript errors (TS2769) related to incompatible types on `req.user` in Express middleware/routes.
+    *   **Immediate Action Required:** Manually refactor authentication middleware (`isAuthenticated`, `isCoach`, etc.) in the `server` codebase to ensure the object attached to `req.user` strictly matches the `AuthenticatedUserPayload` interface (defined in `server/src/types/user.ts`), particularly ensuring the `role` field is consistently a string.
+2.  **Enable Strict TypeScript:** Manually enable stricter type checking (`"strict": true`) in all `tsconfig.json` files and resolve the resulting errors. This is crucial for preventing runtime bugs.
+3.  **Move `.env.example` Files:** Manually move `client-env.example` to `client/.env.example` and `server-env.example` to `server/.env.example`.
+4.  **Review Tailwind Safelist:** Manually verify the necessity of all classes in `client/tailwind.config.ts` safelist.
+5.  **Server API Adaptation Logic:** Verify that the Express app exported from `server/src/index.ts` (and used by `server/api/index.ts`) is correctly structured to run as a Vercel serverless function.
+6.  **Hardcoded URLs:** Perform a final check for any remaining hardcoded URLs in `client/src`.
+7.  **Manual Testing:** Test build (`npm run build`), local Vercel deployment (`vercel dev`), and application functionality after manual fixes.
+
+## Important Patterns & Preferences
+
+*   Deployment target is Vercel.
+*   Monorepo structure with `client` and `server` workspaces.
+*   Use TypeScript across the stack.
+*   Standardize configuration files (`vercel.json`, `.env.example`, GitHub templates).
+*   Utilize GitHub Actions for CI/CD.
+
+## Learnings & Insights
+
+*   Deployment readiness involves configuration (`vercel.json`), process (`README.md`, GitHub Actions), and code quality (TypeScript errors, environment variables).
+*   Type safety, especially around Express middleware and `req.user` augmentation, is critical for successful TypeScript builds on the backend.
+*   Vite v3+ requires `terser` as an explicit dependency for production builds.
+*   Vercel deployments require specific project structure (e.g., `api` directory) for serverless functions.
+
 Current work focus: Implementing comprehensive performance improvements for the Satya Coaching application, with optimizations for server-side caching, database queries, bundle size, API requests, memory leaks, performance monitoring, image handling, and mobile optimizations.
 
 Recent changes:

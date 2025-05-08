@@ -37,9 +37,15 @@ vi.mock('date-fns', () => ({
 // Mock @headlessui/react Dialog component
 vi.mock('@headlessui/react', () => ({
   Dialog: {
-    Panel: ({ children }: { children: React.ReactNode }) => <div data-testid="dialog-panel">{children}</div>,
-    Title: ({ children }: { children: React.ReactNode }) => <h3 data-testid="dialog-title">{children}</h3>,
-    Description: ({ children }: { children: React.ReactNode }) => <p data-testid="dialog-description">{children}</p>,
+    Panel: ({ children }: { children: React.ReactNode }) => (
+      <div data-testid="dialog-panel">{children}</div>
+    ),
+    Title: ({ children }: { children: React.ReactNode }) => (
+      <h3 data-testid="dialog-title">{children}</h3>
+    ),
+    Description: ({ children }: { children: React.ReactNode }) => (
+      <p data-testid="dialog-description">{children}</p>
+    ),
   },
 }));
 
@@ -67,15 +73,15 @@ describe('SessionModal', () => {
       lastSessionDate: null,
     },
   ];
-  
+
   const mockOnClose = vi.fn();
   const mockOnCreateSession = vi.fn();
-  
+
   beforeEach(() => {
     mockOnClose.mockReset();
     mockOnCreateSession.mockReset();
   });
-  
+
   it('should render the modal when open', () => {
     const { getByTestId, getByText } = render(
       <SessionModal
@@ -86,12 +92,12 @@ describe('SessionModal', () => {
         clients={mockClients}
       />
     );
-    
+
     expect(getByTestId('dialog-panel')).toBeDefined();
     expect(getByTestId('dialog-title')).toBeDefined();
     expect(getByText('Create Session')).toBeDefined();
   });
-  
+
   it('should show client dropdown with options', () => {
     const { getByLabelText } = render(
       <SessionModal
@@ -102,21 +108,21 @@ describe('SessionModal', () => {
         clients={mockClients}
       />
     );
-    
+
     const clientSelect = getByLabelText('Select Client') as HTMLSelectElement;
     expect(clientSelect).toBeDefined();
-    
+
     // Options should include the placeholder and 2 clients
     expect(clientSelect.options.length).toBe(3);
-    
+
     // First option should be placeholder
     expect(clientSelect.options[0].text).toBe('Choose a client');
-    
+
     // Client options should have correct text
     expect(clientSelect.options[1].text).toBe('John Doe');
     expect(clientSelect.options[2].text).toBe('Jane Smith');
   });
-  
+
   it('should call onCreateSession with form data when submitted', () => {
     const { getByLabelText, getByText } = render(
       <SessionModal
@@ -127,21 +133,21 @@ describe('SessionModal', () => {
         clients={mockClients}
       />
     );
-    
+
     // Fill out the form
     const clientSelect = getByLabelText('Select Client') as HTMLSelectElement;
     fireEvent.change(clientSelect, { target: { value: '1' } });
-    
+
     const dateInput = getByLabelText('Session Date') as HTMLInputElement;
     fireEvent.change(dateInput, { target: { value: '2023-07-15' } });
-    
+
     const notesInput = getByLabelText('Notes') as HTMLTextAreaElement;
     fireEvent.change(notesInput, { target: { value: 'Test session notes' } });
-    
+
     // Submit the form
     const createButton = getByText('Create');
     fireEvent.click(createButton);
-    
+
     // Check if onCreateSession was called with correct data
     expect(mockOnCreateSession).toHaveBeenCalledTimes(1);
     expect(mockOnCreateSession).toHaveBeenCalledWith({
@@ -150,7 +156,7 @@ describe('SessionModal', () => {
       notes: 'Test session notes',
     });
   });
-  
+
   it('should show validation errors when form is submitted without required fields', () => {
     const { getByText, queryByText } = render(
       <SessionModal
@@ -161,18 +167,18 @@ describe('SessionModal', () => {
         clients={mockClients}
       />
     );
-    
+
     // Submit form without filling required fields
     const createButton = getByText('Create');
     fireEvent.click(createButton);
-    
+
     // Check if validation error messages are shown
     expect(queryByText('This field is required')).toBeDefined();
-    
+
     // onCreateSession should not be called
     expect(mockOnCreateSession).not.toHaveBeenCalled();
   });
-  
+
   it('should call onClose when cancel button is clicked', () => {
     const { getByText } = render(
       <SessionModal
@@ -183,13 +189,13 @@ describe('SessionModal', () => {
         clients={mockClients}
       />
     );
-    
+
     const cancelButton = getByText('Cancel');
     fireEvent.click(cancelButton);
-    
+
     expect(mockOnClose).toHaveBeenCalledTimes(1);
   });
-  
+
   it('should disable buttons when loading', () => {
     const { getByText } = render(
       <SessionModal
@@ -200,11 +206,11 @@ describe('SessionModal', () => {
         clients={mockClients}
       />
     );
-    
+
     const createButton = getByText('Create').closest('button');
     const cancelButton = getByText('Cancel').closest('button');
-    
+
     expect(createButton?.disabled).toBe(true);
     expect(cancelButton?.disabled).toBe(true);
   });
-}); 
+});

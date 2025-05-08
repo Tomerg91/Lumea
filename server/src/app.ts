@@ -26,10 +26,11 @@ const app = express();
 // Connect to MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/satyacoaching';
 
-mongoose.connect(MONGODB_URI)
+mongoose
+  .connect(MONGODB_URI)
   .then(async () => {
     console.log('Connected to MongoDB');
-    
+
     // Create database indexes for better performance
     await createDatabaseIndexes();
   })
@@ -42,23 +43,27 @@ mongoose.connect(MONGODB_URI)
 configureSecurityMiddleware(app);
 
 // Apply performance monitoring middleware
-app.use(performanceMonitor({
-  slowThreshold: 500, // Log requests taking more than 500ms
-}));
+app.use(
+  performanceMonitor({
+    slowThreshold: 500, // Log requests taking more than 500ms
+  })
+);
 
 // Enhanced compression configuration
-app.use(compression({
-  level: 6, // Default is 6, higher = better compression but more CPU, adjust based on load testing
-  threshold: 1024, // Only compress responses larger than 1KB
-  filter: (req, res) => {
-    // Don't compress responses for old browsers without proper support
-    if (req.headers['x-no-compression']) {
-      return false;
-    }
-    // Use compression by default
-    return compression.filter(req, res);
-  },
-}));
+app.use(
+  compression({
+    level: 6, // Default is 6, higher = better compression but more CPU, adjust based on load testing
+    threshold: 1024, // Only compress responses larger than 1KB
+    filter: (req, res) => {
+      // Don't compress responses for old browsers without proper support
+      if (req.headers['x-no-compression']) {
+        return false;
+      }
+      // Use compression by default
+      return compression.filter(req, res);
+    },
+  })
+);
 
 app.use(morgan('dev')); // Request logging
 app.use(express.json()); // Parse JSON bodies
@@ -83,4 +88,4 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
   res.status(500).json({ message: 'Internal server error' });
 });
 
-export default app; 
+export default app;

@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll, vi, beforeEach } from 'vitest';
 import mongoose, { Types } from 'mongoose';
 import jwt from 'jsonwebtoken';
-import { 
-  generateTokens, 
-  verifyRefreshToken, 
-  invalidateRefreshToken, 
-  invalidateAllUserSessions 
+import {
+  generateTokens,
+  verifyRefreshToken,
+  invalidateRefreshToken,
+  invalidateAllUserSessions,
 } from '../auth/tokenUtils';
 import { Session } from '../models/Session';
 import { jwtConfig } from '../auth/config';
@@ -27,7 +27,7 @@ vi.mock('../models/Session', () => {
 
 describe('Auth Utilities', () => {
   let testUserId: Types.ObjectId;
-  
+
   beforeAll(() => {
     testUserId = new Types.ObjectId();
   });
@@ -57,11 +57,13 @@ describe('Auth Utilities', () => {
       expect(typeof refreshToken).toBe('string');
 
       // Verify Session.create was called with expected parameters
-      expect(Session.create).toHaveBeenCalledWith(expect.objectContaining({
-        user: testUserId,
-        refreshToken: expect.any(String),
-        expiresAt: expect.any(Date),
-      }));
+      expect(Session.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user: testUserId,
+          refreshToken: expect.any(String),
+          expiresAt: expect.any(Date),
+        })
+      );
     });
 
     it('should handle Session.create errors properly', async () => {
@@ -69,7 +71,9 @@ describe('Auth Utilities', () => {
       (Session.create as any).mockRejectedValue(new Error('Database error'));
 
       // Test that the error is propagated
-      await expect(generateTokens(testUserId, 'admin')).rejects.toThrow('Failed to save user session.');
+      await expect(generateTokens(testUserId, 'admin')).rejects.toThrow(
+        'Failed to save user session.'
+      );
     });
   });
 
@@ -92,17 +96,19 @@ describe('Auth Utilities', () => {
       });
 
       const result = await verifyRefreshToken(token);
-      
+
       // Verify the result is the user ID
       expect(result).toEqual(testUserId);
-      
+
       // Verify findOne was called with right parameters
-      expect(Session.findOne).toHaveBeenCalledWith(expect.objectContaining({
-        user: testUserId,
-        refreshToken: tokenJti,
-        expiresAt: { $gt: expect.any(Date) },
-        revokedAt: { $exists: false },
-      }));
+      expect(Session.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user: testUserId,
+          refreshToken: tokenJti,
+          expiresAt: { $gt: expect.any(Date) },
+          revokedAt: { $exists: false },
+        })
+      );
     });
 
     it('should return null if refresh token is invalid', async () => {
@@ -114,10 +120,10 @@ describe('Auth Utilities', () => {
       );
 
       const result = await verifyRefreshToken(token);
-      
+
       // Verify that null is returned for invalid token
       expect(result).toBeNull();
-      
+
       // Session.findOne should not be called for invalid token
       expect(Session.findOne).not.toHaveBeenCalled();
     });
@@ -135,7 +141,7 @@ describe('Auth Utilities', () => {
       (Session.findOne as any).mockResolvedValue(null);
 
       const result = await verifyRefreshToken(token);
-      
+
       // Verify that null is returned when no session found
       expect(result).toBeNull();
     });
@@ -148,16 +154,16 @@ describe('Auth Utilities', () => {
 
       const refreshTokenJti = 'token-to-invalidate';
       const result = await invalidateRefreshToken(testUserId, refreshTokenJti);
-      
+
       // Verify the result is true for successful invalidation
       expect(result).toBe(true);
-      
+
       // Verify updateOne was called with the right parameters
       expect(Session.updateOne).toHaveBeenCalledWith(
-        { 
-          user: testUserId, 
-          refreshToken: refreshTokenJti, 
-          revokedAt: { $exists: false } 
+        {
+          user: testUserId,
+          refreshToken: refreshTokenJti,
+          revokedAt: { $exists: false },
         },
         { $set: { revokedAt: expect.any(Date) } }
       );
@@ -168,7 +174,7 @@ describe('Auth Utilities', () => {
       (Session.updateOne as any).mockResolvedValue({ modifiedCount: 0 });
 
       const result = await invalidateRefreshToken(testUserId, 'non-existent-token');
-      
+
       // Verify the result is false when no tokens invalidated
       expect(result).toBe(false);
     });
@@ -178,7 +184,7 @@ describe('Auth Utilities', () => {
       (Session.updateOne as any).mockRejectedValue(new Error('Database error'));
 
       const result = await invalidateRefreshToken(testUserId, 'error-token');
-      
+
       // Verify the result is false on error
       expect(result).toBe(false);
     });
@@ -190,10 +196,10 @@ describe('Auth Utilities', () => {
       (Session.updateMany as any).mockResolvedValue({ modifiedCount: 3 });
 
       const result = await invalidateAllUserSessions(testUserId);
-      
+
       // Verify the result is true for successful invalidation
       expect(result).toBe(true);
-      
+
       // Verify updateMany was called with the right parameters
       expect(Session.updateMany).toHaveBeenCalledWith(
         { user: testUserId, revokedAt: { $exists: false } },
@@ -206,7 +212,7 @@ describe('Auth Utilities', () => {
       (Session.updateMany as any).mockResolvedValue({ modifiedCount: 0 });
 
       const result = await invalidateAllUserSessions(testUserId);
-      
+
       // Verify the result is false when no sessions invalidated
       expect(result).toBe(false);
     });
@@ -216,7 +222,7 @@ describe('Auth Utilities', () => {
       (Session.updateMany as any).mockRejectedValue(new Error('Database error'));
 
       const result = await invalidateAllUserSessions(testUserId);
-      
+
       // Verify the result is false on error
       expect(result).toBe(false);
     });
@@ -240,7 +246,7 @@ describe('User Authentication Integration', () => {
       firstName: 'Test',
       lastName: 'Client',
       role: null, // Will be set during test
-    }
+    },
   };
 
   // Mock implementations for mongoose models
@@ -249,24 +255,24 @@ describe('User Authentication Integration', () => {
       findById: vi.fn(),
       findOne: vi.fn(),
       create: vi.fn(),
-    }
+    },
   }));
 
   vi.mock('../models/Role', () => ({
     Role: {
       findOne: vi.fn(),
-    }
+    },
   }));
 
   beforeAll(async () => {
     // Set up mock roles
     const adminRoleId = new Types.ObjectId();
     const clientRoleId = new Types.ObjectId();
-    
+
     // Set role IDs in test users
     testUsers.admin.role = adminRoleId;
     testUsers.client.role = clientRoleId;
-    
+
     // Mock Role.findOne for different role names
     (Role.findOne as any).mockImplementation(({ name }) => {
       if (name === 'admin') {
@@ -281,10 +287,10 @@ describe('User Authentication Integration', () => {
   it('should hash password correctly', async () => {
     const password = 'testpassword';
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     // Password should be hashed and not match the original
     expect(hashedPassword).not.toBe(password);
-    
+
     // Should be able to verify the password against the hash
     const match = await bcrypt.compare(password, hashedPassword);
     expect(match).toBe(true);
@@ -293,7 +299,7 @@ describe('User Authentication Integration', () => {
   it('should create a user with hashed password', async () => {
     const userData = { ...testUsers.admin };
     const hashedPassword = await bcrypt.hash(userData.password, 10);
-    
+
     // Mock User creation with hashed password
     (User.create as any).mockImplementation((data) => {
       // Verify password was hashed before storage
@@ -307,7 +313,7 @@ describe('User Authentication Integration', () => {
         passwordHash: data.passwordHash,
       });
     });
-    
+
     // Simulate creating user with hashed password
     const user = await User.create({
       email: userData.email,
@@ -316,8 +322,8 @@ describe('User Authentication Integration', () => {
       role: userData.role,
       passwordHash: hashedPassword,
     });
-    
+
     expect(user).toBeDefined();
     expect(user.passwordHash).toBe(hashedPassword);
   });
-}); 
+});

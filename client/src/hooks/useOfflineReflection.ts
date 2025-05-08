@@ -61,20 +61,23 @@ export default function useOfflineReflection({
             if (response.ok) {
               // Remove from queue
               await removeFromOfflineQueue(item.id!);
-              
+
               // If it was a reflection, invalidate queries
               if (item.reflectionId) {
                 queryClient.invalidateQueries({
-                  queryKey: ['reflections']
+                  queryKey: ['reflections'],
                 });
                 queryClient.invalidateQueries({
-                  queryKey: ['reflections', item.reflectionId]
+                  queryKey: ['reflections', item.reflectionId],
                 });
               }
-              
+
               toast({
                 title: t('success.offlineSync', 'Offline data synced'),
-                description: t('success.offlineSyncDetail', 'Your offline data has been successfully synced to the server.'),
+                description: t(
+                  'success.offlineSyncDetail',
+                  'Your offline data has been successfully synced to the server.'
+                ),
                 variant: 'default',
               });
             } else {
@@ -169,15 +172,18 @@ export default function useOfflineReflection({
 
             // Invalidate queries
             queryClient.invalidateQueries({
-              queryKey: ['reflections']
+              queryKey: ['reflections'],
             });
             queryClient.invalidateQueries({
-              queryKey: ['reflections', reflectionId]
+              queryKey: ['reflections', reflectionId],
             });
 
             toast({
               title: t('success.reflectionSubmitted', 'Reflection submitted'),
-              description: t('success.reflectionSubmittedDetail', 'Your reflection has been submitted successfully.'),
+              description: t(
+                'success.reflectionSubmittedDetail',
+                'Your reflection has been submitted successfully.'
+              ),
               variant: 'default',
             });
           } else {
@@ -222,7 +228,10 @@ export default function useOfflineReflection({
 
             toast({
               title: t('success.reflectionQueued', 'Reflection queued'),
-              description: t('success.reflectionQueuedDetail', 'Your reflection has been saved offline and will be synced when you reconnect.'),
+              description: t(
+                'success.reflectionQueuedDetail',
+                'Your reflection has been saved offline and will be synced when you reconnect.'
+              ),
               variant: 'default',
             });
 
@@ -255,15 +264,18 @@ export default function useOfflineReflection({
 
             // Invalidate queries
             queryClient.invalidateQueries({
-              queryKey: ['reflections']
+              queryKey: ['reflections'],
             });
             queryClient.invalidateQueries({
-              queryKey: ['reflections', reflectionId]
+              queryKey: ['reflections', reflectionId],
             });
 
             toast({
               title: t('success.reflectionSubmitted', 'Reflection submitted'),
-              description: t('success.reflectionSubmittedDetail', 'Your reflection has been submitted successfully.'),
+              description: t(
+                'success.reflectionSubmittedDetail',
+                'Your reflection has been submitted successfully.'
+              ),
               variant: 'default',
             });
           } else {
@@ -294,7 +306,10 @@ export default function useOfflineReflection({
 
             toast({
               title: t('success.reflectionQueued', 'Reflection queued'),
-              description: t('success.reflectionQueuedDetail', 'Your reflection has been saved offline and will be synced when you reconnect.'),
+              description: t(
+                'success.reflectionQueuedDetail',
+                'Your reflection has been saved offline and will be synced when you reconnect.'
+              ),
               variant: 'default',
             });
 
@@ -305,7 +320,7 @@ export default function useOfflineReflection({
         }
       } catch (error) {
         console.error('Error submitting reflection:', error);
-        
+
         if (onError) {
           onError(error instanceof Error ? error : new Error(String(error)));
         }
@@ -351,4 +366,4 @@ export default function useOfflineReflection({
     submitReflection,
     isSubmitting,
   };
-} 
+}

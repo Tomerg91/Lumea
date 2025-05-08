@@ -191,19 +191,10 @@ export default function ReflectionRecorder({
                 className="w-full resize-none"
               />
               <div className="flex justify-between">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onCancel}
-                >
+                <Button type="button" variant="outline" onClick={onCancel}>
                   {t('common.cancel', 'Cancel')}
                 </Button>
-                <Button
-                  type="button"
-                  variant="default"
-                  onClick={handleNext}
-                  disabled={!canProceed}
-                >
+                <Button type="button" variant="default" onClick={handleNext} disabled={!canProceed}>
                   {t('common.next', 'Next')}
                   <ArrowRightCircle className="ml-2 h-4 w-4" />
                 </Button>
@@ -283,11 +274,7 @@ export default function ReflectionRecorder({
                       className="rounded-full"
                       size="lg"
                     >
-                      {isPlaying ? (
-                        <Pause className="h-6 w-6" />
-                      ) : (
-                        <Play className="h-6 w-6" />
-                      )}
+                      {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
                     </Button>
                     <Button
                       type="button"
@@ -322,10 +309,7 @@ export default function ReflectionRecorder({
                 {t('reflections.review', 'Review Your Reflection')}
               </h3>
               <p className="text-sm text-gray-500">
-                {t(
-                  'reflections.reviewDetail',
-                  'Please review your reflection before submitting.'
-                )}
+                {t('reflections.reviewDetail', 'Please review your reflection before submitting.')}
               </p>
 
               {text && (
@@ -357,9 +341,7 @@ export default function ReflectionRecorder({
                       ) : (
                         <Play className="h-4 w-4 mr-2" />
                       )}
-                      {isPlaying
-                        ? t('common.pause', 'Pause')
-                        : t('common.play', 'Play')}
+                      {isPlaying ? t('common.pause', 'Pause') : t('common.play', 'Play')}
                     </Button>
                   </div>
                 </div>
@@ -386,4 +368,4 @@ export default function ReflectionRecorder({
       </CardContent>
     </Card>
   );
-} 
+}

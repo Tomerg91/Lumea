@@ -26,10 +26,8 @@ const generateSrcSet = (src: string): string => {
   // Generate srcset with multiple widths
   const widths = [300, 600, 900, 1200, 1600, 2000];
   const baseUrl = src.split('?')[0]; // Remove any existing query params
-  
-  return widths
-    .map(width => `${baseUrl}?w=${width} ${width}w`)
-    .join(', ');
+
+  return widths.map((width) => `${baseUrl}?w=${width} ${width}w`).join(', ');
 };
 
 /**
@@ -54,12 +52,12 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [imgSrc, setImgSrc] = useState(src);
   const [srcSet, setSrcSet] = useState<string | undefined>(undefined);
-  
+
   useEffect(() => {
     // Reset loading state when src changes
     setIsLoading(true);
     setImgSrc(src);
-    
+
     // Generate srcset if appropriate
     if (!src.includes('base64') && !src.endsWith('.svg')) {
       setSrcSet(generateSrcSet(src));
@@ -67,12 +65,12 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
       setSrcSet(undefined);
     }
   }, [src]);
-  
+
   const handleLoad = () => {
     setIsLoading(false);
     onLoad?.();
   };
-  
+
   const handleError = () => {
     if (imgSrc !== fallbackSrc) {
       setImgSrc(fallbackSrc);
@@ -80,7 +78,7 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
     setIsLoading(false);
     onError?.();
   };
-  
+
   return (
     <div className={`relative ${className}`} style={{ width, height }}>
       {isLoading && (
@@ -104,4 +102,4 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
   );
 };
 
-export default OptimizedImage; 
+export default OptimizedImage;

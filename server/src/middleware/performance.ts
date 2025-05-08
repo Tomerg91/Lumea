@@ -11,7 +11,7 @@ interface PerformanceMonitorOptions {
 /**
  * Create performance monitoring middleware
  * Tracks request processing time and logs slow requests
- * 
+ *
  * @param options Middleware options
  * @returns Express middleware
  */
@@ -29,28 +29,28 @@ export const performanceMonitor = (options: PerformanceMonitorOptions = {}) => {
 
     // Mark start time
     const start = Date.now();
-    
+
     // Store original end function
     const originalEnd = res.end;
-    
+
     // Override end function to calculate duration
-    res.end = function(this: Response, ...args: any[]) {
+    res.end = function (this: Response, ...args: any[]) {
       // Calculate request duration
       const duration = Date.now() - start;
-      
+
       // Add X-Response-Time header
       this.setHeader('X-Response-Time', `${duration}ms`);
-      
+
       // Log slow requests
       if (duration > slowThreshold) {
         const message = `Slow request detected: ${req.method} ${req.originalUrl || req.url} - ${duration}ms`;
         logFunction(message);
       }
-      
+
       // Call original end function with correct context and arguments
       return originalEnd.apply(this, args);
     } as any;
-    
+
     next();
   };
 };
@@ -71,11 +71,11 @@ export const getMemoryUsage = (): string => {
  */
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return '0 B';
-  
+
   const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  
+
   return `${parseFloat((bytes / Math.pow(1024, i)).toFixed(2))} ${sizes[i]}`;
 };
 
-export default performanceMonitor; 
+export default performanceMonitor;

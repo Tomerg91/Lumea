@@ -185,11 +185,19 @@
   }
 
   .lumea-gradient {
-    @apply bg-gradient-to-br from-lumea-beige-DEFAULT via-white to-lumea-bone-DEFAULT dark:from-lumea-stone-700/30 dark:via-background dark:to-lumea-stone-800/10;
+    @apply bg-gradient-to-br from-[#F1EDE4] via-white to-[#DAD3C8];
+  }
+  
+  .dark .lumea-gradient {
+    @apply bg-gradient-to-br from-[rgba(57,52,46,0.3)] via-background to-[rgba(38,35,31,0.1)];
   }
 
   .lumea-card {
-    @apply bg-white/70 dark:bg-lumea-stone-700/10 backdrop-blur-sm border border-lumea-bone-DEFAULT dark:border-lumea-stone-600/20 shadow-lumea-sm rounded-xl transition-all duration-300 hover:shadow-lumea-md;
+    @apply bg-white/70 backdrop-blur-sm border border-[#DAD3C8] shadow-lumea-sm rounded-xl transition-all duration-300 hover:shadow-lumea-md;
+  }
+  
+  .dark .lumea-card {
+    @apply bg-[rgba(57,52,46,0.1)] border-[rgba(77,70,62,0.2)];
   }
 
   .organic-shadow {
@@ -201,7 +209,11 @@
   }
 
   .elegant-input {
-    @apply bg-white/80 dark:bg-lumea-stone-700/20 border-lumea-taupe-300 dark:border-lumea-stone-600/30 focus:border-lumea-sage-400 dark:focus:border-lumea-sage-600 focus:shadow-[0_0_0_1px_rgba(143,170,165,0.4)] dark:focus:shadow-[0_0_0_1px_rgba(143,170,165,0.6)] rounded-lg;
+    @apply bg-white/80 border-[#D4C3B5] focus:border-[#8FAAA5] focus:shadow-[0_0_0_1px_rgba(143,170,165,0.4)] rounded-lg;
+  }
+  
+  .dark .elegant-input {
+    @apply bg-[rgba(57,52,46,0.2)] border-[rgba(77,70,62,0.3)] focus:border-[#5A6F6B] focus:shadow-[0_0_0_1px_rgba(143,170,165,0.6)];
   }
 
   @keyframes floating {

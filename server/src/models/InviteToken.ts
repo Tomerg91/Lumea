@@ -40,4 +40,4 @@ const InviteTokenSchema = new Schema<IInviteToken>({
 InviteTokenSchema.index({ token: 1 });
 InviteTokenSchema.index({ expires: 1 }, { expireAfterSeconds: 0 }); // TTL index
 
-export const InviteToken = mongoose.model<IInviteToken>('InviteToken', InviteTokenSchema); 
+export const InviteToken = mongoose.model<IInviteToken>('InviteToken', InviteTokenSchema);

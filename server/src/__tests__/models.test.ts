@@ -20,15 +20,17 @@ vi.mock('mongoose', async () => {
           return {
             ...data,
             save: vi.fn().mockResolvedValue(data),
-            validate: vi.fn().mockImplementation(function() {
-              return schema.methods.validate ? schema.methods.validate.call(this) : Promise.resolve();
+            validate: vi.fn().mockImplementation(function () {
+              return schema.methods.validate
+                ? schema.methods.validate.call(this)
+                : Promise.resolve();
             }),
           };
         }
-        
+
         // Add static methods from the schema
         Object.assign(MockModel, schema.statics);
-        
+
         // Mock additional commonly used Mongoose model methods
         MockModel.create = vi.fn().mockImplementation(async (data) => {
           // Run validation before creating
@@ -36,7 +38,7 @@ vi.mock('mongoose', async () => {
           await doc.validate();
           return doc;
         });
-        
+
         return MockModel;
       }),
     },
@@ -48,7 +50,7 @@ describe('Mongoose Models', () => {
   // Create common test resources
   let roleId: Types.ObjectId;
   let userId: Types.ObjectId;
-  
+
   beforeAll(() => {
     roleId = new Types.ObjectId();
     userId = new Types.ObjectId();
@@ -58,7 +60,7 @@ describe('Mongoose Models', () => {
     it('should create a valid role', async () => {
       const roleData = {
         name: 'admin' as const,
-        description: 'Administrator role'
+        description: 'Administrator role',
       };
 
       const role = new Role(roleData);
@@ -70,7 +72,7 @@ describe('Mongoose Models', () => {
     it('should reject invalid role name', async () => {
       const roleData = {
         name: 'invalid-role' as any,
-        description: 'Invalid role type'
+        description: 'Invalid role type',
       };
 
       // This should fail validation
@@ -86,7 +88,7 @@ describe('Mongoose Models', () => {
         firstName: 'Test',
         lastName: 'User',
         role: roleId,
-        isActive: true
+        isActive: true,
       };
 
       const user = new User(userData);
@@ -102,14 +104,14 @@ describe('Mongoose Models', () => {
         email: 'invalid-email',
         passwordHash: 'hashed_password_here',
         role: roleId,
-        isActive: true
+        isActive: true,
       };
 
       const user = new User(userData);
-      
+
       // Create a spy for the validate method
       const validateSpy = vi.spyOn(user, 'validate');
-      
+
       // Validation should fail
       await expect(user.validate()).rejects.toThrow();
       expect(validateSpy).toHaveBeenCalled();
@@ -119,11 +121,11 @@ describe('Mongoose Models', () => {
       const userData = {
         email: 'test@example.com',
         role: roleId,
-        isActive: true
+        isActive: true,
       };
 
       const user = new User(userData);
-      
+
       // Validation should fail due to missing required field
       await expect(user.validate()).rejects.toThrow();
     });
@@ -140,7 +142,7 @@ describe('Mongoose Models', () => {
         expiresAt: future,
         issuedAt: now,
         ipAddress: '127.0.0.1',
-        userAgent: 'Mozilla/5.0 (Vitest)'
+        userAgent: 'Mozilla/5.0 (Vitest)',
       };
 
       const session = new Session(sessionData);
@@ -154,11 +156,11 @@ describe('Mongoose Models', () => {
     it('should require user, refreshToken and expiresAt', async () => {
       const sessionData = {
         // Missing required fields
-        ipAddress: '127.0.0.1'
+        ipAddress: '127.0.0.1',
       };
 
       const session = new Session(sessionData);
-      
+
       // Validation should fail due to missing required fields
       await expect(session.validate()).rejects.toThrow();
     });
@@ -170,7 +172,7 @@ describe('Mongoose Models', () => {
         user: userId,
         title: 'My Reflection',
         content: 'This is a reflection on my progress.',
-        visibility: 'private' as const
+        visibility: 'private' as const,
       };
 
       const reflection = new Reflection(reflectionData);
@@ -184,11 +186,11 @@ describe('Mongoose Models', () => {
     it('should require user and content', async () => {
       const reflectionData = {
         title: 'Incomplete Reflection',
-        visibility: 'private' as const
+        visibility: 'private' as const,
       };
 
       const reflection = new Reflection(reflectionData);
-      
+
       // Validation should fail due to missing required fields
       await expect(reflection.validate()).rejects.toThrow();
     });
@@ -197,11 +199,11 @@ describe('Mongoose Models', () => {
       const reflectionData = {
         user: userId,
         content: 'Test content',
-        visibility: 'invalid-visibility' as any
+        visibility: 'invalid-visibility' as any,
       };
 
       const reflection = new Reflection(reflectionData);
-      
+
       // Validation should fail due to invalid enum value
       await expect(reflection.validate()).rejects.toThrow();
     });
@@ -216,7 +218,7 @@ describe('Mongoose Models', () => {
         client: clientId,
         title: 'Session Notes',
         content: 'Client showed progress in these areas...',
-        visibility: 'private_to_coach' as const
+        visibility: 'private_to_coach' as const,
       };
 
       const note = new CoachNote(noteData);
@@ -231,27 +233,27 @@ describe('Mongoose Models', () => {
     it('should require coach, client, and content', async () => {
       const noteData = {
         title: 'Incomplete Note',
-        visibility: 'private_to_coach' as const
+        visibility: 'private_to_coach' as const,
       };
 
       const note = new CoachNote(noteData);
-      
+
       // Validation should fail due to missing required fields
       await expect(note.validate()).rejects.toThrow();
     });
 
     it('should validate visibility enum values', async () => {
       const clientId = new Types.ObjectId();
-      
+
       const noteData = {
         coach: userId,
         client: clientId,
         content: 'Test content',
-        visibility: 'invalid-visibility' as any
+        visibility: 'invalid-visibility' as any,
       };
 
       const note = new CoachNote(noteData);
-      
+
       // Validation should fail due to invalid enum value
       await expect(note.validate()).rejects.toThrow();
     });
@@ -266,7 +268,7 @@ describe('Mongoose Models', () => {
         resourceType: 'article' as const,
         tags: ['coaching', 'techniques'],
         addedBy: userId,
-        sharedWithRoles: ['coach', 'client'] as const
+        sharedWithRoles: ['coach', 'client'] as const,
       };
 
       const resource = new Resource(resourceData);
@@ -283,15 +285,15 @@ describe('Mongoose Models', () => {
       const resourceData = {
         title: 'Missing Resource Path',
         resourceType: 'document' as const,
-        addedBy: userId
+        addedBy: userId,
         // Missing both url and filePath
       };
 
       const resource = new Resource(resourceData);
-      
+
       // Create a spy for the validate method
       const validateSpy = vi.spyOn(resource, 'validate');
-      
+
       // Validation should fail due to missing both url and filePath
       await expect(resource.validate()).rejects.toThrow();
       expect(validateSpy).toHaveBeenCalled();
@@ -302,11 +304,11 @@ describe('Mongoose Models', () => {
         title: 'Invalid Resource Type',
         url: 'https://example.com/article',
         resourceType: 'invalid-type' as any,
-        addedBy: userId
+        addedBy: userId,
       };
 
       const resource = new Resource(resourceData);
-      
+
       // Validation should fail due to invalid resourceType enum value
       await expect(resource.validate()).rejects.toThrow();
     });
@@ -316,13 +318,13 @@ describe('Mongoose Models', () => {
         title: 'Invalid URL',
         url: 'not-a-valid-url',
         resourceType: 'link' as const,
-        addedBy: userId
+        addedBy: userId,
       };
 
       const resource = new Resource(resourceData);
-      
+
       // Validation should fail due to invalid URL format
       await expect(resource.validate()).rejects.toThrow();
     });
   });
-}); 
+});

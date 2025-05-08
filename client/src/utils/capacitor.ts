@@ -177,4 +177,4 @@ const base64ToBlob = (base64: string, mimeType: string = 'application/octet-stre
   }
 
   return new Blob(byteArrays, { type: mimeType });
-}; 
+};

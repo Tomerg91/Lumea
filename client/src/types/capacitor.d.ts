@@ -6,23 +6,13 @@ declare module '@capacitor/filesystem' {
       directory: string;
       recursive?: boolean;
     }): Promise<{ uri: string }>;
-    
-    readFile(options: {
-      path: string;
-      directory: string;
-    }): Promise<{ data: string }>;
-    
-    deleteFile(options: {
-      path: string;
-      directory: string;
-    }): Promise<void>;
 
-    mkdir(options: {
-      path: string;
-      directory: string;
-      recursive?: boolean;
-    }): Promise<void>;
-    
+    readFile(options: { path: string; directory: string }): Promise<{ data: string }>;
+
+    deleteFile(options: { path: string; directory: string }): Promise<void>;
+
+    mkdir(options: { path: string; directory: string; recursive?: boolean }): Promise<void>;
+
     // Add other methods as needed
   }
 
@@ -33,7 +23,7 @@ declare module '@capacitor/filesystem' {
     Documents = 'DOCUMENTS',
     Data = 'DATA',
     External = 'EXTERNAL',
-    ExternalStorage = 'EXTERNAL_STORAGE'
+    ExternalStorage = 'EXTERNAL_STORAGE',
   }
 }
 
@@ -49,4 +39,4 @@ declare module '@capacitor/core' {
   }
 
   export const Permissions: PermissionsPlugin;
-} 
+}

@@ -24,14 +24,14 @@ const transporter = nodemailer.createTransport({
 
 /**
  * Send an invitation email to a client
- * 
+ *
  * @param email The recipient's email address
  * @param token The invitation token
  * @param coachName The name of the coach who sent the invitation
  */
 export async function sendInvite(email: string, token: string, coachName: string): Promise<void> {
   const inviteLink = `${APP_URL}/signup/${token}`;
-  
+
   // Hebrew RTL content
   const hebrewHtml = `
     <div dir="rtl" style="text-align: right; font-family: Arial, sans-serif;">
@@ -45,7 +45,7 @@ export async function sendInvite(email: string, token: string, coachName: string
       <p>בברכה,<br>צוות סאטיה קואצ'ינג</p>
     </div>
   `;
-  
+
   // Plain text fallback (bilingual)
   const plainText = `
 הזמנה לפלטפורמת סאטיה קואצ'ינג
@@ -78,7 +78,7 @@ If you did not request this invitation, please ignore this email.
 Best regards,
 The Satya Coaching Team
   `;
-  
+
   // Send the email
   await transporter.sendMail({
     from: `"Satya Coaching" <${FROM_EMAIL}>`,
@@ -87,4 +87,4 @@ The Satya Coaching Team
     text: plainText,
     html: hebrewHtml,
   });
-} 
+}

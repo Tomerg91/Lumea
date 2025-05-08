@@ -44,22 +44,24 @@ export const securityMiddleware = helmet(); // Use defaults
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again after 15 minutes'
+  message: 'Too many requests from this IP, please try again after 15 minutes',
 });
 
 // Default function to configure all security middleware
 export default function configureSecurityMiddleware(app: Express): void {
   // Apply helmet for security headers
   app.use(securityMiddleware);
-  
+
   // Configure CORS
-  app.use(cors({
-    origin: process.env.CORS_ORIGIN || '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
-  }));
-  
+  app.use(
+    cors({
+      origin: process.env.CORS_ORIGIN || '*',
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      credentials: true,
+    })
+  );
+
   // Apply rate limiting to all routes
   app.use('/api/', apiLimiter);
 }

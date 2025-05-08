@@ -42,4 +42,4 @@ CoachingSessionSchema.index({ coachId: 1, date: -1 });
 // Add compound index for efficient querying by client and date
 CoachingSessionSchema.index({ clientId: 1, date: -1 });
 
-export const CoachingSession = model<ICoachingSession>('CoachingSession', CoachingSessionSchema); 
+export const CoachingSession = model<ICoachingSession>('CoachingSession', CoachingSessionSchema);

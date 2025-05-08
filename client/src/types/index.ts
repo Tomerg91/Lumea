@@ -29,4 +29,4 @@ export interface Client {
   email: string;
   coachId: string;
   // Add other properties as needed
-} 
+}

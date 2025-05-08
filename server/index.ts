@@ -10,6 +10,9 @@ import { PrismaClient } from '@prisma/client'; // Removed unused User import
 import compression from 'compression';
 import { createClient } from 'redis';
 import { RedisStore } from 'connect-redis';
+import memorystore from 'memorystore'; // Add memorystore import
+
+const MemoryStore = memorystore(session); // Create MemoryStore constructor
 
 // Import the centralized Passport configuration
 import './config/passport';
@@ -47,24 +50,36 @@ const redisClient = createClient({
   url: process.env.REDIS_URL || 'redis://localhost:6379',
 });
 
+// Create a variable to hold our session store
+let sessionStore;
+
 redisClient.on('error', (err) => {
   console.error('Redis session store error:', err);
+  console.log('Falling back to MemoryStore for session storage');
+  // Create MemoryStore instance as fallback
+  sessionStore = new MemoryStore({
+    checkPeriod: 86400000 // prune expired entries every 24h
+  });
 });
 
 (async () => {
   try {
     await redisClient.connect();
     console.log('Connected to Redis for session storage');
+    // Create Redis store for sessions if connection is successful
+    sessionStore = new RedisStore({
+      client: redisClient,
+      prefix: 'session:',
+    });
   } catch (err) {
     console.error('Failed to connect to Redis for session storage:', err);
+    console.log('Falling back to MemoryStore for session storage');
+    // Create MemoryStore instance as fallback
+    sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    });
   }
 })();
-
-// Create Redis store for sessions
-const redisSessionStore = new RedisStore({
-  client: redisClient,
-  prefix: 'session:',
-});
 
 // Add compression middleware
 app.use(compression());
@@ -95,7 +110,7 @@ if (!process.env.SESSION_SECRET) {
 }
 app.use(
   session({
-    store: redisSessionStore,
+    store: sessionStore, // Use the appropriate store
     secret: process.env.SESSION_SECRET || 'fallback-insecure-secret-key', // Provide a fallback but warn
     resave: false,
     saveUninitialized: false,
@@ -117,15 +132,14 @@ if (!process.env.PUBLIC_DIR) {
   console.warn('WARNING: PUBLIC_DIR not set. Using default "public" directory.');
 }
 const publicDir = process.env.PUBLIC_DIR || 'public';
-app.use('/static', express.static(publicDir, {
-  setHeaders: (res, path) => {
-    staticCacheMiddleware(
-      { path } as Request, 
-      res as Response, 
-      () => {}
-    );
-  }
-}));
+app.use(
+  '/static',
+  express.static(publicDir, {
+    setHeaders: (res, path) => {
+      staticCacheMiddleware({ path } as Request, res as Response, () => {});
+    },
+  })
+);
 
 // Routes - Use the imported route handlers with caching for read operations
 app.use('/api/auth', authRoutes);
@@ -143,7 +157,12 @@ app.get('/api/health', (_req: Request, res: Response) => {
 });
 
 // Error handling middleware
-const errorHandler: ErrorRequestHandler = (err: Error, _req: Request, res: Response, _next: NextFunction) => {
+const errorHandler: ErrorRequestHandler = (
+  err: Error,
+  _req: Request,
+  res: Response,
+  _next: NextFunction
+) => {
   console.error('[Global Error Handler]:', err.stack);
   res.status(500).json({ message: err.message || 'Internal server error' });
 };

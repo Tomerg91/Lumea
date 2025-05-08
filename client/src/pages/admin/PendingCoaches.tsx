@@ -112,7 +112,7 @@ const PendingCoaches: React.FC = () => {
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">{t('admin.pendingCoaches')}</h2>
-      
+
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
           <thead className="bg-gray-100 dark:bg-gray-700">
@@ -179,4 +179,4 @@ const PendingCoaches: React.FC = () => {
   );
 };
 
-export default PendingCoaches; 
+export default PendingCoaches;

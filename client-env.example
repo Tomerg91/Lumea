@@ -1,0 +1,15 @@
+# Client Environment Variables
+# Rename this file to .env.example and move it to the client/ directory
+
+# URL of the backend API
+VITE_API_URL=http://localhost:3000
+
+# Google Client ID for OAuth
+VITE_GOOGLE_CLIENT_ID=
+
+# Facebook Client ID for OAuth (if used)
+VITE_FACEBOOK_CLIENT_ID=
+
+# Supabase Public Anon Key
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY= 

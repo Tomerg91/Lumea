@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { User, IUser } from '../models/User';
-import { 
-  createPasswordResetToken, 
-  validatePasswordResetToken, 
-  invalidatePasswordResetToken 
+import {
+  createPasswordResetToken,
+  validatePasswordResetToken,
+  invalidatePasswordResetToken,
 } from '../utils/tokenHelpers';
 import { sendReset } from '../mail/sendReset';
 import mongoose, { Types } from 'mongoose';
@@ -23,25 +23,25 @@ export const requestPasswordReset = async (req: Request, res: Response): Promise
 
     // Find the user by email
     const user = await User.findOne({ email });
-    
+
     // Even if we don't find a user, send a 200 response for security reasons
     // This prevents user enumeration attacks
     if (!user) {
-      res.status(200).json({ message: 'If your email is in our system, you will receive a password reset link shortly' });
+      res.status(200).json({
+        message: 'If your email is in our system, you will receive a password reset link shortly',
+      });
       return;
     }
 
     // Generate a password reset token
     const token = await createPasswordResetToken(user._id.toString());
-    
-    // Send the reset email
-    await sendReset(
-      user.email, 
-      token, 
-      `${user.firstName} ${user.lastName}`
-    );
 
-    res.status(200).json({ message: 'If your email is in our system, you will receive a password reset link shortly' });
+    // Send the reset email
+    await sendReset(user.email, token, `${user.firstName} ${user.lastName}`);
+
+    res.status(200).json({
+      message: 'If your email is in our system, you will receive a password reset link shortly',
+    });
   } catch (error) {
     console.error('Error requesting password reset:', error);
     res.status(500).json({ message: 'Error processing password reset request' });
@@ -61,7 +61,7 @@ export const validateResetToken = async (req: Request, res: Response): Promise<v
     }
 
     const resetToken = await validatePasswordResetToken(token);
-    
+
     if (!resetToken) {
       res.status(400).json({ message: 'Invalid or expired token' });
       return;
@@ -94,7 +94,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
 
     // Validate the token
     const resetToken = await validatePasswordResetToken(token);
-    
+
     if (!resetToken) {
       res.status(400).json({ message: 'Invalid or expired token' });
       return;
@@ -102,7 +102,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
 
     // Find the user
     const user = await User.findById(resetToken.userId);
-    
+
     if (!user) {
       res.status(404).json({ message: 'User not found' });
       return;
@@ -124,4 +124,4 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     console.error('Error resetting password:', error);
     res.status(500).json({ message: 'Error resetting password' });
   }
-}; 
+};

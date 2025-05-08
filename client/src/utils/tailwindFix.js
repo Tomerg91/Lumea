@@ -46,4 +46,4 @@ export function themeColorStyle(colorPath, opacity) {
 export default {
   themeColor,
   themeColorStyle,
-}; 
+};

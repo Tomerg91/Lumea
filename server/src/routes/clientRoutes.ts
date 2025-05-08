@@ -11,11 +11,11 @@ const CLIENT_CACHE_PREFIX = 'clients';
 
 // GET /api/my-clients - Get clients for the authenticated coach
 router.get(
-  '/my-clients', 
-  isAuthenticated, 
-  isCoach, 
+  '/my-clients',
+  isAuthenticated,
+  isCoach,
   cacheResponse({ ttl: CLIENT_CACHE_TTL, keyPrefix: CLIENT_CACHE_PREFIX }),
   clientController.getMyClients
 );
 
-export default router; 
+export default router;

@@ -27,7 +27,7 @@ const ALLOWED_AUDIO_MIME_TYPES = [
 
 /**
  * Generate a presigned URL for uploading audio to S3
- * 
+ *
  * @param {string} userId - User ID for path construction
  * @param {string} mimeType - The MIME type of the audio file
  * @param {number} fileSize - Size of the file in bytes
@@ -46,7 +46,9 @@ export async function getPresignedAudioUploadUrl(
 
   // Validate file size
   if (fileSize > MAX_FILE_SIZE) {
-    throw new Error(`File size exceeds the maximum allowed size of ${MAX_FILE_SIZE / 1024 / 1024}MB`);
+    throw new Error(
+      `File size exceeds the maximum allowed size of ${MAX_FILE_SIZE / 1024 / 1024}MB`
+    );
   }
 
   // Generate a unique key for the file
@@ -73,4 +75,4 @@ export async function getPresignedAudioUploadUrl(
     console.error('Error generating presigned URL:', error);
     throw new Error('Failed to generate upload URL');
   }
-} 
+}

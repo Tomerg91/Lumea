@@ -106,13 +106,19 @@ export interface IStorage {
   createResource(resource: InsertResource): Promise<ExtendedResource>;
   getResourceById(id: number): Promise<ExtendedResource | undefined>;
   getResourcesByCoachId(coachId: number): Promise<ExtendedResource[]>;
-  getResourcesByCoachIdAndFilters(coachId: number, filters: ResourceFilters): Promise<ExtendedResource[]>;
+  getResourcesByCoachIdAndFilters(
+    coachId: number,
+    filters: ResourceFilters
+  ): Promise<ExtendedResource[]>;
   getVisibleResourcesForClient(clientId: number): Promise<ExtendedResource[]>;
   getVisibleResourcesForClientByFilters(
     clientId: number,
     filters: ResourceFilters
   ): Promise<ExtendedResource[]>;
-  updateResource(id: number, resource: Partial<ExtendedResource>): Promise<ExtendedResource | undefined>;
+  updateResource(
+    id: number,
+    resource: Partial<ExtendedResource>
+  ): Promise<ExtendedResource | undefined>;
   getFeaturedResources(limit?: number): Promise<ExtendedResource[]>;
   getResourcesByTag(tag: string): Promise<ExtendedResource[]>;
   getResourcesByCategory(category: string): Promise<ExtendedResource[]>;
@@ -466,7 +472,10 @@ export class MemStorage implements IStorage {
     return allResources;
   }
 
-  async updateResource(id: number, resourceData: Partial<ExtendedResource>): Promise<ExtendedResource | undefined> {
+  async updateResource(
+    id: number,
+    resourceData: Partial<ExtendedResource>
+  ): Promise<ExtendedResource | undefined> {
     const existingResource = this.resourcesData.get(id);
     if (!existingResource) {
       return undefined;
@@ -536,7 +545,10 @@ export class MemStorage implements IStorage {
   }
 
   // Helper method to apply filters to a resource array
-  private applyResourceFilters(resources: ExtendedResource[], filters: ResourceFilters): ExtendedResource[] {
+  private applyResourceFilters(
+    resources: ExtendedResource[],
+    filters: ResourceFilters
+  ): ExtendedResource[] {
     if (!filters) return resources;
 
     let filteredResources = [...resources];

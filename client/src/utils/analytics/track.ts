@@ -1,7 +1,7 @@
 /**
  * Analytics utility for tracking events and page views.
  * This wrapper supports Plausible Analytics but can be extended to other providers.
- * 
+ *
  * Respects user privacy by:
  * - Not tracking any PII (Personally Identifiable Information)
  * - Only sending anonymized events for product usage insights
@@ -9,12 +9,12 @@
  */
 
 // Event types that can be tracked across the application
-export type TrackEventName = 
+export type TrackEventName =
   // Page views
   | 'page_view'
   // User actions
   | 'session_created'
-  | 'reflection_started' 
+  | 'reflection_started'
   | 'reflection_completed'
   | 'audio_recording_started'
   | 'audio_recording_completed'
@@ -96,21 +96,24 @@ class PlausibleAnalytics implements AnalyticsProvider {
     if (this.isInitialized) return;
 
     // Don't initialize in development unless explicitly enabled
-    if (process.env.NODE_ENV === 'development' && !process.env.REACT_APP_ENABLE_ANALYTICS) {
+    const isDev = import.meta.env.DEV;
+    const enableAnalytics = import.meta.env.VITE_ENABLE_ANALYTICS === 'true';
+
+    if (isDev && !enableAnalytics) {
       console.log('[Analytics] Disabled in development environment');
       return;
     }
 
     // Only initialize if we have a Plausible domain set
-    const plausibleDomain = process.env.REACT_APP_PLAUSIBLE_DOMAIN || this.domain;
-    
+    const plausibleDomain = import.meta.env.VITE_PLAUSIBLE_DOMAIN || this.domain;
+
     try {
       // Load the Plausible script
       const script = document.createElement('script');
       script.defer = true;
       script.setAttribute('data-domain', plausibleDomain);
       script.src = 'https://plausible.io/js/script.js';
-      
+
       // Add script to head
       document.head.appendChild(script);
       this.isInitialized = true;
@@ -122,16 +125,16 @@ class PlausibleAnalytics implements AnalyticsProvider {
 
   trackEvent(eventName: TrackEventName, properties?: EventProperties): void {
     if (!this.isInitialized) return;
-    
+
     try {
       // Access the Plausible event function
       const plausible = (window as any).plausible;
-      
+
       if (typeof plausible === 'function') {
         plausible(eventName, { props: properties });
-        
+
         // Only log events in development
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.DEV) {
           console.log('[Analytics] Event tracked:', eventName, properties);
         }
       }
@@ -142,7 +145,7 @@ class PlausibleAnalytics implements AnalyticsProvider {
 
   trackPageView(properties?: EventProperties): void {
     if (!this.isInitialized) return;
-    
+
     try {
       // For Plausible, page views are tracked automatically
       // This is just for custom properties
@@ -193,39 +196,42 @@ analytics.init();
 
 /**
  * Convenience wrapper for tracking events
- * 
+ *
  * @param eventName - The name of the event to track
  * @param properties - Optional properties to include with the event
  */
 export function trackEvent(eventName: TrackEventName, properties?: EventProperties): void {
   // Check if we're in a Capacitor mobile app
   const isMobileApp = typeof (window as any).Capacitor !== 'undefined';
-  
+
   // Add platform info automatically
   const platformProperties: EventProperties = {
     ...properties,
-    platform: isMobileApp 
-      ? (window as any).Capacitor?.getPlatform() === 'ios' ? 'ios' : 'android'
-      : 'web'
+    platform: isMobileApp
+      ? (window as any).Capacitor?.getPlatform() === 'ios'
+        ? 'ios'
+        : 'android'
+      : 'web',
   };
-  
+
   // Add app version for mobile
   if (isMobileApp && (window as any).Capacitor?.getAppInfo) {
     try {
       const appInfo = (window as any).Capacitor.getAppInfo();
       platformProperties.appVersion = appInfo.version;
-      platformProperties.deviceType = (window as any).Capacitor.getDeviceInfo?.()?.model || 'unknown';
+      platformProperties.deviceType =
+        (window as any).Capacitor.getDeviceInfo?.()?.model || 'unknown';
     } catch (e) {
       // Silent fail if we can't get app info
     }
   }
-  
+
   analytics.trackEvent(eventName, platformProperties);
 }
 
 /**
  * Convenience wrapper for tracking page views
- * 
+ *
  * @param properties - Optional properties to include with the page view
  */
 export function trackPageView(properties?: EventProperties): void {
@@ -234,7 +240,7 @@ export function trackPageView(properties?: EventProperties): void {
 
 /**
  * Track errors in the application
- * 
+ *
  * @param errorType - The type of error
  * @param errorMessage - The error message
  * @param errorCode - Optional error code
@@ -243,7 +249,7 @@ export function trackError(errorType: string, errorMessage: string, errorCode?: 
   trackEvent('error_occurred', {
     errorType,
     errorMessage,
-    errorCode
+    errorCode,
   });
 }
 
@@ -251,5 +257,5 @@ export default {
   trackEvent,
   trackPageView,
   trackError,
-  analytics
-}; 
+  analytics,
+};

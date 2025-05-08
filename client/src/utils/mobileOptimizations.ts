@@ -20,20 +20,20 @@ interface DeviceInfo {
 export function detectDevice(): DeviceInfo {
   const ua = navigator.userAgent || '';
   const connection = (navigator as any).connection;
-  
+
   // Basic device detection
   const isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua);
   const isTablet = /iPad|Android(?!.*Mobile)/i.test(ua);
   const isIOS = /iPhone|iPad|iPod/i.test(ua);
   const isAndroid = /Android/i.test(ua);
-  
+
   // Detect if device is low-end based on memory and CPU cores
   const isLowEnd = detectLowEndDevice();
-  
+
   // Detect connection type
-  let connectionType = connection?.type || 'unknown';
+  const connectionType = connection?.type || 'unknown';
   let connectionSpeed: 'slow' | 'medium' | 'fast' = 'medium';
-  
+
   if (connection) {
     if (connection.downlink < 1 || connection.rtt > 500) {
       connectionSpeed = 'slow';
@@ -41,7 +41,7 @@ export function detectDevice(): DeviceInfo {
       connectionSpeed = 'fast';
     }
   }
-  
+
   return {
     isMobile,
     isTablet,
@@ -49,7 +49,7 @@ export function detectDevice(): DeviceInfo {
     isIOS,
     isAndroid,
     connectionType,
-    connectionSpeed
+    connectionSpeed,
   };
 }
 
@@ -65,21 +65,23 @@ function detectLowEndDevice(): boolean {
       return true;
     }
   }
-  
+
   // Check processor cores
   const cpuCores = navigator.hardwareConcurrency || 0;
   if (cpuCores > 0 && cpuCores <= 4) {
     return true;
   }
-  
+
   // Check if the device is mobile and connection is slow
   const connection = (navigator as any).connection;
-  if (connection && 
-      (/iPhone|Android/i.test(navigator.userAgent)) && 
-      (connection.downlink < 1 || connection.rtt > 500 || connection.saveData)) {
+  if (
+    connection &&
+    /iPhone|Android/i.test(navigator.userAgent) &&
+    (connection.downlink < 1 || connection.rtt > 500 || connection.saveData)
+  ) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -89,42 +91,45 @@ function detectLowEndDevice(): boolean {
  */
 export function getOptimizedConfig() {
   const device = detectDevice();
-  
+
   return {
     // Image quality (0-100)
     imageQuality: device.isLowEnd || device.connectionSpeed === 'slow' ? 60 : 80,
-    
+
     // Animation settings
     enableAnimations: !device.isLowEnd,
-    reduceMotion: device.isLowEnd || 
-                  window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-    
+    reduceMotion: device.isLowEnd || window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+
     // Rendering optimizations
     enableVirtualLists: device.isMobile || device.isLowEnd,
-    
+
     // Background processing
     backgroundProcessing: !device.isLowEnd && device.connectionSpeed !== 'slow',
-    
+
     // Prefetching settings
     enablePrefetching: device.connectionSpeed === 'fast' && !device.isLowEnd,
-    
+
     // Location precision (affects battery)
     locationPrecision: device.isLowEnd ? 'low' : 'high',
-    
+
     // Data fetching strategy
     dataStrategy: device.connectionSpeed === 'slow' ? 'minimal' : 'complete',
-    
+
     // Device specific optimizations
     deviceSpecific: {
-      ios: device.isIOS ? {
-        useNativeScroll: true,
-        useHWAcceleration: true
-      } : undefined,
-      android: device.isAndroid ? {
-        minimizeReflows: true,
-        useRasterization: device.isLowEnd
-      } : undefined
-    }
+      ios: device.isIOS
+        ? {
+            useNativeScroll: true,
+            useHWAcceleration: true,
+          }
+        : undefined,
+      android: device.isAndroid
+        ? {
+            minimizeReflows: true,
+            useRasterization: device.isLowEnd,
+          }
+        : undefined,
+    },
   };
 }
 
@@ -134,26 +139,26 @@ export function getOptimizedConfig() {
 export function applyOptimizedStyles() {
   const device = detectDevice();
   const config = getOptimizedConfig();
-  
+
   // Add optimization classes to document root
   const htmlElement = document.documentElement;
-  
+
   if (device.isMobile) {
     htmlElement.classList.add('mobile-device');
   }
-  
+
   if (device.isLowEnd) {
     htmlElement.classList.add('low-end-device');
   }
-  
+
   if (device.connectionSpeed === 'slow') {
     htmlElement.classList.add('slow-connection');
   }
-  
+
   if (config.reduceMotion) {
     htmlElement.classList.add('reduce-motion');
   }
-  
+
   // Set CSS variables for optimized values
   htmlElement.style.setProperty('--optimal-image-quality', `${config.imageQuality}%`);
   htmlElement.style.setProperty('--enable-animations', config.enableAnimations ? '1' : '0');
@@ -166,5 +171,5 @@ export default {
   deviceInfo,
   detectDevice,
   getOptimizedConfig,
-  applyOptimizedStyles
-}; 
+  applyOptimizedStyles,
+};

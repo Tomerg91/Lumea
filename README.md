@@ -308,3 +308,46 @@ The Coach Dashboard provides an efficient workspace for coaches to manage their 
 - Vitest component tests for critical UI components
 - Playwright E2E tests for the complete coach workflow
 - Mobile viewport testing (375×812) for responsive design
+
+## Deployment
+
+This project is configured for deployment on Vercel.
+
+### Vercel Setup
+
+1.  **Create a Vercel Account**: If you don't have one, sign up at [vercel.com](https://vercel.com).
+2.  **Import Project**: 
+    *   Connect your GitHub account to Vercel.
+    *   Import the repository for this project.
+3.  **Configure Project Settings**:
+    *   **Build & Development Settings**:
+        *   Framework Preset: `Vite` (Vercel might detect this automatically).
+        *   Build Command: `npm run build` (or `pnpm build` if you are using pnpm, ensure `vercel.json` matches).
+        *   Output Directory: `client/dist` (ensure this matches your `vite.config.ts` and `vercel.json`).
+        *   Install Command: `npm install && npm run install:all --if-present` (or equivalent for your package manager to install root and workspace dependencies).
+    *   **Root Directory**: Leave as default (repository root) if `vercel.json` is in the root. 
+    *   **Serverless Functions**: Ensure Vercel is configured to handle your backend API routes correctly. The `vercel.json` provided in this project includes a basic setup for an Express-like server in the `/server/api` directory. You might need to adjust this based on your actual server structure. Typically, you would place your serverless functions (e.g., Express app entry point) in an `api` directory in your project root or `server/api` if your `vercel.json` routes point there.
+
+4.  **Environment Variables**: 
+    *   Add all required environment variables listed in `.env.example` files (for both `client` and `server`) to your Vercel project settings.
+    *   **Sensitive Variables**: Ensure `JWT_SECRET`, `DATABASE_URL`, `SMTP_PASS`, `ENCRYPTION_KEY`, `ENCRYPTION_IV`, `SUPABASE_SERVICE_KEY`, etc., are set securely in Vercel.
+    *   `NODE_ENV` should be set to `production` for Vercel deployments (this is often a default setting on Vercel).
+    *   `CLIENT_URL` should be the production URL of your frontend (e.g., `https://your-app-name.vercel.app`).
+    *   `VITE_API_URL` (for client) should point to your Vercel backend URL (e.g., `https://your-app-name.vercel.app/api` if your API is served from `/api`).
+
+5.  **Deploy**: Trigger a deployment. Vercel will build and deploy your application.
+
+### Local Vercel CLI (Optional)
+
+For local testing of Vercel deployment:
+
+1.  Install Vercel CLI: `npm install -g vercel`
+2.  Login: `vercel login`
+3.  Link project: `vercel link` (from the project root)
+4.  Run development server: `vercel dev` (This will use your `vercel.json` configuration locally)
+
+### Important Notes for Vercel Deployment
+
+*   **Serverless Backend**: If your `server` directory contains a traditional Node.js/Express server, you'll need to adapt it to run as Vercel Serverless Functions. Typically, this involves having an entry point file (e.g., `server/api/index.ts`) that exports the Express app or individual route handlers.
+*   **Monorepo Support**: Vercel supports monorepos. Ensure your build commands and output directories are correctly configured for your project structure. The `install:all` script is important for installing dependencies in workspaces.
+*   **Database**: Ensure your MongoDB (or Supabase) instance is accessible from Vercel's servers. For Supabase, use the production Supabase URL and keys.

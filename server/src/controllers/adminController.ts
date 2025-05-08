@@ -17,14 +17,15 @@ export const adminController = {
 
       // Find all coaches with pending status
       const pendingCoaches = await User.find({
-        status: 'pending'
+        status: 'pending',
       }).select('_id email firstName lastName createdAt');
 
       // Filter coaches based on role
-      const filteredCoaches = pendingCoaches.filter(coach => {
-        const roleValue = typeof coach.role === 'object' && coach.role !== null && 'name' in coach.role 
-          ? coach.role.name 
-          : String(coach.role);
+      const filteredCoaches = pendingCoaches.filter((coach) => {
+        const roleValue =
+          typeof coach.role === 'object' && coach.role !== null && 'name' in coach.role
+            ? coach.role.name
+            : String(coach.role);
         return roleValue === 'coach';
       });
 
@@ -79,10 +80,11 @@ export const adminController = {
       }
 
       // Check if user has coach role - handling different role formats
-      const roleValue = typeof coach.role === 'object' && coach.role !== null && 'name' in coach.role 
-        ? coach.role.name 
-        : String(coach.role);
-      
+      const roleValue =
+        typeof coach.role === 'object' && coach.role !== null && 'name' in coach.role
+          ? coach.role.name
+          : String(coach.role);
+
       if (roleValue !== 'coach') {
         return res.status(400).json({ message: 'User is not a coach' });
       }
@@ -91,15 +93,15 @@ export const adminController = {
       coach.status = 'active';
       await coach.save();
 
-      return res.status(200).json({ 
+      return res.status(200).json({
         message: 'Coach approved successfully',
         coach: {
           id: coach._id,
           email: coach.email,
           firstName: coach.firstName,
           lastName: coach.lastName,
-          status: coach.status
-        }
+          status: coach.status,
+        },
       });
     } catch (error) {
       console.error('Error approving coach:', error);

@@ -48,7 +48,7 @@ export const sessionController = {
         const query: Record<string, unknown> = {
           coachId: req.user.id,
         };
-        
+
         if (clientId) {
           query.clientId = clientId;
         }
@@ -110,7 +110,7 @@ export const sessionController = {
       }
 
       const { clientId, date, notes } = req.body;
-      
+
       // Create session
       const session = await CoachingSession.create({
         coachId: req.user.id,

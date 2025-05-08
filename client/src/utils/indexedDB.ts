@@ -66,7 +66,7 @@ export async function saveEncryptionKey(id: string, key: Uint8Array): Promise<vo
 
     // Convert Uint8Array to Array for storage (IndexedDB can't store typed arrays directly)
     const keyArray = Array.from(key);
-    
+
     const request = store.put({ id, key: keyArray });
 
     request.onerror = (event) => {
@@ -134,12 +134,12 @@ export async function addToOfflineQueue(item: QueueItem): Promise<number> {
   return new Promise((resolve, reject) => {
     const transaction = db!.transaction([QUEUE_STORE], 'readwrite');
     const store = transaction.objectStore(QUEUE_STORE);
-    
+
     // Ensure timestamp is set
     if (!item.timestamp) {
       item.timestamp = Date.now();
     }
-    
+
     const request = store.add(item);
 
     request.onerror = (event) => {
@@ -210,4 +210,4 @@ async function ensureDBInitialized(): Promise<void> {
   if (!db) {
     await initIndexedDB();
   }
-} 
+}

@@ -44,43 +44,43 @@ export const inviteClient = async (req: Request, res: Response): Promise<void> =
     // Apply rate limiting
     const coachId = req.user._id.toString();
     const now = Date.now();
-    
+
     // Clean up expired entries
     for (const [key, entry] of rateLimitCache.entries()) {
       if (now - entry.timestamp > RATE_LIMIT_WINDOW) {
         rateLimitCache.delete(key);
       }
     }
-    
+
     // Check current rate limit
     const rateLimit = rateLimitCache.get(coachId) || { count: 0, timestamp: now };
-    
+
     // Check pending invites count
-    const pendingInvitesCount = await InviteToken.countDocuments({ 
-      coachId: new mongoose.Types.ObjectId(coachId)
+    const pendingInvitesCount = await InviteToken.countDocuments({
+      coachId: new mongoose.Types.ObjectId(coachId),
     });
-    
+
     const totalInvites = pendingInvitesCount + rateLimit.count;
-    
+
     if (totalInvites >= MAX_INVITES) {
-      res.status(429).json({ 
-        message: `You have reached the maximum limit of ${MAX_INVITES} pending invites` 
+      res.status(429).json({
+        message: `You have reached the maximum limit of ${MAX_INVITES} pending invites`,
       });
       return;
     }
-    
+
     // Update rate limit
     rateLimitCache.set(coachId, {
       count: rateLimit.count + 1,
-      timestamp: rateLimit.timestamp
+      timestamp: rateLimit.timestamp,
     });
 
     // Generate and save the invite token
     const token = await createInviteToken(coachId, email);
-    
+
     // Get coach name for the email
     const coachName = `${req.user.firstName} ${req.user.lastName}`;
-    
+
     // Send the invitation email
     await sendInvite(email, token, coachName);
 
@@ -103,34 +103,34 @@ export const getMyClients = async (req: Request, res: Response): Promise<void> =
     }
 
     const coachId = req.user._id;
-    
+
     // Pagination parameters
-    const page = parseInt(req.query.page as string || '1');
-    const limit = parseInt(req.query.limit as string || '10');
+    const page = parseInt((req.query.page as string) || '1');
+    const limit = parseInt((req.query.limit as string) || '10');
     const skip = (page - 1) * limit;
 
     // Get client role id
     const clientRole = await Role.findOne({ name: 'client' });
-    
+
     if (!clientRole) {
       res.status(500).json({ message: 'Client role not found' });
       return;
     }
 
     // Get clients
-    const clients = await User.find({ 
-      coachId, 
-      role: clientRole._id 
+    const clients = await User.find({
+      coachId,
+      role: clientRole._id,
     })
-    .select('_id firstName lastName email isApproved createdAt')
-    .skip(skip)
-    .limit(limit)
-    .sort({ createdAt: -1 });
+      .select('_id firstName lastName email isApproved createdAt')
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
 
     // Get total count for pagination
-    const totalClients = await User.countDocuments({ 
-      coachId, 
-      role: clientRole._id 
+    const totalClients = await User.countDocuments({
+      coachId,
+      role: clientRole._id,
     });
 
     // Get pending invites
@@ -145,11 +145,11 @@ export const getMyClients = async (req: Request, res: Response): Promise<void> =
         total: totalClients,
         currentPage: page,
         totalPages: Math.ceil(totalClients / limit),
-        limit
-      }
+        limit,
+      },
     });
   } catch (error) {
     console.error('Error getting clients:', error);
     res.status(500).json({ message: 'Error retrieving clients' });
   }
-}; 
+};

@@ -49,10 +49,12 @@ const resourceSchema = new Schema<IResource>(
       type: Schema.Types.ObjectId,
       ref: 'User',
     },
-    sharedWithRoles: [{
-      type: String,
-      enum: ['admin', 'coach', 'client'],
-    }],
+    sharedWithRoles: [
+      {
+        type: String,
+        enum: ['admin', 'coach', 'client'],
+      },
+    ],
     tags: [
       {
         type: Schema.Types.Mixed, // Allow both ObjectId and string
