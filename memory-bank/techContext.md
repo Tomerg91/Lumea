@@ -1,8 +1,8 @@
 # Tech Context
 
-Technologies used: Frontend: React (`^18.3.1`) with TypeScript (`5.8.3`), Tailwind CSS (`^3.4.11`), i18next, Vite (`^5.4.1`). Backend: **Supabase (PostgreSQL, Auth, Storage, APIs)**, **Redis** for caching, Express with compression middleware. Native Wrapper: Capacitor (`^7.2.0`). Node.js/Express for backend API endpoints and server-side logic.
+Technologies used: Frontend: React (`^18.3.1`) with TypeScript (`5.8.3`), Tailwind CSS (`^3.4.11`), i18next, Vite (`^5.4.1`). Backend: Node.js/Express for backend API endpoints and server-side logic, utilizing **Supabase** for its **PostgreSQL** database and authentication services. **Prisma** is the ORM for PostgreSQL. **Redis** is used for caching. `Mongoose` is used for legacy MongoDB interactions. Native Wrapper: Capacitor (`^7.2.0`).
 
-Development setup: Project structure using npm workspaces (`client`, `server`). Configuration managed via .env files (including Supabase URL/keys). Standard Node.js/npm toolchain for frontend and backend. Supabase CLI or Dashboard for DB management. CI/CD pipeline with GitHub Actions (`.github/workflows/typecheck.yml`). TypeScript (`5.8.3`) for type checking (client check: `npm --workspace client run typecheck`). Client TS config isolated via `client/tsconfig.json` extending `client/tsconfig.base.json`. Root `package.json` uses `overrides` for TS and React types. Performance monitoring via custom metrics collection.
+Development setup: Project structure using npm workspaces (`client`, `server`). Configuration managed via .env files (including Supabase URL/keys). Standard Node.js/npm toolchain for frontend and backend. Supabase CLI or Dashboard for DB management. Prisma CLI for migrations. CI/CD pipeline with GitHub Actions (`.github/workflows/typecheck.yml`). TypeScript (`5.8.3`) for type checking (client check: `npm --workspace client run typecheck`). Client TS config isolated via `client/tsconfig.json` extending `client/tsconfig.base.json`. Root `package.json` uses `overrides` for TS and React types. Performance monitoring via custom metrics collection.
 
 Technical constraints: Application must be bilingual (Hebrew/RTL default, English/LTR secondary). Must meet WCAG 2.1 AA accessibility guidelines. No real-time chat, integrated payments, or automatic calendar sync (within MVP). High security standards required (handled largely by Supabase RLS, HTTPS). Mobile performance optimization required for low-end devices and poor network conditions.
 
@@ -34,10 +34,10 @@ Tool usage patterns: Development involves interaction with AI code generation to
 *   **Backend:**
     *   Runtime: Node.js (>= v20)
     *   Framework: Express.js with TypeScript
-    *   Database: MongoDB Atlas (primary), Supabase PostgreSQL (used for RLS example/testing and potentially session storage)
-    *   ODM: Mongoose (for MongoDB)
+    *   Database: Supabase PostgreSQL (primary for new development, user data, auth), MongoDB Atlas (legacy data structures)
+    *   ORM/ODM: Prisma (for PostgreSQL), Mongoose (for MongoDB)
     *   Session Store: `connect-pg-simple` (using PostgreSQL)
-    *   Authentication: Passport.js (Local strategy, potentially JWT involved), Session-based auth.
+    *   Authentication: Passport.js (Local strategy implemented with Prisma), Session-based auth.
     *   File Storage: AWS S3 (optional), local uploads directory (`server/uploads`) as fallback.
     *   Email: Nodemailer via SMTP configuration.
 *   **Shared:** TypeScript types defined in `shared/` directory.
@@ -72,8 +72,9 @@ Tool usage patterns: Development involves interaction with AI code generation to
 *   `radix-ui`: Foundation for many UI components.
 *   `i18next`: Handles internationalization.
 *   `express-session` / `connect-pg-simple`: Manages user sessions on the backend.
-*   `passport`: Handles authentication strategies.
-*   `mongoose`: Interacts with MongoDB.
+*   `passport`: Handles authentication strategies (now with Prisma integration).
+*   `mongoose`: Interacts with MongoDB (legacy).
+*   `prisma`: ORM for PostgreSQL, used for user data and new features.
 *   `vite`: Frontend build and development server.
 *   `tailwindcss`: Utility-first CSS framework.
 *   `capacitor`: For potential mobile app builds.
@@ -81,10 +82,11 @@ Tool usage patterns: Development involves interaction with AI code generation to
 ## Tool Usage Patterns
 
 *   `npm run dev`: Starts client and server concurrently for local development.
-*   `npm run build`: Builds both client and server for production (currently fails due to server TS errors).
+*   `npm run build`: Builds both client and server for production (currently succeeding after TypeScript error resolution).
 *   `npm run install:all`: Installs dependencies for root and workspaces.
 *   `npm run lint`: Runs ESLint checks.
 *   `npm test`: Runs backend (Jest) and frontend (Vitest) tests.
 *   `npm run ci-all`: Used in GitHub Actions for linting, type checking, and testing.
+*   `npx prisma migrate dev`: Used for database migrations with Prisma.
 *   `supabase start/db reset`: Used for managing local Supabase instance.
 *   `vercel dev`: Can be used for local testing of Vercel deployment environment.

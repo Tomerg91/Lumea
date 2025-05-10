@@ -2,52 +2,74 @@
 
 ## Current Focus
 
-**Deployment Readiness for Vercel:** The primary goal is to ensure the application can be successfully built and deployed to Vercel. This involves configuring deployment settings, standardizing repository practices, and resolving build errors.
+**Frontend Integration with Backend APIs:** The primary goal is to connect the frontend services (user profile, sessions, resources) to the live backend API endpoints, replacing mock data and enabling full-stack functionality.
+**Completing User Profile Feature:** This includes resolving database migration issues to add new fields (like `bio`) and ensuring the frontend can update them.
 
 ## Recent Activity & Decisions
 
-*   **Vercel Configuration Added:** Created `vercel.json` with build settings, routing rules for client/server, and security/caching headers (including CSP).
-*   **GitHub Repository Improvements:**
-    *   Added `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`.
-    *   Added `PULL_REQUEST_TEMPLATE.md` and issue templates (`bug_report.md`, `feature_request.md`).
-    *   Added Deployment section to `README.md`.
-    *   Updated GitHub Actions CI (`.github/workflows/ci.yml`) with dependency caching.
-    *   Updated Mobile Release workflow (`.github/workflows/release-mobile.yml`) with artifact validation.
-*   **Tailwind CSS Refinement:**
-    *   Removed duplicate `client/tailwind.config.cjs`.
-    *   Updated `content` paths in `client/tailwind.config.ts`.
-    *   Adjusted `safelist` (requires further manual review).
-*   **Environment Variable Management:**
-    *   Created `.env.example` templates (need moving to `client/` and `server/`).
-    *   Updated `client/src/lib/api.ts` for better API URL handling.
-    *   Added environment variable validation and logging/monitoring placeholders in `server/src/index.ts`.
-*   **Build Dependency Fixed:** Added `terser` to `client/package.json` devDependencies.
-*   **Vercel Serverless Structure:** Created `server/api/index.ts` as the Vercel entry point for the backend API.
-*   **TypeScript Type Definitions:** Created `server/src/types/user.ts` (for `AuthenticatedUserPayload`) and updated `server/src/types/express.d.ts` to augment `req.user` type.
+*   **Resolved Critical Server Build Errors (Major Effort):**
+    *   Successfully resolved all TypeScript build errors (`npm run build` now passes with 0 errors).
+    *   This involved extensive refactoring and type alignment across the server codebase, primarily addressing inconsistencies between Mongoose/Prisma user models and the `Express.User` type via the `AuthenticatedUserPayload` interface.
+    *   Key files modified/analyzed: `server/config/passport.ts` (Prisma version identified as active over Mongoose one), `server/src/types/user.ts`, `server/src/types/express.d.ts`, `server/src/models/User.ts` (Mongoose), `server/src/storage.ts`, `server/src/controllers` (various, including `inviteController`, `reflectionController`, `sessionController`, `userController`), `server/src/routes` (various, including `auth.ts`, `user.ts`), `server/src/index.ts`, `server/src/middlewares/auth.ts`, `server/src/scripts/create-admin.ts` (Prisma), and `server/src/server/auth.ts` (Prisma-based main auth setup).
+    *   Clarified usage of `server/config/passport.ts` (Prisma, active) vs. `server/src/config/passport.ts` (Mongoose, older).
+
+*   **Backend API Enhancement for User Profile:**
+    *   Added a new endpoint `PUT /api/users/me` to allow authenticated users to update their profiles.
+    *   Implemented the `updateCurrentUserProfile` controller function in `server/src/controllers/userController.ts` using Prisma.
+    *   Attempted to add a `bio` field to the `User` model in `server/prisma/schema.prisma`.
+    *   Encountered a persistent `P1001: Can't reach database server` error when running `npx prisma migrate dev --name added_user_bio`, blocking the schema change.
+    *   Temporarily commented out the `bio` field in `schema.prisma` and `userController.ts` to allow frontend integration to proceed with other fields (e.g., `name`).
+
+*   **Frontend Service Integration (Replacing Mock Data):**
+    *   `client/src/services/userService.ts`:
+        *   `fetchUserProfile` updated to call `GET /api/auth/me`.
+        *   `updateUserProfile` updated to call `PUT /api/users/me` (currently sending only `name`; `bio` pending DB migration fix).
+    *   `client/src/services/sessionService.ts`:
+        *   `fetchSessions` updated to call `GET /api/sessions/client/all`.
+        *   `createSession` updated to call `POST /api/sessions/`.
+    *   `client/src/services/resourceService.ts`:
+        *   `fetchResources` updated to call `GET /api/resources/`.
+
+*   **Vercel Configuration Added (Previous Session):** Created `vercel.json` with build settings, routing rules for client/server, and security/caching headers (including CSP).
+*   **GitHub Repository Improvements (Previous Session):** Added `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `PULL_REQUEST_TEMPLATE.md`, issue templates, and updated `README.md`, CI workflows.
+*   **Tailwind CSS Refinement (Previous Session):** Addressed path issues and safelist (still needs review).
+*   **Environment Variable Management (Previous Session):** Created `.env.example` templates, updated API URL handling.
+*   **Build Dependency Fixed (Previous Session):** Added `terser`.
+*   **Vercel Serverless Structure (Previous Session):** Created `server/api/index.ts`.
 
 ## Key Pending Issues & Next Steps
 
-1.  **Server Build Errors (Critical):** The `npm run build` command fails during the server `tsc` step due to numerous TypeScript errors (TS2769) related to incompatible types on `req.user` in Express middleware/routes.
-    *   **Immediate Action Required:** Manually refactor authentication middleware (`isAuthenticated`, `isCoach`, etc.) in the `server` codebase to ensure the object attached to `req.user` strictly matches the `AuthenticatedUserPayload` interface (defined in `server/src/types/user.ts`), particularly ensuring the `role` field is consistently a string.
-2.  **Enable Strict TypeScript:** Manually enable stricter type checking (`"strict": true`) in all `tsconfig.json` files and resolve the resulting errors. This is crucial for preventing runtime bugs.
-3.  **Move `.env.example` Files:** Manually move `client-env.example` to `client/.env.example` and `server-env.example` to `server/.env.example`.
-4.  **Review Tailwind Safelist:** Manually verify the necessity of all classes in `client/tailwind.config.ts` safelist.
-5.  **Server API Adaptation Logic:** Verify that the Express app exported from `server/src/index.ts` (and used by `server/api/index.ts`) is correctly structured to run as a Vercel serverless function.
-6.  **Hardcoded URLs:** Perform a final check for any remaining hardcoded URLs in `client/src`.
-7.  **Manual Testing:** Test build (`npm run build`), local Vercel deployment (`vercel dev`), and application functionality after manual fixes.
+1.  **Resolve Supabase DB Connection Issue (Critical Blocker):** The `P1001: Can't reach database server` error during `prisma migrate dev` must be resolved. This prevents any further schema changes, including adding the `bio` field.
+    *   **Action:** Verify database URL, credentials, network access to the Supabase instance. Check Supabase project status.
+2.  **Complete `bio` Field Integration:**
+    *   Once DB connection is stable, add `bio: String?` to `User` model in `server/prisma/schema.prisma`.
+    *   Successfully run `npx prisma migrate dev --name added_user_bio`.
+    *   Uncomment `bio` handling in `server/src/controllers/userController.ts`.
+    *   Enable `bio` updates in `client/src/services/userService.ts` and relevant UI components.
+3.  **Comprehensive Frontend Testing:** Thoroughly test all integrated services and user flows: user profile viewing and updating, session listing and creation, resource listing. Verify data persistence and error handling.
+4.  **Review and Finalize User Profile Update:** Confirm all necessary fields for user profile updates are included and functional. Address any UI/UX considerations for the profile edit form.
+5.  **Enable Strict TypeScript:** Manually enable stricter type checking (`"strict": true`) in all `tsconfig.json` files and resolve the resulting errors. This is crucial for preventing runtime bugs.
+6.  **Move `.env.example` Files:** Manually move `client-env.example` to `client/.env.example` and `server-env.example` to `server/.env.example`.
+7.  **Review Tailwind Safelist:** Manually verify the necessity of all classes in `client/tailwind.config.ts` safelist.
+8.  **Server API Adaptation Logic (Vercel):** Verify that the Express app exported from `server/src/index.ts` (and used by `server/api/index.ts`) is correctly structured to run as a Vercel serverless function (deferred until core functionality is stable).
 
 ## Important Patterns & Preferences
 
 *   Deployment target is Vercel.
 *   Monorepo structure with `client` and `server` workspaces.
 *   Use TypeScript across the stack.
+*   Prisma for new database interactions and schema management (PostgreSQL).
+*   Mongoose for legacy MongoDB interactions.
 *   Standardize configuration files (`vercel.json`, `.env.example`, GitHub templates).
 *   Utilize GitHub Actions for CI/CD.
 
 ## Learnings & Insights
 
-*   Deployment readiness involves configuration (`vercel.json`), process (`README.md`, GitHub Actions), and code quality (TypeScript errors, environment variables).
-*   Type safety, especially around Express middleware and `req.user` augmentation, is critical for successful TypeScript builds on the backend.
+*   Successfully resolving server-side TypeScript build errors was a significant undertaking, requiring meticulous attention to type definitions (`AuthenticatedUserPayload`, `Express.User`) and the interaction between Mongoose and Prisma user representations.
+*   Integrating frontend services with a live backend often uncovers discrepancies or missing pieces in API contracts or data models (e.g., the need for the `bio` field and its update mechanism).
+*   Database connectivity is paramount. `Prisma migrate` failures (like P1001) can halt development on features requiring schema changes. Always ensure DB connection is stable before migrations.
+*   Managing a dual ORM/ODM (Prisma and Mongoose) environment adds complexity. Clear boundaries and shared types are essential.
+*   Deployment readiness involves configuration (`vercel.json`), process (`README.md`, GitHub Actions), and robust, error-free code.
 *   Vite v3+ requires `terser` as an explicit dependency for production builds.
 *   Vercel deployments require specific project structure (e.g., `api` directory) for serverless functions.
 

@@ -435,30 +435,61 @@ The application now has a fully functional coaching platform with improved perfo
 
 ### What Works
 
-*   Core application features function in local development.
-*   Client and server can be built locally (after fixing `terser` dependency).
-*   Basic CI checks (linting, type checking, tests) are set up in GitHub Actions.
-*   Project configuration for Vercel (`vercel.json`) is present.
-*   Repository documentation (`README`, `CONTRIBUTING`, etc.) is improved.
-*   Type definitions and augmentation for `req.user` have been added.
-*   Basic logging and monitoring placeholders are in place.
+*   **Server Build:** The `npm run build` command, which includes `tsc` for the server, now completes successfully with 0 errors. This was a major hurdle overcome by resolving numerous TypeScript type inconsistencies, particularly around `req.user`, `AuthenticatedUserPayload`, and the Mongoose/Prisma User model differences.
+*   **Backend User Authentication Core:** Core authentication logic using Passport.js with local strategy (leveraging Prisma for user lookup) is functional. Users can log in.
+*   **Backend API for User Profile (Partial):**
+    *   `GET /api/auth/me`: Successfully retrieves authenticated user profile data.
+    *   `PUT /api/users/me`: Functional for updating the user's `name`. The `bio` field update is pending resolution of a database migration issue.
+*   **Backend APIs for Sessions & Resources (Basic):**
+    *   `GET /api/sessions/client/all`: Fetches sessions for a client.
+    *   `POST /api/sessions/`: Allows creation of new sessions.
+    *   `GET /api/resources/`: Fetches available resources.
+*   **Frontend Service Integration (Initial):**
+    *   `userService.ts`: `fetchUserProfile` calls `GET /api/auth/me`. `updateUserProfile` calls `PUT /api/users/me` (for `name`).
+    *   `sessionService.ts`: `fetchSessions` calls `GET /api/sessions/client/all`. `createSession` calls `POST /api/sessions/`.
+    *   `resourceService.ts`: `fetchResources` calls `GET /api/resources/`.
+*   **Monorepo Structure:** Client, server, and shared workspaces are functioning.
+*   **Vercel Deployment Setup:** `vercel.json` is configured, and the basic serverless entry point `server/api/index.ts` is in place (though full Vercel deployment functionality requires further testing after current issues are resolved).
+*   **Performance Enhancements (Previous):** Server-side caching (Redis), static file caching, DB optimizations (MongoDB), code splitting, memory leak prevention utilities, performance monitoring, image optimization, and compression middleware were previously implemented.
+*   **Supabase `profiles` Table (Previous):** The missing `profiles` table was created with RLS and a trigger for new user signups.
+*   **Design System & UI Components (Previous):** A design token system, enhanced UI components, and a design system showcase page were implemented.
+*   **Mobile Build & CI/CD (Previous):** Capacitor setup for mobile builds and GitHub Actions for mobile releases are in place.
+*   **Analytics (Previous):** Plausible analytics with expanded event tracking is integrated.
+*   **Coach Dashboard & Client Management (Previous):** Features for coaches to view clients, invite clients (with token system), and manage sessions were implemented.
+*   **Password Reset Flow (Previous):** Functional password reset mechanism.
 
-### What's Left / Known Issues
+### What's Left to Build / Current Status
 
-*   **Server Build Failure (Blocking Deployment)**: The backend fails the `tsc` build due to widespread TypeScript errors (TS2769) related to `req.user` typing in middleware/routes. This **must** be fixed manually by refactoring authentication middleware.
-*   **Lack of Strict TypeScript**: TypeScript's `strict` mode is disabled across the project (`tsconfig.json` files), significantly increasing the risk of runtime errors. Enabling this and fixing the resulting errors is a major pending task.
-*   **Vercel Serverless Adaptation**: The backend server logic in `server/src` needs verification/refactoring to ensure it runs correctly as a Vercel serverless function via the `server/api/index.ts` entry point.
-*   **Configuration Files**: `.env.example` files need to be manually moved into `client/` and `server/` directories.
-*   **Tailwind Safelist**: Needs manual review for optimization.
-*   **Error Handling/Logging**: Placeholders exist but need integration with actual services (e.g., Sentry).
-*   **Performance Monitoring**: Placeholder exists but needs integration (e.g., New Relic).
-*   **Testing**: Existing tests pass in CI, but comprehensive E2E and potentially integration tests for Vercel environment specifics might be needed.
-*   **Performance Optimizations**: Recommendations in `PERFORMANCE_IMPROVEMENTS.md` have not yet been implemented.
+*   **Resolve Supabase Database Connection for Migrations (Top Priority):** The `P1001: Can't reach database server` error during `prisma migrate dev` is the primary blocker. This prevents schema changes necessary for features like the user `bio` field.
+*   **Complete User Profile `bio` Field Integration:**
+    1.  Fix DB connection issue.
+    2.  Add `bio: String?` to `User` model in `server/prisma/schema.prisma`.
+    3.  Successfully run `npx prisma migrate dev --name added_user_bio`.
+    4.  Uncomment and test `bio` handling in `server/src/controllers/userController.ts`.
+    5.  Implement `bio` field update in `client/src/services/userService.ts` and relevant frontend UI components.
+*   **Comprehensive Frontend Testing:** Thoroughly test all newly integrated frontend services and user flows:
+    *   User profile page: viewing and editing (name, and eventually bio).
+    *   Sessions page: listing current sessions, creating new sessions.
+    *   Resources page: listing available resources.
+    *   Verify data persistence, UI updates, and error handling for all features.
+*   **Enable Strict TypeScript:** Gradually enable `"strict": true` in `tsconfig.json` files (client, server, shared) and address all resulting type errors. This is crucial for long-term code health and bug prevention.
+*   **Finalize User Profile Feature:** Beyond `bio`, review if other fields are needed for the user profile and implement them.
+*   **Refine Error Handling:** Implement more robust and user-friendly error handling on both client and server, especially for API request failures.
+*   **Code Cleanup and Refactoring:** Review areas modified during the build fix and frontend integration for potential cleanup and simplification.
+*   **Documentation Updates:** Ensure any new API endpoints or significant frontend changes are documented (e.g., in Swagger/OpenAPI if used, or internal docs).
+*   **Carry-over tasks from previous states:**
+    *   Move `.env.example` files to their respective `client/` and `server/` directories.
+    *   Review Tailwind CSS `safelist` in `client/tailwind.config.ts` for necessity.
+    *   Thoroughly test Vercel deployment once core functionality is stable and DB issues are resolved.
 
-## Evolution of Decisions
+## Known Issues
 
-*   Shifted focus from feature implementation/local refinement to deployment readiness for Vercel.
-*   Recognized the criticality of TypeScript type safety for backend builds, particularly concerning Express middleware and `req.user` typing.
-*   Adopted standard GitHub repository documentation and templates.
-*   Implemented Vercel-specific configuration (`vercel.json`, `server/api/index.ts`).
-*   Identified and fixed the missing `terser` dependency for the client build.
+*   **`P1001: Can't reach database server`:** This error occurs when attempting to run `npx prisma migrate dev`. It blocks any database schema modifications. Suspected causes: incorrect `DATABASE_URL` in `.env`, network connectivity issues to Supabase, or problems with the Supabase instance itself.
+*   **Potential for Mongoose/Prisma Data Sync Issues:** While not an active bug, the coexistence of two ORMs accessing potentially related data (even if for different parts of the app now) requires careful management to avoid future inconsistencies if boundaries blur.
+
+## Evolution of Project Decisions
+
+*   **ORM Strategy Shift:** The project has increasingly adopted Prisma for new backend development, particularly for user authentication and profile management, using PostgreSQL (Supabase). Mongoose with MongoDB is now primarily for legacy data structures. This decision was solidified during the resolution of server build errors, where aligning with Prisma types proved more straightforward for new components.
+*   **Incremental Frontend Integration:** Faced with the `bio` field migration blocker, the decision was made to comment out `bio`-related changes temporarily and proceed with integrating other parts of the frontend services (`userService` for name, `sessionService`, `resourceService`) to maintain momentum.
+*   **Build Success as a Milestone:** Achieving a successful `npm run build` for the server was a critical milestone, unblocking further full-stack development and Vercel deployment attempts.
+*   **Focus on Core Functionality First:** Deployment to Vercel and enabling stricter TypeScript are important goals but are temporarily deferred until the critical database connectivity issue is resolved and core frontend features are demonstrably working with the live backend.
