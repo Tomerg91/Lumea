@@ -123,5 +123,27 @@
       "career": "קריירה ומקצוע",
       "wellness": "בריאות ורווחה"
     }
+  },
+  "audioRecorder": {
+    "startRecording": "התחל הקלטה",
+    "stop": "עצור",
+    "pause": "השהה",
+    "resume": "המשך",
+    "recordAgain": "הקלט שוב",
+    "recording": "מקליט",
+    "paused": "מושהה",
+    "completed": "הקלטה הושלמה",
+    "requestingPermission": "מבקש גישה למיקרופון...",
+    "recordingComplete": "הקלטה הושלמה",
+    "duration": "משך זמן",
+    "format": "פורמט",
+    "size": "גודל",
+    "errors": {
+      "unsupportedBrowser": "הקלטת אודיו אינה נתמכת בדפדפן שלך",
+      "microphoneAccess": "אין אפשרות לגשת למיקרופון",
+      "permissionDenied": "הרשאת מיקרופון נדחתה. אנא אפשר גישה למיקרופון כדי להקליט אודיו.",
+      "noMicrophone": "לא נמצא מיקרופון. אנא חבר מיקרופון ונסה שוב.",
+      "recordingFailed": "הקלטה נכשלה. אנא נסה שוב."
+    }
   }
 } 

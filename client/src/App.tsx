@@ -17,6 +17,7 @@ const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const DesignSystemPage = lazy(() => import('./pages/DesignSystem'));
 const RichTextEditorDemo = lazy(() => import('./components/RichTextEditorDemo').then(module => ({ default: module.RichTextEditorDemo })));
 const ReflectionDemo = lazy(() => import('./pages/ReflectionDemo'));
+const AudioRecorderDemo = lazy(() => import('./components/audio/AudioRecorderDemo'));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -93,7 +94,8 @@ const App: React.FC = () => {
         <Link to="/">Home</Link> | <Link to="/test">Test Page</Link> |{' '}
         <Link to="/debug">Debug</Link> | <Link to="/design-system">Design System</Link> |{' '}
         <Link to="/rich-editor-demo">Rich Editor Demo</Link> |{' '}
-        <Link to="/reflection-demo">Reflection Demo</Link>
+        <Link to="/reflection-demo">Reflection Demo</Link> |{' '}
+        <Link to="/audio-recorder-demo">Audio Recorder Demo</Link>
         {/* Show different links based on auth state and role */}
         {session && profile?.role === 'coach' && (
           <>
@@ -142,6 +144,7 @@ const App: React.FC = () => {
             {/* Design System Route */}
             <Route path="/rich-editor-demo" element={<RichTextEditorDemo />} />
             <Route path="/reflection-demo" element={<ReflectionDemo />} />
+            <Route path="/audio-recorder-demo" element={<AudioRecorderDemo />} />
             {/* Admin Protected Routes */}
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
               <Route path="/admin" element={<AdminDashboard />} />

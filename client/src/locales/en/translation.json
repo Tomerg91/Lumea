@@ -123,5 +123,27 @@
       "career": "Career & Professional",
       "wellness": "Wellness & Self-Care"
     }
+  },
+  "audioRecorder": {
+    "startRecording": "Start Recording",
+    "stop": "Stop",
+    "pause": "Pause",
+    "resume": "Resume",
+    "recordAgain": "Record Again",
+    "recording": "Recording",
+    "paused": "Paused",
+    "completed": "Recording Complete",
+    "requestingPermission": "Requesting microphone access...",
+    "recordingComplete": "Recording complete",
+    "duration": "Duration",
+    "format": "Format",
+    "size": "Size",
+    "errors": {
+      "unsupportedBrowser": "Audio recording is not supported in your browser",
+      "microphoneAccess": "Unable to access microphone",
+      "permissionDenied": "Microphone permission denied. Please allow microphone access to record audio.",
+      "noMicrophone": "No microphone found. Please connect a microphone and try again.",
+      "recordingFailed": "Recording failed. Please try again."
+    }
   }
 } 
