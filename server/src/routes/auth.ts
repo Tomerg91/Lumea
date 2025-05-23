@@ -92,19 +92,22 @@ router.post('/signup', async (req, res) => {
     );
 
     if (!createdUserDoc || !createdUserDoc.email) {
-        console.error('[POST /api/auth/signup] Failed to create user or user email missing');
-        return res.status(500).json({ message: 'Error creating user profile' });
+      console.error('[POST /api/auth/signup] Failed to create user or user email missing');
+      return res.status(500).json({ message: 'Error creating user profile' });
     }
     console.log('[POST /api/auth/signup] User document created successfully:', createdUserDoc._id);
 
     // Get AuthenticatedUserPayload for session
     const payloadForSessionSignup = await getUserByEmail(createdUserDoc.email);
     if (!payloadForSessionSignup) {
-        console.error('[POST /api/auth/signup] Failed to retrieve payload for session after signup');
-        return res.status(500).json({ message: 'Error preparing user session' });
+      console.error('[POST /api/auth/signup] Failed to retrieve payload for session after signup');
+      return res.status(500).json({ message: 'Error preparing user session' });
     }
 
-    console.log('[POST /api/auth/signup] Attempting to log in user with payload:', payloadForSessionSignup.id);
+    console.log(
+      '[POST /api/auth/signup] Attempting to log in user with payload:',
+      payloadForSessionSignup.id
+    );
     req.login(payloadForSessionSignup, (err) => {
       if (err) {
         console.error('[POST /api/auth/signup] Error during login:', err);
@@ -149,13 +152,15 @@ router.post('/login', (req, res, next) => {
         // Get AuthenticatedUserPayload for session
         // Ensure userFromPassport.email exists before calling getUserByEmail
         if (!userFromPassport.email) {
-            console.error('[POST /api/auth/login] User from passport missing email');
-            return res.status(500).json({ message: 'Error preparing user session data' });
+          console.error('[POST /api/auth/login] User from passport missing email');
+          return res.status(500).json({ message: 'Error preparing user session data' });
         }
         const payloadForSessionLogin = await getUserByEmail(userFromPassport.email);
         if (!payloadForSessionLogin) {
-            console.error('[POST /api/auth/login] Failed to retrieve payload for session after login attempt');
-            return res.status(500).json({ message: 'Error preparing user session' });
+          console.error(
+            '[POST /api/auth/login] Failed to retrieve payload for session after login attempt'
+          );
+          return res.status(500).json({ message: 'Error preparing user session' });
         }
 
         req.login(payloadForSessionLogin, (errLogin) => {

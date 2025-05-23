@@ -62,4 +62,4 @@ class LoggerService {
   }
 }
 
-export const logger = LoggerService.getInstance(); 
+export const logger = LoggerService.getInstance();

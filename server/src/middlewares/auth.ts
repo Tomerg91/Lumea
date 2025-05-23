@@ -43,9 +43,10 @@ export const isAuthenticated = async (
 
       const plainUser = userFromDb.toObject();
       const populatedRole = plainUser.role as IRole;
-      const roleName = (populatedRole && typeof populatedRole === 'object' && populatedRole.name) 
-                       ? populatedRole.name 
-                       : 'client';
+      const roleName =
+        populatedRole && typeof populatedRole === 'object' && populatedRole.name
+          ? populatedRole.name
+          : 'client';
 
       req.user = {
         id: plainUser._id.toString(),

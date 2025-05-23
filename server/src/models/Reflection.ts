@@ -4,7 +4,12 @@ import mongoose, { Schema, Document } from 'mongoose';
 export type QuestionType = 'text' | 'scale' | 'multiple_choice' | 'yes_no' | 'rich_text';
 
 // Reflection categories based on Satya Method
-export type ReflectionCategory = 'self_awareness' | 'patterns' | 'growth_opportunities' | 'action_commitments' | 'gratitude';
+export type ReflectionCategory =
+  | 'self_awareness'
+  | 'patterns'
+  | 'growth_opportunities'
+  | 'action_commitments'
+  | 'gratitude';
 
 // Individual question definition
 export interface IReflectionQuestion {
@@ -40,90 +45,106 @@ export interface IReflection extends Document {
   version: number; // For handling concurrent edits
   estimatedCompletionMinutes?: number;
   actualCompletionMinutes?: number;
+  sharedWithCoach?: boolean;
+  sharedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
 
 // Answer subdocument schema
-const reflectionAnswerSchema = new Schema<IReflectionAnswer>({
-  questionId: {
-    type: String,
-    required: true,
+const reflectionAnswerSchema = new Schema<IReflectionAnswer>(
+  {
+    questionId: {
+      type: String,
+      required: true,
+    },
+    value: {
+      type: Schema.Types.Mixed, // Can be string, number, or boolean
+      required: true,
+    },
+    followUpAnswer: {
+      type: String,
+      required: false,
+    },
   },
-  value: {
-    type: Schema.Types.Mixed, // Can be string, number, or boolean
-    required: true,
-  },
-  followUpAnswer: {
-    type: String,
-    required: false,
-  },
-}, { _id: false });
+  { _id: false }
+);
 
 // Main reflection schema
-const reflectionSchema = new Schema<IReflection>({
-  sessionId: {
-    type: Schema.Types.ObjectId,
-    ref: 'CoachingSession',
-    required: true,
-    index: true,
+const reflectionSchema = new Schema<IReflection>(
+  {
+    sessionId: {
+      type: Schema.Types.ObjectId,
+      ref: 'CoachingSession',
+      required: true,
+      index: true,
+    },
+    clientId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+    coachId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+    answers: [reflectionAnswerSchema],
+    status: {
+      type: String,
+      enum: ['draft', 'submitted'],
+      default: 'draft',
+      required: true,
+    },
+    submittedAt: {
+      type: Date,
+      required: false,
+    },
+    lastSavedAt: {
+      type: Date,
+      default: Date.now,
+      required: true,
+    },
+    version: {
+      type: Number,
+      default: 1,
+      required: true,
+    },
+    estimatedCompletionMinutes: {
+      type: Number,
+      required: false,
+    },
+    actualCompletionMinutes: {
+      type: Number,
+      required: false,
+    },
+    sharedWithCoach: {
+      type: Boolean,
+      required: false,
+    },
+    sharedAt: {
+      type: Date,
+      required: false,
+    },
   },
-  clientId: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    index: true,
-  },
-  coachId: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    index: true,
-  },
-  answers: [reflectionAnswerSchema],
-  status: {
-    type: String,
-    enum: ['draft', 'submitted'],
-    default: 'draft',
-    required: true,
-  },
-  submittedAt: {
-    type: Date,
-    required: false,
-  },
-  lastSavedAt: {
-    type: Date,
-    default: Date.now,
-    required: true,
-  },
-  version: {
-    type: Number,
-    default: 1,
-    required: true,
-  },
-  estimatedCompletionMinutes: {
-    type: Number,
-    required: false,
-  },
-  actualCompletionMinutes: {
-    type: Number,
-    required: false,
-  },
-}, {
-  timestamps: true,
-});
+  {
+    timestamps: true,
+  }
+);
 
 // Compound index for unique reflection per session
 reflectionSchema.index({ sessionId: 1, clientId: 1 }, { unique: true });
 
 // Pre-save middleware to update lastSavedAt
-reflectionSchema.pre('save', function(next) {
+reflectionSchema.pre('save', function (next) {
   this.lastSavedAt = new Date();
   next();
 });
 
 // Static method to get reflection questions template
-reflectionSchema.statics.getQuestionTemplate = function(): IReflectionQuestion[] {
+reflectionSchema.statics.getQuestionTemplate = function (): IReflectionQuestion[] {
   return [
     // Self-awareness questions
     {
@@ -145,7 +166,7 @@ reflectionSchema.statics.getQuestionTemplate = function(): IReflectionQuestion[]
       scaleLabels: { min: 'Low awareness', max: 'High awareness' },
       order: 2,
     },
-    
+
     // Patterns questions
     {
       id: 'patterns_1',
@@ -164,7 +185,7 @@ reflectionSchema.statics.getQuestionTemplate = function(): IReflectionQuestion[]
       followUpQuestion: 'What specific pattern would you like to work on?',
       order: 4,
     },
-    
+
     // Growth opportunities
     {
       id: 'growth_1',
@@ -187,11 +208,11 @@ reflectionSchema.statics.getQuestionTemplate = function(): IReflectionQuestion[]
         'Life goals and direction',
         'Self-compassion',
         'Boundary setting',
-        'Other'
+        'Other',
       ],
       order: 6,
     },
-    
+
     // Action commitments
     {
       id: 'action_1',
@@ -212,7 +233,7 @@ reflectionSchema.statics.getQuestionTemplate = function(): IReflectionQuestion[]
       scaleLabels: { min: 'Not confident', max: 'Very confident' },
       order: 8,
     },
-    
+
     // Gratitude
     {
       id: 'gratitude_1',

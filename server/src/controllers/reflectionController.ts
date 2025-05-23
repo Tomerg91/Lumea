@@ -2,7 +2,11 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import mongoose from 'mongoose';
 import { Reflection, IReflectionAnswer, IReflectionQuestion } from '../models/Reflection';
-import { ReflectionTemplates, ReflectionTemplateType, IReflectionTemplate } from '../models/ReflectionTemplate';
+import {
+  ReflectionTemplates,
+  ReflectionTemplateType,
+  IReflectionTemplate,
+} from '../models/ReflectionTemplate';
 import { CoachingSession } from '../models/CoachingSession';
 import { User } from '../models/User';
 
@@ -30,7 +34,7 @@ export const reflectionController = {
       }
 
       const sessionId = req.params.sessionId;
-      const templateType = req.query.template as ReflectionTemplateType || 'standard';
+      const templateType = (req.query.template as ReflectionTemplateType) || 'standard';
 
       // Validate ObjectId format
       if (!mongoose.Types.ObjectId.isValid(sessionId)) {
@@ -57,15 +61,15 @@ export const reflectionController = {
 
       // Only allow reflection forms for completed sessions
       if (session.status !== 'completed') {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: 'Reflection forms are only available for completed sessions',
-          sessionStatus: session.status 
+          sessionStatus: session.status,
         });
       }
 
       // Get the reflection template
       const template = ReflectionTemplates.getTemplate(templateType);
-      
+
       // Also provide backward-compatible simple questions
       const questions = ReflectionTemplates.templateToQuestions(template);
 
@@ -167,9 +171,9 @@ export const reflectionController = {
 
       // Only allow reflections for completed sessions
       if (session.status !== 'completed') {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: 'Reflections can only be saved for completed sessions',
-          sessionStatus: session.status 
+          sessionStatus: session.status,
         });
       }
 
@@ -178,14 +182,14 @@ export const reflectionController = {
 
       if (reflection) {
         // Update existing reflection
-        reflection.answers = validatedData.answers;
+        reflection.answers = validatedData.answers as IReflectionAnswer[];
         reflection.status = validatedData.status || reflection.status;
         reflection.version += 1; // Increment version for concurrency control
-        
+
         if (validatedData.estimatedCompletionMinutes) {
           reflection.estimatedCompletionMinutes = validatedData.estimatedCompletionMinutes;
         }
-        
+
         if (validatedData.actualCompletionMinutes) {
           reflection.actualCompletionMinutes = validatedData.actualCompletionMinutes;
         }
@@ -216,7 +220,10 @@ export const reflectionController = {
       await reflection.populate('coachId', 'firstName lastName email');
 
       res.json({
-        message: validatedData.status === 'submitted' ? 'Reflection submitted successfully' : 'Reflection saved as draft',
+        message:
+          validatedData.status === 'submitted'
+            ? 'Reflection submitted successfully'
+            : 'Reflection saved as draft',
         reflection,
       });
     } catch (error) {
@@ -251,10 +258,7 @@ export const reflectionController = {
       }
 
       // Only clients can delete their own reflections (and admins)
-      if (
-        req.user.role !== 'admin' &&
-        reflection.clientId.toString() !== req.user.id.toString()
-      ) {
+      if (req.user.role !== 'admin' && reflection.clientId.toString() !== req.user.id.toString()) {
         return res.status(403).json({ error: 'Not authorized to delete this reflection' });
       }
 
@@ -281,7 +285,7 @@ export const reflectionController = {
 
       // Only clients can access this endpoint (or admins with clientId param)
       let clientId = req.user.id;
-      
+
       if (req.user.role === 'admin' && req.query.clientId) {
         clientId = req.query.clientId as string;
       } else if (req.user.role !== 'client') {
@@ -368,6 +372,304 @@ export const reflectionController = {
     } catch (error) {
       console.error('Error getting coach reflections:', error);
       res.status(500).json({ error: 'Failed to get coach reflections' });
+    }
+  },
+
+  // Create a new reflection
+  async createReflection(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      // Validate request body
+      const validatedData = saveReflectionSchema.parse(req.body);
+      const { sessionId } = req.body;
+
+      if (!sessionId || !mongoose.Types.ObjectId.isValid(sessionId)) {
+        return res.status(400).json({ error: 'Valid session ID is required' });
+      }
+
+      // Check if session exists and verify it's completed
+      const session = await CoachingSession.findById(sessionId);
+
+      if (!session) {
+        return res.status(404).json({ error: 'Session not found' });
+      }
+
+      // Only clients can create reflections for their own sessions
+      if (req.user.role !== 'admin' && session.clientId.toString() !== req.user.id.toString()) {
+        return res.status(403).json({ error: 'Only clients can create their own reflections' });
+      }
+
+      // Only allow reflections for completed sessions
+      if (session.status !== 'completed') {
+        return res.status(400).json({
+          error: 'Reflections can only be created for completed sessions',
+          sessionStatus: session.status,
+        });
+      }
+
+      // Check if reflection already exists
+      const existingReflection = await Reflection.findOne({ sessionId, clientId: req.user.id });
+      if (existingReflection) {
+        return res.status(409).json({ error: 'Reflection already exists for this session' });
+      }
+
+      // Create new reflection
+      const reflection = new Reflection({
+        sessionId,
+        clientId: req.user.id,
+        coachId: session.coachId,
+        answers: validatedData.answers,
+        status: validatedData.status || 'draft',
+        estimatedCompletionMinutes: validatedData.estimatedCompletionMinutes,
+        actualCompletionMinutes: validatedData.actualCompletionMinutes,
+        submittedAt: validatedData.status === 'submitted' ? new Date() : undefined,
+      });
+
+      await reflection.save();
+
+      // Populate related data for response
+      await reflection.populate('clientId', 'firstName lastName email');
+      await reflection.populate('coachId', 'firstName lastName email');
+
+      res.status(201).json({
+        message:
+          validatedData.status === 'submitted'
+            ? 'Reflection submitted successfully'
+            : 'Reflection created as draft',
+        reflection,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: 'Validation failed', details: error.errors });
+      } else {
+        console.error('Error creating reflection:', error);
+        res.status(500).json({ error: 'Failed to create reflection' });
+      }
+    }
+  },
+
+  // Get all reflections with optional filtering
+  async getReflections(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const skip = (page - 1) * limit;
+      const sessionId = req.query.sessionId as string;
+
+      // Build query based on user role
+      const query: any = {};
+
+      if (req.user.role === 'client') {
+        query.clientId = req.user.id;
+      } else if (req.user.role === 'coach') {
+        query.coachId = req.user.id;
+        query.status = 'submitted'; // Coaches only see submitted reflections
+      }
+      // Admins can see all reflections (no additional filter)
+
+      // Add session filter if provided
+      if (sessionId && mongoose.Types.ObjectId.isValid(sessionId)) {
+        query.sessionId = sessionId;
+      }
+
+      const reflections = await Reflection.find(query)
+        .populate({
+          path: 'sessionId',
+          select: 'date status notes',
+        })
+        .populate('clientId', 'firstName lastName email')
+        .populate('coachId', 'firstName lastName email')
+        .sort({ submittedAt: -1, lastSavedAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+      const total = await Reflection.countDocuments(query);
+
+      res.json({
+        reflections,
+        pagination: {
+          total,
+          page,
+          limit,
+          pages: Math.ceil(total / limit),
+        },
+      });
+    } catch (error) {
+      console.error('Error getting reflections:', error);
+      res.status(500).json({ error: 'Failed to get reflections' });
+    }
+  },
+
+  // Get all reflections for a specific session
+  async getSessionReflections(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const sessionId = req.params.sessionId;
+
+      if (!mongoose.Types.ObjectId.isValid(sessionId)) {
+        return res.status(400).json({ error: 'Invalid session ID format' });
+      }
+
+      // Check if session exists and user has access
+      const session = await CoachingSession.findById(sessionId);
+
+      if (!session) {
+        return res.status(404).json({ error: 'Session not found' });
+      }
+
+      // Check authorization
+      if (
+        req.user.role !== 'admin' &&
+        session.clientId.toString() !== req.user.id.toString() &&
+        session.coachId.toString() !== req.user.id.toString()
+      ) {
+        return res.status(403).json({ error: 'Not authorized to access this session' });
+      }
+
+      // Build query based on user role
+      const query: any = { sessionId };
+
+      if (req.user.role === 'coach') {
+        query.status = 'submitted'; // Coaches only see submitted reflections
+      }
+
+      const reflections = await Reflection.find(query)
+        .populate('clientId', 'firstName lastName email')
+        .populate('coachId', 'firstName lastName email')
+        .sort({ submittedAt: -1, lastSavedAt: -1 });
+
+      res.json({ reflections });
+    } catch (error) {
+      console.error('Error getting session reflections:', error);
+      res.status(500).json({ error: 'Failed to get session reflections' });
+    }
+  },
+
+  // Update an existing reflection
+  async updateReflection(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const reflectionId = req.params.id;
+
+      if (!mongoose.Types.ObjectId.isValid(reflectionId)) {
+        return res.status(400).json({ error: 'Invalid reflection ID format' });
+      }
+
+      // Validate request body
+      const validatedData = saveReflectionSchema.parse(req.body);
+
+      // Find the reflection
+      const reflection = await Reflection.findById(reflectionId);
+
+      if (!reflection) {
+        return res.status(404).json({ error: 'Reflection not found' });
+      }
+
+      // Only clients can update their own reflections (and admins)
+      if (req.user.role !== 'admin' && reflection.clientId.toString() !== req.user.id.toString()) {
+        return res.status(403).json({ error: 'Not authorized to update this reflection' });
+      }
+
+      // Don't allow updates to submitted reflections unless admin
+      if (reflection.status === 'submitted' && req.user.role !== 'admin') {
+        return res.status(400).json({ error: 'Cannot update submitted reflections' });
+      }
+
+      // Update reflection
+      reflection.answers = validatedData.answers as IReflectionAnswer[];
+      reflection.status = validatedData.status || reflection.status;
+      reflection.version += 1; // Increment version for concurrency control
+
+      if (validatedData.estimatedCompletionMinutes) {
+        reflection.estimatedCompletionMinutes = validatedData.estimatedCompletionMinutes;
+      }
+
+      if (validatedData.actualCompletionMinutes) {
+        reflection.actualCompletionMinutes = validatedData.actualCompletionMinutes;
+      }
+
+      if (validatedData.status === 'submitted' && !reflection.submittedAt) {
+        reflection.submittedAt = new Date();
+      }
+
+      await reflection.save();
+
+      // Populate related data for response
+      await reflection.populate('clientId', 'firstName lastName email');
+      await reflection.populate('coachId', 'firstName lastName email');
+
+      res.json({
+        message:
+          validatedData.status === 'submitted'
+            ? 'Reflection submitted successfully'
+            : 'Reflection updated successfully',
+        reflection,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: 'Validation failed', details: error.errors });
+      } else {
+        console.error('Error updating reflection:', error);
+        res.status(500).json({ error: 'Failed to update reflection' });
+      }
+    }
+  },
+
+  // Share reflection with coach
+  async shareWithCoach(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const reflectionId = req.params.id;
+
+      if (!mongoose.Types.ObjectId.isValid(reflectionId)) {
+        return res.status(400).json({ error: 'Invalid reflection ID format' });
+      }
+
+      // Find the reflection
+      const reflection = await Reflection.findById(reflectionId);
+
+      if (!reflection) {
+        return res.status(404).json({ error: 'Reflection not found' });
+      }
+
+      // Only clients can share their own reflections
+      if (req.user.role !== 'admin' && reflection.clientId.toString() !== req.user.id.toString()) {
+        return res.status(403).json({ error: 'Not authorized to share this reflection' });
+      }
+
+      // Can only share submitted reflections
+      if (reflection.status !== 'submitted') {
+        return res.status(400).json({ error: 'Only submitted reflections can be shared' });
+      }
+
+      // Update reflection to mark as shared
+      reflection.sharedWithCoach = true;
+      reflection.sharedAt = new Date();
+      await reflection.save();
+
+      res.json({
+        message: 'Reflection shared with coach successfully',
+        reflection,
+      });
+    } catch (error) {
+      console.error('Error sharing reflection:', error);
+      res.status(500).json({ error: 'Failed to share reflection' });
     }
   },
 };

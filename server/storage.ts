@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { drizzle } from 'drizzle-orm/node-postgres';
 import {
   users,
   userLinks,
@@ -7,27 +8,42 @@ import {
   payments,
   resources,
   resourceAccess,
+} from './drizzle/schema';
+import {
   type User,
-  type InsertUser,
   type UserLink,
-  type InsertUserLink,
   type Session,
-  type InsertSession,
   type Reflection,
-  type InsertReflection,
   type Payment,
-  type InsertPayment,
   type Resource,
-  type InsertResource,
   type ResourceAccess,
+  type InsertUser,
+  type InsertUserLink,
+  type InsertSession,
+  type InsertReflection,
+  type InsertPayment,
+  type InsertResource,
   type InsertResourceAccess,
-} from '@shared/schema';
+} from './drizzle/schema';
+import { SessionStore } from './lib/session-store';
+import {
+  pool,
+  type SelectUser,
+  inArray,
+  like,
+  and,
+  or,
+  gt,
+  lt,
+  desc,
+  asc,
+} from 'drizzle-orm';
+import crypto from 'crypto';
+import util from 'util';
 import session from 'express-session';
 import createMemoryStore from 'memorystore';
 import type { Store as SessionStore } from 'express-session';
-import { db, pool } from './db.js';
 import connectPgSimple from 'connect-pg-simple';
-import { eq, inArray, like, and, or, gt, lt, desc, asc } from 'drizzle-orm';
 import { ExtendedSession, ExtendedReflection } from './src/types/schema-types';
 
 const MemoryStore = createMemoryStore(session);
@@ -177,7 +193,7 @@ export class MemStorage implements IStorage {
     }
 
     // Generate a unique token
-    const token = require('crypto').randomBytes(32).toString('hex');
+    const token = crypto.randomBytes(32).toString('hex');
 
     // Store token with expiration (24 hours from now)
     const expiry = new Date();
@@ -216,8 +232,8 @@ export class MemStorage implements IStorage {
     }
 
     // Hash the new password
-    const salt = require('crypto').randomBytes(16).toString('hex');
-    const buf = await require('util').promisify(require('crypto').scrypt)(newPassword, salt, 64);
+    const salt = crypto.randomBytes(16).toString('hex');
+    const buf = await util.promisify(crypto.scrypt)(newPassword, salt, 64);
     const hashedPassword = `${buf.toString('hex')}.${salt}`;
 
     // Update the user's password

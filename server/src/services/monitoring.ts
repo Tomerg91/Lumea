@@ -41,4 +41,4 @@ export const monitoring = MonitoringService.getInstance();
 
 // To initialize early in your app (e.g., top of server/src/index.ts):
 // import './services/monitoring'; // This will run the constructor in MonitoringService.ts
-// MonitoringService.getInstance(); // Or call getInstance() to ensure constructor runs 
+// MonitoringService.getInstance(); // Or call getInstance() to ensure constructor runs

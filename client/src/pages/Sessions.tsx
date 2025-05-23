@@ -25,20 +25,22 @@ import {
 } from '@/components/ui/select';
 import MainLayout from '@/components/MainLayout';
 import { useToast } from '@/hooks/use-toast';
-import { fetchSessions, createSession as apiCreateSession } from '@/services/sessionService';
+import { fetchSessions, createSession as apiCreateSession, CreateSessionData } from '@/services/sessionService';
+import { Session } from '@/components/SessionList';
+import { useAuth } from '@/contexts/AuthContext';
 
-export type Session = {
-  id: string;
+// Local interface for the new session form data
+interface NewSessionFormData {
   date: Date;
   time: string;
   coach: string;
   type: string;
-  status: 'upcoming' | 'completed' | 'cancelled';
-  notes?: string;
-};
+  notes: string;
+}
 
 const Sessions = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -66,7 +68,7 @@ const Sessions = () => {
     loadSessions();
   }, [toast]);
 
-  const [newSessionData, setNewSessionData] = useState({
+  const [newSessionData, setNewSessionData] = useState<NewSessionFormData>({
     date: new Date(),
     time: '',
     coach: '',
@@ -77,9 +79,25 @@ const Sessions = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleCreateSession = async () => {
+    if (!user?.id) {
+      toast({
+        title: 'Error',
+        description: 'You must be logged in to create a session.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const createdSession = await apiCreateSession(newSessionData);
+      // Transform form data to match CreateSessionData interface
+      const createSessionPayload: CreateSessionData = {
+        clientId: user.id,
+        date: format(newSessionData.date, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\''),
+        notes: newSessionData.notes,
+      };
+
+      const createdSession = await apiCreateSession(createSessionPayload);
       setSessions(prevSessions => [...prevSessions, createdSession]);
       setIsDialogOpen(false);
       setNewSessionData({
@@ -105,7 +123,7 @@ const Sessions = () => {
   };
 
   const sessionsByDate = sessions.reduce<Record<string, Session[]>>((acc, session) => {
-    const dateStr = format(session.date, 'yyyy-MM-dd');
+    const dateStr = format(new Date(session.date), 'yyyy-MM-dd');
     if (!acc[dateStr]) {
       acc[dateStr] = [];
     }
@@ -374,14 +392,14 @@ const Sessions = () => {
                       </Card>
                     )}
                     {selectedSessions
-                      .filter((session) => session.status === 'upcoming')
+                      .filter((session) => session.status === 'pending')
                       .map((session) => (
-                        <Card key={session.id} className="lumea-card mb-4">
+                        <Card key={session._id} className="lumea-card mb-4">
                           <CardHeader className="pb-2">
                             <CardTitle>
-                              {session.time} - {session.type}
+                              {format(new Date(session.date), 'HH:mm')} - {session.client ? `${session.client.firstName} ${session.client.lastName}` : 'Session'}
                             </CardTitle>
-                            <CardDescription>with {session.coach}</CardDescription>
+                            <CardDescription>with Coach</CardDescription>
                           </CardHeader>
                           <CardContent>
                             {session.notes && <p className="text-sm mb-4">{session.notes}</p>}
@@ -418,18 +436,18 @@ const Sessions = () => {
                 ) : (
                   <>
                     {sessions
-                      .filter((session) => session.status === 'upcoming')
-                      .sort((a, b) => a.date.getTime() - b.date.getTime())
+                      .filter((session) => session.status === 'pending')
+                      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
                       .map((session) => (
-                        <Card key={session.id} className="lumea-card mb-4">
+                        <Card key={session._id} className="lumea-card mb-4">
                           <CardHeader className="pb-2">
                             <div className="flex justify-between">
                               <div>
                                 <CardTitle>
-                                  {format(session.date, 'MMMM d, yyyy')} at {session.time}
+                                  {format(new Date(session.date), 'MMMM d, yyyy')} at {format(new Date(session.date), 'HH:mm')}
                                 </CardTitle>
                                 <CardDescription>
-                                  {session.type} with {session.coach}
+                                  Session with {session.client ? `${session.client.firstName} ${session.client.lastName}` : 'Coach'}
                                 </CardDescription>
                               </div>
                               <div className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-medium px-2.5 py-0.5 rounded-full h-fit">
@@ -468,7 +486,7 @@ const Sessions = () => {
                           </CardContent>
                         </Card>
                       ))}
-                    {sessions.filter((session) => session.status === 'upcoming').length === 0 && (
+                    {sessions.filter((session) => session.status === 'pending').length === 0 && (
                       <Card className="lumea-card">
                         <CardContent className="flex flex-col items-center justify-center p-8 text-center">
                           <svg
@@ -509,17 +527,17 @@ const Sessions = () => {
             <div className="grid grid-cols-1 gap-4">
               {sessions
                 .filter((session) => session.status === 'completed')
-                .sort((a, b) => b.date.getTime() - a.date.getTime())
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                 .map((session) => (
-                  <Card key={session.id} className="lumea-card">
+                  <Card key={session._id} className="lumea-card">
                     <CardHeader className="pb-2">
                       <div className="flex justify-between">
                         <div>
                           <CardTitle>
-                            {format(session.date, 'MMMM d, yyyy')} at {session.time}
+                            {format(new Date(session.date), 'MMMM d, yyyy')} at {format(new Date(session.date), 'HH:mm')}
                           </CardTitle>
                           <CardDescription>
-                            {session.type} with {session.coach}
+                            Session with {session.client ? `${session.client.firstName} ${session.client.lastName}` : 'Coach'}
                           </CardDescription>
                         </div>
                         <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-medium px-2.5 py-0.5 rounded-full h-fit">
@@ -569,15 +587,15 @@ const Sessions = () => {
               {sessions
                 .filter((session) => session.status === 'cancelled')
                 .map((session) => (
-                  <Card key={session.id} className="lumea-card">
+                  <Card key={session._id} className="lumea-card">
                     <CardHeader className="pb-2">
                       <div className="flex justify-between">
                         <div>
                           <CardTitle>
-                            {format(session.date, 'MMMM d, yyyy')} at {session.time}
+                            {format(new Date(session.date), 'MMMM d, yyyy')} at {format(new Date(session.date), 'HH:mm')}
                           </CardTitle>
                           <CardDescription>
-                            {session.type} with {session.coach}
+                            Session with {session.client ? `${session.client.firstName} ${session.client.lastName}` : 'Coach'}
                           </CardDescription>
                         </div>
                         <div className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs font-medium px-2.5 py-0.5 rounded-full h-fit">

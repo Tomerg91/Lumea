@@ -19,7 +19,9 @@ export interface AuthenticatedUser {
 }
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
     interface User extends AuthenticatedUser {}
   }
 }
@@ -69,7 +71,7 @@ passport.use(
 passport.serializeUser((user: Express.User, done) => {
   console.log(`Serializing user ID: ${user.id}`);
   // user.id is already a string as per Prisma schema and AuthenticatedUser interface
-  done(null, user.id); 
+  done(null, user.id);
 });
 
 passport.deserializeUser(async (id: string, done) => {

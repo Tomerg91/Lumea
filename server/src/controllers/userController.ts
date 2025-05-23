@@ -78,7 +78,9 @@ export const userController = {
       if (Object.keys(dataToUpdate).length === 0) {
         // If only bio was provided, and it's commented out, this might trigger.
         // For now, if only name is updatable, this means name was not provided.
-        return res.status(400).json({ message: 'No updateable fields provided (name is required if bio is disabled)' });
+        return res
+          .status(400)
+          .json({ message: 'No updateable fields provided (name is required if bio is disabled)' });
       }
 
       const updatedUser = await prisma.user.update({

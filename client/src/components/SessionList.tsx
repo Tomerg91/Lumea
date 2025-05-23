@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { format, isToday, isYesterday, isSameWeek, isSameMonth } from 'date-fns';
+import { format, isToday, isYesterday, isSameWeek, isSameMonth, differenceInHours } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -87,34 +87,25 @@ const StatusChangeDropdown: React.FC<{
 
   // Define valid status transitions based on business logic
   const getValidTransitions = (status: SessionStatus, sessionDate: string): SessionStatus[] => {
-    const sessionDateTime = new Date(sessionDate);
+    const sessionTime = new Date(sessionDate);
     const now = new Date();
-    const hoursUntilSession = (sessionDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-    const daysDifference = Math.abs((sessionDateTime.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    const isSameDay = sessionDateTime.toDateString() === now.toDateString();
-    
+    const hoursUntilSession = differenceInHours(sessionTime, now);
+
     switch (status) {
-      case 'pending':
-        const validFromPending: SessionStatus[] = [];
+      case 'pending': {
+        const validFromPending: SessionStatus[] = ['in-progress', 'completed'];
         
-        // Can mark as in-progress if within 1 day
-        if (daysDifference <= 1) {
-          validFromPending.push('in-progress');
-        }
-        
-        // Can cancel if more than 2 hours away or if in the past
+        // Can only cancel if more than 2 hours away
         if (hoursUntilSession <= 0 || hoursUntilSession >= 2) {
           validFromPending.push('cancelled');
         }
         
-        // Can mark as completed if it's same day or past
-        if (isSameDay || sessionDateTime <= now) {
-          validFromPending.push('completed');
-        }
-        
         return validFromPending;
         
-      case 'in-progress':
+        break;
+      }
+      
+      case 'in-progress': {
         const validFromInProgress: SessionStatus[] = ['completed'];
         
         // Can still cancel if more than 2 hours away
@@ -123,6 +114,9 @@ const StatusChangeDropdown: React.FC<{
         }
         
         return validFromInProgress;
+        
+        break;
+      }
         
       case 'completed':
         // Completed sessions cannot be changed

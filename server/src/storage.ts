@@ -227,7 +227,7 @@ export async function getFullUserByEmailForAuth(email: string): Promise<IUser | 
   try {
     // console.log('[getFullUserByEmailForAuth] Fetching full user with email:', email);
     // Fetches the user without populating role, includes passwordHash and passwordSalt
-    const user = await User.findOne({ email }); 
+    const user = await User.findOne({ email });
     if (!user) {
       // console.log('[getFullUserByEmailForAuth] User not found for email:', email);
       return null;
@@ -237,7 +237,7 @@ export async function getFullUserByEmailForAuth(email: string): Promise<IUser | 
   } catch (error) {
     // console.error('[getFullUserByEmailForAuth] Error fetching user:', error);
     // Avoid throwing generic error here to let passport handle it or for specific checks
-    return null; 
+    return null;
   }
 }
 

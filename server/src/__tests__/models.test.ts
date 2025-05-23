@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
-import mongoose, { Types } from 'mongoose';
-import { User, IUser } from '../models/User';
-import { Role, IRole } from '../models/Role';
-import { Session, ISession } from '../models/Session';
-import { Reflection, IReflection } from '../models/Reflection';
-import { CoachNote, ICoachNote } from '../models/CoachNote';
-import { Resource, IResource } from '../models/Resource';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
+import { Types } from 'mongoose';
+import { User } from '../models/User';
+import { Role } from '../models/Role';
+import { Session } from '../models/Session';
+import { Reflection } from '../models/Reflection';
+import { CoachNote } from '../models/CoachNote';
+import { Resource } from '../models/Resource';
 
 // Mocks for Mongoose to avoid actual DB calls
 vi.mock('mongoose', async () => {
@@ -168,25 +168,47 @@ describe('Mongoose Models', () => {
 
   describe('Reflection Model', () => {
     it('should create a valid reflection', async () => {
+      const sessionId = new Types.ObjectId();
+      const clientId = new Types.ObjectId();
+      const coachId = new Types.ObjectId();
+
       const reflectionData = {
-        user: userId,
-        title: 'My Reflection',
-        content: 'This is a reflection on my progress.',
-        visibility: 'private' as const,
+        sessionId,
+        clientId,
+        coachId,
+        answers: [
+          {
+            questionId: 'self_awareness_1',
+            value: 'I discovered that I have a pattern of avoiding difficult conversations.',
+          },
+          {
+            questionId: 'self_awareness_2',
+            value: 7,
+          }
+        ],
+        status: 'submitted' as const,
+        submittedAt: new Date(),
       };
 
       const reflection = new Reflection(reflectionData);
       expect(reflection).toBeDefined();
-      expect(reflection.user).toEqual(userId);
-      expect(reflection.title).toBe('My Reflection');
-      expect(reflection.content).toBe('This is a reflection on my progress.');
-      expect(reflection.visibility).toBe('private');
+      expect(reflection.sessionId).toEqual(sessionId);
+      expect(reflection.clientId).toEqual(clientId);
+      expect(reflection.coachId).toEqual(coachId);
+      expect(reflection.status).toBe('submitted');
+      expect(reflection.answers).toHaveLength(2);
+      expect(reflection.answers[0].questionId).toBe('self_awareness_1');
     });
 
-    it('should require user and content', async () => {
+    it('should require sessionId, clientId, and coachId', async () => {
       const reflectionData = {
-        title: 'Incomplete Reflection',
-        visibility: 'private' as const,
+        answers: [
+          {
+            questionId: 'test_question',
+            value: 'Test answer',
+          }
+        ],
+        status: 'draft' as const,
       };
 
       const reflection = new Reflection(reflectionData);
@@ -195,17 +217,41 @@ describe('Mongoose Models', () => {
       await expect(reflection.validate()).rejects.toThrow();
     });
 
-    it('should validate visibility enum values', async () => {
+    it('should validate status enum values', async () => {
+      const sessionId = new Types.ObjectId();
+      const clientId = new Types.ObjectId();
+      const coachId = new Types.ObjectId();
+
       const reflectionData = {
-        user: userId,
-        content: 'Test content',
-        visibility: 'invalid-visibility' as any,
+        sessionId,
+        clientId,
+        coachId,
+        answers: [],
+        status: 'invalid-status' as any,
       };
 
       const reflection = new Reflection(reflectionData);
 
       // Validation should fail due to invalid enum value
       await expect(reflection.validate()).rejects.toThrow();
+    });
+
+    it('should default status to draft and set lastSavedAt', async () => {
+      const sessionId = new Types.ObjectId();
+      const clientId = new Types.ObjectId();
+      const coachId = new Types.ObjectId();
+
+      const reflectionData = {
+        sessionId,
+        clientId,
+        coachId,
+        answers: [],
+      };
+
+      const reflection = new Reflection(reflectionData);
+      expect(reflection.status).toBe('draft');
+      expect(reflection.version).toBe(1);
+      expect(reflection.lastSavedAt).toBeDefined();
     });
   });
 

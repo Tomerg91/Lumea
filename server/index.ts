@@ -47,8 +47,8 @@ const redisClient = createClient({
   url: process.env.REDIS_URL || 'redis://localhost:6379',
   socket: {
     connectTimeout: 5000, // Limit connection attempts to 5 seconds
-    reconnectStrategy: false // Disable auto-reconnection attempts
-  }
+    reconnectStrategy: false, // Disable auto-reconnection attempts
+  },
 });
 
 // Setup express app but don't start listening until session store is ready
@@ -59,7 +59,7 @@ const prisma = new PrismaClient();
 // Initialize server with appropriate session store
 async function initializeServer() {
   let sessionStore;
-  
+
   try {
     // Try to connect to Redis with a timeout
     console.log('Attempting to connect to Redis...');
@@ -68,10 +68,10 @@ async function initializeServer() {
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error('Redis connection timeout')), 5000);
     });
-    
+
     await Promise.race([connectPromise, timeoutPromise]);
     console.log('Connected to Redis for session storage');
-    
+
     // Create Redis store for sessions if connection is successful
     sessionStore = new RedisStore({
       client: redisClient,
@@ -81,9 +81,9 @@ async function initializeServer() {
     console.log('Using MemoryStore for session storage - Redis unavailable');
     // Create MemoryStore instance as fallback
     sessionStore = new MemoryStore({
-      checkPeriod: 86400000 // prune expired entries every 24h
+      checkPeriod: 86400000, // prune expired entries every 24h
     });
-    
+
     // If Redis client is still connecting, quit it to prevent repeated errors
     try {
       await redisClient.quit();
@@ -189,7 +189,7 @@ async function initializeServer() {
 }
 
 // Start the server
-initializeServer().catch(err => {
+initializeServer().catch((err) => {
   console.error('Failed to initialize server:', err);
   process.exit(1);
 });

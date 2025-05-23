@@ -107,7 +107,7 @@ export async function handleOAuthLogin(
     // Ensure sensitive fields like passwordHash/passwordSalt are not returned
     // user will be AuthenticatedUserPayload or the plain object from Mongoose createUser, neither have toObject or passwordHash/Salt
     // const userObject =
-    //   user && typeof user.toObject === 'function' ? user.toObject() : user ? { ...user } : null; 
+    //   user && typeof user.toObject === 'function' ? user.toObject() : user ? { ...user } : null;
 
     // if (userObject) {
     //   delete userObject.passwordHash;

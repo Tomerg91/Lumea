@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeAll, afterAll, vi, beforeEach } from 'vitest';
-import mongoose, { Types } from 'mongoose';
+import { describe, it, expect, beforeAll, vi, beforeEach } from 'vitest';
+import { Types } from 'mongoose';
 import jwt from 'jsonwebtoken';
 import {
   generateTokens,

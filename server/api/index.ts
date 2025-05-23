@@ -3,4 +3,4 @@
 
 import app from '../src/index';
 
-export default app; 
+export default app;

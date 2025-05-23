@@ -39,7 +39,8 @@ export function configurePassport() {
           console.log('[LocalStrategy] Attempting to authenticate user:', email);
           const fullUser: IUser | null = await getFullUserByEmailForAuth(email);
 
-          if (!fullUser || !fullUser.passwordHash) { // passwordHash implies passwordSalt also exists if schema is consistent
+          if (!fullUser || !fullUser.passwordHash) {
+            // passwordHash implies passwordSalt also exists if schema is consistent
             console.log('[LocalStrategy] User not found or user data incomplete:', email);
             return done(null, false);
           }
@@ -54,17 +55,21 @@ export function configurePassport() {
 
           // Password is valid, now get the payload for the session
           const authenticatedUserPayload = await getUserByEmail(email);
-          
+
           if (!authenticatedUserPayload) {
             // This should ideally not happen if fullUser was found and password was valid,
             // but as a safeguard if getUserByEmail has further checks or fails.
-            console.error('[LocalStrategy] Could not retrieve AuthenticatedUserPayload for verified user:', email);
-            return done(new Error('User authentication succeeded but failed to prepare session data.'));
+            console.error(
+              '[LocalStrategy] Could not retrieve AuthenticatedUserPayload for verified user:',
+              email
+            );
+            return done(
+              new Error('User authentication succeeded but failed to prepare session data.')
+            );
           }
 
           console.log('[LocalStrategy] Authentication successful for user:', email);
           return done(null, authenticatedUserPayload);
-
         } catch (error) {
           console.error('[LocalStrategy] Error during authentication:', error);
           return done(error);

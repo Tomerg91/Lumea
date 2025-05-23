@@ -38,9 +38,12 @@ const updateSessionStatusSchema = z.object({
 // Validation schema for updating session details
 const updateSessionDetailsSchema = z.object({
   clientId: z.string().optional(),
-  date: z.string().refine((val) => !isNaN(Date.parse(val)), {
-    message: 'Invalid date format',
-  }).optional(),
+  date: z
+    .string()
+    .refine((val) => !isNaN(Date.parse(val)), {
+      message: 'Invalid date format',
+    })
+    .optional(),
   notes: z.string().optional(),
 });
 
@@ -281,35 +284,33 @@ export const sessionController = {
 
       // Prepare update data
       const updateData: any = {};
-      
+
       if (validatedData.date) {
         updateData.date = new Date(validatedData.date);
       }
-      
+
       if (validatedData.notes !== undefined) {
         updateData.notes = validatedData.notes;
       }
-      
+
       if (validatedData.clientId) {
         // Validate that the client exists and belongs to this coach
         const client = await User.findOne({
           _id: validatedData.clientId,
-          role: 'client'
+          role: 'client',
         });
-        
+
         if (!client) {
           return res.status(400).json({ error: 'Invalid client ID' });
         }
-        
+
         updateData.clientId = validatedData.clientId;
       }
 
       // Update the session
-      const updatedSession = await CoachingSession.findByIdAndUpdate(
-        sessionId,
-        updateData,
-        { new: true }
-      )
+      const updatedSession = await CoachingSession.findByIdAndUpdate(sessionId, updateData, {
+        new: true,
+      })
         .populate('clientId', 'firstName lastName email')
         .populate('coachId', 'firstName lastName email')
         .lean();
@@ -515,68 +516,70 @@ export const sessionController = {
 
       // Validate the status update
       const validatedData = updateSessionStatusSchema.parse(req.body);
-      
+
       // Enhanced status transition validation with business logic
       const currentStatus = session.status;
       const newStatus = validatedData.status;
       const sessionDate = new Date(session.date);
       const now = new Date();
-      
+
       // Define valid status transitions
       const validTransitions: Record<SessionStatus, SessionStatus[]> = {
-        'pending': ['in-progress', 'cancelled'],
+        pending: ['in-progress', 'cancelled'],
         'in-progress': ['completed', 'cancelled'],
-        'completed': [], // Completed sessions cannot be changed
-        'cancelled': ['pending'], // Cancelled sessions can only be reset to pending
+        completed: [], // Completed sessions cannot be changed
+        cancelled: ['pending'], // Cancelled sessions can only be reset to pending
       };
-      
+
       // Check if the transition is valid
       if (!validTransitions[currentStatus].includes(newStatus)) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: 'Invalid status transition',
-          details: `Cannot change status from "${currentStatus}" to "${newStatus}". Valid transitions from "${currentStatus}" are: ${validTransitions[currentStatus].join(', ') || 'none'}`
+          details: `Cannot change status from "${currentStatus}" to "${newStatus}". Valid transitions from "${currentStatus}" are: ${validTransitions[currentStatus].join(', ') || 'none'}`,
         });
       }
-      
+
       // Time-based validation for certain transitions
       if (newStatus === 'completed') {
         // Session can only be marked as completed if it's on or after the scheduled date
         if (sessionDate > now) {
-          return res.status(400).json({ 
+          return res.status(400).json({
             error: 'Cannot mark future session as completed',
-            details: `Session is scheduled for ${sessionDate.toISOString()}, but current time is ${now.toISOString()}`
+            details: `Session is scheduled for ${sessionDate.toISOString()}, but current time is ${now.toISOString()}`,
           });
         }
-        
+
         // Session should have been in-progress before being completed (unless it's same day and we allow direct completion)
         const isSameDay = sessionDate.toDateString() === now.toDateString();
         if (currentStatus === 'pending' && !isSameDay) {
-          return res.status(400).json({ 
+          return res.status(400).json({
             error: 'Session must be marked as in-progress before completion',
-            details: 'Please mark the session as in-progress first, then complete it'
+            details: 'Please mark the session as in-progress first, then complete it',
           });
         }
       }
-      
+
       if (newStatus === 'in-progress') {
         // Session should be within reasonable time frame to be marked as in-progress
-        const daysDifference = Math.abs((sessionDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        const daysDifference = Math.abs(
+          (sessionDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+        );
         if (daysDifference > 1) {
-          return res.status(400).json({ 
+          return res.status(400).json({
             error: 'Session date is too far from current date',
-            details: `Session is scheduled for ${sessionDate.toDateString()}, which is ${Math.ceil(daysDifference)} days away`
+            details: `Session is scheduled for ${sessionDate.toDateString()}, which is ${Math.ceil(daysDifference)} days away`,
           });
         }
       }
-      
+
       // Business rule: Only allow cancellation up to a certain time before the session
       if (newStatus === 'cancelled' && currentStatus !== 'cancelled') {
         const hoursUntilSession = (sessionDate.getTime() - now.getTime()) / (1000 * 60 * 60);
         // Allow cancellation if session is more than 2 hours away or if it's in the past
         if (hoursUntilSession > 0 && hoursUntilSession < 2) {
-          return res.status(400).json({ 
+          return res.status(400).json({
             error: 'Cannot cancel session less than 2 hours before scheduled time',
-            details: `Session is in ${Math.ceil(hoursUntilSession)} hour(s). Cancellations must be made at least 2 hours in advance`
+            details: `Session is in ${Math.ceil(hoursUntilSession)} hour(s). Cancellations must be made at least 2 hours in advance`,
           });
         }
       }
@@ -584,7 +587,7 @@ export const sessionController = {
       // Update the session status directly
       const updatedSession = await CoachingSession.findByIdAndUpdate(
         sessionId,
-        { 
+        {
           status: newStatus,
           // Add a status change timestamp for audit purposes
           [`${newStatus}At`]: new Date(),

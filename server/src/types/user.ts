@@ -8,4 +8,4 @@ export interface AuthenticatedUserPayload {
   role: string; // Ensure your middleware provides role as a string
   name?: string;
   // Add any other properties consistently attached to req.user
-} 
+}

@@ -21,15 +21,15 @@ export interface IAdvancedReflectionQuestion extends IReflectionQuestion {
 }
 
 // Template types for different session contexts
-export type ReflectionTemplateType = 
-  | 'standard'           // Regular session reflection
-  | 'breakthrough'       // After major breakthrough sessions
-  | 'challenge'         // When working through difficult topics
-  | 'goal_setting'      // Goal-oriented sessions
-  | 'relationship'      // Relationship-focused sessions
-  | 'career'            // Career/professional focus
-  | 'wellness'          // Health and wellness focus
-  | 'short_form';       // Quick reflection for shorter sessions
+export type ReflectionTemplateType =
+  | 'standard' // Regular session reflection
+  | 'breakthrough' // After major breakthrough sessions
+  | 'challenge' // When working through difficult topics
+  | 'goal_setting' // Goal-oriented sessions
+  | 'relationship' // Relationship-focused sessions
+  | 'career' // Career/professional focus
+  | 'wellness' // Health and wellness focus
+  | 'short_form'; // Quick reflection for shorter sessions
 
 export interface IReflectionTemplate {
   type: ReflectionTemplateType;
@@ -82,7 +82,7 @@ export class ReflectionTemplates {
         {
           id: 'opening',
           title: 'Session Overview',
-          description: 'How did today\'s session feel for you?',
+          description: "How did today's session feel for you?",
           estimatedMinutes: 3,
           questions: [
             {
@@ -90,7 +90,7 @@ export class ReflectionTemplates {
               section: 'opening',
               category: 'self_awareness',
               type: 'scale',
-              question: 'How would you rate your overall experience of today\'s session?',
+              question: "How would you rate your overall experience of today's session?",
               helpText: 'Consider your emotional state, engagement level, and sense of progress',
               required: true,
               scaleMin: 1,
@@ -104,7 +104,7 @@ export class ReflectionTemplates {
               section: 'opening',
               category: 'self_awareness',
               type: 'multiple_choice',
-              question: 'Which words best describe how you\'re feeling right now?',
+              question: "Which words best describe how you're feeling right now?",
               helpText: 'You can select multiple options that resonate',
               required: true,
               options: [
@@ -119,7 +119,7 @@ export class ReflectionTemplates {
                 'Sad',
                 'Angry',
                 'Grateful',
-                'Inspired'
+                'Inspired',
               ],
               order: 2,
               estimatedMinutes: 1,
@@ -138,7 +138,8 @@ export class ReflectionTemplates {
               category: 'self_awareness',
               type: 'rich_text',
               question: 'What did you discover or learn about yourself during this session?',
-              helpText: 'Think about new insights, realizations, or understanding about your thoughts, feelings, behaviors, or patterns',
+              helpText:
+                'Think about new insights, realizations, or understanding about your thoughts, feelings, behaviors, or patterns',
               placeholder: 'I realized that...',
               required: true,
               validationRules: { minLength: 50 },
@@ -151,7 +152,8 @@ export class ReflectionTemplates {
               category: 'self_awareness',
               type: 'scale',
               question: 'How would you rate your level of self-awareness during this session?',
-              helpText: 'Consider how clearly you could see your patterns, motivations, and reactions',
+              helpText:
+                'Consider how clearly you could see your patterns, motivations, and reactions',
               required: true,
               scaleMin: 1,
               scaleMax: 10,
@@ -172,8 +174,10 @@ export class ReflectionTemplates {
               section: 'patterns',
               category: 'patterns',
               type: 'rich_text',
-              question: 'What patterns of thinking, feeling, or behaving did you notice in yourself?',
-              helpText: 'Patterns might be recurring thoughts, emotional reactions, or ways you respond to certain situations',
+              question:
+                'What patterns of thinking, feeling, or behaving did you notice in yourself?',
+              helpText:
+                'Patterns might be recurring thoughts, emotional reactions, or ways you respond to certain situations',
               placeholder: 'I notice that I tend to...',
               required: true,
               validationRules: { minLength: 30 },
@@ -187,7 +191,8 @@ export class ReflectionTemplates {
               type: 'yes_no',
               question: 'Are there any patterns you recognized that you would like to change?',
               required: true,
-              followUpQuestion: 'What specific pattern would you like to work on changing, and why?',
+              followUpQuestion:
+                'What specific pattern would you like to work on changing, and why?',
               order: 6,
               estimatedMinutes: 1,
             },
@@ -204,8 +209,10 @@ export class ReflectionTemplates {
               section: 'growth',
               category: 'growth_opportunities',
               type: 'rich_text',
-              question: 'Where do you see the biggest opportunity for your personal growth right now?',
-              helpText: 'Consider areas where you feel ready to expand, heal, or develop new skills',
+              question:
+                'Where do you see the biggest opportunity for your personal growth right now?',
+              helpText:
+                'Consider areas where you feel ready to expand, heal, or develop new skills',
               placeholder: 'I see an opportunity to grow in...',
               required: true,
               validationRules: { minLength: 40 },
@@ -231,7 +238,7 @@ export class ReflectionTemplates {
                 'Family and intimate relationships',
                 'Health and self-care',
                 'Creativity and self-expression',
-                'Other'
+                'Other',
               ],
               order: 8,
               estimatedMinutes: 1,
@@ -241,7 +248,7 @@ export class ReflectionTemplates {
         {
           id: 'actions',
           title: 'Action & Integration',
-          description: 'How will you integrate today\'s insights?',
+          description: "How will you integrate today's insights?",
           estimatedMinutes: 3,
           questions: [
             {
@@ -249,8 +256,10 @@ export class ReflectionTemplates {
               section: 'actions',
               category: 'action_commitments',
               type: 'rich_text',
-              question: 'What specific actions will you take before our next session to integrate today\'s insights?',
-              helpText: 'Think of small, concrete steps you can realistically take. Be specific about what, when, and how',
+              question:
+                "What specific actions will you take before our next session to integrate today's insights?",
+              helpText:
+                'Think of small, concrete steps you can realistically take. Be specific about what, when, and how',
               placeholder: 'I commit to...',
               required: true,
               validationRules: { minLength: 50 },
@@ -263,7 +272,8 @@ export class ReflectionTemplates {
               category: 'action_commitments',
               type: 'scale',
               question: 'How confident are you that you will follow through on these actions?',
-              helpText: 'Be honest about your confidence level - this helps identify what support you might need',
+              helpText:
+                'Be honest about your confidence level - this helps identify what support you might need',
               required: true,
               scaleMin: 1,
               scaleMax: 10,
@@ -277,22 +287,23 @@ export class ReflectionTemplates {
               category: 'action_commitments',
               type: 'text',
               question: 'What support do you need to succeed with these actions?',
-              helpText: 'This could be internal support (mindset, self-compassion) or external support (accountability, resources)',
+              helpText:
+                'This could be internal support (mindset, self-compassion) or external support (accountability, resources)',
               placeholder: 'To succeed, I need...',
               required: false,
               order: 11,
               estimatedMinutes: 1,
               conditionalLogic: {
                 dependsOn: 'action_confidence',
-                showIf: ['1', '2', '3', '4', '5', '6', '7'] // Show if confidence is 7 or below
-              }
+                showIf: ['1', '2', '3', '4', '5', '6', '7'], // Show if confidence is 7 or below
+              },
             },
           ],
         },
         {
           id: 'closing',
           title: 'Gratitude & Closing',
-          description: 'Completing today\'s reflection',
+          description: "Completing today's reflection",
           estimatedMinutes: 2,
           optional: true,
           questions: [
@@ -301,9 +312,10 @@ export class ReflectionTemplates {
               section: 'closing',
               category: 'gratitude',
               type: 'rich_text',
-              question: 'What are you most grateful for from today\'s coaching session?',
-              helpText: 'This could be an insight, a feeling, a breakthrough, or simply the time and space for reflection',
-              placeholder: 'I\'m grateful for...',
+              question: "What are you most grateful for from today's coaching session?",
+              helpText:
+                'This could be an insight, a feeling, a breakthrough, or simply the time and space for reflection',
+              placeholder: "I'm grateful for...",
               required: false,
               order: 12,
               estimatedMinutes: 1,
@@ -314,13 +326,13 @@ export class ReflectionTemplates {
               category: 'gratitude',
               type: 'multiple_choice',
               question: 'How complete does this session feel for you?',
-              helpText: 'There\'s no right answer - just notice what feels true',
+              helpText: "There's no right answer - just notice what feels true",
               required: false,
               options: [
                 'Very complete - I feel satisfied and ready to move forward',
                 'Mostly complete - I got what I needed with some lingering questions',
                 'Somewhat complete - I have more to explore on this topic',
-                'Incomplete - I feel like we just scratched the surface'
+                'Incomplete - I feel like we just scratched the surface',
               ],
               order: 13,
               estimatedMinutes: 1,
@@ -336,7 +348,8 @@ export class ReflectionTemplates {
     return {
       type: 'breakthrough',
       name: 'Breakthrough Session Reflection',
-      description: 'Deep reflection for sessions with significant insights or emotional breakthroughs',
+      description:
+        'Deep reflection for sessions with significant insights or emotional breakthroughs',
       estimatedMinutes: 20,
       sections: [
         {
@@ -351,7 +364,8 @@ export class ReflectionTemplates {
               category: 'self_awareness',
               type: 'rich_text',
               question: 'Describe the breakthrough, insight, or shift you experienced today',
-              helpText: 'What changed in your understanding, feeling, or perspective? Take your time to capture this fully',
+              helpText:
+                'What changed in your understanding, feeling, or perspective? Take your time to capture this fully',
               placeholder: 'The breakthrough I experienced was...',
               required: true,
               validationRules: { minLength: 100 },
@@ -390,7 +404,7 @@ export class ReflectionTemplates {
         {
           id: 'quick_check',
           title: 'Quick Check-In',
-          description: 'Essential reflections from today\'s session',
+          description: "Essential reflections from today's session",
           estimatedMinutes: 5,
           questions: [
             {
@@ -410,7 +424,7 @@ export class ReflectionTemplates {
               section: 'quick_check',
               category: 'action_commitments',
               type: 'text',
-              question: 'What is one thing you will do differently as a result of today\'s session?',
+              question: "What is one thing you will do differently as a result of today's session?",
               placeholder: 'I will...',
               required: true,
               validationRules: { minLength: 15 },
@@ -461,7 +475,12 @@ export class ReflectionTemplates {
   }
 
   // Helper method to get all available templates
-  static getAvailableTemplates(): { type: ReflectionTemplateType; name: string; description: string; estimatedMinutes: number }[] {
+  static getAvailableTemplates(): {
+    type: ReflectionTemplateType;
+    name: string;
+    description: string;
+    estimatedMinutes: number;
+  }[] {
     return [
       {
         type: 'standard',
@@ -517,9 +536,9 @@ export class ReflectionTemplates {
   // Convert advanced template to simple questions for backward compatibility
   static templateToQuestions(template: IReflectionTemplate): IReflectionQuestion[] {
     const questions: IReflectionQuestion[] = [];
-    
-    template.sections.forEach(section => {
-      section.questions.forEach(question => {
+
+    template.sections.forEach((section) => {
+      section.questions.forEach((question) => {
         questions.push({
           id: question.id,
           category: question.category,
@@ -538,4 +557,4 @@ export class ReflectionTemplates {
 
     return questions.sort((a, b) => a.order - b.order);
   }
-} 
+}

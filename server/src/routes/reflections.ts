@@ -41,4 +41,4 @@ router.get('/client/all', reflectionController.getClientReflections);
 // GET /api/reflections/coach/all - Get all reflections for a coach (submitted only)
 router.get('/coach/all', reflectionController.getCoachReflections);
 
-export default router; 
+export default router;

@@ -35,7 +35,8 @@ const validateEnvVariables = () => {
     // Add other critical variables, e.g., SMTP, Supabase, AWS keys if essential for startup
   ];
 
-  if (process.env.NODE_ENV !== 'test') { // Skip for test environment or adjust as needed
+  if (process.env.NODE_ENV !== 'test') {
+    // Skip for test environment or adjust as needed
     requiredEnvVars.forEach((varName) => {
       if (!process.env[varName]) {
         logger.error(`FATAL ERROR: Environment variable ${varName} is not set. Exiting.`);
@@ -53,7 +54,11 @@ const validateEnvVariables = () => {
   }
 
   // Validate specific values if necessary
-  if (process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
+  if (
+    process.env.NODE_ENV !== 'development' &&
+    process.env.NODE_ENV !== 'production' &&
+    process.env.NODE_ENV !== 'test'
+  ) {
     if (logger && typeof logger.error === 'function') {
       logger.error(`FATAL ERROR: Invalid NODE_ENV: ${process.env.NODE_ENV}`);
     } else {
@@ -76,7 +81,7 @@ const validateEnvVariables = () => {
 validateEnvVariables(); // Call validation at startup
 
 const app: Application = express();
-const port = parseInt(process.env.PORT || "5000", 10);
+const port = parseInt(process.env.PORT || '5000', 10);
 app.set('port', port);
 
 app.use(
@@ -137,7 +142,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 // Global Error Handler (Must be defined AFTER all other app.use() and routes calls)
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   // Use the logger for error reporting
-  logger.error(err.message, err, { 
+  logger.error(err.message, err, {
     path: req.path,
     method: req.method,
     ip: req.ip,
@@ -145,8 +150,11 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   });
 
   const statusCode = (err as any).status || 500;
-  const responseMessage = process.env.NODE_ENV === 'production' && statusCode === 500 ? 'Internal Server Error' : err.message;
-  
+  const responseMessage =
+    process.env.NODE_ENV === 'production' && statusCode === 500
+      ? 'Internal Server Error'
+      : err.message;
+
   res.status(statusCode).json({ error: responseMessage });
 });
 
@@ -182,10 +190,7 @@ server.on('error', (error: NodeJS.ErrnoException) => {
   if (logger && typeof logger.error === 'function') {
     logger.error('Unhandled server error:', error);
   } else {
-    console.error(
-      `Server error: ${error.message}`,
-      { code: error.code, syscall: error.syscall }
-    );
+    console.error(`Server error: ${error.message}`, { code: error.code, syscall: error.syscall });
   }
 });
 

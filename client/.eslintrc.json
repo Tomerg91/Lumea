@@ -4,20 +4,5 @@
   "rules": {
     "react-refresh/only-export-components": "off",
     "react-hooks/exhaustive-deps": "off"
-  },
-  "parserOptions": {
-    "project": ["./tsconfig.json"]
-  },
-  "overrides": [
-    {
-      "files": ["vite.config.ts"],
-      "parserOptions": { "project": null }
-    },
-    {
-      "files": ["tests/**/*.ts", "tests/**/*.tsx"],
-      "parserOptions": { 
-        "project": "./tests/tsconfig.json"
-      }
-    }
-  ]
+  }
 }
