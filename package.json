@@ -19,7 +19,7 @@
     "db:migrate": "supabase db reset",
     "db:seed": "ts-node scripts/bootstrap.ts",
     "test:rls": "vitest run supabase/tests/rls.spec.ts",
-    "prepare": "husky"
+    "prepare": "[ -z \"$CI\" ] && husky || echo 'Skipping husky setup in CI environment'"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
