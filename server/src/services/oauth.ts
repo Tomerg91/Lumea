@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { User, IUser } from '../models/User.js';
 import { getUserByEmail, createUser } from '../storage.js';
+import { AuthenticatedUserPayload } from '../types/user.js';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // Facebook doesn't use OAuth2Client, so this should be removed
@@ -68,7 +69,7 @@ export async function handleOAuthLogin(
   email: string,
   name: string,
   picture?: string
-): Promise<Record<string, unknown> | null> {
+): Promise<AuthenticatedUserPayload | null> {
   try {
     // Check if user exists using Mongoose storage function
     let user = await getUserByEmail(email);
@@ -94,26 +95,26 @@ export async function handleOAuthLogin(
       user = await createUser(userData);
 
       // Store the result in the user variable
-      console.log(`[OAuth] New user created with ID: ${user._id}`);
+      console.log(`[OAuth] New user created with ID: ${user.id}`);
     } else {
-      console.log(`[OAuth] Existing user found via ${provider}: ${user._id}`);
+      console.log(`[OAuth] Existing user found via ${provider}: ${user.id}`);
       // Potential future step: Update user profile picture if it changed
       // if (picture && user.profilePictureUrl !== picture) {
       //   await User.findByIdAndUpdate(user._id, { profilePictureUrl: picture });
       // }
     }
 
-    // Return the Mongoose user document (or a DTO)
     // Ensure sensitive fields like passwordHash/passwordSalt are not returned
-    const userObject =
-      user && typeof user.toObject === 'function' ? user.toObject() : user ? { ...user } : null; // Handle potential plain object return from createUser
+    // user will be AuthenticatedUserPayload or the plain object from Mongoose createUser, neither have toObject or passwordHash/Salt
+    // const userObject =
+    //   user && typeof user.toObject === 'function' ? user.toObject() : user ? { ...user } : null; 
 
-    if (userObject) {
-      delete userObject.passwordHash;
-      delete userObject.passwordSalt;
-    }
+    // if (userObject) {
+    //   delete userObject.passwordHash;
+    //   delete userObject.passwordSalt;
+    // }
 
-    return userObject;
+    return user; // user is already AuthenticatedUserPayload or a clean Partial<IUser>
   } catch (error) {
     console.error(`[OAuth] ${provider} login error for email ${email}:`, error);
     // Don't rethrow generic error, maybe return null or specific error type

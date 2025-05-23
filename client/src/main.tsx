@@ -6,6 +6,7 @@ import App from './App';
 import './i18n';
 import { initPerformanceMonitoring } from './utils/performanceMonitoring';
 import mobileOptimizations from './utils/mobileOptimizations';
+import { AuthProvider } from './contexts/AuthContext';
 
 // Initialize performance monitoring
 initPerformanceMonitoring();
@@ -16,7 +17,9 @@ mobileOptimizations.applyOptimizedStyles();
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

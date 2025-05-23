@@ -8,6 +8,8 @@ import { CoachNote, ICoachNote } from './models/CoachNote.js';
 import { Reflection, IReflection } from './models/Reflection.js';
 import scrypt from 'scrypt-js';
 import crypto from 'crypto';
+import { IRole } from './models/Role.js';
+import { AuthenticatedUserPayload } from './types/user.js';
 
 // Add these constants at the top of the file
 const SCRYPT_N = 16384; // CPU/memory cost parameter
@@ -220,32 +222,65 @@ export async function deleteFileRecord(fileId: string, userId: string): Promise<
   return !!result;
 }
 
-export async function getUserByEmail(email: string): Promise<IUser | null> {
+// Function to get the full IUser object for authentication purposes
+export async function getFullUserByEmailForAuth(email: string): Promise<IUser | null> {
+  try {
+    // console.log('[getFullUserByEmailForAuth] Fetching full user with email:', email);
+    // Fetches the user without populating role, includes passwordHash and passwordSalt
+    const user = await User.findOne({ email }); 
+    if (!user) {
+      // console.log('[getFullUserByEmailForAuth] User not found for email:', email);
+      return null;
+    }
+    // console.log('[getFullUserByEmailForAuth] Successfully found user:', user._id);
+    return user; // Returns the full IUser Mongoose document
+  } catch (error) {
+    // console.error('[getFullUserByEmailForAuth] Error fetching user:', error);
+    // Avoid throwing generic error here to let passport handle it or for specific checks
+    return null; 
+  }
+}
+
+export async function getUserByEmail(email: string): Promise<AuthenticatedUserPayload | null> {
   try {
     console.log('[getUserByEmail] Fetching user with email:', email);
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).populate('role');
     if (!user) {
       console.log('[getUserByEmail] User not found for email:', email);
       return null;
     }
     console.log('[getUserByEmail] Successfully found user:', user._id);
-    return user;
+    const userRole = user.role as IRole;
+    const userPayload: AuthenticatedUserPayload = {
+      id: user._id.toString(),
+      email: user.email,
+      name: `${user.firstName} ${user.lastName}`,
+      role: userRole?.name || 'client',
+    };
+    return userPayload;
   } catch (error) {
     console.error('[getUserByEmail] Error fetching user:', error);
     throw new Error('Failed to get user by email');
   }
 }
 
-export async function getUserById(id: string): Promise<IUser | null> {
+export async function getUserById(id: string): Promise<AuthenticatedUserPayload | null> {
   try {
     console.log('[getUserById] Fetching user with ID:', id);
-    const user = await User.findById(id);
+    const user = await User.findById(id).populate('role');
     if (!user) {
       console.log('[getUserById] User not found for ID:', id);
       return null;
     }
     console.log('[getUserById] Successfully found user:', id);
-    return user;
+    const userRole = user.role as IRole;
+    const userPayload: AuthenticatedUserPayload = {
+      id: user._id.toString(),
+      email: user.email,
+      name: `${user.firstName} ${user.lastName}`,
+      role: userRole?.name || 'client',
+    };
+    return userPayload;
   } catch (error) {
     console.error('[getUserById] Error fetching user:', error);
     throw new Error('Failed to get user by ID');

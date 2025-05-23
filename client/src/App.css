@@ -31,19 +31,11 @@
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
-  /* Debug styling */
-  border: 3px solid red;
   min-height: 100vh;
 }
 
-/* Debug styling for body */
-body {
-  background-color: #f0f0f0;
-}
-
-/* Debug styling for main containers */
+/* Container styling */
 .container {
-  border: 2px dashed blue;
   padding: 20px;
   margin: 10px 0;
 }

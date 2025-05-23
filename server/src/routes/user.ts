@@ -10,4 +10,7 @@ router.use(isAuthenticated);
 // Export user data
 router.get('/export', userController.exportData);
 
+// Update current user's profile
+router.put('/me', userController.updateCurrentUserProfile);
+
 export default router;

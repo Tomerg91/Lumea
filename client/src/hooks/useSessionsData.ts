@@ -1,9 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
-import { Session } from '../components/SessionList';
-
-// API base URL
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+import { Session, SessionStatus } from '../components/SessionList';
+import { 
+  fetchSessions as fetchSessionsService,
+  createSession as createSessionService,
+  updateSessionStatus as updateSessionStatusService,
+  CreateSessionData,
+  UpdateSessionStatusData
+} from '../services/sessionService';
 
 // Type for session list response
 interface SessionsResponse {
@@ -16,43 +19,53 @@ interface SessionsResponse {
   };
 }
 
-// Type for session creation data
-interface CreateSessionData {
-  clientId: string;
-  date: string;
-  notes: string;
-}
-
-// Function to fetch sessions
+// Wrapper function to match the expected response format
 const fetchSessions = async (
   page = 1,
   limit = 10,
   clientId?: string
 ): Promise<SessionsResponse> => {
-  const params = new URLSearchParams();
-  params.append('page', page.toString());
-  params.append('limit', limit.toString());
-  if (clientId) params.append('clientId', clientId);
-
-  const response = await axios.get<SessionsResponse>(`${API_URL}/sessions`, {
-    params,
-    headers: {
-      'Content-Type': 'application/json',
+  // For now, we'll use the service function and wrap it in the expected format
+  // In the future, the backend might support pagination parameters
+  const sessions = await fetchSessionsService();
+  
+  // Apply client filtering if specified
+  const filteredSessions = clientId 
+    ? sessions.filter(session => session.clientId === clientId)
+    : sessions;
+  
+  // Create pagination info (mock for now since backend doesn't support it yet)
+  const total = filteredSessions.length;
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+  const paginatedSessions = filteredSessions.slice(startIndex, endIndex);
+  
+  return {
+    sessions: paginatedSessions,
+    pagination: {
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
     },
-  });
-
-  return response.data;
+  };
 };
 
 // Function to create a session
 const createSession = async (
   data: CreateSessionData
 ): Promise<{ message: string; session: Session }> => {
-  const response = await axios.post<{ message: string; session: Session }>(
-    `${API_URL}/sessions`,
-    data
-  );
-  return response.data;
+  const session = await createSessionService(data);
+  return { message: 'Session created successfully', session };
+};
+
+// Function to update session status
+const updateSessionStatus = async (
+  sessionId: string,
+  data: UpdateSessionStatusData
+): Promise<{ message: string; session: Session }> => {
+  const session = await updateSessionStatusService(sessionId, data);
+  return { message: 'Session status updated successfully', session };
 };
 
 // Hook for fetching and managing sessions
@@ -96,6 +109,7 @@ export const useSessionsData = (page = 1, limit = 100, clientId?: string) => {
               createdAt: new Date().toISOString(),
             },
             date: newSession.date,
+            status: 'pending', // Default status for new sessions
             notes: newSession.notes,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -122,6 +136,58 @@ export const useSessionsData = (page = 1, limit = 100, clientId?: string) => {
     },
   });
 
+  // Mutation for updating session status with optimistic updates
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ sessionId, status }: { sessionId: string; status: SessionStatus }) =>
+      updateSessionStatus(sessionId, { status }),
+    onMutate: async ({ sessionId, status }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['sessions'] });
+
+      // Snapshot the previous value
+      const previousSessions = queryClient.getQueryData(['sessions', page, limit, clientId]);
+
+      // Optimistically update the session status
+      queryClient.setQueryData(
+        ['sessions', page, limit, clientId],
+        (old: SessionsResponse | undefined) => {
+          if (!old) return old;
+
+          return {
+            ...old,
+            sessions: old.sessions.map((session) =>
+              session._id === sessionId
+                ? { ...session, status, updatedAt: new Date().toISOString() }
+                : session
+            ),
+          };
+        }
+      );
+
+      return { previousSessions };
+    },
+    onError: (err, variables, context) => {
+      // If there's an error, roll back to the previous state
+      if (context?.previousSessions) {
+        queryClient.setQueryData(['sessions', page, limit, clientId], context.previousSessions);
+      }
+      
+      // Log the detailed error for debugging
+      console.error('Status update failed:', {
+        error: err,
+        sessionId: variables.sessionId,
+        attemptedStatus: variables.status,
+      });
+      
+      // You can also show a toast notification here if you have a toast system
+      // toast.error(err.message || 'Failed to update session status');
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+    },
+  });
+
   return {
     sessions: data?.sessions || [],
     pagination: data?.pagination,
@@ -131,6 +197,9 @@ export const useSessionsData = (page = 1, limit = 100, clientId?: string) => {
     createSession: createMutation.mutate,
     isCreating: createMutation.isPending,
     createError: createMutation.error,
+    updateSessionStatus: updateStatusMutation.mutate,
+    isUpdatingStatus: updateStatusMutation.isPending,
+    updateStatusError: updateStatusMutation.error,
   };
 };
 

@@ -10,10 +10,13 @@ const AuthPage = lazy(() => import('./pages/Auth'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ClientsPage = lazy(() => import('./pages/Dashboard/ClientsPage'));
 const SessionsPage = lazy(() => import('./pages/SessionsPage'));
+const SessionDetail = lazy(() => import('./pages/SessionDetail'));
 const TestPage = lazy(() => import('./pages/Test'));
 const DebugPage = lazy(() => import('./pages/Debug'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const DesignSystemPage = lazy(() => import('./pages/DesignSystem'));
+const RichTextEditorDemo = lazy(() => import('./components/RichTextEditorDemo').then(module => ({ default: module.RichTextEditorDemo })));
+const ReflectionDemo = lazy(() => import('./pages/ReflectionDemo'));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -88,7 +91,9 @@ const App: React.FC = () => {
     <div>
       <nav>
         <Link to="/">Home</Link> | <Link to="/test">Test Page</Link> |{' '}
-        <Link to="/debug">Debug</Link> | <Link to="/design-system">Design System</Link>
+        <Link to="/debug">Debug</Link> | <Link to="/design-system">Design System</Link> |{' '}
+        <Link to="/rich-editor-demo">Rich Editor Demo</Link> |{' '}
+        <Link to="/reflection-demo">Reflection Demo</Link>
         {/* Show different links based on auth state and role */}
         {session && profile?.role === 'coach' && (
           <>
@@ -135,6 +140,8 @@ const App: React.FC = () => {
             <Route path="/debug" element={<DebugPage />} /> {/* Debug Page Route */}
             <Route path="/design-system" element={<DesignSystemPage />} />{' '}
             {/* Design System Route */}
+            <Route path="/rich-editor-demo" element={<RichTextEditorDemo />} />
+            <Route path="/reflection-demo" element={<ReflectionDemo />} />
             {/* Admin Protected Routes */}
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
               <Route path="/admin" element={<AdminDashboard />} />
@@ -144,6 +151,7 @@ const App: React.FC = () => {
               <Route path="/coach/dashboard" element={<Dashboard />} />
               <Route path="/coach/clients" element={<ClientsPage />} />
               <Route path="/coach/sessions" element={<SessionsPage />} />
+              <Route path="/coach/sessions/:sessionId" element={<SessionDetail />} />
               <Route path="/coach/reflections" element={<div>Coach Reflections Page</div>} />
               <Route path="/coach/resources" element={<div>Coach Resources Page</div>} />
               <Route path="/coach/profile" element={<div>Coach Profile Page</div>} />
@@ -157,6 +165,7 @@ const App: React.FC = () => {
             <Route element={<ProtectedRoute allowedRoles={['client']} />}>
               <Route path="/client/dashboard" element={<Dashboard />} />
               <Route path="/client/sessions" element={<SessionsPage />} />
+              <Route path="/client/sessions/:sessionId" element={<SessionDetail />} />
               <Route path="/client/reflections" element={<div>Client Reflections Page</div>} />
               <Route path="/client/resources" element={<div>Client Resources Page</div>} />
               <Route path="/client/profile" element={<div>Client Profile Page</div>} />

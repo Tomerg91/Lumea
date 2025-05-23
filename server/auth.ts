@@ -59,7 +59,7 @@ export function setupAuth(app: Express) {
             // Convert user to Express.User format
             const userForSession: Express.User = {
               _id: String(user.id),
-              id: user.id,
+              id: String(user.id),
               name: user.name,
               email: user.email,
               role: user.role,
@@ -85,7 +85,7 @@ export function setupAuth(app: Express) {
       // Convert user to Express.User format
       const userForSession: Express.User = {
         _id: String(user.id),
-        id: user.id,
+        id: String(user.id),
         name: user.name,
         email: user.email,
         role: user.role,
@@ -136,7 +136,7 @@ export function setupAuth(app: Express) {
       // Convert to proper Express.User for login
       const userForSession: Express.User = {
         _id: String(user.id),
-        id: user.id,
+        id: String(user.id),
         name: user.name,
         email: user.email,
         role: user.role,

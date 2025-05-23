@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -26,6 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import MainLayout from '@/components/MainLayout';
 import ThemeToggle from '@/components/ThemeToggle';
+import { UserProfile, fetchUserProfile, updateUserProfile } from '@/services/userService';
 
 const profileSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters long' }),
@@ -51,16 +52,16 @@ type SecurityFormValues = z.infer<typeof securitySchema>;
 
 const Profile = () => {
   const { toast } = useToast();
-  const [imagePreview, setImagePreview] = useState<string | null>(
-    'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=150&auto=format&fit=crop'
-  );
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      name: 'Alexandra Chen',
-      email: 'alexandra.chen@example.com',
-      bio: "I'm passionate about mindfulness practices and somatic healing. Looking forward to my personal growth journey.",
+      name: '',
+      email: '',
+      bio: '',
       role: 'client',
     },
   });
@@ -74,6 +75,33 @@ const Profile = () => {
     },
   });
 
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const userProfileData = await fetchUserProfile();
+        profileForm.reset(userProfileData);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load profile');
+        toast({
+          title: 'Error Loading Profile',
+          description: 'Could not fetch your profile. Displaying default or empty form.',
+          variant: 'destructive',
+        });
+        profileForm.reset({
+          name: 'Default User',
+          email: 'default@example.com',
+          bio: 'Could not load profile from server.',
+          role: 'client',
+        });
+        setImagePreview('https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=150&auto=format&fit=crop');
+      }
+      setIsLoading(false);
+    };
+    loadUserProfile();
+  }, [profileForm, toast]);
+
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -85,12 +113,31 @@ const Profile = () => {
     }
   };
 
-  const onProfileSubmit = (data: ProfileFormValues) => {
-    console.log('Profile data:', data);
-    toast({
-      title: 'Profile Updated',
-      description: 'Your profile information has been saved successfully.',
-    });
+  const onProfileSubmit = async (data: ProfileFormValues) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const profileToUpdate: UserProfile = {
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        ...(data.bio && { bio: data.bio }),
+      };
+      const updatedProfile = await updateUserProfile(profileToUpdate);
+      profileForm.reset(updatedProfile);
+      toast({
+        title: 'Profile Updated',
+        description: 'Your profile information has been saved (mocked).',
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update profile');
+      toast({
+        title: 'Error Updating Profile',
+        description: err instanceof Error ? err.message : 'Could not save your profile.',
+        variant: 'destructive',
+      });
+    }
+    setIsLoading(false);
   };
 
   const onSecuritySubmit = (data: SecurityFormValues) => {
@@ -105,6 +152,16 @@ const Profile = () => {
       confirmPassword: '',
     });
   };
+
+  if (isLoading && !profileForm.formState.isDirty && !profileForm.getValues('name')) {
+    return (
+      <MainLayout>
+        <div className="max-w-4xl mx-auto flex justify-center items-center h-[calc(100vh-200px)]">
+          <p className="text-xl">Loading profile...</p>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -238,6 +295,7 @@ const Profile = () => {
                   <Button
                     type="submit"
                     className="bg-lumea-stone text-lumea-beige hover:bg-lumea-stone/90"
+                    disabled={isLoading || !profileForm.formState.isDirty}
                   >
                     Save Changes
                   </Button>

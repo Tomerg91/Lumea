@@ -1,28 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { User, IUser } from '../models/User';
+import { User, IUser } from '../models/User.js';
 import { jwtConfig } from '../auth/config';
-
-// Define a User type for Request context
-export interface RequestUser {
-  id: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  role?: 'admin' | 'coach' | 'client' | string;
-  roleName?: string;
-  isActive?: boolean;
-}
+import { AuthenticatedUserPayload } from '../types/user.js';
+import { IRole } from '../models/Role.js';
 
 // Extend Express Request using module augmentation
 declare module 'express' {
   interface Request {
-    user?: RequestUser;
+    user?: AuthenticatedUserPayload;
   }
 }
 
 /**
- * Middleware to check if user is authenticated
+ * Middleware to check if user is authenticated via JWT
  */
 export const isAuthenticated = async (
   req: Request,
@@ -30,52 +21,37 @@ export const isAuthenticated = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Get the token from the Authorization header
     const authHeader = req.headers.authorization;
-
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       res.status(401).json({ message: 'Authentication required' });
       return;
     }
-
     const token = authHeader.split(' ')[1];
-
     if (!token) {
       res.status(401).json({ message: 'Authentication token is missing' });
       return;
     }
 
-    // Verify the token
     try {
       const decoded = jwt.verify(token, jwtConfig.accessSecret) as jwt.JwtPayload;
+      const userFromDb = await User.findById(decoded.id).populate('role');
 
-      // Get user from database
-      const user = await User.findById(decoded.id);
-
-      if (!user) {
+      if (!userFromDb) {
         res.status(401).json({ message: 'User not found' });
         return;
       }
 
-      // Determine role value
-      let roleValue: string | undefined = undefined;
-      if (typeof user.role === 'object' && user.role !== null) {
-        if ('name' in user.role) {
-          roleValue = user.role.name as string;
-        }
-      } else if (user.role) {
-        roleValue = String(user.role);
-      }
+      const plainUser = userFromDb.toObject();
+      const populatedRole = plainUser.role as IRole;
+      const roleName = (populatedRole && typeof populatedRole === 'object' && populatedRole.name) 
+                       ? populatedRole.name 
+                       : 'client';
 
-      // Add user to request object with appropriate type
       req.user = {
-        id: user._id.toString(),
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: roleValue as 'admin' | 'coach' | 'client' | string,
-        roleName: roleValue, // Add roleName for backward compatibility
-        isActive: user.isActive,
+        id: plainUser._id.toString(),
+        email: plainUser.email,
+        name: `${plainUser.firstName || ''} ${plainUser.lastName || ''}`.trim() || undefined,
+        role: roleName,
       };
 
       next();
@@ -87,8 +63,7 @@ export const isAuthenticated = async (
       }
     }
   } catch (error) {
-    console.error('Authentication error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(401).json({ message: 'Authentication error' });
   }
 };
 

@@ -2,7 +2,6 @@ import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 import bcrypt from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
-import { IUser } from '../src/models/User.js';
 import { Request, Response, NextFunction } from 'express';
 
 const prisma = new PrismaClient();
@@ -16,7 +15,6 @@ export interface AuthenticatedUser {
   email: string;
   name: string | null;
   role: 'coach' | 'client' | 'admin';
-  status?: 'active' | 'pending' | 'inactive';
   [key: string]: unknown;
 }
 
@@ -58,7 +56,6 @@ passport.use(
         email: user.email,
         name: user.name || '',
         role: (user.role as 'coach' | 'client' | 'admin') || 'client',
-        status: (user.status as 'active' | 'pending' | 'inactive') || 'active',
       };
       console.log(`Login successful for user: ${authenticatedUser.id}`);
       return done(null, authenticatedUser);
@@ -69,11 +66,10 @@ passport.use(
   })
 );
 
-passport.serializeUser((user, done) => {
-  // Safe cast to unknown first to avoid type errors
-  const authUser = user as Express.User;
-  console.log(`Serializing user: ${authUser.id}`);
-  done(null, authUser.id);
+passport.serializeUser((user: Express.User, done) => {
+  console.log(`Serializing user ID: ${user.id}`);
+  // user.id is already a string as per Prisma schema and AuthenticatedUser interface
+  done(null, user.id); 
 });
 
 passport.deserializeUser(async (id: string, done) => {
@@ -86,7 +82,6 @@ passport.deserializeUser(async (id: string, done) => {
         email: true,
         name: true,
         role: true,
-        status: true,
       },
     });
 
@@ -95,13 +90,13 @@ passport.deserializeUser(async (id: string, done) => {
       return done(null, false);
     }
 
+    // Note: user from select won't have status, so no need to map it.
     const authenticatedUser: Express.User = {
       _id: user.id,
       id: user.id,
       email: user.email,
       name: user.name || '',
       role: (user.role as 'coach' | 'client' | 'admin') || 'client',
-      status: (user.status as 'active' | 'pending' | 'inactive') || 'active',
     };
     console.log(`User deserialized successfully: ${authenticatedUser.id}`);
     done(null, authenticatedUser);

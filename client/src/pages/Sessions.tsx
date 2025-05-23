@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,8 +25,9 @@ import {
 } from '@/components/ui/select';
 import MainLayout from '@/components/MainLayout';
 import { useToast } from '@/hooks/use-toast';
+import { fetchSessions, createSession as apiCreateSession } from '@/services/sessionService';
 
-type Session = {
+export type Session = {
   id: string;
   date: Date;
   time: string;
@@ -40,36 +41,32 @@ const Sessions = () => {
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
-  const [sessions, setSessions] = useState<Session[]>([
-    {
-      id: '1',
-      date: new Date(Date.now() + 86400000), // Tomorrow
-      time: '10:00 AM',
-      coach: 'Sarah Johnson',
-      type: 'One-on-one Session',
-      status: 'upcoming',
-      notes: 'Focus on mindful breathing techniques and connecting to core values.',
-    },
-    {
-      id: '2',
-      date: new Date(Date.now() - 172800000), // 2 days ago
-      time: '2:00 PM',
-      coach: 'Michael Chen',
-      type: 'Group Session',
-      status: 'completed',
-      notes: 'Explored somatic experiences related to work stress.',
-    },
-    {
-      id: '3',
-      date: new Date(Date.now() + 518400000), // 6 days from now
-      time: '11:30 AM',
-      coach: 'Sarah Johnson',
-      type: 'One-on-one Session',
-      status: 'upcoming',
-    },
-  ]);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [newSession, setNewSession] = useState({
+  useEffect(() => {
+    const loadSessions = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const fetchedSessions = await fetchSessions();
+        setSessions(fetchedSessions);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load sessions');
+        toast({
+          title: 'Error',
+          description: 'Could not fetch sessions. Displaying mock data or an empty list.',
+          variant: 'destructive',
+        });
+      }
+      setIsLoading(false);
+    };
+
+    loadSessions();
+  }, [toast]);
+
+  const [newSessionData, setNewSessionData] = useState({
     date: new Date(),
     time: '',
     coach: '',
@@ -79,32 +76,32 @@ const Sessions = () => {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const handleCreateSession = () => {
-    const id = Math.random().toString(36).substring(2, 9);
-    const createdSession = {
-      id,
-      date: newSession.date,
-      time: newSession.time,
-      coach: newSession.coach,
-      type: newSession.type,
-      status: 'upcoming' as const,
-      notes: newSession.notes,
-    };
-
-    setSessions([...sessions, createdSession]);
-    setIsDialogOpen(false);
-    setNewSession({
-      date: new Date(),
-      time: '',
-      coach: '',
-      type: '',
-      notes: '',
-    });
-
-    toast({
-      title: 'Success',
-      description: 'Your session has been scheduled.',
-    });
+  const handleCreateSession = async () => {
+    setIsLoading(true);
+    try {
+      const createdSession = await apiCreateSession(newSessionData);
+      setSessions(prevSessions => [...prevSessions, createdSession]);
+      setIsDialogOpen(false);
+      setNewSessionData({
+        date: new Date(),
+        time: '',
+        coach: '',
+        type: '',
+        notes: '',
+      });
+      toast({
+        title: 'Success',
+        description: 'Your session has been scheduled (mocked).',
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create session');
+      toast({
+        title: 'Error',
+        description: 'Could not create session.',
+        variant: 'destructive',
+      });
+    }
+    setIsLoading(false);
   };
 
   const sessionsByDate = sessions.reduce<Record<string, Session[]>>((acc, session) => {
@@ -118,6 +115,27 @@ const Sessions = () => {
 
   const selectedDateStr = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
   const selectedSessions = selectedDateStr ? sessionsByDate[selectedDateStr] || [] : [];
+
+  if (isLoading && !sessions.length) {
+    return (
+      <MainLayout>
+        <div className="max-w-6xl mx-auto flex justify-center items-center h-[calc(100vh-200px)]">
+          <p className="text-xl">Loading sessions...</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (error && !sessions.length) {
+    return (
+      <MainLayout>
+        <div className="max-w-6xl mx-auto flex flex-col justify-center items-center h-[calc(100vh-200px)]">
+          <p className="text-xl text-red-500">Error: {error}</p>
+          <p>Please try refreshing the page. If the issue persists, the backend might be unavailable.</p>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -161,8 +179,8 @@ const Sessions = () => {
                   <Label htmlFor="date">Date</Label>
                   <Calendar
                     mode="single"
-                    selected={newSession.date}
-                    onSelect={(date) => date && setNewSession({ ...newSession, date })}
+                    selected={newSessionData.date}
+                    onSelect={(date) => date && setNewSessionData({ ...newSessionData, date })}
                     className="rounded-md border p-3"
                     disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                   />
@@ -172,15 +190,15 @@ const Sessions = () => {
                   <Input
                     id="time"
                     type="time"
-                    value={newSession.time}
-                    onChange={(e) => setNewSession({ ...newSession, time: e.target.value })}
+                    value={newSessionData.time}
+                    onChange={(e) => setNewSessionData({ ...newSessionData, time: e.target.value })}
                   />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="coach">Coach</Label>
                   <Select
-                    value={newSession.coach}
-                    onValueChange={(value) => setNewSession({ ...newSession, coach: value })}
+                    value={newSessionData.coach}
+                    onValueChange={(value) => setNewSessionData({ ...newSessionData, coach: value })}
                   >
                     <SelectTrigger id="coach">
                       <SelectValue placeholder="Select a coach" />
@@ -195,8 +213,8 @@ const Sessions = () => {
                 <div className="grid gap-2">
                   <Label htmlFor="type">Session Type</Label>
                   <Select
-                    value={newSession.type}
-                    onValueChange={(value) => setNewSession({ ...newSession, type: value })}
+                    value={newSessionData.type}
+                    onValueChange={(value) => setNewSessionData({ ...newSessionData, type: value })}
                   >
                     <SelectTrigger id="type">
                       <SelectValue placeholder="Select session type" />
@@ -212,8 +230,8 @@ const Sessions = () => {
                   <Label htmlFor="notes">Notes</Label>
                   <Textarea
                     id="notes"
-                    value={newSession.notes}
-                    onChange={(e) => setNewSession({ ...newSession, notes: e.target.value })}
+                    value={newSessionData.notes}
+                    onChange={(e) => setNewSessionData({ ...newSessionData, notes: e.target.value })}
                     placeholder="Add any details or topics you'd like to cover..."
                   />
                 </div>
@@ -225,7 +243,7 @@ const Sessions = () => {
                 <Button
                   className="bg-lumea-stone text-lumea-beige hover:bg-lumea-stone/90"
                   onClick={handleCreateSession}
-                  disabled={!newSession.time || !newSession.coach || !newSession.type}
+                  disabled={!newSessionData.time || !newSessionData.coach || !newSessionData.type || isLoading}
                 >
                   Schedule Session
                 </Button>

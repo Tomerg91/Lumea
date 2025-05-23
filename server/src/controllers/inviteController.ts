@@ -21,6 +21,12 @@ const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
  */
 export const inviteClient = async (req: Request, res: Response): Promise<void> => {
   try {
+    if (!req.user || !req.user.id) {
+      res.status(401).json({ message: 'Unauthorized: User not logged in or user ID missing.' });
+      return;
+    }
+    const coachId = req.user.id.toString();
+
     // Ensure the user is a coach
     if (!req.user || !req.user.role || req.user.role !== 'coach') {
       res.status(403).json({ message: 'Only coaches can invite clients' });
@@ -42,7 +48,6 @@ export const inviteClient = async (req: Request, res: Response): Promise<void> =
     }
 
     // Apply rate limiting
-    const coachId = req.user._id.toString();
     const now = Date.now();
 
     // Clean up expired entries
@@ -79,7 +84,7 @@ export const inviteClient = async (req: Request, res: Response): Promise<void> =
     const token = await createInviteToken(coachId, email);
 
     // Get coach name for the email
-    const coachName = `${req.user.firstName} ${req.user.lastName}`;
+    const coachName = req.user.name || 'Coach';
 
     // Send the invitation email
     await sendInvite(email, token, coachName);
@@ -96,13 +101,17 @@ export const inviteClient = async (req: Request, res: Response): Promise<void> =
  */
 export const getMyClients = async (req: Request, res: Response): Promise<void> => {
   try {
+    if (!req.user || !req.user.id) {
+      res.status(401).json({ message: 'Unauthorized: User not logged in or user ID missing.' });
+      return;
+    }
+    const coachId = req.user.id;
+
     // Ensure the user is a coach
     if (!req.user || !req.user.role || req.user.role !== 'coach') {
       res.status(403).json({ message: 'Only coaches can view their clients' });
       return;
     }
-
-    const coachId = req.user._id;
 
     // Pagination parameters
     const page = parseInt((req.query.page as string) || '1');

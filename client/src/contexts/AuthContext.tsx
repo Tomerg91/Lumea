@@ -307,7 +307,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Try to fetch the profile
       const { data, error } = await client
         .from('profiles')
-        .select('*')
+        .select('id,name,email,role,created_at,updated_at')
         .eq('id', userId)
         .maybeSingle();
 

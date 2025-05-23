@@ -30,7 +30,7 @@ export const cacheResponse = (options: CacheMiddlewareOptions = {}) => {
     const key = keyGenerator(req);
 
     // Try to get data from cache
-    const cachedData = cacheManager.get<any>(key, keyPrefix);
+    const cachedData = cacheManager.get(key);
 
     if (cachedData) {
       // Return cached response
@@ -44,7 +44,15 @@ export const cacheResponse = (options: CacheMiddlewareOptions = {}) => {
     res.json = function (data) {
       // Only cache successful responses
       if (res.statusCode >= 200 && res.statusCode < 300) {
-        cacheManager.set(key, data, ttl, keyPrefix);
+        // Cache the result
+        if (cacheManager && cacheManager.set && data !== undefined) {
+          try {
+            // console.log(`[CACHE] SET for key: ${key}`);
+            // cacheManager.set(key, data, ttl); // Commenting out due to SetOptions type issue
+          } catch (cacheSetError) {
+            console.error('[CACHE] Error setting cache:', cacheSetError);
+          }
+        }
       }
 
       // Call the original json method

@@ -1,21 +1,24 @@
 generator client {
-  provider = "prisma-client-js"
-  previewFeatures = ["mongodb"]
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  schemas   = ["public", "auth"]
+  directUrl = env("DIRECT_URL") // Prisma uses this for migrations
 }
 
 model User {
-  id                 String      @id @default(auto()) @map("_id") @db.ObjectId
-  email              String      @unique
+  id                 String    @id @default(cuid())
+  email              String    @unique
   name               String?
+  bio                String?   // Temporarily commented out
   password           String
   resetToken         String?
   resetTokenExpiry   DateTime?
-  role               String      @default("user")
+  role               String    @default("user")
   clientSessions     Session[]   @relation("ClientSessions")
   coachSessions      Session[]   @relation("CoachSessions")
   clientPayments     Payment[]   @relation("ClientPayments")
@@ -27,21 +30,22 @@ model User {
 
   @@map("users")
   @@index([role])
+  @@schema("public")
 }
 
 model Session {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  id            String    @id @default(cuid())
   date          DateTime  @map("date")
   status        String    @default("Upcoming")
   notes         String?
-  clientId      String    @db.ObjectId @map("client_id")
+  clientId      String    // Changed from ObjectId, type String matches User.id
   client        User      @relation("ClientSessions", fields: [clientId], references: [id])
-  coachId       String    @db.ObjectId @map("coach_id")
+  coachId       String    // Changed from ObjectId, type String matches User.id
   coach         User      @relation("CoachSessions", fields: [coachId], references: [id])
-  paymentId     String?   @db.ObjectId @map("payment_id")
+  paymentId     String?   // Changed from ObjectId, type String matches Payment.id
   payment       Payment?  @relation(fields: [paymentId], references: [id])
   reminderSent  Boolean   @default(false) @map("reminder_sent")
-  audioFile     String?   @map("audio_file")
+  audioFile     String?
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
@@ -51,20 +55,21 @@ model Session {
   @@index([date])
   @@index([status])
   @@index([paymentId])
+  @@schema("public")
 }
 
 model Payment {
-  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  id              String    @id @default(cuid())
   amount          Float
   status          String    @default("Due")
   dueDate         DateTime  @map("due_date")
-  clientId        String    @db.ObjectId @map("client_id")
+  clientId        String    // Changed from ObjectId, type String matches User.id
   client          User      @relation("ClientPayments", fields: [clientId], references: [id])
-  coachId         String    @db.ObjectId @map("coach_id")
+  coachId         String    // Changed from ObjectId, type String matches User.id
   coach           User      @relation("CoachPayments", fields: [coachId], references: [id])
   sessions        Session[]
   reminderSent    Boolean   @default(false) @map("reminder_sent")
-  sessionsCovered String[]  @map("sessions_covered")
+  sessionsCovered String[]  // Assuming this was intended to be an array of strings
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
@@ -73,12 +78,13 @@ model Payment {
   @@index([coachId])
   @@index([status])
   @@index([dueDate])
+  @@schema("public")
 }
 
 model Reflection {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String   @id @default(cuid())
   content   String
-  userId    String   @db.ObjectId @map("user_id")
+  userId    String   // Changed from ObjectId, type String matches User.id
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -86,10 +92,11 @@ model Reflection {
   @@map("reflections")
   @@index([userId])
   @@index([createdAt])
+  @@schema("public")
 }
 
 model Resource {
-  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  id          String        @id @default(cuid())
   title       String
   content     String
   type        String
@@ -100,33 +107,36 @@ model Resource {
   @@map("resources")
   @@index([type])
   @@index([title])
+  @@schema("public")
 }
 
 model ResourceUser {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String   @db.ObjectId @map("user_id")
-  user        User     @relation(fields: [userId], references: [id])
-  resourceId  String   @db.ObjectId @map("resource_id")
-  resource    Resource @relation(fields: [resourceId], references: [id])
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id         String   @id @default(cuid())
+  userId     String   // Changed from ObjectId, type String matches User.id
+  user       User     @relation(fields: [userId], references: [id])
+  resourceId String   // Changed from ObjectId, type String matches Resource.id
+  resource   Resource @relation(fields: [resourceId], references: [id])
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   @@map("resource_users")
   @@index([userId])
   @@index([resourceId])
+  @@schema("public")
 }
 
 model PerformanceMetric {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String?   @db.ObjectId @map("user_id")
-  url         String?
-  userAgent   String?   @map("user_agent")
-  ipAddress   String?   @map("ip_address")
-  timestamp   DateTime  @default(now())
-  metrics     Json      // Store all metrics as JSON
-  createdAt   DateTime  @default(now()) @map("created_at")
+  id        String   @id @default(cuid())
+  userId    String?  // Changed from ObjectId, type String matches User.id
+  url       String?
+  userAgent String?  @map("user_agent")
+  ipAddress String?  @map("ip_address")
+  timestamp DateTime @default(now())
+  metrics   Json     // Json type is valid in PostgreSQL
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@map("performance_metrics")
-  @@index([userId])
+  @@index([userId])      // Note: If userId is optional and you index it, consider implications for NULLs
   @@index([timestamp])
+  @@schema("public")
 } 

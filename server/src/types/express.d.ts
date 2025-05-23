@@ -4,22 +4,20 @@ import { AuthenticatedUserPayload } from './user';
 
 declare global {
   namespace Express {
-    // Define a proper User interface that matches our model
+    // Explicitly define Express.User to match AuthenticatedUserPayload structure
     interface User {
-      id: string; // Force id to be string
-      firstName: string;
-      lastName: string;
+      id: string;       // Ensure id is string
       email: string;
-      role: string | mongoose.Types.ObjectId | { name: string } | null;
-      isActive: boolean;
-      status: string;
-      profilePicture?: string;
-      [key: string]: any; // Allow other properties
+      role: string;     // Ensure role is string
+      name?: string;    // Optional name
+      // Ensure this interface contains all fields expected by passport on the User object
+      // and that these fields are present in AuthenticatedUserPayload.
+      [key: string]: any; // Added back index signature for Passport compatibility
     }
 
     // Explicitly augment the Request interface
     interface Request {
-      user?: AuthenticatedUserPayload;
+      user?: AuthenticatedUserPayload; // req.user should be AuthenticatedUserPayload
     }
   }
 }

@@ -1,0 +1,300 @@
+# Lumea - Satya Method Coaching Platform
+
+## Overview
+Lumea is a Progressive Web App (PWA) designed as a 1-on-1 personal development coaching platform based on the Satya Method. The platform provides a secure, dedicated, calm, and supportive digital environment for the coaching process, enabling coaches and clients to connect, track sessions, share resources, and manage progress.
+
+The application serves coaches and their clients with secure user role management, session tracking, post-session reflections (text and audio), private coach notes, resource sharing, progress tracking, and manual payment reminders.
+
+## Core Features
+
+### User Authentication & Role Management
+- Secure authentication system using Supabase
+- Role-based access control (Client, Coach, Platform Admin)
+- User profile management with bio, contact information, and preferences
+- Account registration with role selection during signup
+
+### Session Management
+- Create and schedule coaching sessions
+- Session history and tracking
+- Date-based session grouping (Today, Yesterday, This Week, etc.)
+- Session status management (pending, completed, cancelled)
+- Client-coach session assignment
+
+### Reflection System
+- Post-session reflections for clients (text and audio format)
+- Private coach notes for each session
+- Reflection history and progress tracking
+- Audio reflection recording and playback
+
+### Client Management (Coach Dashboard)
+- Coach dashboard showing all assigned clients
+- Client invitation system for coaches to invite new clients
+- Client profile overview with last session information
+- Empty state handling for coaches with no clients
+
+### Resource Sharing
+- Upload and share coaching resources
+- Resource categorization and organization
+- File management with proper permissions
+- Resource access control based on user roles
+
+### Progress Tracking
+- Track client progress over time
+- Visual progress indicators
+- Session completion metrics
+- Goal setting and achievement tracking
+
+### Payment Management
+- Manual payment reminder system
+- Payment status tracking
+- Simple payment workflow without integrated gateways
+
+## User Experience
+
+### User Personas
+1. **Coaches**: Professionals providing Satya Method coaching who need to manage multiple clients, track sessions, and maintain private notes
+2. **Clients**: Individuals receiving coaching who need to attend sessions, submit reflections, and track their progress
+3. **Platform Admins**: System administrators managing the overall platform
+
+### Key User Flows
+1. **Coach Onboarding**: Registration → Profile setup → Client invitation → Session creation
+2. **Client Journey**: Invitation acceptance → Profile completion → Session attendance → Reflection submission
+3. **Session Flow**: Session creation → Client notification → Session completion → Reflection and notes
+4. **Resource Sharing**: Upload resource → Categorize → Share with clients → Access control
+
+### UI/UX Considerations
+- Bilingual support (Hebrew-first with RTL, English with LTR)
+- WCAG 2.1 AA accessibility compliance
+- Mobile-responsive design for all devices
+- Calm and supportive visual design
+- Lumea color palette with warm, professional tones
+- Optimized performance for mobile devices
+
+## Technical Architecture
+
+### Frontend
+- React 18 with TypeScript
+- Vite build system with HMR
+- Tailwind CSS with custom Lumea design system
+- i18next for internationalization (Hebrew/English)
+- TanStack Query for data fetching and caching
+- React Router for navigation
+- Capacitor for mobile app deployment
+
+### Backend
+- Node.js with Express.js
+- TypeScript throughout the backend
+- Supabase for authentication and PostgreSQL database
+- Prisma ORM for database operations
+- MongoDB with Mongoose for legacy data (dual ORM setup)
+- Redis for caching and session storage
+- Row Level Security (RLS) policies for data protection
+
+### Database Schema
+- Users/Profiles table with role management
+- Sessions table with coach-client relationships
+- Reflections table for post-session content
+- Resources table for file sharing
+- Coach notes table for private session notes
+
+### Infrastructure
+- Vercel deployment for both frontend and backend
+- Supabase for database and authentication
+- Redis for caching layer
+- Mobile deployment via Capacitor (iOS/Android)
+- GitHub Actions for CI/CD
+
+### Performance Optimizations
+- Server-side caching with Redis
+- Database query optimization with indexes
+- Code splitting and lazy loading
+- Image optimization with responsive srcset
+- Compression middleware for reduced payload
+- Performance monitoring for Core Web Vitals
+
+## Development Roadmap
+
+### Phase 1: Foundation & Authentication (COMPLETED)
+- Project setup with monorepo structure
+- Supabase authentication integration
+- User registration with role selection
+- Basic routing and navigation
+- Tailwind CSS configuration
+- TypeScript setup across the stack
+
+### Phase 2: Core Backend Infrastructure (COMPLETED)
+- Express.js server setup
+- Database schema design and implementation
+- Prisma ORM integration
+- Basic API endpoints for authentication
+- Error handling and logging
+- Environment configuration
+
+### Phase 3: Performance & Quality (COMPLETED)
+- Server-side caching implementation
+- Database optimization
+- Code splitting and lazy loading
+- Performance monitoring
+- CI/CD pipeline setup
+- GitHub workflow optimization
+
+### Phase 4: UI Design System (COMPLETED)
+- Lumea color palette implementation
+- Design token system
+- Enhanced UI components
+- Design system showcase
+- Mobile optimization
+- Responsive design improvements
+
+### Phase 5: Coach Dashboard & Client Management (COMPLETED)
+- Coach dashboard implementation
+- Client management interface
+- Client invitation system
+- Session creation and management
+- Session listing with date grouping
+- Empty state handling
+
+### Phase 6: Session & Reflection System (IN PROGRESS)
+- Complete session workflow implementation
+- Audio reflection recording system
+- Text reflection forms
+- Session status management
+- Coach notes functionality
+- Session history and tracking
+
+### Phase 7: Resource Management System
+- File upload and storage
+- Resource categorization
+- Sharing permissions and access control
+- Resource library interface
+- File type validation and security
+
+### Phase 8: Progress Tracking & Analytics
+- Progress visualization components
+- Goal setting functionality
+- Achievement tracking
+- Session completion metrics
+- Client progress reports
+
+### Phase 9: Mobile App Development
+- Capacitor integration for mobile
+- iOS and Android app builds
+- Mobile-specific optimizations
+- App store deployment preparation
+- Push notification system
+
+### Phase 10: Payment & Administration
+- Manual payment reminder system
+- Payment status tracking
+- Admin dashboard for platform management
+- User management for admins
+- System monitoring and analytics
+
+## Logical Dependency Chain
+
+### Foundation First (Phase 1-2)
+Essential infrastructure must be built before any features:
+- Authentication system (completed)
+- Database schema (completed)
+- Basic API structure (completed)
+- User role management (completed)
+
+### User Interface Layer (Phase 3-4)
+Core UI components and performance optimizations:
+- Design system implementation (completed)
+- Performance optimizations (completed)
+- Mobile responsiveness (completed)
+
+### Core Features (Phase 5-6)
+Primary coaching functionality:
+- Coach dashboard (completed)
+- Session management (in progress)
+- Reflection system (next priority)
+
+### Extended Features (Phase 7-8)
+Enhanced functionality building on core features:
+- Resource management (depends on file upload infrastructure)
+- Progress tracking (depends on session data)
+
+### Platform Completion (Phase 9-10)
+Final platform features:
+- Mobile apps (depends on web platform stability)
+- Payment system (depends on user management)
+- Administration tools (depends on all core features)
+
+## Current Status & Next Steps
+
+### Recently Completed
+- Coach dashboard with client management
+- Session creation and listing
+- Date-based session grouping
+- Client invitation system
+- Optimistic UI updates for sessions
+- Component and E2E testing setup
+
+### Immediate Next Steps (Phase 6 Continuation)
+1. **Complete Session Workflow**
+   - Session status updates (in-progress, completed)
+   - Session detail view and editing
+   - Session cancellation and rescheduling
+
+2. **Implement Reflection System**
+   - Text reflection forms for clients
+   - Audio reflection recording interface
+   - Reflection history and viewing
+   - Coach access to client reflections
+
+3. **Coach Notes Implementation**
+   - Private notes interface for coaches
+   - Note editing and management
+   - Notes linked to specific sessions
+   - Search and filtering for notes
+
+4. **Session Enhancement**
+   - Session notifications and reminders
+   - Session feedback collection
+   - Session duration tracking
+   - Recurring session templates
+
+## Risks and Mitigations
+
+### Technical Challenges
+- **Dual ORM Complexity**: Using both Prisma and Mongoose requires careful type management and data consistency
+- **Mobile Performance**: Ensure mobile app performance matches web platform
+- **Audio Recording**: Browser compatibility for audio reflection recording
+
+### MVP Scope Management
+- **Feature Creep**: Focus on core coaching workflow before advanced features
+- **Performance**: Maintain performance as feature set grows
+- **User Experience**: Balance feature richness with simplicity
+
+### Resource Constraints
+- **Testing Coverage**: Maintain comprehensive testing as features expand
+- **Documentation**: Keep documentation current with rapid development
+- **Security**: Ensure security measures scale with platform growth
+
+## Appendix
+
+### Technology Stack
+- **Frontend**: React 18, TypeScript, Tailwind CSS, Vite
+- **Backend**: Node.js, Express.js, TypeScript
+- **Database**: PostgreSQL (Supabase), MongoDB (legacy)
+- **Authentication**: Supabase Auth
+- **Caching**: Redis
+- **Deployment**: Vercel
+- **Mobile**: Capacitor
+- **Testing**: Vitest, Playwright
+
+### Security Considerations
+- Row Level Security (RLS) policies in Supabase
+- Input validation and sanitization
+- Secure file upload handling
+- Authentication token management
+- HTTPS enforcement
+
+### Performance Requirements
+- Mobile-first responsive design
+- < 3 second initial page load
+- Offline capability for mobile apps
+- Real-time updates for session management
+- Optimized for low-bandwidth connections 

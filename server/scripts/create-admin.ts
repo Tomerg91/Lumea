@@ -36,7 +36,7 @@ async function createAdminUser() {
         password: hashedPassword,
         name,
         role: 'admin',
-        status: 'active',
+        // status: 'active', // Prisma schema does not seem to have status, removing for now
       },
     });
 

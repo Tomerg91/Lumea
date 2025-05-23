@@ -1,14 +1,23 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import SessionList from '../components/SessionList';
+import SessionList, { SessionStatus } from '../components/SessionList';
 import SessionModal from '../components/SessionModal';
 import useSessionsData from '../hooks/useSessionsData';
 import useClientsData from '../hooks/useClientsData';
+import { useAuth } from '../contexts/AuthContext';
 
 const SessionsPage: React.FC = () => {
   const { t } = useTranslation();
+  const { profile } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { sessions, isLoading, createSession, isCreating } = useSessionsData();
+  const { 
+    sessions, 
+    isLoading, 
+    createSession, 
+    isCreating,
+    updateSessionStatus,
+    isUpdatingStatus 
+  } = useSessionsData();
   const { clients } = useClientsData(1, 100); // Fetch all clients for dropdown
 
   const handleCreateSession = (data: { clientId: string; date: string; notes: string }) => {
@@ -17,6 +26,10 @@ const SessionsPage: React.FC = () => {
         setIsModalOpen(false);
       },
     });
+  };
+
+  const handleStatusChange = (sessionId: string, newStatus: SessionStatus) => {
+    updateSessionStatus({ sessionId, status: newStatus });
   };
 
   return (
@@ -35,6 +48,9 @@ const SessionsPage: React.FC = () => {
         sessions={sessions}
         isLoading={isLoading}
         onCreateClick={() => setIsModalOpen(true)}
+        onStatusChange={handleStatusChange}
+        isUpdatingStatus={isUpdatingStatus}
+        userRole={profile?.role}
       />
 
       <SessionModal

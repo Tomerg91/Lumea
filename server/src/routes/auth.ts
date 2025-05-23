@@ -82,7 +82,7 @@ router.post('/signup', async (req, res) => {
     }
 
     console.log('[POST /api/auth/signup] Creating new user');
-    const user = await createUser(
+    const createdUserDoc = await createUser(
       validatedData as {
         name: string;
         email: string;
@@ -90,17 +90,29 @@ router.post('/signup', async (req, res) => {
         role: 'coach' | 'client' | 'admin';
       }
     );
-    console.log('[POST /api/auth/signup] User created successfully:', user._id);
 
-    console.log('[POST /api/auth/signup] Attempting to log in user');
-    req.login(user as unknown as Express.User, (err) => {
+    if (!createdUserDoc || !createdUserDoc.email) {
+        console.error('[POST /api/auth/signup] Failed to create user or user email missing');
+        return res.status(500).json({ message: 'Error creating user profile' });
+    }
+    console.log('[POST /api/auth/signup] User document created successfully:', createdUserDoc._id);
+
+    // Get AuthenticatedUserPayload for session
+    const payloadForSessionSignup = await getUserByEmail(createdUserDoc.email);
+    if (!payloadForSessionSignup) {
+        console.error('[POST /api/auth/signup] Failed to retrieve payload for session after signup');
+        return res.status(500).json({ message: 'Error preparing user session' });
+    }
+
+    console.log('[POST /api/auth/signup] Attempting to log in user with payload:', payloadForSessionSignup.id);
+    req.login(payloadForSessionSignup, (err) => {
       if (err) {
         console.error('[POST /api/auth/signup] Error during login:', err);
         return res.status(500).json({ message: 'Error logging in after signup' });
       }
       console.log('[POST /api/auth/signup] User logged in successfully');
-      const { password, ...userWithoutPassword } = user.toObject();
-      return res.status(201).json(userWithoutPassword);
+      // Respond with the session payload, which is clean
+      return res.status(201).json(payloadForSessionSignup);
     });
   } catch (error) {
     console.error('[POST /api/auth/signup] Error during signup:', error);
@@ -126,19 +138,32 @@ router.post('/login', (req, res, next) => {
     //   loginSchema.parse(req.body); // Commented out schema usage
     passport.authenticate(
       'local',
-      (err: Error | null, user: IUser | false, info: { message: string }) => {
+      async (err: Error | null, userFromPassport: IUser | false, info: { message: string }) => {
         if (err) {
           return next(err);
         }
-        if (!user) {
+        if (!userFromPassport) {
           return res.status(401).json({ message: info.message });
         }
-        req.login(user as unknown as Express.User, (err) => {
-          if (err) {
-            return next(err);
+
+        // Get AuthenticatedUserPayload for session
+        // Ensure userFromPassport.email exists before calling getUserByEmail
+        if (!userFromPassport.email) {
+            console.error('[POST /api/auth/login] User from passport missing email');
+            return res.status(500).json({ message: 'Error preparing user session data' });
+        }
+        const payloadForSessionLogin = await getUserByEmail(userFromPassport.email);
+        if (!payloadForSessionLogin) {
+            console.error('[POST /api/auth/login] Failed to retrieve payload for session after login attempt');
+            return res.status(500).json({ message: 'Error preparing user session' });
+        }
+
+        req.login(payloadForSessionLogin, (errLogin) => {
+          if (errLogin) {
+            return next(errLogin);
           }
-          const { password, ...userWithoutPassword } = user.toObject();
-          res.json(userWithoutPassword);
+          // Respond with the session payload
+          res.json(payloadForSessionLogin);
         });
       }
     )(req, res, next);
@@ -167,6 +192,7 @@ router.post('/logout', (req, res) => {
 
 router.get('/current-user', ensureAuthenticated, (req, res) => {
   console.log('[GET /api/auth/current-user] Starting current user check');
+  // req.user is AuthenticatedUserPayload thanks to passport setup and type augmentation
   if (!req.user) {
     console.error(
       '[GET /api/auth/current-user] Error: req.user is missing after ensureAuthenticated'
@@ -174,27 +200,12 @@ router.get('/current-user', ensureAuthenticated, (req, res) => {
     return res.status(500).json({ message: 'Internal server error: User context missing' });
   }
 
-  // Get the MongoDB _id safely with type narrowing
-  let userId: string | undefined;
-  if ('_id' in req.user) {
-    userId = String(req.user._id);
-  } else {
-    userId = 'unknown';
-  }
+  // AuthenticatedUserPayload has id (string), email, role (string), name? (string)
+  // No need for _id check or toObject()
+  console.log('[GET /api/auth/current-user] User found:', req.user.id);
 
-  console.log('[GET /api/auth/current-user] User found:', userId);
-
-  // Get a usable object
-  let userObject: Record<string, unknown>;
-  if ('toObject' in req.user && typeof req.user.toObject === 'function') {
-    userObject = req.user.toObject();
-  } else {
-    userObject = { ...req.user };
-  }
-
-  // Don't send password to client
-  const { password, ...userWithoutPassword } = userObject;
-  res.json(userWithoutPassword);
+  // req.user is already the clean payload object
+  res.json(req.user);
 });
 
 router.post('/request-password-reset', async (req, res) => {

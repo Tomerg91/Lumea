@@ -1,0 +1,177 @@
+/* Rich Text Editor Styles */
+.rich-text-editor {
+  font-family: inherit;
+}
+
+/* Editor content styles */
+.rich-text-editor [contenteditable] {
+  line-height: 1.6;
+  font-size: 16px; /* Prevent zoom on iOS */
+}
+
+/* Placeholder styling */
+.rich-text-editor [contenteditable]:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+  display: block;
+}
+
+/* Focus styles */
+.rich-text-editor [contenteditable]:focus {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+  border-color: #3b82f6;
+}
+
+/* List styles inside editor */
+.rich-text-editor ul,
+.rich-text-editor ol {
+  margin: 0.5em 0;
+  padding-left: 1.25em;
+}
+
+.rich-text-editor[dir="rtl"] ul,
+.rich-text-editor[dir="rtl"] ol {
+  padding-left: 0;
+  padding-right: 1.25em;
+}
+
+.rich-text-editor li {
+  margin: 0.25em 0;
+}
+
+/* Text formatting */
+.rich-text-editor strong,
+.rich-text-editor b {
+  font-weight: 600;
+}
+
+.rich-text-editor em,
+.rich-text-editor i {
+  font-style: italic;
+}
+
+.rich-text-editor u {
+  text-decoration: underline;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .rich-text-editor {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  .rich-text-editor .toolbar {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  
+  .rich-text-editor .toolbar button {
+    min-width: 36px;
+    min-height: 36px; /* Better touch targets */
+  }
+  
+  /* Hide some buttons on very small screens */
+  @media (max-width: 480px) {
+    .rich-text-editor .toolbar-separator {
+      display: none;
+    }
+  }
+}
+
+/* RTL-specific adjustments */
+[dir="rtl"] .rich-text-editor {
+  text-align: right;
+}
+
+[dir="rtl"] .rich-text-editor .toolbar {
+  direction: rtl;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .rich-text-editor {
+    border-width: 2px;
+  }
+  
+  .rich-text-editor .toolbar button {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .rich-text-editor .toolbar button {
+    transition: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  .rich-text-editor .toolbar {
+    display: none;
+  }
+  
+  .rich-text-editor .footer {
+    display: none;
+  }
+}
+
+/* Custom scrollbar for editor */
+.rich-text-editor [contenteditable] {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.rich-text-editor [contenteditable]::-webkit-scrollbar {
+  width: 6px;
+}
+
+.rich-text-editor [contenteditable]::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.rich-text-editor [contenteditable]::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.rich-text-editor [contenteditable]::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Error state styling */
+.rich-text-editor.error {
+  border-color: #ef4444;
+}
+
+.rich-text-editor.error [contenteditable]:focus {
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.5);
+  border-color: #ef4444;
+}
+
+/* Loading state */
+.rich-text-editor.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Disabled state */
+.rich-text-editor.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.rich-text-editor.disabled * {
+  cursor: not-allowed;
+}
+
+/* Selection styles for better visibility */
+.rich-text-editor [contenteditable]::selection {
+  background-color: rgba(59, 130, 246, 0.3);
+}
+
+.rich-text-editor [contenteditable]::-moz-selection {
+  background-color: rgba(59, 130, 246, 0.3);
+} 

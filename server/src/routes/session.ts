@@ -25,6 +25,9 @@ router.get('/past', isAuthenticated, sessionController.getPastSessions);
 // Update a session
 router.put('/:id', isAuthenticated, sessionController.updateSession);
 
+// Update session status (coach only)
+router.put('/:id/status', isCoach, sessionController.updateSessionStatus);
+
 // Delete a session (coach only)
 router.delete('/:id', isCoach, sessionController.deleteSession);
 
