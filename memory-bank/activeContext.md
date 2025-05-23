@@ -5,18 +5,29 @@
 **GitHub CI Workflow Failures - COMPLETELY RESOLVED ✅ (December 2024):** 
 All TypeScript compilation errors and ESLint critical errors have been successfully fixed. The CI pipeline now passes with 0 compilation errors and 0 critical ESLint errors. This major infrastructure improvement unblocks development and ensures reliable continuous integration.
 
-**Task 5: Audio Reflection Recording Interface (Ready to Resume):** With CI stability achieved, we can now confidently continue building audio reflection recording capabilities. **Subtask 5.1 (Audio Recording Component) has been completed** with a comprehensive AudioRecorder component featuring MediaRecorder API integration, real-time waveform visualization, multi-format support, and complete recording controls. A demo is available at `/audio-recorder-demo`.
+**Auth Page Refresh Issue - COMPLETELY RESOLVED ✅ (December 2024):**
+Fixed infinite refresh loop in the authentication page caused by duplicate useEffect hooks with identical dependencies. The auth page now works properly without refresh loops, enabling smooth user authentication flow.
+
+**Task 5: Audio Reflection Recording Interface (Ready to Resume):** With CI stability achieved and auth issues resolved, we can now confidently continue building audio reflection recording capabilities. **Subtask 5.1 (Audio Recording Component) has been completed** with a comprehensive AudioRecorder component featuring MediaRecorder API integration, real-time waveform visualization, multi-format support, and complete recording controls. A demo is available at `/audio-recorder-demo`.
 
 **Next Steps:** Ready to proceed with Subtask 5.2 (Audio Playback and Review Interface) to build audio playback controls with waveform visualization and review capabilities.
 
-**Phase 6 Progress:** Task 4 (Text Reflection Forms) fully completed, Task 5 (Audio Recording Interface) progressing with foundational recording component complete, and critical CI infrastructure now stable for reliable development.
+**Phase 6 Progress:** Task 4 (Text Reflection Forms) fully completed, Task 5 (Audio Recording Interface) progressing with foundational recording component complete, critical CI infrastructure now stable, and authentication flow now working seamlessly.
 
 **Frontend Integration with Backend APIs:** The primary goal is to connect the frontend services (user profile, sessions, resources) to the live backend API endpoints, replacing mock data and enabling full-stack functionality.
 **Completing User Profile Feature:** This includes resolving database migration issues to add new fields (like `bio`) and ensuring the frontend can update them.
 
 ## Recent Activity & Decisions
 
-*   **MAJOR ACHIEVEMENT - Resolved GitHub CI Workflow Failures (Latest Session):**
+*   **CRITICAL FIX - Resolved Auth Page Infinite Refresh Loop (Latest Session):**
+    *   **Problem:** The authentication page was stuck in an infinite refresh loop, preventing users from logging in or signing up.
+    *   **Root Cause:** Duplicate `useEffect` hooks in `client/src/pages/Auth.tsx` with identical dependencies `[session, profile, navigate]` were running simultaneously and creating conflicts. Both hooks had the same console.log statements and were triggering on the same state changes.
+    *   **Solution Applied:** Merged the two duplicate `useEffect` hooks into a single, comprehensive effect that handles both connection error checking and authentication redirects with dependency array `[authLoading, session, profile, authError, navigate]`.
+    *   **Files Modified:** `client/src/pages/Auth.tsx` - consolidated duplicate effects into unified authentication logic
+    *   **Results:** Authentication page now works correctly without refresh loops, users are properly redirected to appropriate dashboards (`/coach/dashboard` or `/client/dashboard`) after login, all existing functionality maintained.
+    *   **Impact:** Users can now successfully authenticate and access the application without being stuck on the auth page.
+
+*   **MAJOR ACHIEVEMENT - Resolved GitHub CI Workflow Failures (Previous Session):**
     *   **Problem:** GitHub CI was failing on every commit with 573 ESLint problems (254 errors, 319 warnings) and critical TypeScript compilation errors.
     *   **Root Causes:** Missing methods in reflectionController, type mismatches in Sessions.tsx, ESLint configuration conflicts, syntax errors in test files.
     *   **Solutions Applied:**

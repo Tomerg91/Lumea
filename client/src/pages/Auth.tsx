@@ -1,29 +1,22 @@
 /* eslint-disable react/no-unescaped-entities */ // Disabled due to persistent issue with i18next t() function default value
-import React from 'react';
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { AuthError } from '@supabase/supabase-js';
-import { useAuth } from '@/contexts/AuthContext';
-import { getSupabaseClient, checkSupabaseConnection } from '@/lib/supabase';
-import { useTranslation } from 'react-i18next';
-import type { TFunction } from 'i18next';
+import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase, checkSupabaseConnection } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import ThemeToggle from '@/components/ThemeToggle';
 import Logo from '@/components/Logo';
 import BackgroundPattern from '@/components/BackgroundPattern';
-import ThemeToggle from '@/components/ThemeToggle';
+import type { TFunction } from 'i18next';
+import { AuthError } from '@supabase/supabase-js';
 
 const createLoginSchema = (t: TFunction) =>
   z.object({
@@ -97,8 +90,7 @@ const Auth = () => {
           // If we're in development, check if we're using the dev client
           if (process.env.NODE_ENV === 'development') {
             // We can check if it's dev mode by checking if we're connecting to the dev URL
-            const clientUrl = await getSupabaseClient()
-              .auth.getSession()
+            const clientUrl = await supabase.auth.getSession()
               .then(
                 () => true, // Session call succeeded
                 () => false // Session call failed
@@ -249,7 +241,7 @@ const Auth = () => {
     }
   };
 
-  // Effect to check for connection issues and display appropriate message
+  // Effect to check for connection issues and handle redirects
   React.useEffect(() => {
     console.log('[Auth] useEffect - checking session and profile');
     console.log('[Auth] Session:', session);
@@ -263,18 +255,13 @@ const Auth = () => {
         authError.message?.includes('Network Error') ||
         authError.message?.includes('network request failed')
       ) {
-        setConnectionError(true);
+        setConnectionError('Network connectivity issue detected. Please check your internet connection.');
       }
     } else {
-      setConnectionError(false);
+      setConnectionError(null);
     }
-  }, [authLoading, session, profile, authError]);
 
-  React.useEffect(() => {
-    console.log('[Auth] useEffect - checking session and profile');
-    console.log('[Auth] Session:', session);
-    console.log('[Auth] Profile:', profile);
-
+    // Handle redirects when authenticated
     if (session && profile) {
       console.log('[Auth] Both session and profile exist, checking role for redirect');
       if (profile.role === 'coach') {
@@ -290,7 +277,7 @@ const Auth = () => {
     } else if (session && !profile) {
       console.log('[Auth] Session exists but no profile yet, waiting for profile to load');
     }
-  }, [session, profile, navigate]);
+  }, [authLoading, session, profile, authError, navigate]);
 
   // Display development mode notice when applicable
   const DevModeNotice = () => {
