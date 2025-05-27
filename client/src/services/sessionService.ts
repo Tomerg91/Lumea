@@ -35,6 +35,71 @@ interface RescheduleSessionData {
   reason: string;
 }
 
+// Timer-related types
+export interface TimerStatus {
+  timerStatus: 'stopped' | 'running' | 'paused';
+  sessionId: string;
+  timingId?: string;
+  startTime?: string;
+  endTime?: string;
+  currentDuration: number; // in seconds
+  actualDuration: number; // in seconds
+  adjustedDuration?: number; // in seconds
+  totalDuration: number; // in seconds
+  durationInMinutes: number; // in minutes
+  totalPausedTime: number; // in seconds
+  pauseCount: number;
+  adjustmentCount: number;
+  hasTimer: boolean;
+  adjustments?: DurationAdjustment[];
+}
+
+export interface DurationAdjustment {
+  originalDuration: number;
+  adjustedDuration: number;
+  reason?: string;
+  adjustedBy: {
+    firstName: string;
+    lastName: string;
+  };
+  adjustedAt: string;
+}
+
+export interface DurationAdjustmentData {
+  adjustedDuration: number; // in seconds
+  reason?: string;
+}
+
+export interface DurationAnalytics {
+  sessionId: string;
+  date: string;
+  coach: {
+    firstName: string;
+    lastName: string;
+  };
+  client: {
+    firstName: string;
+    lastName: string;
+  };
+  plannedDuration: number; // in minutes
+  actualDuration: number; // in seconds
+  adjustedDuration?: number; // in seconds
+  totalDuration: number; // in seconds
+  durationInMinutes: number;
+  totalPausedTime: number;
+  pauseCount: number;
+  adjustmentCount: number;
+  timerStatus: 'stopped' | 'running' | 'paused';
+}
+
+export interface AnalyticsSummary {
+  totalSessions: number;
+  totalDurationMinutes: number;
+  averageDurationMinutes: number;
+  totalPauses: number;
+  totalAdjustments: number;
+}
+
 // Common fetch configuration with authentication
 const createFetchConfig = (options: RequestInit = {}): RequestInit => ({
   ...options,
@@ -319,6 +384,185 @@ export const getAvailableSlots = async (
   const result = await response.json();
   // Backend returns { success: true, availableSlots: Slot[], totalSlots: number }
   return result.availableSlots || [];
+};
+
+// Session Timer API Functions
+
+export const startSessionTimer = async (sessionId: string): Promise<TimerStatus> => {
+  console.log('Starting session timer for session:', sessionId);
+  
+  const response = await fetch(
+    `${API_BASE_URL}/sessions/timer/start`,
+    createFetchConfig({
+      method: 'POST',
+      body: JSON.stringify({ sessionId }),
+    })
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ 
+      message: 'Failed to start timer and parse error' 
+    }));
+    throw new Error(errorData.message || 'Failed to start session timer');
+  }
+  
+  const result = await response.json();
+  return result.data;
+};
+
+export const stopSessionTimer = async (sessionId: string): Promise<TimerStatus> => {
+  console.log('Stopping session timer for session:', sessionId);
+  
+  const response = await fetch(
+    `${API_BASE_URL}/sessions/timer/stop`,
+    createFetchConfig({
+      method: 'POST',
+      body: JSON.stringify({ sessionId }),
+    })
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ 
+      message: 'Failed to stop timer and parse error' 
+    }));
+    throw new Error(errorData.message || 'Failed to stop session timer');
+  }
+  
+  const result = await response.json();
+  return result.data;
+};
+
+export const pauseSessionTimer = async (sessionId: string): Promise<TimerStatus> => {
+  console.log('Pausing session timer for session:', sessionId);
+  
+  const response = await fetch(
+    `${API_BASE_URL}/sessions/timer/pause`,
+    createFetchConfig({
+      method: 'POST',
+      body: JSON.stringify({ sessionId }),
+    })
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ 
+      message: 'Failed to pause timer and parse error' 
+    }));
+    throw new Error(errorData.message || 'Failed to pause session timer');
+  }
+  
+  const result = await response.json();
+  return result.data;
+};
+
+export const resumeSessionTimer = async (sessionId: string): Promise<TimerStatus> => {
+  console.log('Resuming session timer for session:', sessionId);
+  
+  const response = await fetch(
+    `${API_BASE_URL}/sessions/timer/resume`,
+    createFetchConfig({
+      method: 'POST',
+      body: JSON.stringify({ sessionId }),
+    })
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ 
+      message: 'Failed to resume timer and parse error' 
+    }));
+    throw new Error(errorData.message || 'Failed to resume session timer');
+  }
+  
+  const result = await response.json();
+  return result.data;
+};
+
+export const adjustSessionDuration = async (
+  sessionId: string, 
+  adjustmentData: DurationAdjustmentData
+): Promise<TimerStatus> => {
+  console.log('Adjusting session duration for session:', sessionId, adjustmentData);
+  
+  const response = await fetch(
+    `${API_BASE_URL}/sessions/timer/adjust`,
+    createFetchConfig({
+      method: 'PUT',
+      body: JSON.stringify({ sessionId, ...adjustmentData }),
+    })
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ 
+      message: 'Failed to adjust duration and parse error' 
+    }));
+    throw new Error(errorData.message || 'Failed to adjust session duration');
+  }
+  
+  const result = await response.json();
+  return result.data;
+};
+
+export const getSessionTimingData = async (sessionId: string): Promise<TimerStatus> => {
+  console.log('Fetching session timing data for session:', sessionId);
+  
+  const response = await fetch(
+    `${API_BASE_URL}/sessions/timer/${sessionId}/timing`,
+    createFetchConfig()
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ 
+      message: 'Failed to fetch timing data and parse error' 
+    }));
+    throw new Error(errorData.message || 'Failed to fetch session timing data');
+  }
+  
+  const result = await response.json();
+  return result.data;
+};
+
+export const getDurationAnalytics = async (
+  filters: {
+    coachId?: string;
+    clientId?: string;
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+    page?: number;
+    sortBy?: 'date' | 'duration' | 'actualDuration' | 'adjustedDuration';
+    sortOrder?: 'asc' | 'desc';
+  } = {}
+): Promise<{
+  analytics: DurationAnalytics[];
+  summary: AnalyticsSummary;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+}> => {
+  console.log('Fetching duration analytics with filters:', filters);
+  
+  const queryParams = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      queryParams.append(key, value.toString());
+    }
+  });
+  
+  const response = await fetch(
+    `${API_BASE_URL}/sessions/timer/analytics?${queryParams.toString()}`,
+    createFetchConfig()
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ 
+      message: 'Failed to fetch analytics and parse error' 
+    }));
+    throw new Error(errorData.message || 'Failed to fetch duration analytics');
+  }
+  
+  const result = await response.json();
+  return result.data;
 };
 
 // Export types for use in other files

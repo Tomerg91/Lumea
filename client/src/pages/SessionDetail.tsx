@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useMobileDetection } from '../hooks/useMobileDetection';
 import { SessionNotes } from '../components/notes';
 import MobileSessionDetail from '../components/mobile/MobileSessionDetail';
+import SessionTimer from '../components/SessionTimer';
 
 // Status configuration for display (reused from SessionList)
 const statusConfig = {
@@ -337,6 +338,13 @@ const SessionDetail: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Session Timer */}
+      <SessionTimer
+        sessionId={sessionId!}
+        sessionStatus={session.status}
+        className="mb-6"
+      />
 
       {/* Session Notes */}
       <div className="bg-white rounded-lg shadow-sm p-6 mb-6">

@@ -60,6 +60,35 @@
     "logout": "התנתק"
   },
   "common": {
-    "loading": "טוען..."
+    "loading": "טוען...",
+    "cancel": "ביטול",
+    "save": "שמור",
+    "saving": "שומר...",
+    "minutes": "דקות",
+    "optional": "אופציונלי"
+  },
+  "sessionTimer": {
+    "sessionTimer": "שעון מפגש",
+    "start": "התחל שעון",
+    "pause": "השהה שעון",
+    "resume": "המשך שעון",
+    "stop": "עצור שעון",
+    "adjust": "התאם",
+    "adjustDuration": "התאם משך זמן",
+    "durationMinutes": "משך זמן (דקות)",
+    "adjustmentReason": "סיבת התאמה",
+    "adjustmentReasonPlaceholder": "למה אתה מתאים את משך הזמן?",
+    "totalDuration": "משך זמן כולל",
+    "adjustments": "התאמות",
+    "pauseCount": "השהיה {{count}}",
+    "pauseCount_plural": "{{count}} השהיות",
+    "pausedTime": "הושהה: {{time}}",
+    "paused": "מושהה",
+    "error": "שגיאה",
+    "status": {
+      "stopped": "נעצר",
+      "running": "פועל",
+      "paused": "מושהה"
+    }
   }
 }

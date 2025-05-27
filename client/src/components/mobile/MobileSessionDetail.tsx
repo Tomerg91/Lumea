@@ -21,6 +21,7 @@ import { fetchSessionById, updateSession } from '../../services/sessionService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useMobileDetection } from '../../hooks/useMobileDetection';
 import { cn } from '../../lib/utils';
+import MobileSessionTimer from './MobileSessionTimer';
 
 // Mobile-optimized status configuration
 const mobileStatusConfig = {
@@ -486,6 +487,12 @@ const MobileSessionDetail: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Session Timer */}
+        <MobileSessionTimer
+          sessionId={sessionId!}
+          sessionStatus={session.status}
+        />
 
         {/* Client Information Card */}
         <div className="bg-white rounded-2xl p-6 shadow-sm">

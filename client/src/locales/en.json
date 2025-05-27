@@ -140,6 +140,35 @@
     "darkModeDesc": "Use dark theme for the interface"
   },
   "common": {
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "minutes": "minutes",
+    "optional": "optional"
+  },
+  "sessionTimer": {
+    "sessionTimer": "Session Timer",
+    "start": "Start Timer",
+    "pause": "Pause Timer",
+    "resume": "Resume Timer",
+    "stop": "Stop Timer",
+    "adjust": "Adjust",
+    "adjustDuration": "Adjust Duration",
+    "durationMinutes": "Duration (minutes)",
+    "adjustmentReason": "Adjustment Reason",
+    "adjustmentReasonPlaceholder": "Why are you adjusting the duration?",
+    "totalDuration": "Total Duration",
+    "adjustments": "Adjustments",
+    "pauseCount": "{{count}} pause",
+    "pauseCount_plural": "{{count}} pauses",
+    "pausedTime": "Paused: {{time}}",
+    "paused": "Paused",
+    "error": "Error",
+    "status": {
+      "stopped": "Stopped",
+      "running": "Running",
+      "paused": "Paused"
+    }
   }
 }
