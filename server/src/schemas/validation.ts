@@ -400,6 +400,165 @@ export const sessionTimerSchemas = {
   }),
 };
 
+// Session Template validation schemas
+export const sessionTemplateSchemas = {
+  sessionStructureComponent: z.object({
+    id: z.string().min(1, 'Component ID is required'),
+    type: z.enum(['check-in', 'goal-setting', 'progress-review', 'assessment', 'coaching', 'custom']),
+    title: z.string().min(1, 'Component title is required').max(200, 'Title cannot exceed 200 characters'),
+    description: z.string().max(1000, 'Description cannot exceed 1000 characters').optional(),
+    estimatedDuration: z.number().min(1, 'Duration must be at least 1 minute').max(240, 'Duration cannot exceed 4 hours'),
+    order: z.number().min(0, 'Order must be non-negative'),
+    isRequired: z.boolean().default(true),
+    defaultContent: z.string().max(2000, 'Default content cannot exceed 2000 characters').optional(),
+    prompts: z.array(z.string().max(500, 'Prompt cannot exceed 500 characters')).max(20, 'Cannot have more than 20 prompts').optional(),
+  }),
+
+  recurrenceConfig: z.object({
+    pattern: z.enum(['weekly', 'bi-weekly', 'monthly', 'quarterly', 'custom']),
+    interval: z.number().min(1, 'Interval must be at least 1').max(52, 'Interval cannot exceed 52 weeks'),
+    daysOfWeek: z.array(z.number().min(0).max(6)).max(7, 'Cannot specify more than 7 days').optional(),
+    dayOfMonth: z.number().min(1).max(31).optional(),
+    endDate: commonValidators.dateTime.optional(),
+    maxOccurrences: z.number().min(1, 'Must have at least 1 occurrence').max(1000, 'Cannot exceed 1000 occurrences').optional(),
+    customRule: z.string().max(500, 'Custom rule cannot exceed 500 characters').optional(),
+  }),
+
+  templateCustomization: z.object({
+    clientId: commonValidators.objectId.optional(),
+    customFields: z.record(z.any()).optional(),
+    overrides: z.object({
+      duration: z.number().min(15).max(480).optional(),
+      structure: z.array(z.lazy(() => sessionTemplateSchemas.sessionStructureComponent)).optional(),
+      objectives: z.array(z.string().max(500)).max(20).optional(),
+      notes: z.string().max(2000).optional(),
+    }).optional(),
+  }),
+
+  create: z.object({
+    name: z.string().min(1, 'Template name is required').max(200, 'Name cannot exceed 200 characters'),
+    description: z.string().max(1000, 'Description cannot exceed 1000 characters').optional(),
+    type: z.enum(['standard', 'recurring', 'assessment', 'follow-up', 'custom']),
+    defaultDuration: z.number().min(15, 'Duration must be at least 15 minutes').max(480, 'Duration cannot exceed 8 hours').default(60),
+    structure: z.array(z.lazy(() => sessionTemplateSchemas.sessionStructureComponent)).min(1, 'Template must have at least one structure component'),
+    objectives: z.array(z.string().max(500, 'Objective cannot exceed 500 characters')).max(20, 'Cannot have more than 20 objectives').optional(),
+    defaultNotes: z.string().max(2000, 'Default notes cannot exceed 2000 characters').optional(),
+    isRecurring: z.boolean().default(false),
+    recurrenceConfig: z.lazy(() => sessionTemplateSchemas.recurrenceConfig).optional(),
+    isPublic: z.boolean().default(false),
+    category: z.string().max(100, 'Category cannot exceed 100 characters').optional(),
+    tags: z.array(z.string().max(50, 'Tag cannot exceed 50 characters')).max(20, 'Cannot have more than 20 tags').optional(),
+  }).refine(
+    (data) => !data.isRecurring || data.recurrenceConfig,
+    {
+      message: 'Recurring templates must have recurrence configuration',
+      path: ['recurrenceConfig'],
+    }
+  ),
+
+  update: z.object({
+    name: z.string().min(1).max(200).optional(),
+    description: z.string().max(1000).optional(),
+    type: z.enum(['standard', 'recurring', 'assessment', 'follow-up', 'custom']).optional(),
+    defaultDuration: z.number().min(15).max(480).optional(),
+    structure: z.array(z.lazy(() => sessionTemplateSchemas.sessionStructureComponent)).min(1).optional(),
+    objectives: z.array(z.string().max(500)).max(20).optional(),
+    defaultNotes: z.string().max(2000).optional(),
+    isRecurring: z.boolean().optional(),
+    recurrenceConfig: z.lazy(() => sessionTemplateSchemas.recurrenceConfig).optional(),
+    isActive: z.boolean().optional(),
+    isPublic: z.boolean().optional(),
+    category: z.string().max(100).optional(),
+    tags: z.array(z.string().max(50)).max(20).optional(),
+  }),
+
+  query: z.object({
+    type: z.enum(['standard', 'recurring', 'assessment', 'follow-up', 'custom']).optional(),
+    category: z.string().max(100).optional(),
+    isRecurring: z.boolean().optional(),
+    isActive: z.boolean().optional(),
+    isPublic: z.boolean().optional(),
+    tags: z.string().optional(), // Comma-separated tags
+    search: z.string().max(100).optional(),
+    coachId: commonValidators.objectId.optional(),
+    limit: z.coerce.number().min(1).max(100).default(20),
+    page: z.coerce.number().min(1).default(1),
+    sortBy: z.enum(['name', 'createdAt', 'lastUsed', 'usageCount', 'type']).default('lastUsed'),
+    sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  }),
+
+  clone: z.object({
+    name: z.string().min(1).max(200),
+    description: z.string().max(1000).optional(),
+    isPublic: z.boolean().default(false),
+    category: z.string().max(100).optional(),
+    tags: z.array(z.string().max(50)).max(20).optional(),
+  }),
+
+  customization: z.object({
+    clientId: commonValidators.objectId,
+    overrides: z.object({
+      duration: z.number().min(15).max(480).optional(),
+      structure: z.array(z.lazy(() => sessionTemplateSchemas.sessionStructureComponent)).optional(),
+      objectives: z.array(z.string().max(500)).max(20).optional(),
+      notes: z.string().max(2000).optional(),
+    }),
+    customFields: z.record(z.any()).optional(),
+  }),
+
+  generateSession: z.object({
+    clientId: commonValidators.objectId,
+    scheduledDate: commonValidators.dateTime,
+    customizations: z.object({
+      duration: z.number().min(15).max(480).optional(),
+      structure: z.array(z.lazy(() => sessionTemplateSchemas.sessionStructureComponent)).optional(),
+      objectives: z.array(z.string().max(500)).max(20).optional(),
+      notes: z.string().max(2000).optional(),
+    }).optional(),
+    applyClientCustomization: z.boolean().default(true),
+  }),
+
+  bulkGenerate: z.object({
+    clientIds: z.array(commonValidators.objectId).min(1, 'At least one client must be specified').max(50, 'Cannot generate for more than 50 clients'),
+    startDate: commonValidators.dateTime,
+    endDate: commonValidators.dateTime.optional(),
+    applyClientCustomizations: z.boolean().default(true),
+    batchId: z.string().max(100).optional(),
+  }),
+
+  params: z.object({
+    id: commonValidators.objectId,
+  }),
+};
+
+// Template Session validation schemas
+export const templateSessionSchemas = {
+  query: z.object({
+    templateId: commonValidators.objectId.optional(),
+    sessionId: commonValidators.objectId.optional(),
+    coachId: commonValidators.objectId.optional(),
+    clientId: commonValidators.objectId.optional(),
+    generationStatus: z.enum(['pending', 'generated', 'failed', 'cancelled']).optional(),
+    isFromRecurrence: z.boolean().optional(),
+    batchId: z.string().max(100).optional(),
+    startDate: commonValidators.dateTime.optional(),
+    endDate: commonValidators.dateTime.optional(),
+    limit: z.coerce.number().min(1).max(100).default(20),
+    page: z.coerce.number().min(1).default(1),
+    sortBy: z.enum(['generatedAt', 'createdAt', 'generationStatus']).default('generatedAt'),
+    sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  }),
+
+  updateStatus: z.object({
+    status: z.enum(['pending', 'generated', 'failed', 'cancelled']),
+    errors: z.array(z.string().max(1000)).optional(),
+  }),
+
+  params: z.object({
+    id: commonValidators.objectId,
+  }),
+};
+
 // Export all schemas grouped by domain
 export const validationSchemas = {
   user: userSchemas,
@@ -413,4 +572,6 @@ export const validationSchemas = {
   common: commonValidators,
   auditTrail: auditTrail,
   search: search,
+  sessionTemplate: sessionTemplateSchemas,
+  templateSession: templateSessionSchemas,
 }; 
