@@ -19,8 +19,12 @@ import {
   CheckCircle,
   Star,
   Heart,
-  Zap
+  Zap,
+  BarChart3
 } from 'lucide-react';
+import SessionDurationAnalytics from '../components/analytics/SessionDurationAnalytics';
+import { useMobileDetection } from '../hooks/useMobileDetection';
+import MobileSessionDurationAnalytics from '../components/analytics/MobileSessionDurationAnalytics';
 
 interface DashboardStats {
   totalSessions: number;
@@ -52,6 +56,7 @@ const Dashboard = () => {
   const { profile } = useAuth();
   const { isRTL, t } = useLanguage();
   const navigate = useNavigate();
+  const { isMobile } = useMobileDetection();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [upcomingSessions, setUpcomingSessions] = useState<UpcomingSession[]>([]);
   const [recentReflections, setRecentReflections] = useState<RecentReflection[]>([]);
@@ -472,6 +477,39 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Session Duration Analytics (Coach Only) */}
+        {isCoach && (
+          <div className="mt-8 animate-fade-in">
+            <div className="card-lumea-strong">
+              <div className={`flex items-center justify-between mb-6 ${isRTL ? 'rtl-flex-row-reverse' : ''}`}>
+                <div>
+                  <h2 className="text-2xl font-bold text-gradient-purple mb-2">
+                    ניתוח משך מפגשים / Session Duration Analytics
+                  </h2>
+                  <p className="text-sm opacity-70">
+                    מעקב אחר מגמות זמן מפגשים ומדדי יעילות / Track session timing trends and efficiency metrics
+                  </p>
+                </div>
+                <div className="w-12 h-12 bg-gradient-purple rounded-xl flex items-center justify-center">
+                  <BarChart3 className="w-6 h-6 text-white" />
+                </div>
+              </div>
+              
+              {isMobile ? (
+                <MobileSessionDurationAnalytics
+                  coachId={profile?.id}
+                  compact={true}
+                />
+              ) : (
+                <SessionDurationAnalytics
+                  coachId={profile?.id}
+                  compact={true}
+                />
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
