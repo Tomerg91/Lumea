@@ -153,9 +153,7 @@ class ReflectionSearchService {
       return {
         results: result.reflections.map(r => ({
           reflectionId: r._id,
-          sessionDate: (r.sessionId && r.sessionId !== null && typeof r.sessionId === 'object' && 'date' in r.sessionId)
-            ? (r.sessionId as any).date 
-            : new Date().toISOString(),
+          sessionDate: r.createdAt || new Date().toISOString(),
           submittedAt: r.submittedAt || r.lastSavedAt,
           relevanceScore: 1,
           matches: 1,

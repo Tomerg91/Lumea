@@ -1,322 +1,193 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { analyticsService, AnalyticsDateRange } from '../services/analyticsService.js';
 
 export const analyticsController = {
-  async getRevenue(req: Request, res: Response) {
+  /**
+   * Get comprehensive analytics dashboard
+   */
+  async getDashboard(req: Request, res: Response) {
     try {
-      const { startDate, endDate } = req.query;
-      const payments = await prisma.payment.findMany({
-        where: {
-          createdAt: {
-            gte: startDate ? new Date(startDate as string) : undefined,
-            lte: endDate ? new Date(endDate as string) : undefined,
-          },
-          status: 'paid',
-        },
-        orderBy: {
-          createdAt: 'asc',
-        },
-      });
+      const dateRange: AnalyticsDateRange = {
+        startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+        endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+      };
 
-      const revenueData = payments.reduce((acc: Record<string, number>, payment) => {
-        const date = payment.createdAt.toISOString().split('T')[0];
-        acc[date] = (acc[date] || 0) + payment.amount;
-        return acc;
-      }, {});
-
-      res.json(revenueData);
+      const dashboard = await analyticsService.generateDashboard(dateRange);
+      res.json(dashboard);
     } catch (error) {
-      console.error('Error fetching revenue data:', error);
-      res.status(500).json({ message: 'Error fetching revenue data' });
+      console.error('Error generating analytics dashboard:', error);
+      res.status(500).json({ 
+        message: 'Error generating analytics dashboard',
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
     }
+  },
+
+  /**
+   * Get session metrics only
+   */
+  async getSessionMetrics(req: Request, res: Response) {
+    try {
+      const dateRange: AnalyticsDateRange = {
+        startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+        endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+      };
+
+      const sessionMetrics = await analyticsService.getSessionMetrics(dateRange);
+      res.json(sessionMetrics);
+    } catch (error) {
+      console.error('Error fetching session metrics:', error);
+      res.status(500).json({ 
+        message: 'Error fetching session metrics',
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  },
+
+  /**
+   * Get client engagement metrics
+   */
+  async getClientEngagement(req: Request, res: Response) {
+    try {
+      const dateRange: AnalyticsDateRange = {
+        startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+        endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+      };
+
+      const clientEngagement = await analyticsService.getClientEngagementMetrics(dateRange);
+      res.json(clientEngagement);
+    } catch (error) {
+      console.error('Error fetching client engagement metrics:', error);
+      res.status(500).json({ 
+        message: 'Error fetching client engagement metrics',
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  },
+
+  /**
+   * Get coach performance metrics
+   */
+  async getCoachPerformance(req: Request, res: Response) {
+    try {
+      const dateRange: AnalyticsDateRange = {
+        startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+        endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+      };
+
+      const coachPerformance = await analyticsService.getCoachPerformanceMetrics(dateRange);
+      res.json(coachPerformance);
+    } catch (error) {
+      console.error('Error fetching coach performance metrics:', error);
+      res.status(500).json({ 
+        message: 'Error fetching coach performance metrics',
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  },
+
+  /**
+   * Get reflection analytics
+   */
+  async getReflectionAnalytics(req: Request, res: Response) {
+    try {
+      const dateRange: AnalyticsDateRange = {
+        startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+        endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+      };
+
+      const reflectionAnalytics = await analyticsService.getReflectionAnalytics(dateRange);
+      res.json(reflectionAnalytics);
+    } catch (error) {
+      console.error('Error fetching reflection analytics:', error);
+      res.status(500).json({ 
+        message: 'Error fetching reflection analytics',
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  },
+
+  /**
+   * Export analytics data in various formats
+   */
+  async exportData(req: Request, res: Response) {
+    try {
+      const format = req.body.format || req.query.format || 'json';
+      
+      if (!['json', 'csv', 'pdf', 'excel'].includes(format)) {
+        return res.status(400).json({ 
+          message: 'Unsupported export format. Use "json", "csv", "pdf", or "excel".' 
+        });
+      }
+
+      const dateRange: AnalyticsDateRange = {
+        startDate: req.body.startDate || req.query.startDate ? 
+          new Date((req.body.startDate || req.query.startDate) as string) : undefined,
+        endDate: req.body.endDate || req.query.endDate ? 
+          new Date((req.body.endDate || req.query.endDate) as string) : undefined,
+      };
+
+      const exportData = await analyticsService.exportAnalyticsData(format as 'json' | 'csv' | 'pdf' | 'excel', dateRange);
+
+      // Set appropriate headers based on format
+      res.setHeader('Content-Type', exportData.mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${exportData.filename}"`);
+
+      if (format === 'json') {
+        res.json(exportData.data);
+      } else if (format === 'csv') {
+        res.send(exportData.data);
+      } else if (format === 'pdf' || format === 'excel') {
+        // For binary data (PDF/Excel), send as buffer
+        res.send(exportData.data);
+      }
+    } catch (error) {
+      console.error('Error exporting analytics data:', error);
+      res.status(500).json({ 
+        message: 'Error exporting analytics data',
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  },
+
+  // Legacy compatibility methods (keeping for backward compatibility if needed)
+  async getRevenue(req: Request, res: Response) {
+    res.status(501).json({ 
+      message: 'Revenue analytics not implemented. This platform focuses on session and coaching analytics.' 
+    });
   },
 
   async getUserGrowth(req: Request, res: Response) {
-    try {
-      const { startDate, endDate } = req.query;
-      const users = await prisma.user.findMany({
-        where: {
-          createdAt: {
-            gte: startDate ? new Date(startDate as string) : undefined,
-            lte: endDate ? new Date(endDate as string) : undefined,
-          },
-        },
-        orderBy: {
-          createdAt: 'asc',
-        },
-      });
-
-      const growthData = users.reduce((acc: Record<string, number>, user) => {
-        const date = user.createdAt.toISOString().split('T')[0];
-        acc[date] = (acc[date] || 0) + 1;
-        return acc;
-      }, {});
-
-      res.json(growthData);
-    } catch (error) {
-      console.error('Error fetching user growth data:', error);
-      res.status(500).json({ message: 'Error fetching user growth data' });
-    }
+    // Redirect to client engagement which includes user growth data
+    return this.getClientEngagement(req, res);
   },
-
-  async getSessionMetrics(req: Request, res: Response) {
-    try {
-      const { startDate, endDate } = req.query;
-      const sessions = await prisma.session.findMany({
-        where: {
-          date: {
-            gte: startDate ? new Date(startDate as string) : undefined,
-            lte: endDate ? new Date(endDate as string) : undefined,
-          },
-        },
-        include: {
-          client: true,
-          coach: true,
-        },
-        orderBy: {
-          date: 'asc',
-        },
-      });
-
-      const metrics = {
-        totalSessions: sessions.length,
-        sessionsByStatus: sessions.reduce((acc: Record<string, number>, session) => {
-          acc[session.status] = (acc[session.status] || 0) + 1;
-          return acc;
-        }, {}),
-        sessionsByDate: sessions.reduce((acc: Record<string, number>, session) => {
-          const date = session.date.toISOString().split('T')[0];
-          acc[date] = (acc[date] || 0) + 1;
-          return acc;
-        }, {}),
-      };
-
-      res.json(metrics);
-    } catch (error) {
-      console.error('Error fetching session metrics:', error);
-      res.status(500).json({ message: 'Error fetching session metrics' });
-    }
-  },
-
-  async getCoachPerformance(req: Request, res: Response) {
-    try {
-      const { startDate, endDate } = req.query;
-      const coaches = await prisma.user.findMany({
-        where: {
-          role: 'coach',
-        },
-        include: {
-          coachSessions: {
-            where: {
-              date: {
-                gte: startDate ? new Date(startDate as string) : undefined,
-                lte: endDate ? new Date(endDate as string) : undefined,
-              },
-            },
-            include: {
-              client: true,
-            },
-          },
-        },
-      });
-
-      const performance = coaches.map((coach) => {
-        // Calculate unique clients
-        const clientIds = new Set(coach.coachSessions.map((session) => session.clientId));
-
-        return {
-          id: coach.id,
-          name: coach.name,
-          totalClients: clientIds.size, // Use size of Set for unique clients
-          totalSessions: coach.coachSessions.length, // Correctly uses coachSessions
-          sessionCompletionRate:
-            coach.coachSessions.filter((session) => session.status === 'completed').length /
-              coach.coachSessions.length || 0, // Correctly uses coachSessions
-        };
-      });
-
-      res.json(performance);
-    } catch (error) {
-      console.error('Error fetching coach performance data:', error);
-      res.status(500).json({ message: 'Error fetching coach performance data' });
-    }
-  },
-
-  /* // Commenting out function due to missing Session.title field
-  async getPopularTopics(req: Request, res: Response) {
-    try {
-      const { startDate, endDate } = req.query;
-      const sessions = await prisma.session.findMany({
-        where: {
-          date: {
-            gte: startDate ? new Date(startDate as string) : undefined,
-            lte: endDate ? new Date(endDate as string) : undefined
-          }
-        },
-        select: {
-          title: true // Error: title does not exist
-        }
-      });
-
-      const topics = sessions.reduce((acc: Record<string, number>, session) => {
-        const words = session.title.toLowerCase().split(' '); // Error: title does not exist
-        words.forEach(word => {
-          if (word.length > 3) { // Only count words longer than 3 characters
-            acc[word] = (acc[word] || 0) + 1;
-          }
-        });
-        return acc;
-      }, {});
-
-      const sortedTopics = Object.entries(topics)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 10)
-        .reduce((acc: Record<string, number>, [key, value]) => {
-          acc[key] = value;
-          return acc;
-        }, {});
-
-      res.json(sortedTopics);
-    } catch (error) {
-      console.error('Error fetching popular topics:', error);
-      res.status(500).json({ message: 'Error fetching popular topics' });
-    }
-  },
-  */
 
   async getPeakUsage(req: Request, res: Response) {
     try {
-      const { startDate, endDate } = req.query;
-      const sessions = await prisma.session.findMany({
-        where: {
-          date: {
-            gte: startDate ? new Date(startDate as string) : undefined,
-            lte: endDate ? new Date(endDate as string) : undefined,
-          },
-        },
-        select: {
-          date: true,
-        },
-      });
+      const dateRange: AnalyticsDateRange = {
+        startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+        endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+      };
 
-      const hourlyUsage = sessions.reduce((acc: Record<number, number>, session) => {
-        const hour = session.date.getHours();
-        acc[hour] = (acc[hour] || 0) + 1;
-        return acc;
-      }, {});
-
-      const dailyUsage = sessions.reduce((acc: Record<string, number>, session) => {
-        const day = session.date.getDay();
-        acc[day] = (acc[day] || 0) + 1;
-        return acc;
-      }, {});
+      const sessionMetrics = await analyticsService.getSessionMetrics(dateRange);
+      
+      // Extract peak usage patterns from session trends
+      const peakUsage = sessionMetrics.sessionTrends.reduce((peak, current) => {
+        return current.sessions > peak.sessions ? current : peak;
+      }, { date: '', sessions: 0, completed: 0 });
 
       res.json({
-        hourlyUsage,
-        dailyUsage,
+        peakDate: peakUsage.date,
+        peakSessions: peakUsage.sessions,
+        sessionTrends: sessionMetrics.sessionTrends,
+        weeklyAverage: sessionMetrics.averageSessionsPerWeek
       });
     } catch (error) {
       console.error('Error fetching peak usage data:', error);
-      res.status(500).json({ message: 'Error fetching peak usage data' });
+      res.status(500).json({ 
+        message: 'Error fetching peak usage data',
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
     }
-  },
-
-  async exportData(req: Request, res: Response) {
-    try {
-      const { startDate, endDate, metrics } = req.body;
-      const data: Record<string, unknown> = {};
-
-      if (metrics.includes('revenue')) {
-        data.revenue = await prisma.payment.findMany({
-          where: {
-            createdAt: {
-              gte: startDate ? new Date(startDate) : undefined,
-              lte: endDate ? new Date(endDate) : undefined,
-            },
-            status: 'paid',
-          },
-          select: {
-            amount: true,
-            createdAt: true,
-          },
-        });
-      }
-
-      if (metrics.includes('sessions')) {
-        data.sessions = await prisma.session.findMany({
-          where: {
-            date: {
-              gte: startDate ? new Date(startDate) : undefined,
-              lte: endDate ? new Date(endDate) : undefined,
-            },
-          },
-          include: {
-            client: true,
-            coach: true,
-          },
-        });
-      }
-
-      if (metrics.includes('users')) {
-        data.users = await prisma.user.findMany({
-          where: {
-            createdAt: {
-              gte: startDate ? new Date(startDate) : undefined,
-              lte: endDate ? new Date(endDate) : undefined,
-            },
-          },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            createdAt: true,
-          },
-        });
-      }
-
-      const csv = this.convertToCSV(data);
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename=analytics.csv');
-      res.send(csv);
-    } catch (error) {
-      console.error('Error exporting analytics data:', error);
-      res.status(500).json({ message: 'Error exporting analytics data' });
-    }
-  },
-
-  convertToCSV(data: Record<string, unknown[]>): string {
-    const headers: string[] = [];
-    const rows: string[][] = [];
-
-    // Extract headers and data from each metric
-    Object.entries(data).forEach(([metric, items]) => {
-      if (Array.isArray(items) && items.length > 0) {
-        const item = items[0] as Record<string, unknown>;
-        const metricHeaders = Object.keys(item).map((key) => `${metric}_${key}`);
-        headers.push(...metricHeaders);
-
-        items.forEach((item, index) => {
-          if (!rows[index]) rows[index] = [];
-          const values = Object.values(item as Record<string, unknown>);
-          rows[index].push(
-            ...values.map((value) =>
-              value instanceof Date
-                ? value.toISOString()
-                : typeof value === 'object'
-                  ? JSON.stringify(value)
-                  : String(value)
-            )
-          );
-        });
-      }
-    });
-
-    // Combine headers and rows into CSV format
-    const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
-
-    return csvContent;
-  },
+  }
 };

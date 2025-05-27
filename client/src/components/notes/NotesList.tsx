@@ -113,6 +113,35 @@ export const NotesList: React.FC = () => {
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
   const [saveSearchName, setSaveSearchName] = useState('');
 
+  // Computed values for pagination and search results
+  const notes = virtualList.items;
+  const searchResults = useMemo(() => {
+    if (serverSearchMode && lastSearchResult) {
+      return lastSearchResult.notes;
+    }
+    return notes;
+  }, [serverSearchMode, lastSearchResult, notes]);
+
+  const paginatedResults = useMemo(() => {
+    if (serverSearchMode && lastSearchResult) {
+      return lastSearchResult.notes;
+    }
+    const startIndex = (pagination.page - 1) * pagination.limit;
+    const endIndex = startIndex + pagination.limit;
+    return searchResults.slice(startIndex, endIndex);
+  }, [serverSearchMode, lastSearchResult, searchResults, pagination.page, pagination.limit]);
+
+  const totalPages = Math.ceil(searchResults.length / pagination.limit);
+  const currentPage = pagination.page;
+  const setCurrentPage = (page: number) => {
+    setPagination(prev => ({ ...prev, page }));
+  };
+
+  // Load notes function
+  const loadNotes = async () => {
+    await loadInitialData();
+  };
+
   // Predefined tag categories for enhanced filtering
   const tagCategories: TagCategory[] = [
     {
@@ -1501,8 +1530,8 @@ export const NotesList: React.FC = () => {
               onDelete={handleDeleteNote}
               onView={handleViewNote}
               compact={viewMode === 'list'}
-              highlightedContent={note.highlightedContent}
-              highlightedTitle={note.highlightedTitle}
+              highlightedContent={(note as SearchResult).highlightedContent}
+              highlightedTitle={(note as SearchResult).highlightedTitle}
               selectionMode={bulkMode}
               isSelected={selectedNoteIds.includes(note._id)}
               onToggleSelection={toggleNoteSelection}

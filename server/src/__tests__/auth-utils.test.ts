@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, jest, beforeEach } from '@jest/globals';
 import { Types } from 'mongoose';
 import jwt from 'jsonwebtoken';
 import {
@@ -14,13 +14,13 @@ import { User } from '../models/User';
 import { Role } from '../models/Role';
 
 // Mock for the Session model
-vi.mock('../models/Session', () => {
+jest.mock('../models/Session', () => {
   const mockSession = {
-    create: vi.fn(),
-    findOne: vi.fn(),
-    updateOne: vi.fn(),
-    updateMany: vi.fn(),
-    deleteOne: vi.fn(),
+    create: jest.fn(),
+    findOne: jest.fn(),
+    updateOne: jest.fn(),
+    updateMany: jest.fn(),
+    deleteOne: jest.fn(),
   };
   return { Session: mockSession };
 });
@@ -34,7 +34,7 @@ describe('Auth Utilities', () => {
 
   beforeEach(() => {
     // Reset mocks before each test
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('generateTokens', () => {
@@ -250,19 +250,19 @@ describe('User Authentication Integration', () => {
   };
 
   // Mock implementations for mongoose models
-  vi.mock('../models/User', () => ({
-    User: {
-      findById: vi.fn(),
-      findOne: vi.fn(),
-      create: vi.fn(),
-    },
-  }));
+  jest.mock('../models/User', () => ({
+  User: {
+    findById: jest.fn(),
+    findOne: jest.fn(),
+    create: jest.fn(),
+  },
+}));
 
-  vi.mock('../models/Role', () => ({
-    Role: {
-      findOne: vi.fn(),
-    },
-  }));
+jest.mock('../models/Role', () => ({
+  Role: {
+    findOne: jest.fn(),
+  },
+}));
 
   beforeAll(async () => {
     // Set up mock roles

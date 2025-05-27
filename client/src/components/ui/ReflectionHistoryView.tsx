@@ -193,13 +193,13 @@ export const ReflectionHistoryView: React.FC<ReflectionHistoryViewProps> = ({
       const dataToExport = searchResults.length > 0 ? searchResults : 
         reflections.map(r => ({
           reflectionId: r._id,
-          sessionDate: r.sessionId?.date || new Date().toISOString(),
+          sessionDate: r.createdAt || new Date().toISOString(),
           submittedAt: r.submittedAt || r.lastSavedAt,
           relevanceScore: 1,
           matches: 1,
           preview: r.answers?.slice(0, 3).map(answer => ({
             questionId: answer.questionId,
-            value: answer.value,
+            value: typeof answer.value === 'boolean' ? String(answer.value) : answer.value,
             followUpAnswer: answer.followUpAnswer || null,
             isHighlighted: false,
           })) || [],
@@ -227,13 +227,13 @@ export const ReflectionHistoryView: React.FC<ReflectionHistoryViewProps> = ({
   const displayData = useMemo(() => {
     return searchResults.length > 0 ? searchResults : reflections.map(r => ({
       reflectionId: r._id,
-      sessionDate: r.sessionId?.date || new Date().toISOString(),
+      sessionDate: r.createdAt || new Date().toISOString(),
       submittedAt: r.submittedAt || r.lastSavedAt,
       relevanceScore: 1,
       matches: 1,
       preview: r.answers?.slice(0, 3).map(answer => ({
         questionId: answer.questionId,
-        value: answer.value,
+        value: typeof answer.value === 'boolean' ? String(answer.value) : answer.value,
         followUpAnswer: answer.followUpAnswer || null,
         isHighlighted: false,
       })) || [],

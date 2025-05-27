@@ -19,6 +19,7 @@ import sessionTimerRoutes from './routes/sessionTimer';
 import sessionTemplateRoutes from './routes/sessionTemplateRoutes';
 import clientRoutes from './routes/clientRoutes';
 import feedbackRoutes from './routes/feedbackRoutes';
+import analyticsRoutes from './routes/analytics';
 
 // Import services
 import { feedbackTriggerService } from './services/feedbackTriggerService';
@@ -94,6 +95,7 @@ app.use('/api/sessions/timer', sessionTimerRoutes);
 app.use('/api/session-templates', sessionTemplateRoutes);
 app.use('/api', clientRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // 404 handler
 app.use((req, res) => {

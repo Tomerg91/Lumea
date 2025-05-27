@@ -396,9 +396,7 @@ class ReflectionService {
     preview: string;
     completionTime?: number;
   } {
-    const sessionDate = reflection.sessionId && typeof reflection.sessionId === 'object' && 'date' in reflection.sessionId
-      ? (reflection.sessionId as any).date 
-      : new Date().toISOString();
+    const sessionDate = reflection.createdAt || new Date().toISOString();
 
     const firstTextAnswer = reflection.answers?.find(
       answer => typeof answer.value === 'string' && answer.value.length > 10

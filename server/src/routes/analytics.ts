@@ -1,34 +1,31 @@
 import { Router } from 'express';
 import { analyticsController } from '../controllers/analyticsController.js';
-import { authenticate, isAdmin } from '../middleware/auth.js';
+import { isAuthenticated, hasRole, isAdmin } from '../middleware/auth.js';
 
 const router = Router();
 
 // All analytics routes require authentication
-router.use(authenticate);
+router.use(isAuthenticated);
 
-// Get revenue data
-router.get('/revenue', analyticsController.getRevenue);
+// Main analytics dashboard (comprehensive analytics)
+router.get('/dashboard', hasRole('coach', 'admin'), analyticsController.getDashboard);
 
-// Get user growth data
-router.get('/user-growth', analyticsController.getUserGrowth);
+// Individual analytics metrics
+router.get('/sessions', hasRole('coach', 'admin'), analyticsController.getSessionMetrics);
+router.get('/client-engagement', hasRole('coach', 'admin'), analyticsController.getClientEngagement);
+router.get('/coach-performance', hasRole('coach', 'admin'), analyticsController.getCoachPerformance);
+router.get('/reflections', hasRole('coach', 'admin'), analyticsController.getReflectionAnalytics);
 
-// Get session metrics
-router.get('/session-metrics', analyticsController.getSessionMetrics);
+// Legacy compatibility routes (keeping existing API contracts)
+router.get('/session-metrics', hasRole('coach', 'admin'), analyticsController.getSessionMetrics);
+router.get('/user-growth', hasRole('coach', 'admin'), analyticsController.getUserGrowth);
+router.get('/peak-usage', hasRole('coach', 'admin'), analyticsController.getPeakUsage);
 
-// Get coach performance
-router.get('/coach-performance', analyticsController.getCoachPerformance);
+// Revenue route (not implemented for this coaching platform)
+router.get('/revenue', isAdmin, analyticsController.getRevenue);
 
-// Get retention rates
-// router.get('/retention-rates', analyticsController.getRetentionRates); // Commented out - function likely missing
-
-// Get popular topics
-// router.get('/popular-topics', analyticsController.getPopularTopics); // Commented out due to missing Session.title
-
-// Get peak usage times
-router.get('/peak-usage', analyticsController.getPeakUsage);
-
-// Export analytics data
-router.post('/export', analyticsController.exportData);
+// Export functionality
+router.post('/export', hasRole('coach', 'admin'), analyticsController.exportData);
+router.get('/export', hasRole('coach', 'admin'), analyticsController.exportData);
 
 export default router;

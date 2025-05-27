@@ -44,7 +44,8 @@ const Navigation = () => {
         { to: '/coach/clients', icon: <Users className="w-4 h-4" />, label: t('nav.clients') },
         { to: '/coach/sessions', icon: <Calendar className="w-4 h-4" />, label: t('nav.sessions') },
         { to: '/coach/reflections', icon: <MessageSquare className="w-4 h-4" />, label: t('nav.reflections') },
-        { to: '/coach/resources', icon: <BarChart3 className="w-4 h-4" />, label: t('nav.resources') },
+        { to: '/coach/analytics', icon: <BarChart3 className="w-4 h-4" />, label: 'Analytics' },
+        { to: '/coach/resources', icon: <Settings className="w-4 h-4" />, label: t('nav.resources') },
       ];
     }
 
@@ -61,6 +62,7 @@ const Navigation = () => {
     if (profile.role === 'admin') {
       return [
         { to: '/admin', icon: <Settings className="w-4 h-4" />, label: 'Admin Console' },
+        { to: '/admin/analytics', icon: <BarChart3 className="w-4 h-4" />, label: 'Analytics' },
       ];
     }
 

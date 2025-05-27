@@ -28,6 +28,7 @@ const NotesDemo = lazy(() => import('./components/notes/NotesDemo').then(module 
 const ReflectionsPage = lazy(() => import('./pages/ReflectionsPage'));
 const ResourcesPage = lazy(() => import('./pages/ResourcesPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const Offline = lazy(() => import('./pages/Offline'));
 
 // Loading component with Lumea design
@@ -228,6 +229,14 @@ const App: React.FC = () => {
                   </RoleProtectedRoute>
                 } 
               />
+              <Route 
+                path="/coach/analytics" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['coach', 'admin']}>
+                    <AnalyticsPage />
+                  </RoleProtectedRoute>
+                } 
+              />
             </Route>
 
             {/* Protected Client Routes */}
@@ -289,6 +298,14 @@ const App: React.FC = () => {
                 element={
                   <RoleProtectedRoute allowedRoles={['admin']}>
                     <DebugPage />
+                  </RoleProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/analytics" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <AnalyticsPage />
                   </RoleProtectedRoute>
                 } 
               />
