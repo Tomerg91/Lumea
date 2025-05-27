@@ -23,6 +23,18 @@ interface UpdateSessionData {
   notes?: string;
 }
 
+// Type for session cancellation data
+interface CancelSessionData {
+  reason: 'coach_emergency' | 'client_request' | 'illness' | 'scheduling_conflict' | 'technical_issues' | 'weather' | 'personal_emergency' | 'other';
+  reasonText?: string;
+}
+
+// Type for session rescheduling data
+interface RescheduleSessionData {
+  newDate: string;
+  reason: string;
+}
+
 // Common fetch configuration with authentication
 const createFetchConfig = (options: RequestInit = {}): RequestInit => ({
   ...options,
@@ -188,7 +200,126 @@ export const updateSession = async (
   return updatedSession;
 };
 
-// Export types for use in other files
-export type { CreateSessionData, UpdateSessionStatusData, UpdateSessionData };
+export const cancelSession = async (
+  sessionId: string, 
+  cancelData: CancelSessionData
+): Promise<Session> => {
+  console.log('Attempting to cancel session:', { sessionId, cancelData });
+  
+  const response = await fetch(
+    `${API_BASE_URL}/sessions/${sessionId}/cancel`, 
+    createFetchConfig({
+      method: 'POST',
+      body: JSON.stringify(cancelData),
+    })
+  );
 
-// Add other session-related API functions here (e.g., updateSession, deleteSession) 
+  if (!response.ok) {
+    let errorMessage = 'Failed to cancel session';
+    
+    try {
+      const errorData = await response.json();
+      if (errorData.message) {
+        errorMessage = errorData.message;
+      } else if (errorData.error) {
+        errorMessage = errorData.error;
+      }
+      
+      // Provide user-friendly error messages
+      if (errorMessage.includes('minimum notice')) {
+        errorMessage = 'Sessions must be cancelled at least 24 hours in advance.';
+      } else if (errorMessage.includes('monthly limit')) {
+        errorMessage = 'You have reached the maximum number of cancellations for this month.';
+      } else if (errorMessage.includes('already cancelled')) {
+        errorMessage = 'This session has already been cancelled.';
+      }
+    } catch (parseError) {
+      console.error('Failed to parse cancellation error response:', parseError);
+    }
+    
+    throw new Error(errorMessage);
+  }
+  
+  const result = await response.json();
+  // Backend returns { success: true, message: string, session: Session }
+  return result.session;
+};
+
+export const rescheduleSession = async (
+  sessionId: string, 
+  rescheduleData: RescheduleSessionData
+): Promise<Session> => {
+  console.log('Attempting to reschedule session:', { sessionId, rescheduleData });
+  
+  const response = await fetch(
+    `${API_BASE_URL}/sessions/${sessionId}/reschedule`, 
+    createFetchConfig({
+      method: 'POST',
+      body: JSON.stringify(rescheduleData),
+    })
+  );
+
+  if (!response.ok) {
+    let errorMessage = 'Failed to reschedule session';
+    
+    try {
+      const errorData = await response.json();
+      if (errorData.message) {
+        errorMessage = errorData.message;
+      } else if (errorData.error) {
+        errorMessage = errorData.error;
+      }
+      
+      // Provide user-friendly error messages
+      if (errorMessage.includes('conflict')) {
+        errorMessage = 'The requested time slot conflicts with another session.';
+      } else if (errorMessage.includes('past date')) {
+        errorMessage = 'Cannot reschedule to a date in the past.';
+      } else if (errorMessage.includes('already rescheduled')) {
+        errorMessage = 'This session has already been rescheduled the maximum number of times.';
+      }
+    } catch (parseError) {
+      console.error('Failed to parse reschedule error response:', parseError);
+    }
+    
+    throw new Error(errorMessage);
+  }
+  
+  const result = await response.json();
+  // Backend returns { success: true, message: string, session: Session }
+  return result.session;
+};
+
+export const getAvailableSlots = async (
+  sessionId: string,
+  fromDate: string,
+  toDate: string,
+  duration?: number
+): Promise<{ start: string; end: string }[]> => {
+  console.log('Fetching available slots:', { sessionId, fromDate, toDate, duration });
+  
+  const params = new URLSearchParams({
+    fromDate,
+    toDate,
+    ...(duration && { duration: duration.toString() })
+  });
+  
+  const response = await fetch(
+    `${API_BASE_URL}/sessions/${sessionId}/available-slots?${params}`, 
+    createFetchConfig()
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ 
+      message: 'Failed to fetch available slots' 
+    }));
+    throw new Error(errorData.message || 'Failed to fetch available slots');
+  }
+  
+  const result = await response.json();
+  // Backend returns { success: true, availableSlots: Slot[], totalSlots: number }
+  return result.availableSlots || [];
+};
+
+// Export types for use in other files
+export type { CreateSessionData, UpdateSessionStatusData, UpdateSessionData, CancelSessionData, RescheduleSessionData }; 

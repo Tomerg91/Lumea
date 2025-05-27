@@ -176,6 +176,12 @@ export function collectWebVitals(): Partial<PerformanceMetrics> {
 export async function reportPerformanceMetrics(): Promise<void> {
   try {
     const metrics = collectWebVitals();
+    
+    // Only report if we have meaningful data
+    if (!metrics.loadTime && !metrics.firstContentfulPaint) {
+      return;
+    }
+
     await fetch('/api/metrics/performance', {
       method: 'POST',
       headers: {
@@ -186,7 +192,8 @@ export async function reportPerformanceMetrics(): Promise<void> {
       keepalive: true,
     });
   } catch (err) {
-    console.error('Error reporting performance metrics:', err);
+    // Silently fail to avoid blocking the app
+    console.debug('Performance metrics reporting failed:', err);
   }
 }
 
@@ -204,21 +211,40 @@ export function initPerformanceMonitoring(): void {
     mark('app:loaded');
     measure('app:initialization', 'app:init', 'app:loaded');
 
-    // Delay reporting slightly to include load metrics
+    // Delay reporting to ensure all metrics are captured
     setTimeout(() => {
       reportPerformanceMetrics();
-    }, 1000);
+    }, 5000); // Increased delay
   });
 
-  // Report metrics on page unload
+  // Report metrics on page unload (but don't block)
   window.addEventListener('beforeunload', () => {
     mark('app:unload');
+    // Don't wait for the response
     reportPerformanceMetrics();
   });
 
-  // Setup periodic reporting
-  const REPORTING_INTERVAL = 60000; // 1 minute
-  setInterval(() => {
-    reportPerformanceMetrics();
-  }, REPORTING_INTERVAL);
+  // Reduce periodic reporting frequency dramatically to save bandwidth
+  // Only report every 10 minutes and only if the server is available
+  const REPORTING_INTERVAL = 600000; // 10 minutes instead of 5 minutes
+  let consecutiveFailures = 0;
+  const MAX_FAILURES = 3;
+
+  const periodicReport = async () => {
+    // Skip if we've had too many consecutive failures
+    if (consecutiveFailures >= MAX_FAILURES) {
+      console.debug('Performance monitoring paused due to connection issues');
+      return;
+    }
+
+    try {
+      await reportPerformanceMetrics();
+      consecutiveFailures = 0; // Reset on success
+    } catch (err) {
+      consecutiveFailures++;
+      console.debug(`Performance reporting failed ${consecutiveFailures}/${MAX_FAILURES} times`);
+    }
+  };
+
+  setInterval(periodicReport, REPORTING_INTERVAL);
 }

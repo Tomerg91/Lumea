@@ -62,7 +62,11 @@
     "createdAt": "Created",
     "updatedAt": "Last Updated",
     "editSession": "Edit Session",
-    "deleteSession": "Delete Session"
+    "deleteSession": "Delete Session",
+    "quickActions": "Quick Actions",
+    "callClient": "Call Client",
+    "messageClient": "Message Client",
+    "actions": "Actions"
   },
   "validation": {
     "required": "This field is required",
@@ -138,12 +142,52 @@
     "duration": "Duration",
     "format": "Format",
     "size": "Size",
+    "holdToRecord": "Hold to Record",
+    "releaseToStop": "Release to Stop",
+    "recordAudio": "Record Audio",
+    "permissionRequired": "Microphone Permission Required",
+    "iosPermissionInstructions": "Please allow microphone access in Safari settings to record audio.",
+    "androidPermissionInstructions": "Please allow microphone access when prompted to record audio.",
+    "safariRecommended": "Safari browser is recommended for best recording experience on iOS.",
+    "chromeRecommended": "Chrome browser is recommended for best recording experience on Android.",
     "errors": {
       "unsupportedBrowser": "Audio recording is not supported in your browser",
       "microphoneAccess": "Unable to access microphone",
       "permissionDenied": "Microphone permission denied. Please allow microphone access to record audio.",
       "noMicrophone": "No microphone found. Please connect a microphone and try again.",
-      "recordingFailed": "Recording failed. Please try again."
+      "recordingFailed": "Recording failed. Please try again.",
+      "notSupported": "Audio recording is not supported on this device."
+    }
+  },
+  "audioPlayer": {
+    "recording": "Audio Recording",
+    "download": "Download",
+    "share": "Share",
+    "delete": "Delete",
+    "errors": {
+      "playbackFailed": "Audio playback failed. Please try again."
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications",
+    "emptyDescription": "You're all caught up! Notifications will appear here when you receive them.",
+    "unread": "Unread",
+    "priority": "priority",
+    "markAsRead": "Mark as Read",
+    "markAllAsRead": "Mark All as Read",
+    "archive": "Archive",
+    "delete": "Delete",
+    "loadMore": "Load More",
+    "pushEnabled": "Push Enabled",
+    "enablePush": "Enable Push",
+    "types": {
+      "session_reminder": "Session Reminder",
+      "session_confirmation": "Session Confirmed",
+      "session_cancelled": "Session Cancelled",
+      "session_rescheduled": "Session Rescheduled",
+      "cancellation_request": "Cancellation Request",
+      "reschedule_request": "Reschedule Request"
     }
   }
 } 

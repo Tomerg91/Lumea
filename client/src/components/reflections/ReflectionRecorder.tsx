@@ -6,6 +6,7 @@ import { Button } from '../ui/button';
 import { Textarea } from '../ui/textarea';
 import { Card, CardContent } from '../ui/card';
 import { toast } from '../ui/use-toast';
+import AudioPlayer from '../audio/AudioPlayer';
 import {
   Play,
   Pause,
@@ -102,41 +103,6 @@ export default function ReflectionRecorder({
       });
     } catch (error) {
       console.error('Error submitting reflection:', error);
-    }
-  };
-
-  // Handle audio playback
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    if (!audioBlobUrl) return;
-
-    const audio = new Audio(audioBlobUrl);
-    setAudioElement(audio);
-
-    audio.addEventListener('ended', () => {
-      setIsPlaying(false);
-    });
-
-    return () => {
-      audio.pause();
-      audio.src = '';
-      audio.removeEventListener('ended', () => {
-        setIsPlaying(false);
-      });
-    };
-  }, [audioBlobUrl]);
-
-  const togglePlayback = () => {
-    if (!audioElement) return;
-
-    if (isPlaying) {
-      audioElement.pause();
-      setIsPlaying(false);
-    } else {
-      audioElement.play();
-      setIsPlaying(true);
     }
   };
 
@@ -266,25 +232,30 @@ export default function ReflectionRecorder({
                     )}
                   </div>
                 ) : (
-                  <div className="flex space-x-2">
-                    <Button
-                      type="button"
-                      variant={isPlaying ? 'outline' : 'default'}
-                      onClick={togglePlayback}
-                      className="rounded-full"
-                      size="lg"
-                    >
-                      {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      onClick={resetRecording}
-                      className="rounded-full"
-                      size="lg"
-                    >
-                      {t('common.reset', 'Reset')}
-                    </Button>
+                  <div className="space-y-4">
+                    <AudioPlayer
+                      audioBlob={audioBlob}
+                      audioUrl={audioBlobUrl || ''}
+                      duration={duration}
+                      showWaveform={true}
+                      showControls={true}
+                      showVolume={false}
+                      showSpeed={false}
+                      showDownload={false}
+                      autoPlay={false}
+                      className="max-w-md mx-auto"
+                    />
+                    <div className="flex justify-center">
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={resetRecording}
+                        className="rounded-full"
+                        size="lg"
+                      >
+                        {t('common.reset', 'Reset')}
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -328,21 +299,19 @@ export default function ReflectionRecorder({
                   <h4 className="text-sm font-medium">
                     {t('reflections.audioReview', 'Audio Reflection')}
                   </h4>
-                  <div className="p-3 bg-gray-50 rounded-md flex justify-center">
-                    <Button
-                      type="button"
-                      variant={isPlaying ? 'outline' : 'default'}
-                      onClick={togglePlayback}
-                      className="rounded-full"
-                      size="sm"
-                    >
-                      {isPlaying ? (
-                        <Pause className="h-4 w-4 mr-2" />
-                      ) : (
-                        <Play className="h-4 w-4 mr-2" />
-                      )}
-                      {isPlaying ? t('common.pause', 'Pause') : t('common.play', 'Play')}
-                    </Button>
+                  <div className="p-3 bg-gray-50 rounded-md">
+                    <AudioPlayer
+                      audioBlob={audioBlob}
+                      audioUrl={audioBlobUrl || ''}
+                      duration={duration}
+                      showWaveform={true}
+                      showControls={true}
+                      showVolume={false}
+                      showSpeed={false}
+                      showDownload={false}
+                      autoPlay={false}
+                      className="max-w-md mx-auto"
+                    />
                   </div>
                 </div>
               )}

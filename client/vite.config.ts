@@ -159,14 +159,35 @@ export default defineConfig(({ mode }) => {
       port: 8080,
       hmr: {
         overlay: true,
+        port: 8081, // Use a different port for HMR to avoid conflicts
       },
       proxy: {
         '/api': {
-          target: 'http://localhost:3000',
+          target: 'http://localhost:3001',
           changeOrigin: true,
           secure: false,
+          timeout: 10000, // 10 second timeout
+          configure: (proxy, options) => {
+            proxy.on('error', (err, req, res) => {
+              console.error('Proxy error:', err.message, 'for', req.url);
+            });
+            // Only log in development and for non-metrics endpoints to reduce noise
+            if (mode === 'development') {
+              proxy.on('proxyReq', (proxyReq, req, res) => {
+                if (!req.url?.includes('/metrics/')) {
+                  console.log('→', req.method, req.url);
+                }
+              });
+            }
+          },
         },
       },
+      // Improve development server performance
+      fs: {
+        strict: false,
+      },
+      // Cache optimizations
+      force: false, // Don't force dependency re-optimization on every start
     },
     // Add test configuration
     test: {
@@ -192,6 +213,15 @@ export default defineConfig(({ mode }) => {
     // Enable top-level await support
     esbuild: {
       target: ['es2020']
-    }
+    },
+    // CSS optimization
+    css: {
+      devSourcemap: mode === 'development',
+      preprocessorOptions: {
+        scss: {
+          charset: false,
+        },
+      },
+    },
   };
 });

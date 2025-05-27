@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { Schema } from 'joi';
-import { APIError } from './error.js';
+import { APIError, ErrorCode } from './error.js';
 
 // Middleware to validate request body
 export const validateBody = (schema: Schema) => {
@@ -16,7 +16,7 @@ export const validateBody = (schema: Schema) => {
         message: detail.message,
       }));
 
-      throw new APIError(400, 'Validation Error', errors);
+      throw APIError.validation('Validation Error', errors);
     }
 
     next();
@@ -37,7 +37,7 @@ export const validateQuery = (schema: Schema) => {
         message: detail.message,
       }));
 
-      throw new APIError(400, 'Validation Error', errors);
+      throw APIError.validation('Validation Error', errors);
     }
 
     next();
@@ -58,7 +58,7 @@ export const validateParams = (schema: Schema) => {
         message: detail.message,
       }));
 
-      throw new APIError(400, 'Validation Error', errors);
+      throw APIError.validation('Validation Error', errors);
     }
 
     next();

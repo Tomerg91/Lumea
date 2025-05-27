@@ -5,23 +5,142 @@ import crypto from 'crypto';
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
 const ENCRYPTION_IV = process.env.ENCRYPTION_IV || crypto.randomBytes(16).toString('hex');
 
+// Privacy and access control enums
+export enum NoteAccessLevel {
+  PRIVATE = 'private',                    // Only the coach who created it
+  SUPERVISOR = 'supervisor',              // Coach + designated supervisors
+  TEAM = 'team',                         // Coach + team members
+  ORGANIZATION = 'organization'           // All coaches in organization
+}
+
+export enum AuditAction {
+  CREATED = 'created',
+  VIEWED = 'viewed',
+  UPDATED = 'updated',
+  DELETED = 'deleted',
+  SHARED = 'shared',
+  UNSHARED = 'unshared',
+  EXPORTED = 'exported'
+}
+
+// Audit trail interface
+export interface IAuditEntry {
+  action: AuditAction;
+  userId: string;
+  userRole: string;
+  timestamp: Date;
+  ipAddress?: string;
+  userAgent?: string;
+  details?: Record<string, any>;
+}
+
+// Privacy settings interface
+export interface INotePrivacySettings {
+  accessLevel: NoteAccessLevel;
+  allowExport: boolean;
+  allowSharing: boolean;
+  retentionPeriodDays?: number;
+  autoDeleteAfterDays?: number;
+  requireReasonForAccess: boolean;
+  sensitiveContent: boolean;
+  supervisionRequired: boolean;
+}
+
 export interface ICoachNote extends Document {
+  _id: string;
   sessionId: mongoose.Types.ObjectId;
   coachId: mongoose.Types.ObjectId;
-  // Properties used in tests
-  coach?: mongoose.Types.ObjectId;
-  client?: mongoose.Types.ObjectId;
-  title?: string;
-  content?: string;
-  visibility?: 'private' | 'private_to_coach' | 'shared' | 'public';
-  // Original properties
   textContent: string;
+  title?: string;
   audioFileId?: mongoose.Types.ObjectId;
-  tags?: mongoose.Types.ObjectId[];
+  tags?: string[];
   isEncrypted: boolean;
+  searchableContent?: string;
+  
+  // Privacy and access control
+  privacySettings: INotePrivacySettings;
+  accessLevel: NoteAccessLevel;
+  sharedWith: string[]; // Array of user IDs who have explicit access
+  
+  // Audit trail
+  auditTrail: IAuditEntry[];
+  lastAccessedAt?: Date;
+  accessCount: number;
+  
+  // Metadata
   createdAt: Date;
   updatedAt: Date;
+  encryptionVersion?: string;
+  
+  // Backward compatibility fields
+  coach?: mongoose.Types.ObjectId;
+  client?: mongoose.Types.ObjectId;
+  content?: string;
+  visibility?: 'private' | 'private_to_coach' | 'shared' | 'public';
+  
+  // Methods
+  encryptText(text: string): string;
+  decryptText(): string;
+  addAuditEntry(action: AuditAction, userId: string, userRole: string, details?: Record<string, any>, ipAddress?: string, userAgent?: string): void;
+  checkAccess(userId: string, userRole: string): boolean;
+  updateAccessTracking(userId: string): void;
+  toSafeObject(): any;
 }
+
+// Audit entry schema
+const auditEntrySchema = new Schema({
+  action: {
+    type: String,
+    enum: Object.values(AuditAction),
+    required: true
+  },
+  userId: {
+    type: String,
+    required: true
+  },
+  userRole: {
+    type: String,
+    required: true
+  },
+  timestamp: {
+    type: Date,
+    default: Date.now
+  },
+  ipAddress: String,
+  userAgent: String,
+  details: Schema.Types.Mixed
+}, { _id: false });
+
+// Privacy settings schema
+const privacySettingsSchema = new Schema({
+  accessLevel: {
+    type: String,
+    enum: Object.values(NoteAccessLevel),
+    default: NoteAccessLevel.PRIVATE
+  },
+  allowExport: {
+    type: Boolean,
+    default: false
+  },
+  allowSharing: {
+    type: Boolean,
+    default: false
+  },
+  retentionPeriodDays: Number,
+  autoDeleteAfterDays: Number,
+  requireReasonForAccess: {
+    type: Boolean,
+    default: false
+  },
+  sensitiveContent: {
+    type: Boolean,
+    default: false
+  },
+  supervisionRequired: {
+    type: Boolean,
+    default: false
+  }
+}, { _id: false });
 
 const coachNoteSchema = new Schema<ICoachNote>(
   {
@@ -35,7 +154,72 @@ const coachNoteSchema = new Schema<ICoachNote>(
       ref: 'User',
       required: true,
     },
-    // Fields for backward compatibility with tests
+    textContent: {
+      type: String,
+      required: true,
+    },
+    title: {
+      type: String,
+      trim: true,
+    },
+    audioFileId: {
+      type: Schema.Types.ObjectId,
+      ref: 'File',
+    },
+    tags: [{
+      type: String,
+      trim: true
+    }],
+    isEncrypted: {
+      type: Boolean,
+      default: true,
+    },
+    searchableContent: {
+      type: String,
+      trim: true,
+    },
+    
+    // Privacy and access control
+    privacySettings: {
+      type: privacySettingsSchema,
+      required: true,
+      default: () => ({
+        accessLevel: NoteAccessLevel.PRIVATE,
+        allowExport: false,
+        allowSharing: false,
+        requireReasonForAccess: false,
+        sensitiveContent: false,
+        supervisionRequired: false
+      })
+    },
+    accessLevel: {
+      type: String,
+      enum: Object.values(NoteAccessLevel),
+      default: NoteAccessLevel.PRIVATE,
+      required: true,
+    },
+    sharedWith: [{
+      type: String,
+      trim: true
+    }],
+    
+    // Audit trail
+    auditTrail: [auditEntrySchema],
+    lastAccessedAt: {
+      type: Date,
+    },
+    accessCount: {
+      type: Number,
+      default: 0,
+    },
+    
+    // Metadata
+    encryptionVersion: {
+      type: String,
+      default: '1.0'
+    },
+    
+    // Backward compatibility fields
     coach: {
       type: Schema.Types.ObjectId,
       ref: 'User',
@@ -43,10 +227,6 @@ const coachNoteSchema = new Schema<ICoachNote>(
     client: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-    },
-    title: {
-      type: String,
-      trim: true,
     },
     content: {
       type: String,
@@ -56,40 +236,68 @@ const coachNoteSchema = new Schema<ICoachNote>(
       type: String,
       enum: ['private', 'private_to_coach', 'shared', 'public'],
       default: 'private',
-    },
-    // Original fields
-    textContent: {
-      type: String,
-      required: true,
-    },
-    audioFileId: {
-      type: Schema.Types.ObjectId,
-      ref: 'File',
-    },
-    tags: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: 'Tag',
-      },
-    ],
-    isEncrypted: {
-      type: Boolean,
-      default: true,
-    },
+    }
   },
   {
     timestamps: true,
   }
 );
 
-// Index for faster queries
+// Indexes for faster queries and security
 coachNoteSchema.index({ sessionId: 1 });
 coachNoteSchema.index({ coachId: 1 });
 coachNoteSchema.index({ coach: 1 });
 coachNoteSchema.index({ client: 1 });
+coachNoteSchema.index({ accessLevel: 1 });
+coachNoteSchema.index({ 'auditTrail.action': 1 });
+coachNoteSchema.index({ 'auditTrail.userId': 1 });
+coachNoteSchema.index({ lastAccessedAt: 1 });
+coachNoteSchema.index({ createdAt: 1 });
 
-// Pre-save middleware to encrypt text content
+// Full-text search indexes
+coachNoteSchema.index({ 
+  title: 'text', 
+  tags: 'text',
+  searchableContent: 'text'
+}, {
+  weights: {
+    title: 10,        // Highest weight for titles
+    tags: 5,          // Medium weight for tags
+    searchableContent: 1  // Normal weight for content
+  },
+  name: 'full_text_search'
+});
+
+// Additional indexes for filtering and sorting
+coachNoteSchema.index({ tags: 1 });
+coachNoteSchema.index({ createdAt: -1 });
+coachNoteSchema.index({ updatedAt: -1 });
+coachNoteSchema.index({ coachId: 1, createdAt: -1 });
+coachNoteSchema.index({ accessLevel: 1, createdAt: -1 });
+
+// Pre-save middleware to encrypt text content and add audit entry
 coachNoteSchema.pre('save', function (next) {
+  // Generate searchable content before encryption
+  if (this.isModified('textContent') && this.textContent) {
+    // Create searchable content by extracting key terms and sanitizing
+    const cleanContent = this.textContent
+      .replace(/[^\w\s]/g, ' ')  // Remove special characters
+      .replace(/\s+/g, ' ')      // Normalize whitespace
+      .trim()
+      .toLowerCase();
+    
+    // Extract meaningful keywords (remove common words)
+    const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'been', 'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those']);
+    const keywords = cleanContent
+      .split(' ')
+      .filter(word => word.length > 2 && !stopWords.has(word))
+      .slice(0, 50)  // Limit to first 50 meaningful words
+      .join(' ');
+    
+    this.searchableContent = keywords;
+  }
+
+  // Handle encryption
   if (this.isModified('textContent') && this.isEncrypted) {
     try {
       const cipher = crypto.createCipheriv(
@@ -106,6 +314,12 @@ coachNoteSchema.pre('save', function (next) {
       return;
     }
   }
+  
+  // Sync accessLevel with privacy settings
+  if (this.privacySettings && this.privacySettings.accessLevel) {
+    this.accessLevel = this.privacySettings.accessLevel;
+  }
+  
   next();
 });
 
@@ -128,6 +342,108 @@ coachNoteSchema.methods.decryptText = function (): string {
     console.error('Error decrypting coach note text:', error);
     return 'Error decrypting content';
   }
+};
+
+// Method to encrypt text content
+coachNoteSchema.methods.encryptText = function (text: string): string {
+  if (!this.isEncrypted) {
+    return text;
+  }
+
+  try {
+    const cipher = crypto.createCipheriv(
+      'aes-256-cbc',
+      Buffer.from(ENCRYPTION_KEY, 'hex'),
+      Buffer.from(ENCRYPTION_IV, 'hex')
+    );
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return encrypted;
+  } catch (error) {
+    console.error('Error encrypting text:', error);
+    return text;
+  }
+};
+
+// Method to add audit trail entry
+coachNoteSchema.methods.addAuditEntry = function (
+  action: AuditAction,
+  userId: string,
+  userRole: string,
+  details?: Record<string, any>,
+  ipAddress?: string,
+  userAgent?: string
+): void {
+  const auditEntry: IAuditEntry = {
+    action,
+    userId,
+    userRole,
+    timestamp: new Date(),
+    ipAddress,
+    userAgent,
+    details
+  };
+  
+  this.auditTrail.push(auditEntry);
+  
+  // Keep only last 100 audit entries to prevent bloat
+  if (this.auditTrail.length > 100) {
+    this.auditTrail = this.auditTrail.slice(-100);
+  }
+};
+
+// Method to check access permissions
+coachNoteSchema.methods.checkAccess = function (userId: string, userRole: string): boolean {
+  // Owner always has access
+  if (this.coachId.toString() === userId) {
+    return true;
+  }
+  
+  // Check explicit sharing
+  if (this.sharedWith.includes(userId)) {
+    return true;
+  }
+  
+  // Check access level permissions
+  switch (this.accessLevel) {
+    case NoteAccessLevel.PRIVATE:
+      return false;
+    
+    case NoteAccessLevel.SUPERVISOR:
+      return userRole === 'supervisor' || userRole === 'admin';
+    
+    case NoteAccessLevel.TEAM:
+      return userRole === 'coach' || userRole === 'supervisor' || userRole === 'admin';
+    
+    case NoteAccessLevel.ORGANIZATION:
+      return ['coach', 'supervisor', 'admin'].includes(userRole);
+    
+    default:
+      return false;
+  }
+};
+
+// Method to update access tracking
+coachNoteSchema.methods.updateAccessTracking = function (userId: string): void {
+  this.lastAccessedAt = new Date();
+  this.accessCount = (this.accessCount || 0) + 1;
+};
+
+// Method to return safe object (without sensitive data)
+coachNoteSchema.methods.toSafeObject = function (): any {
+  const obj = this.toObject();
+  
+  // Remove sensitive audit trail details for non-owners
+  if (obj.auditTrail) {
+    obj.auditTrail = obj.auditTrail.map((entry: any) => ({
+      action: entry.action,
+      timestamp: entry.timestamp,
+      userRole: entry.userRole
+      // Remove userId, ipAddress, userAgent, details for privacy
+    }));
+  }
+  
+  return obj;
 };
 
 export const CoachNote = mongoose.model<ICoachNote>('CoachNote', coachNoteSchema);

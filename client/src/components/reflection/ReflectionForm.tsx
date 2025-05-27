@@ -135,7 +135,16 @@ export const ReflectionForm: React.FC<ReflectionFormProps> = ({
         const answer = formState.answers[question.id];
 
         if (question.required) {
-          if (!answer || answer.value === '' || answer.value === null || answer.value === undefined) {
+          if (question.type === 'audio') {
+            // For audio questions, check if audioData exists
+            if (!answer || !answer.audioData) {
+              errors.push({
+                questionId: question.id,
+                message: t('validation.required'),
+                type: 'required',
+              });
+            }
+          } else if (!answer || answer.value === '' || answer.value === null || answer.value === undefined) {
             errors.push({
               questionId: question.id,
               message: t('validation.required'),
@@ -146,22 +155,43 @@ export const ReflectionForm: React.FC<ReflectionFormProps> = ({
 
         if (answer && question.validationRules) {
           const rules = question.validationRules;
-          const stringValue = String(answer.value);
+          
+          if (question.type === 'audio' && answer.audioData) {
+            // Audio-specific validation
+            if (rules.minValue && answer.audioData.duration < rules.minValue) {
+              errors.push({
+                questionId: question.id,
+                message: t('reflection.validation.minDuration', { min: rules.minValue }),
+                type: 'minLength', // Reusing minLength type for duration
+              });
+            }
+            
+            if (rules.maxValue && answer.audioData.duration > rules.maxValue) {
+              errors.push({
+                questionId: question.id,
+                message: t('reflection.validation.maxDuration', { max: rules.maxValue }),
+                type: 'maxLength', // Reusing maxLength type for duration
+              });
+            }
+          } else {
+            // Text-based validation for non-audio questions
+            const stringValue = String(answer.value);
 
-          if (rules.minLength && stringValue.length < rules.minLength) {
-            errors.push({
-              questionId: question.id,
-              message: t('reflection.validation.minLength', { min: rules.minLength }),
-              type: 'minLength',
-            });
-          }
+            if (rules.minLength && stringValue.length < rules.minLength) {
+              errors.push({
+                questionId: question.id,
+                message: t('reflection.validation.minLength', { min: rules.minLength }),
+                type: 'minLength',
+              });
+            }
 
-          if (rules.maxLength && stringValue.length > rules.maxLength) {
-            errors.push({
-              questionId: question.id,
-              message: t('reflection.validation.maxLength', { max: rules.maxLength }),
-              type: 'maxLength',
-            });
+            if (rules.maxLength && stringValue.length > rules.maxLength) {
+              errors.push({
+                questionId: question.id,
+                message: t('reflection.validation.maxLength', { max: rules.maxLength }),
+                type: 'maxLength',
+              });
+            }
           }
         }
       });
@@ -270,6 +300,18 @@ export const ReflectionForm: React.FC<ReflectionFormProps> = ({
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [formState.isDirty, formState.autoSaveStatus]);
+
+  // Cleanup audio URLs on unmount
+  useEffect(() => {
+    return () => {
+      // Revoke all audio URLs to prevent memory leaks
+      Object.values(formState.answers).forEach(answer => {
+        if (answer.audioData?.url) {
+          URL.revokeObjectURL(answer.audioData.url);
+        }
+      });
+    };
+  }, [formState.answers]);
 
   const currentSection = template.sections[formState.currentSectionIndex];
 

@@ -1,0 +1,552 @@
+/* Mobile-specific styles for Satya Coaching */
+
+/* Mobile-first responsive design enhancements */
+@media (max-width: 640px) {
+  /* Improve text sizing for mobile */
+  .mobile-text-lg {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+
+  /* Mobile-optimized buttons */
+  .mobile-btn {
+    min-height: 44px; /* iOS accessibility guidelines */
+    padding: 12px 16px;
+  }
+
+  /* Mobile navigation improvements */
+  .mobile-nav-item {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 4px 0;
+  }
+
+  /* Mobile card spacing */
+  .mobile-card {
+    margin: 16px;
+    padding: 16px;
+  }
+
+  /* Mobile-friendly form inputs */
+  .mobile-input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  /* Mobile grid adjustments */
+  .mobile-grid-1 {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Mobile typography scaling */
+  .mobile-heading {
+    font-size: 2rem;
+    line-height: 1.2;
+  }
+
+  .mobile-subheading {
+    font-size: 1.25rem;
+    line-height: 1.4;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .tablet-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+/* Touch-friendly improvements */
+@media (hover: none) and (pointer: coarse) {
+  /* Increase tap targets for touch devices */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Remove hover effects on touch devices */
+  .hover-lift:hover {
+    transform: none;
+    box-shadow: inherit;
+  }
+
+  /* Add active states for better touch feedback */
+  .touch-feedback:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease-in-out;
+  }
+}
+
+/* Dark mode mobile adjustments */
+@media (prefers-color-scheme: dark) and (max-width: 640px) {
+  .mobile-dark-bg {
+    background-color: rgba(33, 15, 15, 0.9);
+  }
+
+  .mobile-dark-text {
+    color: rgba(248, 240, 232, 0.9);
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-bounce-gentle,
+  .animate-pulse-slow,
+  .floating {
+    animation: none;
+  }
+
+  .hover-lift {
+    transition: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .high-contrast-border {
+    border-width: 2px;
+    border-color: currentColor;
+  }
+
+  .high-contrast-text {
+    color: #000;
+    background-color: #fff;
+  }
+}
+
+/* Mobile Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  /* Fix iOS viewport issues */
+  .ios-safe-area {
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* Fix iOS input zoom */
+  .ios-input {
+    font-size: 16px;
+    transform: scale(1);
+  }
+}
+
+/* Mobile-specific styles */
+
+/* Ensure proper mobile viewport behavior */
+@media screen and (max-width: 768px) {
+  /* Add any mobile-specific styles here */
+  .mobile-only {
+    display: block;
+  }
+  
+  .desktop-only {
+    display: none;
+  }
+}
+
+/* For now, this file contains basic mobile utilities */
+/* Add more mobile-specific styles as needed */
+
+/* Mobile-specific styles for Lumea App */
+
+/* Mobile-first responsive design enhancements */
+@media (max-width: 640px) {
+  /* Improve text sizing for mobile */
+  .mobile-text-lg {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+
+  /* Mobile-optimized buttons */
+  .mobile-btn {
+    min-height: 44px; /* iOS accessibility guidelines */
+    padding: 12px 16px;
+  }
+
+  /* Mobile navigation improvements */
+  .mobile-nav-item {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 4px 0;
+  }
+
+  /* Mobile card spacing */
+  .mobile-card {
+    margin: 16px;
+    padding: 16px;
+  }
+
+  /* Mobile-friendly form inputs */
+  .mobile-input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  /* Mobile grid adjustments */
+  .mobile-grid-1 {
+    grid-template-columns: 1fr;
+  }
+
+  /* Hero section mobile adjustments */
+  .hero-mobile {
+    padding: 40px 16px;
+  }
+
+  .hero-mobile h1 {
+    font-size: 2.5rem;
+    line-height: 1.2;
+  }
+
+  /* Features grid mobile */
+  .features-mobile {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  /* Mobile testimonials */
+  .testimonials-mobile {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  /* Mobile CTA adjustments */
+  .cta-mobile {
+    padding: 32px 16px;
+  }
+
+  /* RTL specific mobile adjustments */
+  [dir="rtl"] .mobile-nav-item {
+    text-align: right;
+  }
+
+  [dir="rtl"] .mobile-card {
+    text-align: right;
+  }
+
+  /* Glass card mobile optimizations */
+  .glass-card-mobile {
+    backdrop-filter: blur(8px);
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  /* Mobile hover states (for touch devices) */
+  @media (hover: none) {
+    .hover-lift:hover {
+      transform: none;
+    }
+    
+    .mobile-touch-feedback:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
+  }
+}
+
+/* Tablet specific adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .tablet-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tablet-hero {
+    padding: 60px 24px;
+  }
+
+  .tablet-features {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
+  }
+}
+
+/* Enhanced mobile animations */
+@media (prefers-reduced-motion: no-preference) {
+  .mobile-fade-in {
+    animation: mobileSlideUp 0.6s ease-out;
+  }
+
+  @keyframes mobileSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .mobile-slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+  }
+}
+
+/* Mobile accessibility enhancements */
+@media (max-width: 640px) {
+  /* Larger touch targets */
+  button, .btn-primary, .btn-secondary {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Better contrast for small screens */
+  .mobile-high-contrast {
+    filter: contrast(1.1);
+  }
+
+  /* Improved spacing for readability */
+  .mobile-content-spacing {
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+}
+
+/* Optimize for mobile performance */
+@media (max-width: 768px) {
+  /* Reduce animations on mobile for better performance */
+  .low-end-device *,
+  .reduce-motion * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* Optimize touch targets */
+  .btn-primary,
+  .btn-secondary,
+  .btn-tertiary {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Improve scrolling performance */
+  .glass-card,
+  .card-lumea {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
+  /* Reduce backdrop blur on low-end devices */
+  .low-end-device .glass-card,
+  .low-end-device .glass-card-strong {
+    backdrop-filter: none;
+    background: rgba(255, 255, 255, 0.9);
+  }
+
+  /* Optimize font rendering */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeSpeed;
+  }
+
+  /* Reduce complex gradients on slow connections */
+  .slow-connection .bg-gradient-background {
+    background: var(--lavender-soft);
+  }
+}
+
+/* Reduce motion for accessibility and performance */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Mobile Reflection Form Styles */
+.mobile-reflection-form {
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.mobile-reflection-form .safe-area-bottom {
+  padding-bottom: calc(1rem + var(--safe-area-inset-bottom));
+}
+
+/* Mobile Rich Text Editor */
+.mobile-rich-text-editor .mobile-format-toolbar {
+  border-radius: 0;
+}
+
+.mobile-rich-text-editor [contenteditable]:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+  font-style: italic;
+}
+
+.mobile-rich-text-editor [contenteditable]:focus:empty:before {
+  color: #d1d5db;
+}
+
+/* Mobile Audio Components */
+.mobile-audio-recorder {
+  --recording-color: #ef4444;
+  --success-color: #10b981;
+}
+
+.mobile-audio-recorder .recording-ring {
+  border: 3px solid var(--recording-color);
+  animation: pulse-ring 2s infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 20px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.mobile-audio-player .touch-progress-bar {
+  touch-action: none;
+  user-select: none;
+}
+
+/* Mobile Form Input Styles */
+.mobile-form-input {
+  font-size: 16px; /* Prevent zoom on iOS */
+  line-height: 1.5;
+  padding: 16px;
+  border-radius: 16px;
+}
+
+.mobile-form-input:focus {
+  outline: none;
+  border-color: var(--lumea-primary);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* Mobile Scale Input */
+.mobile-scale-input input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  height: 32px;
+}
+
+.mobile-scale-input input[type="range"]::-webkit-slider-track {
+  background: #e5e7eb;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.mobile-scale-input input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--lumea-primary);
+  height: 24px;
+  width: 24px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+
+.mobile-scale-input input[type="range"]::-moz-range-track {
+  background: #e5e7eb;
+  height: 8px;
+  border-radius: 4px;
+  border: none;
+}
+
+.mobile-scale-input input[type="range"]::-moz-range-thumb {
+  background: var(--lumea-primary);
+  height: 24px;
+  width: 24px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+
+/* Mobile Progress Indicator */
+.mobile-progress-indicator .progress-bar {
+  background: linear-gradient(
+    90deg,
+    var(--lumea-primary) 0%,
+    var(--lumea-secondary) 100%
+  );
+  border-radius: 4px;
+  transition: width 0.3s ease-in-out;
+}
+
+/* Mobile Action Sheet */
+.mobile-action-sheet {
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.mobile-action-sheet.open {
+  transform: translateY(0);
+}
+
+/* Mobile Haptic Feedback Classes */
+.haptic-light:active {
+  animation: haptic-light 0.1s ease-out;
+}
+
+.haptic-medium:active {
+  animation: haptic-medium 0.15s ease-out;
+}
+
+.haptic-heavy:active {
+  animation: haptic-heavy 0.2s ease-out;
+}
+
+@keyframes haptic-light {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.98); }
+  100% { transform: scale(1); }
+}
+
+@keyframes haptic-medium {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+@keyframes haptic-heavy {
+  0% { transform: scale(1); }
+  25% { transform: scale(0.92); }
+  50% { transform: scale(0.95); }
+  75% { transform: scale(0.98); }
+  100% { transform: scale(1); }
+}
+
+/* Dark Mode Support for Mobile Reflection Components */
+@media (prefers-color-scheme: dark) {
+  .mobile-rich-text-editor [contenteditable]:empty:before {
+    color: #6b7280;
+  }
+  
+  .mobile-form-input {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+} 

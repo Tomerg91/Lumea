@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { getSupabaseClient } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { AuthError, Session, User } from '@supabase/supabase-js';
 import type { Session as TypeSession, User as TypeUser } from '@supabase/supabase-js';
 
@@ -158,7 +158,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('[AuthContext] Attempting to get initial session...');
       try {
         // Use the appropriate client based on availability
-        const client = getSupabaseClient();
+        const client = supabase;
 
         // Fetch session with error handling
         const {
@@ -208,7 +208,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('[AuthContext] Setting up onAuthStateChange listener...');
     const {
       data: { subscription },
-    } = getSupabaseClient().auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (ignore) return; // Prevent updates after unmount
       console.log(
         '[AuthContext] onAuthStateChange triggered. Event:',
@@ -265,7 +265,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     debounce(async (metadata: Record<string, any>) => {
       return retryWithBackoff(
         async () => {
-          const client = getSupabaseClient();
+          const client = supabase;
           const result = await client.auth.updateUser({ data: metadata });
           return result;
         },
@@ -301,86 +301,69 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('[AuthContext] Attempting to fetch profile for user:', userId);
 
-      // Use the appropriate client based on availability
-      const client = getSupabaseClient();
+      // Get current user from auth (this should always work if user is authenticated)
+      const {
+        data: { user: currentUser },
+        error: userError
+      } = await supabase.auth.getUser();
 
-      // Try to fetch the profile
-      const { data, error } = await client
-        .from('profiles')
-        .select('id,name,email,role,created_at,updated_at')
-        .eq('id', userId)
-        .maybeSingle();
-
-      // If we got a legitimate PostgreSQL error (not 'not found'), throw it
-      if (error && error.code !== 'PGRST116') {
-        console.error('[AuthContext] Error fetching profile:', error);
-        throw error;
+      if (userError || !currentUser) {
+        console.error('[AuthContext] Error fetching current user:', userError);
+        throw userError || new Error('No current user found');
       }
 
-      // If we didn't find a profile, we need to create one
-      if (!data) {
-        console.log(
-          '[AuthContext] Profile not found for user, will create from auth metadata:',
-          userId
-        );
+      console.log('[AuthContext] Current user from auth:', currentUser.id);
 
-        // Get user details from auth to create profile
-        const {
-          data: { user: currentUser },
-        } = await getSupabaseClient().auth.getUser();
+      // Try to fetch from profiles table, but handle RLS/permission errors gracefully
+      let profileData = null;
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id,name,email,role,created_at,updated_at')
+          .eq('id', userId)
+          .maybeSingle();
 
-        if (currentUser) {
-          console.log('[AuthContext] Fetched current user for profile creation:', currentUser.id);
-
-          try {
-            // Create a new profile directly in the user's metadata
-            // This is a workaround since we can't create tables without admin rights
-            const { data: userMetadata, error: metadataError } = await debouncedUpdateUser({
-              name: currentUser.user_metadata?.name || '',
-              role: currentUser.user_metadata?.role || 'client',
-              is_profile_created: true,
-            });
-
-            if (metadataError) {
-              console.error('[AuthContext] Error updating user metadata:', metadataError);
-              return null;
-            }
-
-            // Create a virtual profile from the metadata
-            const profileFromMetadata = {
-              id: currentUser.id,
-              name: currentUser.user_metadata?.name || userMetadata.user.user_metadata?.name || '',
-              email: currentUser.email,
-              role:
-                currentUser.user_metadata?.role ||
-                userMetadata.user.user_metadata?.role ||
-                'client',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            };
-
-            console.log(
-              '[AuthContext] Created virtual profile from metadata:',
-              profileFromMetadata
-            );
-
-            // Update global profile state
-            setProfile(profileFromMetadata);
-            return profileFromMetadata;
-          } catch (metadataError) {
-            console.error('[AuthContext] Error in profile metadata update:', metadataError);
-            return null;
-          }
+        // If we got a permission error (403/42501), fall back to user metadata
+        if (error && (error.code === '42501' || error.message.includes('permission denied'))) {
+          console.log('[AuthContext] RLS policy blocking access to profiles table, using user metadata');
+          profileData = null; // Will fall back to metadata below
+        } else if (error && error.code !== 'PGRST116') {
+          // PGRST116 is "not found", which is okay - we'll create from metadata
+          console.error('[AuthContext] Unexpected error fetching profile:', error);
+          throw error;
         } else {
-          console.error('[AuthContext] Could not fetch current user for profile creation');
-          return null;
+          profileData = data;
         }
+      } catch (profileFetchError) {
+        console.log('[AuthContext] Profile table access failed, falling back to user metadata:', profileFetchError);
+        profileData = null;
+      }
+
+      // If we didn't get profile data (either not found or permission denied), create from user metadata
+      if (!profileData) {
+        console.log('[AuthContext] Creating profile from user metadata');
+
+        // Create a virtual profile from the user metadata and auth info
+        const profileFromMetadata = {
+          id: currentUser.id,
+          name: currentUser.user_metadata?.name || currentUser.user_metadata?.full_name || 'User',
+          email: currentUser.email || '',
+          role: currentUser.user_metadata?.role || 'client',
+          created_at: currentUser.created_at || new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        console.log('[AuthContext] Created virtual profile from metadata:', profileFromMetadata);
+
+        // Set the profile state
+        setProfile(profileFromMetadata);
+        return profileFromMetadata;
       }
 
       // If we get here, we successfully fetched an existing profile
-      console.log('[AuthContext] Profile successfully fetched:', data);
-      setProfile(data);
-      return data;
+      console.log('[AuthContext] Profile successfully fetched from table:', profileData);
+      setProfile(profileData);
+      return profileData;
     } catch (error) {
       console.log('[AuthContext] Catch block error in fetchProfile:', error);
       if (error instanceof AuthError) {
@@ -438,7 +421,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // setLoading(true); // Handled by listener/user effect
     setAuthError(null);
     try {
-      const { data, error } = await getSupabaseClient().auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: email || '',
         password: password || '',
       });
@@ -459,7 +442,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setAuthError(null);
     try {
       // options can include { data: { name: 'Full Name' } } for metadata
-      const { data, error } = await getSupabaseClient().auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: email || '',
         password: password || '',
         options,
@@ -481,7 +464,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // setLoading(true); // Handled by listener/user effect
     setAuthError(null);
     try {
-      const { error } = await getSupabaseClient().auth.signOut();
+      const { error } = await supabase.auth.signOut();
       if (error) throw error; // onAuthStateChange will handle clearing user/session/profile
     } catch (error) {
       console.error('Sign out failed:', error as AuthError);
@@ -500,7 +483,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     try {
       // Use the appropriate client based on availability
-      const client = getSupabaseClient();
+      const client = supabase;
 
       const { data, error } = await client
         .from('profiles')

@@ -50,6 +50,22 @@ const MOCK_TEMPLATE: ReflectionTemplate = {
           order: 2,
           estimatedMinutes: 1,
         },
+        {
+          id: 'session_audio_reflection',
+          section: 'opening',
+          category: 'self_awareness',
+          type: 'audio',
+          question: 'In your own words, how would you describe your experience in today\'s session?',
+          helpText: 'Feel free to speak naturally about what stood out to you, how you felt, or any insights you gained. This is your space to reflect verbally.',
+          required: false,
+          validationRules: {
+            minValue: 10, // minimum 10 seconds
+            maxValue: 180, // maximum 3 minutes
+          },
+          followUpQuestion: 'Is there anything else you\'d like to add in writing?',
+          order: 3,
+          estimatedMinutes: 3,
+        },
       ],
     },
     {

@@ -36,8 +36,7 @@ const InviteTokenSchema = new Schema<IInviteToken>({
   },
 });
 
-// Index for faster lookup and automatic expiry handling
-InviteTokenSchema.index({ token: 1 });
-InviteTokenSchema.index({ expires: 1 }, { expireAfterSeconds: 0 }); // TTL index
+// TTL index for automatic expiry handling
+InviteTokenSchema.index({ expires: 1 }, { expireAfterSeconds: 0 });
 
 export const InviteToken = mongoose.model<IInviteToken>('InviteToken', InviteTokenSchema);

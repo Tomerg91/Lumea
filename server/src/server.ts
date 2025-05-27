@@ -17,6 +17,9 @@ import userRoutes from './routes/user.js';
 import resourceRoutes from './routes/resources.js';
 import oauthRoutes from './routes/oauth.js';
 import analyticsRoutes from './routes/analytics.js';
+import { sessionHistoryRoutes } from './routes/sessionHistoryRoutes';
+import notificationRoutes from './routes/notificationRoutes.js';
+import { notificationScheduler } from './services/notificationSchedulerService';
 
 config();
 
@@ -25,7 +28,16 @@ const app = express();
 // Connect to MongoDB
 mongoose
   .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/lumea')
-  .then(() => console.log('Connected to MongoDB'))
+  .then(async () => {
+    console.log('Connected to MongoDB');
+    
+    // Initialize notification scheduler after database connection
+    try {
+      await notificationScheduler.initialize();
+    } catch (error) {
+      console.error('Failed to initialize notification scheduler:', error);
+    }
+  })
   .catch((err) => console.error('MongoDB connection error:', err));
 
 // Middleware
@@ -69,6 +81,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/resources', resourceRoutes);
 app.use('/api/oauth', oauthRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/session-history', sessionHistoryRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Error handling middleware
 app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -77,8 +91,43 @@ app.use((err: unknown, req: express.Request, res: express.Response, next: expres
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+// Graceful shutdown handling
+const gracefulShutdown = async (signal: string) => {
+  console.log(`\nReceived ${signal}. Starting graceful shutdown...`);
+  
+  // Close the HTTP server
+  server.close(async () => {
+    console.log('HTTP server closed');
+    
+    try {
+      // Shutdown notification scheduler
+      await notificationScheduler.shutdown();
+      
+      // Close database connection
+      await mongoose.connection.close();
+      console.log('Database connection closed');
+      
+      console.log('Graceful shutdown completed');
+      process.exit(0);
+    } catch (error) {
+      console.error('Error during graceful shutdown:', error);
+      process.exit(1);
+    }
+  });
+  
+  // Force exit after 30 seconds
+  setTimeout(() => {
+    console.error('Forced shutdown after timeout');
+    process.exit(1);
+  }, 30000);
+};
+
+// Listen for shutdown signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 export default app;

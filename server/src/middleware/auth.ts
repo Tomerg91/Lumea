@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
-import { APIError } from './error.js';
-import { IUser } from '../models/User.js';
+import { APIError, ErrorCode } from './error.js';
+import { AuthenticatedUserPayload } from '../types/user.js';
 import mongoose from 'mongoose';
 
 // Middleware to check if the user is authenticated
@@ -12,48 +12,53 @@ export const isAuthenticated = (req: Request, res: Response, next: NextFunction)
   next();
 };
 
-// Middleware to check if the user is not authenticated
-export const isNotAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.isAuthenticated()) {
-    return next();
+// Middleware to check if the user is already authenticated (redirect if logged in)
+export const isAlreadyAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+  if (req.user) {
+    throw APIError.unauthorized('Already authenticated');
   }
-  throw new APIError(400, 'Already authenticated');
+  next();
 };
 
-// Middleware to check if the user has a specific role
-export const hasRole = (role: string) => {
+// Middleware to check if the user has specific roles
+export const hasRole = (...roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      throw new APIError(401, 'Not authenticated');
+      throw APIError.unauthorized('Not authenticated');
     }
 
-    if (req.user.role !== role) {
-      throw new APIError(403, 'Insufficient permissions');
+    if (!roles.includes(req.user.role)) {
+      throw APIError.forbidden('Insufficient permissions');
     }
 
     next();
   };
 };
 
-// Middleware to check if the user is the owner of a resource
-export const isOwner = (getResourceUserId: (resourceId: string) => Promise<string | null>) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+// Middleware to check if the user is a coach or admin
+export const isCoach = hasRole('coach', 'admin');
+
+// Middleware to check if the user is an admin
+export const isAdmin = hasRole('admin');
+
+// Middleware to check resource access (user can only access their own resources)
+export const canAccessResource = (resourceUserIdField: string = 'userId') => {
+  return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      throw new APIError(401, 'Not authenticated');
+      throw APIError.unauthorized('Not authenticated');
     }
 
-    const resourceId = req.params.id;
-    if (!resourceId) {
-      throw new APIError(400, 'Resource ID is required');
-    }
-
-    const resourceUserId = await getResourceUserId(resourceId);
+    const resourceUserId = req.params[resourceUserIdField] || req.body[resourceUserIdField];
     if (!resourceUserId) {
-      throw new APIError(404, 'Resource not found');
+      throw new APIError(ErrorCode.VALIDATION_ERROR, 'Resource ID is required', 400);
     }
 
-    if (resourceUserId !== req.user.id.toString()) {
-      throw new APIError(403, 'Not authorized to access this resource');
+    if (resourceUserId !== req.user.id) {
+      throw APIError.notFound('Resource');
+    }
+
+    if (resourceUserId !== req.user.id) {
+      throw APIError.forbidden('Not authorized to access this resource');
     }
 
     next();
@@ -71,7 +76,7 @@ export const authenticate = (strategy: string) => {
         }
 
         if (!user) {
-          throw new APIError(401, info?.message || 'Authentication failed');
+          throw APIError.unauthorized(info?.message || 'Authentication failed');
         }
 
         req.logIn(user, (err) => {
@@ -85,17 +90,6 @@ export const authenticate = (strategy: string) => {
   };
 };
 
-// Middleware to check if user is a coach
-export const isCoach = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.user) {
-    return res.status(401).json({ error: 'Not authenticated' });
-  }
-  if (req.user.role !== 'coach') {
-    return res.status(403).json({ error: 'Not authorized - Coach access required' });
-  }
-  next();
-};
-
 // Middleware to check if user is a client
 export const isClient = (req: Request, res: Response, next: NextFunction) => {
   if (!req.user) {
@@ -103,17 +97,6 @@ export const isClient = (req: Request, res: Response, next: NextFunction) => {
   }
   if (req.user.role !== 'client') {
     return res.status(403).json({ error: 'Not authorized - Client access required' });
-  }
-  next();
-};
-
-// Middleware to check if user is an admin
-export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.user) {
-    return res.status(401).json({ error: 'Not authenticated' });
-  }
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Not authorized - Admin access required' });
   }
   next();
 };

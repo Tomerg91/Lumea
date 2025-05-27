@@ -1,41 +1,332 @@
+import { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import { Express } from 'express';
 import rateLimit from 'express-rate-limit';
+import { APIError, ErrorCode } from './error.js';
 
-// Security options - Commenting out the complex object for now
-/*
-const securityOptions = {
+// Security configuration
+const SECURITY_CONFIG = {
+  // Rate limiting for suspicious activity detection
+  suspiciousActivityThreshold: 50, // requests per window
+  suspiciousActivityWindow: 5 * 60 * 1000, // 5 minutes
+  // Request size limits
+  maxRequestSize: 10 * 1024 * 1024, // 10MB
+  maxHeaderSize: 8192, // 8KB
+  // IP tracking
+  maxIpsPerUser: 5, // Maximum different IPs per user session
+  ipChangeWindow: 60 * 60 * 1000, // 1 hour
+};
+
+// In-memory stores for tracking (in production, use Redis)
+const suspiciousActivityStore = new Map<string, { count: number; firstSeen: number; lastSeen: number; ips: Set<string> }>();
+const ipTrackingStore = new Map<string, { ips: Set<string>; lastReset: number }>();
+
+// Get client IP address with proxy support
+export const getClientIp = (req: Request): string => {
+  const xForwardedFor = req.headers['x-forwarded-for'];
+  const xRealIp = req.headers['x-real-ip'];
+  const connectionRemoteAddress = req.connection?.remoteAddress;
+  const socketRemoteAddress = req.socket?.remoteAddress;
+  
+  if (typeof xForwardedFor === 'string') {
+    // X-Forwarded-For can contain multiple IPs, take the first one
+    return xForwardedFor.split(',')[0].trim();
+  }
+  
+  return (xRealIp as string) || 
+         connectionRemoteAddress || 
+         socketRemoteAddress || 
+         'unknown';
+};
+
+// Security headers middleware using Helmet
+export const securityHeaders = helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", 'data:', 'https:'],
-      connectSrc: ["'self'", 'https://api.lumea.coaching'],
-      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      scriptSrc: ["'self'"],
+      connectSrc: ["'self'", "wss:", "ws:"],
+      mediaSrc: ["'self'", "blob:"],
       objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
+      baseUri: ["'self'"],
+      frameAncestors: ["'none'"],
+      formAction: ["'self'"],
     },
+    ...(process.env.NODE_ENV === 'production' && {
+      upgradeInsecureRequests: true,
+    }),
   },
-  crossOriginEmbedderPolicy: true,
-  crossOriginOpenerPolicy: true,
-  crossOriginResourcePolicy: { policy: 'same-origin' }, // Changed from 'same-site'
-  dnsPrefetchControl: { allow: false },
-  frameguard: { action: 'deny' },
-  hidePoweredBy: true,
+  crossOriginEmbedderPolicy: false, // Disable for file uploads
   hsts: {
-    maxAge: 31536000,
+    maxAge: 31536000, // 1 year
     includeSubDomains: true,
     preload: true,
   },
-  ieNoOpen: true,
   noSniff: true,
-  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   xssFilter: true,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  permittedCrossDomainPolicies: false,
+});
+
+// Request size limiting middleware
+export const requestSizeLimit = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Check content length header
+    const contentLength = parseInt(req.headers['content-length'] || '0', 10);
+    if (contentLength > SECURITY_CONFIG.maxRequestSize) {
+      throw new APIError(
+        ErrorCode.REQUEST_TOO_LARGE,
+        `Request size ${contentLength} bytes exceeds maximum allowed ${SECURITY_CONFIG.maxRequestSize} bytes`,
+        413
+      );
+    }
+
+    // Check header size
+    const headerSize = JSON.stringify(req.headers).length;
+    if (headerSize > SECURITY_CONFIG.maxHeaderSize) {
+      throw new APIError(
+        ErrorCode.REQUEST_TOO_LARGE,
+        'Request headers too large',
+        413
+      );
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
 };
-*/
+
+// Suspicious activity detection middleware
+export const suspiciousActivityDetection = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const clientIp = getClientIp(req);
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    const key = `${clientIp}:${userAgent}`;
+    const now = Date.now();
+
+    let activity = suspiciousActivityStore.get(key);
+    
+    if (!activity) {
+      activity = {
+        count: 1,
+        firstSeen: now,
+        lastSeen: now,
+        ips: new Set([clientIp])
+      };
+      suspiciousActivityStore.set(key, activity);
+    } else {
+      // Reset if window has expired
+      if (now - activity.firstSeen > SECURITY_CONFIG.suspiciousActivityWindow) {
+        activity.count = 1;
+        activity.firstSeen = now;
+        activity.ips.clear();
+        activity.ips.add(clientIp);
+      } else {
+        activity.count++;
+        activity.ips.add(clientIp);
+      }
+      activity.lastSeen = now;
+    }
+
+    // Check for suspicious patterns
+    const isSuspicious = 
+      activity.count > SECURITY_CONFIG.suspiciousActivityThreshold ||
+      activity.ips.size > 10 || // Too many different IPs for same user agent
+      !userAgent || userAgent.length < 10; // Suspicious user agent
+
+    if (isSuspicious) {
+      console.warn('🚨 Suspicious Activity Detected:', {
+        ip: clientIp,
+        userAgent,
+        requestCount: activity.count,
+        uniqueIps: activity.ips.size,
+        timeWindow: now - activity.firstSeen,
+        path: req.path,
+        method: req.method,
+      });
+
+      // For now, just log. In production, you might want to block or require additional verification
+      res.setHeader('X-Rate-Limit-Warning', 'Suspicious activity detected');
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+// IP change detection for authenticated users
+export const ipChangeDetection = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user?.id) {
+      return next(); // Skip for unauthenticated requests
+    }
+
+    const clientIp = getClientIp(req);
+    const userId = req.user.id;
+    const now = Date.now();
+
+    let tracking = ipTrackingStore.get(userId);
+    
+    if (!tracking) {
+      tracking = {
+        ips: new Set([clientIp]),
+        lastReset: now
+      };
+      ipTrackingStore.set(userId, tracking);
+    } else {
+      // Reset if window has expired
+      if (now - tracking.lastReset > SECURITY_CONFIG.ipChangeWindow) {
+        tracking.ips.clear();
+        tracking.ips.add(clientIp);
+        tracking.lastReset = now;
+      } else {
+        tracking.ips.add(clientIp);
+      }
+    }
+
+    // Check for suspicious IP changes
+    if (tracking.ips.size > SECURITY_CONFIG.maxIpsPerUser) {
+      console.warn('🚨 Suspicious IP Changes Detected:', {
+        userId,
+        currentIp: clientIp,
+        uniqueIps: tracking.ips.size,
+        ips: Array.from(tracking.ips),
+        timeWindow: now - tracking.lastReset,
+        path: req.path,
+        method: req.method,
+      });
+
+      // Set warning header but don't block (adjust based on security requirements)
+      res.setHeader('X-Security-Warning', 'Multiple IP addresses detected');
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Request logging middleware for security monitoring
+export const securityLogging = (req: Request, res: Response, next: NextFunction) => {
+  const startTime = Date.now();
+  const clientIp = getClientIp(req);
+  
+  // Log high-value or sensitive endpoints
+  const sensitiveEndpoints = [
+    '/api/auth',
+    '/api/admin',
+    '/api/coach-notes',
+    '/api/files',
+    '/api/users'
+  ];
+
+  const isSensitive = sensitiveEndpoints.some(endpoint => req.path.startsWith(endpoint));
+  
+  // Log when response finishes
+  res.on('finish', () => {
+    const duration = Date.now() - startTime;
+    
+    if (isSensitive || res.statusCode >= 400) {
+      console.info('🔒 Security Log:', {
+        timestamp: new Date().toISOString(),
+        method: req.method,
+        path: req.path,
+        query: req.query,
+        statusCode: res.statusCode,
+        duration,
+        ip: clientIp,
+        userAgent: req.headers['user-agent'],
+        referer: req.headers['referer'],
+        userId: (req as any).user?.id,
+        userRole: (req as any).user?.role,
+        contentLength: req.headers['content-length'],
+        responseLength: res.get('content-length') || 0,
+      });
+    }
+  });
+  
+  next();
+};
+
+// CSRF protection middleware (for state-changing operations)
+export const csrfProtection = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Skip CSRF for GET, HEAD, and OPTIONS requests
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+      return next();
+    }
+
+    // Check for CSRF token in header or body
+    const csrfToken = req.headers['x-csrf-token'] || req.body?._csrf;
+    
+    // For now, we're using double submit cookie pattern
+    // In production, implement proper CSRF token generation and validation
+    const csrfCookie = req.cookies?.['csrf-token'];
+    
+    if (!csrfToken && !csrfCookie) {
+      // For API-only usage, we can be more lenient with CSRF for JSON requests
+      const isJsonRequest = req.headers['content-type']?.includes('application/json');
+      const hasOriginHeader = req.headers['origin'] || req.headers['referer'];
+      
+      if (isJsonRequest && hasOriginHeader) {
+        return next(); // Allow JSON API requests with proper origin
+      }
+      
+      throw new APIError(
+        ErrorCode.FORBIDDEN,
+        'CSRF token required for state-changing operations',
+        403
+      );
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Clean up old entries from in-memory stores
+export const cleanupSecurityStores = () => {
+  const now = Date.now();
+  
+  // Clean suspicious activity store
+  for (const [key, activity] of suspiciousActivityStore.entries()) {
+    if (now - activity.lastSeen > SECURITY_CONFIG.suspiciousActivityWindow * 2) {
+      suspiciousActivityStore.delete(key);
+    }
+  }
+  
+  // Clean IP tracking store
+  for (const [key, tracking] of ipTrackingStore.entries()) {
+    if (now - tracking.lastReset > SECURITY_CONFIG.ipChangeWindow * 2) {
+      ipTrackingStore.delete(key);
+    }
+  }
+};
+
+// Start periodic cleanup
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(cleanupSecurityStores, 10 * 60 * 1000); // Clean every 10 minutes
+}
+
+// Export combined security middleware
+export const applySecurity = [
+  securityHeaders,
+  requestSizeLimit,
+  securityLogging,
+  suspiciousActivityDetection,
+  ipChangeDetection,
+];
+
+export const applyCSRF = [
+  csrfProtection,
+];
 
 // Create the security middleware using helmet defaults
 export const securityMiddleware = helmet(); // Use defaults

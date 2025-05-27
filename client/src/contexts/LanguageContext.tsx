@@ -136,6 +136,24 @@ const translations = {
     'settings.darkMode': 'מצב חשוך',
     'settings.darkModeDesc': 'השתמש בנושא חשוך לממשק',
     
+    // Notifications
+    'notifications.title': 'התראות',
+    'notifications.markAsRead': 'סמן כנקרא',
+    'notifications.markAllAsRead': 'סמן הכל כנקרא',
+    'notifications.settings': 'הגדרות התראות',
+    'notifications.empty': 'אין התראות חדשות',
+    'notifications.loadMore': 'טען עוד',
+    'notifications.allStatuses': 'כל הסטטוסים',
+    'notifications.unread': 'לא נקרא',
+    'notifications.read': 'נקרא',
+    'notifications.allTypes': 'כל הסוגים',
+    'notifications.sessionReminder': 'תזכורת מפגש',
+    'notifications.sessionConfirmation': 'אישור מפגש',
+    'notifications.sessionCancelled': 'ביטול מפגש',
+    'notifications.sessionRescheduled': 'עדכון מועד מפגש',
+    'notifications.cancellationRequest': 'בקשת ביטול',
+    'notifications.rescheduleRequest': 'בקשת עדכון מועד',
+    
     // Common
     'common.loading': 'טוען...',
     'common.error': 'שגיאה',
@@ -270,6 +288,24 @@ const translations = {
     'settings.language': 'Language',
     'settings.darkMode': 'Dark Mode',
     'settings.darkModeDesc': 'Use dark theme for the interface',
+    
+    // Notifications
+    'notifications.title': 'Notifications',
+    'notifications.markAsRead': 'Mark as read',
+    'notifications.markAllAsRead': 'Mark all as read',
+    'notifications.settings': 'Notification settings',
+    'notifications.empty': 'No new notifications',
+    'notifications.loadMore': 'Load more',
+    'notifications.allStatuses': 'All statuses',
+    'notifications.unread': 'Unread',
+    'notifications.read': 'Read',
+    'notifications.allTypes': 'All types',
+    'notifications.sessionReminder': 'Session reminder',
+    'notifications.sessionConfirmation': 'Session confirmation',
+    'notifications.sessionCancelled': 'Session cancelled',
+    'notifications.sessionRescheduled': 'Session rescheduled',
+    'notifications.cancellationRequest': 'Cancellation request',
+    'notifications.rescheduleRequest': 'Reschedule request',
     
     // Common
     'common.loading': 'Loading...',

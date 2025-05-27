@@ -162,6 +162,14 @@ async function initializeServer() {
   app.use('/api/metrics', metricsRoutes);
   app.use('/api/reflections', reflectionRoutes);
 
+  // Audio routes (new audio upload system)
+  const audioRoutes = await import('./src/routes/audioRoutes.js');
+  app.use('/api/audio', audioRoutes.default);
+
+  // Coach note routes
+  const coachNoteRoutes = await import('./src/routes/coachNote.js');
+  app.use('/api/coach-notes', coachNoteRoutes.default);
+
   // --- Removed duplicate/inline routes if any existed ---
 
   // Basic health check endpoint

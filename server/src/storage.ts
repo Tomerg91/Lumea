@@ -50,19 +50,36 @@ export const createTagSchema = z.object({
 export const updateTagSchema = createTagSchema.partial();
 
 // Coach Note schemas
+export const privacySettingsSchema = z.object({
+  accessLevel: z.enum(['private', 'supervisor', 'team', 'organization']).default('private'),
+  allowExport: z.boolean().default(false),
+  allowSharing: z.boolean().default(false),
+  retentionPeriodDays: z.number().optional(),
+  autoDeleteAfterDays: z.number().optional(),
+  requireReasonForAccess: z.boolean().default(false),
+  sensitiveContent: z.boolean().default(false),
+  supervisionRequired: z.boolean().default(false),
+});
+
 export const createCoachNoteSchema = z.object({
   sessionId: z.string(),
   textContent: z.string(),
+  title: z.string().optional(),
   audioFileId: z.string().optional(),
   tags: z.array(z.string()).optional(),
   isEncrypted: z.boolean().default(true),
+  privacySettings: privacySettingsSchema.optional(),
+  sharedWith: z.array(z.string()).optional(),
 });
 
 export const updateCoachNoteSchema = z.object({
   textContent: z.string().optional(),
+  title: z.string().optional(),
   audioFileId: z.string().optional(),
   tags: z.array(z.string()).optional(),
   isEncrypted: z.boolean().optional(),
+  privacySettings: privacySettingsSchema.optional(),
+  sharedWith: z.array(z.string()).optional(),
 });
 
 // Session storage functions
@@ -140,7 +157,19 @@ export async function createCoachNote(
     ...data,
     coachId: new mongoose.Types.ObjectId(coachId),
     sessionId: new mongoose.Types.ObjectId(data.sessionId),
-    tags: data.tags?.map((id) => new mongoose.Types.ObjectId(id)),
+    audioFileId: data.audioFileId ? new mongoose.Types.ObjectId(data.audioFileId) : undefined,
+    // Convert string tags to string array (no longer ObjectId references)
+    tags: data.tags || [],
+    // Set default privacy settings if not provided
+    privacySettings: data.privacySettings || {
+      accessLevel: 'private',
+      allowExport: false,
+      allowSharing: false,
+      requireReasonForAccess: false,
+      sensitiveContent: false,
+      supervisionRequired: false
+    },
+    sharedWith: data.sharedWith || []
   });
   return await coachNote.save();
 }
@@ -149,10 +178,18 @@ export async function updateCoachNote(
   id: string,
   data: z.infer<typeof updateCoachNoteSchema>
 ): Promise<HydratedDocument<ICoachNote> | null> {
-  const updateData = {
+  const updateData: any = {
     ...data,
-    tags: data.tags?.map((id) => new mongoose.Types.ObjectId(id)),
+    // Convert string tags to string array (no longer ObjectId references)
+    tags: data.tags || undefined,
+    audioFileId: data.audioFileId ? new mongoose.Types.ObjectId(data.audioFileId) : undefined,
   };
+  
+  // Remove undefined values to avoid overwriting with undefined
+  Object.keys(updateData).forEach(key => 
+    updateData[key] === undefined && delete updateData[key]
+  );
+  
   return await CoachNote.findByIdAndUpdate(id, updateData, { new: true });
 }
 

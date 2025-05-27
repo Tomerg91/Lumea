@@ -1,0 +1,519 @@
+import { Types } from 'mongoose';
+import { SessionHistory, ISessionHistory, SessionHistoryAction } from '../models/SessionHistory';
+import { ICoachingSession } from '../models/CoachingSession';
+import { IUser } from '../models/User';
+
+export interface CreateHistoryEntryRequest {
+  sessionId: string;
+  action: SessionHistoryAction;
+  actionBy: string; // User ID
+  description: string;
+  previousValues?: Record<string, any>;
+  newValues?: Record<string, any>;
+  metadata?: {
+    cancellationReason?: string;
+    cancellationReasonText?: string;
+    cancellationFee?: number;
+    refundEligible?: boolean;
+    originalDate?: Date;
+    newDate?: Date;
+    rescheduleReason?: string;
+    rescheduleCount?: number;
+    field?: string;
+    reason?: string;
+    ipAddress?: string;
+    userAgent?: string;
+    source?: 'web' | 'mobile' | 'api' | 'system';
+  };
+  systemGenerated?: boolean;
+}
+
+export interface SessionHistoryFilter {
+  sessionId?: string;
+  actionBy?: string;
+  action?: SessionHistoryAction | SessionHistoryAction[];
+  dateFrom?: Date;
+  dateTo?: Date;
+  systemGenerated?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export interface SessionAnalytics {
+  totalSessions: number;
+  totalCancellations: number;
+  totalRescheduling: number;
+  cancellationRate: number;
+  reschedulingRate: number;
+  commonCancellationReasons: Array<{ reason: string; count: number }>;
+  commonRescheduleReasons: Array<{ reason: string; count: number }>;
+  monthlyTrends: Array<{
+    month: string;
+    year: number;
+    created: number;
+    cancelled: number;
+    rescheduled: number;
+    completed: number;
+  }>;
+  userActivitySummary: Array<{
+    userId: string;
+    userName: string;
+    role: string;
+    totalActions: number;
+    cancellations: number;
+    rescheduling: number;
+  }>;
+}
+
+export class AuditService {
+  /**
+   * Create a new history entry for a session
+   */
+  static async createHistoryEntry(request: CreateHistoryEntryRequest): Promise<ISessionHistory> {
+    try {
+      const historyEntry = new SessionHistory({
+        sessionId: new Types.ObjectId(request.sessionId),
+        action: request.action,
+        actionBy: new Types.ObjectId(request.actionBy),
+        timestamp: new Date(),
+        previousValues: request.previousValues,
+        newValues: request.newValues,
+        metadata: request.metadata,
+        description: request.description,
+        systemGenerated: request.systemGenerated || false,
+      });
+
+      return await historyEntry.save();
+    } catch (error) {
+      console.error('Error creating history entry:', error);
+      throw new Error('Failed to create audit trail entry');
+    }
+  }
+
+  /**
+   * Get session history with filtering and pagination
+   */
+  static async getSessionHistory(filter: SessionHistoryFilter): Promise<{
+    history: ISessionHistory[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    try {
+      const query: Record<string, any> = {};
+
+      // Build query based on filters
+      if (filter.sessionId) {
+        query.sessionId = new Types.ObjectId(filter.sessionId);
+      }
+
+      if (filter.actionBy) {
+        query.actionBy = new Types.ObjectId(filter.actionBy);
+      }
+
+      if (filter.action) {
+        if (Array.isArray(filter.action)) {
+          query.action = { $in: filter.action };
+        } else {
+          query.action = filter.action;
+        }
+      }
+
+      if (filter.dateFrom || filter.dateTo) {
+        query.timestamp = {};
+        if (filter.dateFrom) {
+          query.timestamp.$gte = filter.dateFrom;
+        }
+        if (filter.dateTo) {
+          query.timestamp.$lte = filter.dateTo;
+        }
+      }
+
+      if (filter.systemGenerated !== undefined) {
+        query.systemGenerated = filter.systemGenerated;
+      }
+
+      // Pagination
+      const limit = filter.limit || 20;
+      const offset = filter.offset || 0;
+      const page = Math.floor(offset / limit) + 1;
+
+      // Execute query
+      const [history, total] = await Promise.all([
+        SessionHistory.find(query)
+          .populate('actionBy', 'firstName lastName email role')
+          .populate('sessionId', 'date status coachId clientId')
+          .sort({ timestamp: -1 })
+          .limit(limit)
+          .skip(offset)
+          .lean(),
+        SessionHistory.countDocuments(query),
+      ]);
+
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        history: history as ISessionHistory[],
+        total,
+        page,
+        totalPages,
+      };
+    } catch (error) {
+      console.error('Error fetching session history:', error);
+      throw new Error('Failed to fetch session history');
+    }
+  }
+
+  /**
+   * Get analytics for session changes and patterns
+   */
+  static async getSessionAnalytics(
+    coachId?: string,
+    dateFrom?: Date,
+    dateTo?: Date
+  ): Promise<SessionAnalytics> {
+    try {
+      // Build base match conditions
+      const matchConditions: Record<string, any> = {};
+
+      if (dateFrom || dateTo) {
+        matchConditions.timestamp = {};
+        if (dateFrom) matchConditions.timestamp.$gte = dateFrom;
+        if (dateTo) matchConditions.timestamp.$lte = dateTo;
+      }
+
+      // If coachId is provided, we need to match sessions for that coach
+      let sessionFilter = {};
+      if (coachId) {
+        sessionFilter = { coachId: new Types.ObjectId(coachId) };
+      }
+
+      // Use simpler queries instead of complex aggregation pipeline
+      // Get action counts
+      const actionCountsResult = await SessionHistory.aggregate([
+        ...(coachId ? [
+          {
+            $lookup: {
+              from: 'coachingsessions',
+              localField: 'sessionId',
+              foreignField: '_id',
+              as: 'session',
+            },
+          },
+          { $match: { 'session.coachId': new Types.ObjectId(coachId) } }
+        ] : []),
+        { $match: matchConditions },
+        { $group: { _id: '$action', count: { $sum: 1 } } },
+      ]);
+
+      // Get cancellation reasons
+      const cancellationReasons = await SessionHistory.aggregate([
+        ...(coachId ? [
+          {
+            $lookup: {
+              from: 'coachingsessions',
+              localField: 'sessionId',
+              foreignField: '_id',
+              as: 'session',
+            },
+          },
+          { $match: { 'session.coachId': new Types.ObjectId(coachId) } }
+        ] : []),
+        { $match: { ...matchConditions, action: 'cancelled' } },
+        { $group: { _id: '$metadata.cancellationReason', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+      ]);
+
+      // Get reschedule reasons
+      const rescheduleReasons = await SessionHistory.aggregate([
+        ...(coachId ? [
+          {
+            $lookup: {
+              from: 'coachingsessions',
+              localField: 'sessionId',
+              foreignField: '_id',
+              as: 'session',
+            },
+          },
+          { $match: { 'session.coachId': new Types.ObjectId(coachId) } }
+        ] : []),
+        { $match: { ...matchConditions, action: 'rescheduled' } },
+        { $group: { _id: '$metadata.rescheduleReason', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+      ]);
+
+      // Get monthly trends
+      const monthlyTrends = await SessionHistory.aggregate([
+        ...(coachId ? [
+          {
+            $lookup: {
+              from: 'coachingsessions',
+              localField: 'sessionId',
+              foreignField: '_id',
+              as: 'session',
+            },
+          },
+          { $match: { 'session.coachId': new Types.ObjectId(coachId) } }
+        ] : []),
+        { $match: matchConditions },
+        {
+          $group: {
+            _id: {
+              year: { $year: '$timestamp' },
+              month: { $month: '$timestamp' },
+              action: '$action',
+            },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { '_id.year': -1, '_id.month': -1 } },
+      ]);
+
+      // Get user activity
+      const userActivity = await SessionHistory.aggregate([
+        ...(coachId ? [
+          {
+            $lookup: {
+              from: 'coachingsessions',
+              localField: 'sessionId',
+              foreignField: '_id',
+              as: 'session',
+            },
+          },
+          { $match: { 'session.coachId': new Types.ObjectId(coachId) } }
+        ] : []),
+        { $match: matchConditions },
+        {
+          $group: {
+            _id: {
+              userId: '$actionBy',
+              action: '$action',
+            },
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $group: {
+            _id: '$_id.userId',
+            totalActions: { $sum: '$count' },
+            actions: {
+              $push: {
+                action: '$_id.action',
+                count: '$count',
+              },
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'user',
+          },
+        },
+        { $unwind: '$user' },
+      ]);
+
+      const results = {
+        actionCounts: actionCountsResult,
+        cancellationReasons,
+        rescheduleReasons,
+        monthlyTrends,
+        userActivity,
+      };
+
+      // Process results to create analytics object
+      const actionCountsByType = results.actionCounts.reduce((acc: Record<string, number>, item: any) => {
+        acc[item._id] = item.count;
+        return acc;
+      }, {});
+
+      const totalSessions = actionCountsByType.created || 0;
+      const totalCancellations = actionCountsByType.cancelled || 0;
+      const totalRescheduling = actionCountsByType.rescheduled || 0;
+
+      // Calculate rates
+      const cancellationRate = totalSessions > 0 ? (totalCancellations / totalSessions) * 100 : 0;
+      const reschedulingRate = totalSessions > 0 ? (totalRescheduling / totalSessions) * 100 : 0;
+
+      // Process monthly trends
+      const monthlyTrendsMap = new Map();
+      results.monthlyTrends.forEach((item: any) => {
+        const key = `${item._id.year}-${item._id.month}`;
+        if (!monthlyTrendsMap.has(key)) {
+          monthlyTrendsMap.set(key, {
+            month: new Date(item._id.year, item._id.month - 1).toLocaleString('default', { month: 'long' }),
+            year: item._id.year,
+            created: 0,
+            cancelled: 0,
+            rescheduled: 0,
+            completed: 0,
+          });
+        }
+        const trend = monthlyTrendsMap.get(key);
+        trend[item._id.action] = item.count;
+      });
+
+      // Process user activity
+      const userActivitySummary = results.userActivity.map((item: any) => {
+        const cancellations = item.actions.find((a: any) => a.action === 'cancelled')?.count || 0;
+        const rescheduling = item.actions.find((a: any) => a.action === 'rescheduled')?.count || 0;
+
+        return {
+          userId: item._id.toString(),
+          userName: `${item.user.firstName} ${item.user.lastName}`,
+          role: item.user.role,
+          totalActions: item.totalActions,
+          cancellations,
+          rescheduling,
+        };
+      });
+
+      return {
+        totalSessions,
+        totalCancellations,
+        totalRescheduling,
+        cancellationRate: Math.round(cancellationRate * 100) / 100,
+        reschedulingRate: Math.round(reschedulingRate * 100) / 100,
+        commonCancellationReasons: results.cancellationReasons.map((item: any) => ({
+          reason: item._id || 'Unknown',
+          count: item.count,
+        })),
+        commonRescheduleReasons: results.rescheduleReasons.map((item: any) => ({
+          reason: item._id || 'Unknown',
+          count: item.count,
+        })),
+        monthlyTrends: Array.from(monthlyTrendsMap.values()),
+        userActivitySummary,
+      };
+    } catch (error) {
+      console.error('Error generating session analytics:', error);
+      throw new Error('Failed to generate session analytics');
+    }
+  }
+
+  /**
+   * Track session creation
+   */
+  static async trackSessionCreated(
+    session: ICoachingSession,
+    createdBy: string,
+    metadata?: { source?: 'web' | 'mobile' | 'api'; ipAddress?: string; userAgent?: string }
+  ): Promise<void> {
+    await this.createHistoryEntry({
+      sessionId: session._id.toString(),
+      action: 'created',
+      actionBy: createdBy,
+      description: `Session created for ${new Date(session.date).toLocaleString()}`,
+      newValues: {
+        date: session.date,
+        status: session.status,
+        duration: session.duration,
+      },
+      metadata: {
+        source: metadata?.source || 'web',
+        ipAddress: metadata?.ipAddress,
+        userAgent: metadata?.userAgent,
+      },
+      systemGenerated: false,
+    });
+  }
+
+  /**
+   * Track session cancellation
+   */
+  static async trackSessionCancelled(
+    session: ICoachingSession,
+    cancelledBy: string,
+    reason: string,
+    reasonText?: string,
+    metadata?: { cancellationFee?: number; refundEligible?: boolean; source?: 'web' | 'mobile' | 'api' }
+  ): Promise<void> {
+    await this.createHistoryEntry({
+      sessionId: session._id.toString(),
+      action: 'cancelled',
+      actionBy: cancelledBy,
+      description: `Session cancelled: ${reason}${reasonText ? ` - ${reasonText}` : ''}`,
+      previousValues: {
+        status: 'pending',
+        date: session.date,
+      },
+      newValues: {
+        status: 'cancelled',
+        cancelledAt: new Date(),
+      },
+      metadata: {
+        cancellationReason: reason,
+        cancellationReasonText: reasonText,
+        cancellationFee: metadata?.cancellationFee,
+        refundEligible: metadata?.refundEligible,
+        source: metadata?.source || 'web',
+      },
+      systemGenerated: false,
+    });
+  }
+
+  /**
+   * Track session rescheduling
+   */
+  static async trackSessionRescheduled(
+    session: ICoachingSession,
+    rescheduledBy: string,
+    originalDate: Date,
+    newDate: Date,
+    reason: string,
+    rescheduleCount: number,
+    metadata?: { source?: 'web' | 'mobile' | 'api' }
+  ): Promise<void> {
+    await this.createHistoryEntry({
+      sessionId: session._id.toString(),
+      action: 'rescheduled',
+      actionBy: rescheduledBy,
+      description: `Session rescheduled from ${originalDate.toLocaleString()} to ${newDate.toLocaleString()}: ${reason}`,
+      previousValues: {
+        date: originalDate,
+        status: 'pending',
+      },
+      newValues: {
+        date: newDate,
+        status: 'rescheduled',
+        rescheduledAt: new Date(),
+      },
+      metadata: {
+        originalDate,
+        newDate,
+        rescheduleReason: reason,
+        rescheduleCount,
+        source: metadata?.source || 'web',
+      },
+      systemGenerated: false,
+    });
+  }
+
+  /**
+   * Track status changes
+   */
+  static async trackStatusChange(
+    session: ICoachingSession,
+    changedBy: string,
+    previousStatus: string,
+    newStatus: string,
+    metadata?: { reason?: string; source?: 'web' | 'mobile' | 'api' | 'system' }
+  ): Promise<void> {
+    await this.createHistoryEntry({
+      sessionId: session._id.toString(),
+      action: 'status_changed',
+      actionBy: changedBy,
+      description: `Session status changed from ${previousStatus} to ${newStatus}`,
+      previousValues: { status: previousStatus },
+      newValues: { status: newStatus },
+      metadata: {
+        field: 'status',
+        reason: metadata?.reason,
+        source: metadata?.source || 'web',
+      },
+      systemGenerated: metadata?.source === 'system',
+    });
+  }
+} 

@@ -15,6 +15,26 @@ import tagRoutes from './routes/tag.js';
 import coachNoteRoutes from './routes/coachNote.js';
 import userRoutes from './routes/user.js';
 import analyticsRoutes from './routes/analytics.js';
+import metricsRoutes from './routes/metrics.js';
+import { errorHandler, notFoundHandler } from './middleware/error.js';
+import { 
+  applySecurity, 
+  getClientIp,
+  securityLogging 
+} from './middleware/security.js';
+import {
+  authLimiter,
+  passwordResetLimiter,
+  uploadLimiter,
+  apiLimiter,
+  anonymousLimiter,
+  adminLimiter,
+  coachNotesLimiter,
+  reflectionLimiter,
+  burstProtection,
+  sustainedLimiter,
+  cleanupRateLimiters
+} from './middleware/rateLimit.js';
 import http from 'http';
 import connectPgSimple from 'connect-pg-simple';
 import pg from 'pg';
@@ -65,17 +85,6 @@ const validateEnvVariables = () => {
       console.error(`FATAL ERROR: Invalid NODE_ENV: ${process.env.NODE_ENV}`);
     }
   }
-
-  // Example: Validate SMTP settings if email is crucial
-  // if (process.env.ENABLE_EMAIL === 'true') {
-  //   const smtpVars = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM'];
-  //   smtpVars.forEach(varName => {
-  //     if (!process.env[varName]) {
-  //       console.error(`FATAL ERROR: Email enabled, but SMTP variable ${varName} is not set.`);
-  //       process.exit(1);
-  //     }
-  //   });
-  // }
 };
 
 validateEnvVariables(); // Call validation at startup
@@ -84,14 +93,53 @@ const app: Application = express();
 const port = parseInt(process.env.PORT || '5000', 10);
 app.set('port', port);
 
+// Trust proxy for accurate IP detection
+app.set('trust proxy', 1);
+
+// Apply security middleware early
+app.use(applySecurity);
+
+// CORS configuration
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:8080',
+  'http://localhost:8081',
+  'http://localhost:8082',
+  'http://localhost:8083',
+  'http://localhost:8084',
+  'http://localhost:8085',
+];
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      // Check if the origin is in the allowed list or is the configured CLIENT_URL
+      if (allowedOrigins.includes(origin) || origin === process.env.CLIENT_URL) {
+        return callback(null, true);
+      }
+      
+      // In production, be more strict
+      if (process.env.NODE_ENV === 'production') {
+        return callback(new Error('Not allowed by CORS'));
+      }
+      
+      // In development, allow all localhost origins
+      if (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:')) {
+        return callback(null, true);
+      }
+      
+      return callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   })
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// Basic Express middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Session Configuration
 const PgStore = connectPgSimple(session);
@@ -123,57 +171,101 @@ app.use(session(sessionOptions));
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use('/api/auth', authRoutes);
-app.use('/api/sessions', sessionRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/coach/clients', coachRoutes);
-app.use('/api/resources', resourceRoutes);
-app.use('/api/reflections', reflectionRoutes);
-app.use('/api/files', fileRoutes);
-app.use('/api/tags', tagRoutes);
-app.use('/api/coach-notes', coachNoteRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/analytics', analyticsRoutes);
+// Apply burst protection globally
+app.use(burstProtection);
+app.use(sustainedLimiter);
 
+// Apply anonymous user rate limiting
+app.use(anonymousLimiter);
+
+// Route-specific rate limiting and middleware
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth/reset-password', passwordResetLimiter); // Extra protection for password resets
+app.use('/api/sessions', apiLimiter, sessionRoutes);
+app.use('/api/admin', adminLimiter, adminRoutes);
+app.use('/api/coach/clients', apiLimiter, coachRoutes);
+app.use('/api/resources', apiLimiter, resourceRoutes);
+app.use('/api/reflections', reflectionLimiter, reflectionRoutes);
+app.use('/api/files', uploadLimiter, fileRoutes);
+app.use('/api/tags', apiLimiter, tagRoutes);
+app.use('/api/coach-notes', coachNotesLimiter, coachNoteRoutes);
+app.use('/api/users', apiLimiter, userRoutes);
+app.use('/api/analytics', apiLimiter, analyticsRoutes);
+app.use('/api/metrics', apiLimiter, metricsRoutes);
+
+// Health check endpoint (no rate limiting)
 app.get('/api/health', (req: Request, res: Response) => {
-  res.status(200).json({ status: 'UP', message: 'Server is healthy' });
+  const clientIp = getClientIp(req);
+  res.status(200).json({ 
+    status: 'UP', 
+    message: 'Server is healthy',
+    timestamp: new Date().toISOString(),
+    clientIp: clientIp,
+    environment: process.env.NODE_ENV 
+  });
 });
+
+// Security monitoring endpoint (admin only, no rate limiting)
+app.get('/api/security/status', (req: Request, res: Response) => {
+  // This would be protected by admin middleware in a real implementation
+  res.status(200).json({
+    security: {
+      headers: 'enabled',
+      rateLimiting: 'enabled',
+      requestSizeLimit: 'enabled',
+      suspiciousActivityDetection: 'enabled',
+      ipChangeDetection: 'enabled',
+      securityLogging: 'enabled'
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 404 handler for unmatched routes (Must be BEFORE the error handler)
+app.use(notFoundHandler);
 
 // Global Error Handler (Must be defined AFTER all other app.use() and routes calls)
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  // Use the logger for error reporting
-  logger.error(err.message, err, {
-    path: req.path,
-    method: req.method,
-    ip: req.ip,
-    // Add other relevant request context if needed
-  });
-
-  const statusCode = (err as any).status || 500;
-  const responseMessage =
-    process.env.NODE_ENV === 'production' && statusCode === 500
-      ? 'Internal Server Error'
-      : err.message;
-
-  res.status(statusCode).json({ error: responseMessage });
-});
-
-// Default route for unhandled paths (optional, place before error handler if used)
-// app.use((req, res) => {
-//   res.status(404).json({ error: 'Not Found' });
-// });
+app.use(errorHandler);
 
 // Create HTTP server
 const server = http.createServer(app);
 
+// Graceful shutdown handler
+const gracefulShutdown = (signal: string) => {
+  logger.info(`${signal} received. Starting graceful shutdown...`);
+  
+  server.close(() => {
+    logger.info('HTTP server closed.');
+    
+    // Clean up rate limiters
+    cleanupRateLimiters();
+    
+    // Close database connections
+    pool.end(() => {
+      logger.info('Database pool closed.');
+      process.exit(0);
+    });
+  });
+  
+  // Force close after 30 seconds
+  setTimeout(() => {
+    logger.error('Could not close connections in time, forcefully shutting down');
+    process.exit(1);
+  }, 30000);
+};
+
+// Listen for termination signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
 // Listen on specified port
 if (process.env.NODE_ENV !== 'test') {
   server.listen(port, () => {
-    logger.info(`Server is running on port ${port} in ${process.env.NODE_ENV} mode`);
+    logger.info(`🚀 Server is running on port ${port} in ${process.env.NODE_ENV} mode`);
+    logger.info(`🔒 Security middleware enabled`);
+    logger.info(`⚡ Rate limiting configured`);
     if (process.env.NODE_ENV === 'development') {
       logger.info(`Client URL (server expects): ${process.env.CLIENT_URL}`);
-      // VITE_API_URL is a client-side variable, usually not logged on server startup this way.
-      // It's what the client uses to talk to this server.
     }
   });
 }

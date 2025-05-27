@@ -13,7 +13,7 @@ i18n
   .use(initReactI18next)
   // Initialize i18next
   .init({
-    debug: true, // Logs info to console. Set to false for production.
+    debug: false, // Disable debug logging for better performance
     fallbackLng: 'he', // Use Hebrew if detected language is not available
     lng: 'he', // Force Hebrew as the default language
     interpolation: {
@@ -29,14 +29,17 @@ i18n
     },
     detection: {
       // Order and methods for language detection
-      order: ['querystring', 'cookie', 'localStorage', 'sessionStorage', 'navigator', 'htmlTag'],
+      order: ['localStorage', 'cookie', 'navigator'],
       // Caching detected language
-      caches: ['localStorage', 'cookie'],
+      caches: ['localStorage'],
       // Override detected language with Hebrew unless explicitly changed
-      lookupQuerystring: 'lng',
-      lookupCookie: 'i18next',
       lookupLocalStorage: 'i18nextLng',
     },
+    // Performance optimizations
+    load: 'languageOnly', // Load only language, not region
+    preload: ['he'], // Preload only Hebrew
+    cleanCode: true, // Clean language codes
+    nonExplicitSupportedLngs: true,
   });
 
 export default i18n;

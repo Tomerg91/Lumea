@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { Schema } from 'joi';
-import { APIError } from './error.js';
+import { APIError, ErrorCode } from './error.js';
 
 // Validator middleware options
 interface ValidatorOptions {
@@ -24,7 +24,7 @@ export const validatorMiddleware = (schema: Schema, options: ValidatorOptions = 
         message: detail.message,
       }));
 
-      throw new APIError(400, 'Validation Error', errors);
+      throw APIError.validation('Validation Error', errors);
     }
 
     next();
@@ -42,7 +42,7 @@ export const queryValidator = (schema: Schema, options?: ValidatorOptions) => {
         message: detail.message,
       }));
 
-      throw new APIError(400, 'Validation Error', errors);
+      throw APIError.validation('Validation Error', errors);
     }
 
     next();
@@ -60,7 +60,7 @@ export const paramsValidator = (schema: Schema, options?: ValidatorOptions) => {
         message: detail.message,
       }));
 
-      throw new APIError(400, 'Validation Error', errors);
+      throw APIError.validation('Validation Error', errors);
     }
 
     next();
@@ -78,7 +78,7 @@ export const headersValidator = (schema: Schema, options?: ValidatorOptions) => 
         message: detail.message,
       }));
 
-      throw new APIError(400, 'Validation Error', errors);
+      throw APIError.validation('Validation Error', errors);
     }
 
     next();

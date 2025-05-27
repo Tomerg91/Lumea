@@ -16,6 +16,10 @@ import adminRoutes from './routes/admin';
 import authRoutes from './routes/authRoutes';
 import sessionRoutes from './routes/sessionRoutes';
 import clientRoutes from './routes/clientRoutes';
+import feedbackRoutes from './routes/feedbackRoutes';
+
+// Import services
+import { feedbackTriggerService } from './services/feedbackTriggerService';
 
 // Load environment variables
 dotenv.config();
@@ -33,6 +37,15 @@ mongoose
 
     // Create database indexes for better performance
     await createDatabaseIndexes();
+
+    // Initialize feedback trigger service
+    try {
+      await feedbackTriggerService.initialize();
+      console.log('Feedback trigger service initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize feedback trigger service:', error);
+      // Don't exit the app if feedback service fails to initialize
+    }
   })
   .catch((error) => {
     console.error('MongoDB connection error:', error);
@@ -76,6 +89,7 @@ app.use('/api', adminRoutes);
 app.use('/api', authRoutes);
 app.use('/api', sessionRoutes);
 app.use('/api', clientRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -86,6 +100,19 @@ app.use((req, res) => {
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Internal server error' });
+});
+
+// Graceful shutdown handler
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  feedbackTriggerService.shutdown();
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully...');
+  feedbackTriggerService.shutdown();
+  process.exit(0);
 });
 
 export default app;

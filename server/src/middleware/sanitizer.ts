@@ -1,41 +1,35 @@
 import { Request, Response, NextFunction } from 'express';
-import sanitizeHtml from 'sanitize-html';
-import { APIError } from './error.js';
+import { APIError, ErrorCode } from './error.js';
 
-// HTML sanitization options
-const sanitizeOptions = {
-  allowedTags: [
-    'h1',
-    'h2',
-    'h3',
-    'h4',
-    'h5',
-    'h6',
-    'p',
-    'br',
-    'strong',
-    'em',
-    'u',
-    's',
-    'ul',
-    'ol',
-    'li',
-    'blockquote',
-  ],
-  allowedAttributes: {
-    '*': ['class'],
-  },
-  allowedStyles: {
-    '*': {
-      color: [/^#[0-9a-fA-F]{6}$/],
-      'text-align': [/^left$/, /^center$/, /^right$/],
-    },
-  },
+// Simple HTML sanitization - removes potentially dangerous content
+export const sanitizeHtmlContent = (content: string): string => {
+  if (!content || typeof content !== 'string') {
+    return '';
+  }
+
+  // Basic HTML sanitization - removes script tags and dangerous attributes
+  return content
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '') // Remove iframe tags
+    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '') // Remove event handlers
+    .replace(/javascript:/gi, '') // Remove javascript: URLs
+    .replace(/data:/gi, '') // Remove data: URLs
+    .replace(/vbscript:/gi, '') // Remove vbscript: URLs
+    .trim();
 };
 
-// Sanitize HTML content
-const sanitizeHtmlContent = (content: string): string => {
-  return sanitizeHtml(content, sanitizeOptions);
+// Remove potentially dangerous characters from input
+export const sanitizeInput = (input: string): string => {
+  if (!input || typeof input !== 'string') {
+    return '';
+  }
+
+  // Remove null bytes, control characters, and other potentially dangerous content
+  return input
+    .replace(/\0/g, '') // Remove null bytes
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x1F\x7F]/g, '') // Remove all ASCII control characters
+    .trim();
 };
 
 // Sanitize request body
@@ -51,7 +45,7 @@ export const sanitizeBody = (req: Request, res: Response, next: NextFunction) =>
     }
     next();
   } catch (error) {
-    throw new APIError(400, 'Invalid request body');
+    throw new APIError(ErrorCode.VALIDATION_ERROR, 'Invalid request body', 400);
   }
 };
 
@@ -62,13 +56,13 @@ export const sanitizeQuery = (req: Request, res: Response, next: NextFunction) =
       // Sanitize string fields
       Object.keys(req.query).forEach((key) => {
         if (typeof req.query[key] === 'string') {
-          req.query[key] = sanitizeHtmlContent(req.query[key] as string);
+          req.query[key] = sanitizeInput(req.query[key] as string);
         }
       });
     }
     next();
   } catch (error) {
-    throw new APIError(400, 'Invalid query parameters');
+    throw new APIError(ErrorCode.VALIDATION_ERROR, 'Invalid query parameters', 400);
   }
 };
 
@@ -85,6 +79,6 @@ export const sanitizeParams = (req: Request, res: Response, next: NextFunction) 
     }
     next();
   } catch (error) {
-    throw new APIError(400, 'Invalid URL parameters');
+    throw new APIError(ErrorCode.VALIDATION_ERROR, 'Invalid URL parameters', 400);
   }
 };

@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 // Question types for the reflection form
-export type QuestionType = 'text' | 'scale' | 'multiple_choice' | 'yes_no' | 'rich_text';
+export type QuestionType = 'text' | 'scale' | 'multiple_choice' | 'yes_no' | 'rich_text' | 'audio';
 
 // Reflection categories based on Satya Method
 export type ReflectionCategory =

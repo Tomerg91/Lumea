@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { APIError } from './error.js';
+import { APIError, ErrorCode } from './error.js';
 
 // Timeout middleware options
 interface TimeoutOptions {
@@ -15,7 +15,7 @@ export const timeoutMiddleware = (options: TimeoutOptions = {}) => {
   return (req: Request, res: Response, next: NextFunction) => {
     // Set timeout
     req.setTimeout(timeout, () => {
-      throw new APIError(408, errorMessage);
+      throw new APIError(ErrorCode.TIMEOUT, errorMessage, 408);
     });
 
     // Clear timeout on response finish

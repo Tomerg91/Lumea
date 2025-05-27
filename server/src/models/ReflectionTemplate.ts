@@ -161,6 +161,22 @@ export class ReflectionTemplates {
               order: 4,
               estimatedMinutes: 1,
             },
+            {
+              id: 'self_awareness_audio_reflection',
+              section: 'self_awareness',
+              category: 'self_awareness',
+              type: 'audio',
+              question: 'In your own voice, share what this session meant to you personally',
+              helpText: 'Take a moment to speak from the heart about your experience today. There\'s no right or wrong way to express yourself - just be authentic.',
+              required: false,
+              validationRules: { 
+                minValue: 10, // minimum 10 seconds
+                maxValue: 180, // maximum 3 minutes
+              },
+              followUpQuestion: 'Is there anything else you\'d like to add in writing about your verbal reflection?',
+              order: 5,
+              estimatedMinutes: 3,
+            },
           ],
         },
         {
@@ -181,7 +197,7 @@ export class ReflectionTemplates {
               placeholder: 'I notice that I tend to...',
               required: true,
               validationRules: { minLength: 30 },
-              order: 5,
+              order: 6,
               estimatedMinutes: 2,
             },
             {
@@ -193,7 +209,7 @@ export class ReflectionTemplates {
               required: true,
               followUpQuestion:
                 'What specific pattern would you like to work on changing, and why?',
-              order: 6,
+              order: 7,
               estimatedMinutes: 1,
             },
           ],
@@ -216,7 +232,7 @@ export class ReflectionTemplates {
               placeholder: 'I see an opportunity to grow in...',
               required: true,
               validationRules: { minLength: 40 },
-              order: 7,
+              order: 8,
               estimatedMinutes: 2,
             },
             {
@@ -240,7 +256,7 @@ export class ReflectionTemplates {
                 'Creativity and self-expression',
                 'Other',
               ],
-              order: 8,
+              order: 9,
               estimatedMinutes: 1,
             },
           ],
@@ -263,7 +279,7 @@ export class ReflectionTemplates {
               placeholder: 'I commit to...',
               required: true,
               validationRules: { minLength: 50 },
-              order: 9,
+              order: 10,
               estimatedMinutes: 2,
             },
             {
@@ -278,7 +294,7 @@ export class ReflectionTemplates {
               scaleMin: 1,
               scaleMax: 10,
               scaleLabels: { min: 'Not confident', max: 'Very confident' },
-              order: 10,
+              order: 11,
               estimatedMinutes: 1,
             },
             {
@@ -291,7 +307,7 @@ export class ReflectionTemplates {
                 'This could be internal support (mindset, self-compassion) or external support (accountability, resources)',
               placeholder: 'To succeed, I need...',
               required: false,
-              order: 11,
+              order: 12,
               estimatedMinutes: 1,
               conditionalLogic: {
                 dependsOn: 'action_confidence',
@@ -317,7 +333,7 @@ export class ReflectionTemplates {
                 'This could be an insight, a feeling, a breakthrough, or simply the time and space for reflection',
               placeholder: "I'm grateful for...",
               required: false,
-              order: 12,
+              order: 13,
               estimatedMinutes: 1,
             },
             {
@@ -334,7 +350,7 @@ export class ReflectionTemplates {
                 'Somewhat complete - I have more to explore on this topic',
                 'Incomplete - I feel like we just scratched the surface',
               ],
-              order: 13,
+              order: 14,
               estimatedMinutes: 1,
             },
           ],

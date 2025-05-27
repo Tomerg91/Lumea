@@ -1,5 +1,5 @@
 import cors from 'cors';
-import { APIError } from './error.js';
+import { APIError, ErrorCode } from './error.js';
 
 // Define the allowed origins
 const allowedOrigins = [
@@ -14,7 +14,7 @@ const corsOptions = {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new APIError(403, 'Not allowed by CORS'));
+      callback(APIError.forbidden('Not allowed by CORS'));
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

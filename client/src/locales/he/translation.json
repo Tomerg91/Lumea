@@ -62,7 +62,11 @@
     "createdAt": "נוצר",
     "updatedAt": "עודכן לאחרונה",
     "editSession": "עריכת פגישה",
-    "deleteSession": "מחיקת פגישה"
+    "deleteSession": "מחיקת פגישה",
+    "quickActions": "פעולות מהירות",
+    "callClient": "התקשר ללקוח",
+    "messageClient": "שלח הודעה ללקוח",
+    "actions": "פעולות"
   },
   "validation": {
     "required": "שדה זה הוא חובה",
@@ -138,12 +142,52 @@
     "duration": "משך זמן",
     "format": "פורמט",
     "size": "גודל",
+    "holdToRecord": "החזק כדי להקליט",
+    "releaseToStop": "שחרר כדי לעצור",
+    "recordAudio": "הקלטת אודיו",
+    "permissionRequired": "נדרשת הרשאה למיקרופון",
+    "iosPermissionInstructions": "אנא אפשר גישה למיקרופון בהגדרות Safari כדי להקליט אודיו.",
+    "androidPermissionInstructions": "אנא אפשר גישה למיקרופון כאשר תתבקש כדי להקליט אודיו.",
+    "safariRecommended": "דפדפן Safari מומלץ לחוויית הקלטה מיטבית ב-iOS.",
+    "chromeRecommended": "דפדפן Chrome מומלץ לחוויית הקלטה מיטבית באנדרואיד.",
     "errors": {
       "unsupportedBrowser": "הקלטת אודיו אינה נתמכת בדפדפן שלך",
       "microphoneAccess": "אין אפשרות לגשת למיקרופון",
       "permissionDenied": "הרשאת מיקרופון נדחתה. אנא אפשר גישה למיקרופון כדי להקליט אודיו.",
       "noMicrophone": "לא נמצא מיקרופון. אנא חבר מיקרופון ונסה שוב.",
-      "recordingFailed": "הקלטה נכשלה. אנא נסה שוב."
+      "recordingFailed": "הקלטה נכשלה. אנא נסה שוב.",
+      "notSupported": "הקלטת אודיו אינה נתמכת במכשיר זה."
+    }
+  },
+  "audioPlayer": {
+    "recording": "הקלטת אודיו",
+    "download": "הורדה",
+    "share": "שיתוף",
+    "delete": "מחיקה",
+    "errors": {
+      "playbackFailed": "השמעת האודיו נכשלה. אנא נסה שוב."
+    }
+  },
+  "notifications": {
+    "title": "התראות",
+    "empty": "אין התראות",
+    "emptyDescription": "אתה מעודכן! התראות יופיעו כאן כשתקבל אותן.",
+    "unread": "לא נקרא",
+    "priority": "עדיפות",
+    "markAsRead": "סמן כנקרא",
+    "markAllAsRead": "סמן הכל כנקרא",
+    "archive": "ארכיון",
+    "delete": "מחיקה",
+    "loadMore": "טען עוד",
+    "pushEnabled": "התראות פעילות",
+    "enablePush": "הפעל התראות",
+    "types": {
+      "session_reminder": "תזכורת פגישה",
+      "session_confirmation": "פגישה אושרה",
+      "session_cancelled": "פגישה בוטלה",
+      "session_rescheduled": "פגישה נדחתה",
+      "cancellation_request": "בקשת ביטול",
+      "reschedule_request": "בקשת דחייה"
     }
   }
 } 

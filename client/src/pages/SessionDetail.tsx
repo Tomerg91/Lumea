@@ -6,6 +6,9 @@ import { he } from 'date-fns/locale';
 import { Session } from '../components/SessionList';
 import { fetchSessionById, updateSession } from '../services/sessionService';
 import { useAuth } from '../contexts/AuthContext';
+import { useMobileDetection } from '../hooks/useMobileDetection';
+import { SessionNotes } from '../components/notes';
+import MobileSessionDetail from '../components/mobile/MobileSessionDetail';
 
 // Status configuration for display (reused from SessionList)
 const statusConfig = {
@@ -66,6 +69,7 @@ const SessionDetail: React.FC = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { profile } = useAuth();
+  const { isMobile } = useMobileDetection();
   const isRTL = i18n.language === 'he';
   const locale = isRTL ? he : undefined;
 
@@ -189,6 +193,11 @@ const SessionDetail: React.FC = () => {
 
     loadSession();
   }, [sessionId]);
+
+  // Use mobile component on mobile devices
+  if (isMobile) {
+    return <MobileSessionDetail />;
+  }
 
   if (loading) {
     return (
@@ -384,7 +393,7 @@ const SessionDetail: React.FC = () => {
       </div>
 
       {/* Session Information */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
         <h3 className="text-lg font-medium mb-4">{t('sessions.sessionInfo')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
@@ -400,6 +409,15 @@ const SessionDetail: React.FC = () => {
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Private Coach Notes Section */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <SessionNotes
+          sessionId={sessionId!}
+          clientName={`${session.client.firstName} ${session.client.lastName}`}
+          isCoach={profile?.role === 'coach'}
+        />
       </div>
     </div>
   );

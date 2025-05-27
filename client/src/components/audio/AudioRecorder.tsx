@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { Alert } from '../ui/alert';
+import AudioPlayer from './AudioPlayer';
 
 // Audio recording states
 export type RecordingState = 'idle' | 'requesting' | 'recording' | 'paused' | 'completed' | 'error';
@@ -15,6 +16,21 @@ export const AUDIO_FORMATS = [
   { mimeType: 'audio/wav', extension: 'wav' }
 ] as const;
 
+// Mobile detection utility
+const isMobile = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
+// iOS detection utility
+const isIOS = () => {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent);
+};
+
+// Touch device detection
+const isTouchDevice = () => {
+  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+};
+
 export interface AudioRecorderProps {
   onRecordingComplete?: (audioBlob: Blob, duration: number) => void;
   onRecordingError?: (error: string) => void;
@@ -22,6 +38,18 @@ export interface AudioRecorderProps {
   className?: string;
   disabled?: boolean;
   showWaveform?: boolean;
+  showPlayer?: boolean; // Show AudioPlayer for completed recordings
+  playerOptions?: {
+    showWaveform?: boolean;
+    showControls?: boolean;
+    showVolume?: boolean;
+    showSpeed?: boolean;
+    showDownload?: boolean;
+    autoPlay?: boolean;
+  };
+  // Mobile-specific props
+  mobileOptimized?: boolean;
+  compactMode?: boolean;
 }
 
 export interface RecordingData {
@@ -37,9 +65,25 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
   maxDuration = 300, // 5 minutes default
   className = '',
   disabled = false,
-  showWaveform = true
+  showWaveform = true,
+  showPlayer = true,
+  playerOptions = {
+    showWaveform: true,
+    showControls: true,
+    showVolume: true,
+    showSpeed: true,
+    showDownload: true,
+    autoPlay: false
+  },
+  mobileOptimized = false,
+  compactMode = false
 }) => {
   const { t } = useTranslation();
+  
+  // Detect mobile environment
+  const [isMobileDevice] = useState(() => mobileOptimized || isMobile());
+  const [isIOSDevice] = useState(() => isIOS());
+  const [isTouchScreen] = useState(() => isTouchDevice());
   
   // State management
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
@@ -48,6 +92,10 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [audioLevel, setAudioLevel] = useState<number>(0);
   const [supportedMimeType, setSupportedMimeType] = useState<string>('');
+  
+  // Mobile-specific states
+  const [audioContextUnlocked, setAudioContextUnlocked] = useState(!isIOSDevice);
+  const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
 
   // Refs for audio handling
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -119,6 +167,30 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
     }
   }, [showWaveform, monitorAudioLevel]);
 
+  // Mobile-specific audio context unlock (required for iOS)
+  const unlockAudioContext = useCallback(async () => {
+    if (audioContextUnlocked || !isIOSDevice) return true;
+    
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Create a silent audio buffer to unlock the context
+      const buffer = audioContext.createBuffer(1, 1, 22050);
+      const source = audioContext.createBufferSource();
+      source.buffer = buffer;
+      source.connect(audioContext.destination);
+      source.start(0);
+      
+      await audioContext.resume();
+      setAudioContextUnlocked(true);
+      
+      return true;
+    } catch (error) {
+      console.warn('Failed to unlock audio context:', error);
+      return false;
+    }
+  }, [audioContextUnlocked, isIOSDevice]);
+
   // Request microphone permission and start recording
   const startRecording = async () => {
     try {
@@ -129,24 +201,50 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         throw new Error(t('audioRecorder.errors.unsupportedBrowser'));
       }
 
+      // Unlock audio context for iOS
+      if (isIOSDevice && !audioContextUnlocked) {
+        const unlocked = await unlockAudioContext();
+        if (!unlocked) {
+          throw new Error(t('audioRecorder.errors.audioContextLocked'));
+        }
+      }
+
+      // Mobile-optimized audio constraints
+      const audioConstraints = isMobileDevice ? {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        sampleRate: 44100,
+        // Mobile-specific optimizations
+        channelCount: 1, // Mono for mobile to save bandwidth
+        latency: 0.1, // Lower latency for mobile
+        volume: 1.0
+      } : {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        sampleRate: 44100
+      };
+
       // Request microphone access
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 44100
-        }
+        audio: audioConstraints
       });
 
+      setPermissionGranted(true);
       audioStreamRef.current = stream;
       setupAudioContext(stream);
 
-      // Create MediaRecorder
-      const mediaRecorder = new MediaRecorder(stream, { 
+      // Create MediaRecorder with mobile-optimized settings
+      const mediaRecorderOptions = isMobileDevice ? {
+        mimeType: supportedMimeType,
+        audioBitsPerSecond: 64000 // Lower bitrate for mobile
+      } : {
         mimeType: supportedMimeType,
         audioBitsPerSecond: 128000
-      });
+      };
+
+      const mediaRecorder = new MediaRecorder(stream, mediaRecorderOptions);
 
       audioChunksRef.current = [];
 
@@ -185,12 +283,12 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
       };
 
       mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(100); // Collect data every 100ms
       
+      // Start recording
+      mediaRecorder.start(isMobileDevice ? 1000 : 100); // Larger chunks for mobile
       setRecordingState('recording');
-      setDuration(0);
 
-      // Start duration timer
+      // Start duration tracking
       durationIntervalRef.current = setInterval(() => {
         setDuration(prev => {
           const newDuration = prev + 1;
@@ -201,24 +299,25 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         });
       }, 1000);
 
-    } catch (error) {
-      let errorMsg = t('audioRecorder.errors.microphoneAccess');
+    } catch (error: any) {
+      let errorMessage = t('audioRecorder.errors.permissionDenied');
       
-      if (error instanceof Error) {
-        if (error.name === 'NotAllowedError') {
-          errorMsg = t('audioRecorder.errors.permissionDenied');
-        } else if (error.name === 'NotFoundError') {
-          errorMsg = t('audioRecorder.errors.noMicrophone');
-        } else if (error.name === 'NotSupportedError') {
-          errorMsg = t('audioRecorder.errors.unsupportedBrowser');
-        }
+      if (error.name === 'NotAllowedError') {
+        errorMessage = t('audioRecorder.errors.permissionDenied');
+        setPermissionGranted(false);
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = t('audioRecorder.errors.noMicrophone');
+      } else if (error.name === 'NotSupportedError') {
+        errorMessage = t('audioRecorder.errors.notSupported');
+      } else if (error.message) {
+        errorMessage = error.message;
       }
 
-      setErrorMessage(errorMsg);
+      setErrorMessage(errorMessage);
       setRecordingState('error');
       
       if (onRecordingError) {
-        onRecordingError(errorMsg);
+        onRecordingError(errorMessage);
       }
     }
   };
@@ -346,7 +445,9 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
   };
 
   return (
-    <div className={`audio-recorder bg-white rounded-xl p-6 border border-gray-200 shadow-lumea-sm ${className}`}>
+    <div className={`audio-recorder bg-white rounded-xl border border-gray-200 shadow-lumea-sm ${
+      compactMode ? 'p-4' : 'p-6'
+    } ${isMobileDevice ? 'max-w-full' : ''} ${className}`}>
       {/* Error Message */}
       {errorMessage && (
         <Alert variant="destructive" className="mb-4">
@@ -354,63 +455,93 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         </Alert>
       )}
 
+      {/* Mobile Permission Warning */}
+      {isMobileDevice && permissionGranted === false && (
+        <Alert variant="warning" className="mb-4">
+          <div className="space-y-2">
+            <p className="font-medium">{t('audioRecorder.mobile.permissionRequired')}</p>
+            <p className="text-sm">
+              {isIOSDevice 
+                ? t('audioRecorder.mobile.iosInstructions')
+                : t('audioRecorder.mobile.androidInstructions')
+              }
+            </p>
+          </div>
+        </Alert>
+      )}
+
       {/* Recording Status */}
-      <div className="text-center mb-4">
+      <div className={`text-center ${compactMode ? 'mb-2' : 'mb-4'}`}>
         {recordingState === 'requesting' && (
           <div className="flex items-center justify-center space-x-2">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-lumea-primary"></div>
-            <span className="text-sm text-gray-600">{t('audioRecorder.requestingPermission')}</span>
+            <span className={`text-sm text-gray-600 ${isMobileDevice ? 'text-base' : ''}`}>
+              {t('audioRecorder.requestingPermission')}
+            </span>
           </div>
         )}
         
         {recordingState === 'recording' && (
           <div className="flex items-center justify-center space-x-2">
             <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-            <span className="text-sm font-medium text-red-600">{t('audioRecorder.recording')}</span>
+            <span className={`text-sm font-medium text-red-600 ${isMobileDevice ? 'text-base' : ''}`}>
+              {t('audioRecorder.recording')}
+            </span>
           </div>
         )}
         
         {recordingState === 'paused' && (
           <div className="flex items-center justify-center space-x-2">
             <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-            <span className="text-sm font-medium text-yellow-600">{t('audioRecorder.paused')}</span>
+            <span className={`text-sm font-medium text-yellow-600 ${isMobileDevice ? 'text-base' : ''}`}>
+              {t('audioRecorder.paused')}
+            </span>
           </div>
         )}
         
         {recordingState === 'completed' && (
           <div className="flex items-center justify-center space-x-2">
             <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            <span className="text-sm font-medium text-green-600">{t('audioRecorder.completed')}</span>
+            <span className={`text-sm font-medium text-green-600 ${isMobileDevice ? 'text-base' : ''}`}>
+              {t('audioRecorder.completed')}
+            </span>
           </div>
         )}
       </div>
 
-      {/* Waveform Visualization */}
-      <WaveformDisplay />
+      {/* Waveform Visualization - Responsive */}
+      {showWaveform && !compactMode && <WaveformDisplay />}
 
-      {/* Duration Display */}
-      <div className="text-center my-4">
-        <span className="text-2xl font-mono font-bold text-gray-800">
+      {/* Duration Display - Mobile Optimized */}
+      <div className={`text-center ${compactMode ? 'my-2' : 'my-4'}`}>
+        <span className={`font-mono font-bold text-gray-800 ${
+          isMobileDevice ? 'text-3xl' : 'text-2xl'
+        }`}>
           {formatDuration(duration)}
         </span>
         {maxDuration && (
-          <span className="text-sm text-gray-500 ml-2">
+          <span className={`text-gray-500 ml-2 ${
+            isMobileDevice ? 'text-base' : 'text-sm'
+          }`}>
             / {formatDuration(maxDuration)}
           </span>
         )}
       </div>
 
-      {/* Recording Controls */}
-      <div className="flex justify-center space-x-3">
+      {/* Recording Controls - Touch Optimized */}
+      <div className={`flex justify-center ${
+        isMobileDevice ? 'space-x-4' : 'space-x-3'
+      }`}>
         {recordingState === 'idle' && (
           <Button
             onClick={startRecording}
             disabled={disabled || !supportedMimeType}
             variant="lumea"
-            size="lg"
-            className="px-8"
+            size={isMobileDevice ? "lg" : "lg"}
+            className={`${isMobileDevice ? 'px-8 py-4 text-lg min-h-[52px] min-w-[160px]' : 'px-8'} 
+              ${isTouchScreen ? 'active:scale-95' : ''} transition-transform`}
           >
-            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <svg className={`${isMobileDevice ? 'w-6 h-6' : 'w-5 h-5'} mr-2`} fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
             </svg>
             {t('audioRecorder.startRecording')}
@@ -422,20 +553,24 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
             <Button
               onClick={pauseRecording}
               variant="outline"
-              size="lg"
+              size={isMobileDevice ? "lg" : "lg"}
+              className={`${isMobileDevice ? 'px-6 py-4 text-lg min-h-[52px]' : ''} 
+                ${isTouchScreen ? 'active:scale-95' : ''} transition-transform`}
             >
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <svg className={`${isMobileDevice ? 'w-6 h-6' : 'w-5 h-5'} mr-2`} fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
-              {t('audioRecorder.pause')}
+              {isMobileDevice ? t('audioRecorder.pause') : t('audioRecorder.pause')}
             </Button>
             
             <Button
               onClick={stopRecording}
               variant="destructive"
-              size="lg"
+              size={isMobileDevice ? "lg" : "lg"}
+              className={`${isMobileDevice ? 'px-6 py-4 text-lg min-h-[52px]' : ''} 
+                ${isTouchScreen ? 'active:scale-95' : ''} transition-transform`}
             >
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <svg className={`${isMobileDevice ? 'w-6 h-6' : 'w-5 h-5'} mr-2`} fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" />
               </svg>
               {t('audioRecorder.stop')}
@@ -448,9 +583,11 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
             <Button
               onClick={resumeRecording}
               variant="lumea"
-              size="lg"
+              size={isMobileDevice ? "lg" : "lg"}
+              className={`${isMobileDevice ? 'px-6 py-4 text-lg min-h-[52px]' : ''} 
+                ${isTouchScreen ? 'active:scale-95' : ''} transition-transform`}
             >
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <svg className={`${isMobileDevice ? 'w-6 h-6' : 'w-5 h-5'} mr-2`} fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
               </svg>
               {t('audioRecorder.resume')}
@@ -459,10 +596,12 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
             <Button
               onClick={stopRecording}
               variant="destructive"
-              size="lg"
+              size={isMobileDevice ? "lg" : "lg"}
+              className={`${isMobileDevice ? 'px-6 py-4 text-lg min-h-[52px]' : ''} 
+                ${isTouchScreen ? 'active:scale-95' : ''} transition-transform`}
             >
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" />
+              <svg className={`${isMobileDevice ? 'w-6 h-6' : 'w-5 h-5'} mr-2`} fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" />
               </svg>
               {t('audioRecorder.stop')}
             </Button>
@@ -473,9 +612,11 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
           <Button
             onClick={resetRecording}
             variant="outline"
-            size="lg"
+            size={isMobileDevice ? "lg" : "lg"}
+            className={`${isMobileDevice ? 'px-8 py-4 text-lg min-h-[52px] min-w-[160px]' : ''} 
+              ${isTouchScreen ? 'active:scale-95' : ''} transition-transform`}
           >
-            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <svg className={`${isMobileDevice ? 'w-6 h-6' : 'w-5 h-5'} mr-2`} fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
             </svg>
             {t('audioRecorder.recordAgain')}
@@ -483,22 +624,59 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         )}
       </div>
 
-      {/* Recording Info */}
-      {recordingData && (
-        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-          <div className="text-sm text-gray-600">
+      {/* Recording Info - Mobile Optimized */}
+      {recordingData && !showPlayer && (
+        <div className={`${compactMode ? 'mt-2' : 'mt-4'} p-3 bg-gray-50 rounded-lg`}>
+          <div className={`${isMobileDevice ? 'text-base' : 'text-sm'} text-gray-600 space-y-1`}>
             <p>{t('audioRecorder.recordingComplete')}</p>
-            <p>{t('audioRecorder.duration')}: {formatDuration(recordingData.duration)}</p>
-            <p>{t('audioRecorder.format')}: {recordingData.mimeType}</p>
-            <p>{t('audioRecorder.size')}: {(recordingData.blob.size / 1024).toFixed(1)} KB</p>
+            <div className={`${isMobileDevice ? 'grid grid-cols-2 gap-2' : 'space-y-1'}`}>
+              <p>{t('audioRecorder.duration')}: {formatDuration(recordingData.duration)}</p>
+              <p>{t('audioRecorder.size')}: {(recordingData.blob.size / 1024).toFixed(1)} KB</p>
+            </div>
           </div>
+        </div>
+      )}
+
+      {/* Audio Player */}
+      {showPlayer && recordingData && (
+        <div className={`${compactMode ? 'mt-4' : 'mt-6'}`}>
+          <h3 className={`font-medium text-gray-900 ${
+            compactMode ? 'text-base mb-2' : 'text-lg mb-3'
+          } ${isMobileDevice ? 'text-lg' : ''}`}>
+            {t('audioRecorder.playback', 'Playback')}
+          </h3>
+          <AudioPlayer
+            audioBlob={recordingData.blob}
+            audioUrl={recordingData.url}
+            duration={recordingData.duration}
+            className="mt-4"
+            showWaveform={playerOptions.showWaveform}
+            showControls={playerOptions.showControls}
+            showVolume={playerOptions.showVolume && !isMobileDevice} // Hide volume on mobile
+            showSpeed={playerOptions.showSpeed && !compactMode}
+            showDownload={playerOptions.showDownload}
+            autoPlay={playerOptions.autoPlay}
+            // Mobile optimizations
+            mobileOptimized={isMobileDevice}
+            compactMode={compactMode}
+          />
         </div>
       )}
 
       {/* Browser Support Warning */}
       {!supportedMimeType && (
-        <Alert variant="warning" className="mt-4">
-          {t('audioRecorder.errors.unsupportedBrowser')}
+        <Alert variant="warning" className={`${compactMode ? 'mt-2' : 'mt-4'}`}>
+          <div className="space-y-2">
+            <p className="font-medium">{t('audioRecorder.errors.unsupportedBrowser')}</p>
+            {isMobileDevice && (
+              <p className="text-sm">
+                {isIOSDevice 
+                  ? t('audioRecorder.mobile.safariRecommended')
+                  : t('audioRecorder.mobile.chromeRecommended')
+                }
+              </p>
+            )}
+          </div>
         </Alert>
       )}
     </div>

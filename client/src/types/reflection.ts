@@ -1,6 +1,6 @@
 // Frontend types for reflection system - matches backend models
 
-export type QuestionType = 'text' | 'scale' | 'multiple_choice' | 'yes_no' | 'rich_text';
+export type QuestionType = 'text' | 'scale' | 'multiple_choice' | 'yes_no' | 'rich_text' | 'audio';
 
 export type ReflectionCategory = 'self_awareness' | 'patterns' | 'growth_opportunities' | 'action_commitments' | 'gratitude';
 
@@ -68,6 +68,17 @@ export interface ReflectionAnswer {
   questionId: string;
   value: string | number | boolean;
   followUpAnswer?: string;
+  // Audio-specific properties
+  audioData?: {
+    blob: Blob;
+    url: string;
+    duration: number;
+    mimeType: string;
+    size: number;
+  };
+  // S3 upload information (when audio is uploaded)
+  s3Key?: string;
+  fileId?: string;
 }
 
 export interface Reflection {

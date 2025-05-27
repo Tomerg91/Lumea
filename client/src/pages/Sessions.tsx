@@ -28,6 +28,8 @@ import { useToast } from '@/hooks/use-toast';
 import { fetchSessions, createSession as apiCreateSession, CreateSessionData } from '@/services/sessionService';
 import { Session } from '@/components/SessionList';
 import { useAuth } from '@/contexts/AuthContext';
+import { CancelSessionModal } from '@/components/ui/CancelSessionModal';
+import { RescheduleSessionModal } from '@/components/ui/RescheduleSessionModal';
 
 // Local interface for the new session form data
 interface NewSessionFormData {
@@ -77,6 +79,42 @@ const Sessions = () => {
   });
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [sessionToCancel, setSessionToCancel] = useState<Session | null>(null);
+  const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
+  const [sessionToReschedule, setSessionToReschedule] = useState<Session | null>(null);
+
+  const handleCancelSession = (session: Session) => {
+    setSessionToCancel(session);
+    setCancelModalOpen(true);
+  };
+
+  const handleCancelSuccess = (cancelledSession: Session) => {
+    // Update the sessions list with the cancelled session
+    setSessions(prevSessions => 
+      prevSessions.map(session => 
+        session._id === cancelledSession._id ? cancelledSession : session
+      )
+    );
+    setCancelModalOpen(false);
+    setSessionToCancel(null);
+  };
+
+  const handleRescheduleSession = (session: Session) => {
+    setSessionToReschedule(session);
+    setRescheduleModalOpen(true);
+  };
+
+  const handleRescheduleSuccess = (rescheduledSession: Session) => {
+    // Update the sessions list with the rescheduled session
+    setSessions(prevSessions => 
+      prevSessions.map(session => 
+        session._id === rescheduledSession._id ? rescheduledSession : session
+      )
+    );
+    setRescheduleModalOpen(false);
+    setSessionToReschedule(null);
+  };
 
   const handleCreateSession = async () => {
     if (!user?.id) {
@@ -404,7 +442,11 @@ const Sessions = () => {
                           <CardContent>
                             {session.notes && <p className="text-sm mb-4">{session.notes}</p>}
                             <div className="flex gap-2">
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleRescheduleSession(session)}
+                              >
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
                                   width="16"
@@ -421,6 +463,30 @@ const Sessions = () => {
                                   <path d="M12 8v4l3 3"></path>
                                 </svg>
                                 Reschedule
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleCancelSession(session)}
+                                className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="mr-1"
+                                >
+                                  <path d="M3 6h18"></path>
+                                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                </svg>
+                                Cancel
                               </Button>
                               <Button
                                 className="bg-lumea-stone text-lumea-beige hover:bg-lumea-stone/90"
@@ -458,7 +524,11 @@ const Sessions = () => {
                           <CardContent>
                             {session.notes && <p className="text-sm mb-4">{session.notes}</p>}
                             <div className="flex gap-2">
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleRescheduleSession(session)}
+                              >
                                 <svg
                                   xmlns="http://www.w3.org/2000/svg"
                                   width="16"
@@ -475,6 +545,30 @@ const Sessions = () => {
                                   <path d="M12 8v4l3 3"></path>
                                 </svg>
                                 Reschedule
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleCancelSession(session)}
+                                className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="mr-1"
+                                >
+                                  <path d="M3 6h18"></path>
+                                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                </svg>
+                                Cancel
                               </Button>
                               <Button
                                 className="bg-lumea-stone text-lumea-beige hover:bg-lumea-stone/90"
@@ -637,6 +731,26 @@ const Sessions = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <CancelSessionModal
+        session={sessionToCancel}
+        isOpen={cancelModalOpen}
+        onClose={() => {
+          setCancelModalOpen(false);
+          setSessionToCancel(null);
+        }}
+        onCancelSuccess={handleCancelSuccess}
+      />
+
+      <RescheduleSessionModal
+        session={sessionToReschedule}
+        isOpen={rescheduleModalOpen}
+        onClose={() => {
+          setRescheduleModalOpen(false);
+          setSessionToReschedule(null);
+        }}
+        onRescheduleSuccess={handleRescheduleSuccess}
+      />
     </MainLayout>
   );
 };

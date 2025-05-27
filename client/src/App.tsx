@@ -1,7 +1,11 @@
 import React, { lazy, Suspense } from 'react';
-import { Routes, Route, Link, Navigate, Outlet } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
-import usePageTracking from './hooks/usePageTracking'; // Import page tracking hook
+import { LanguageProvider } from './contexts/LanguageContext';
+import usePageTracking from './hooks/usePageTracking';
+import { usePWA } from './hooks/usePWA';
+import Navigation from './components/Navigation';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 import './App.css';
 
 // Implement lazy loading for all page components
@@ -18,178 +22,360 @@ const DesignSystemPage = lazy(() => import('./pages/DesignSystem'));
 const RichTextEditorDemo = lazy(() => import('./components/RichTextEditorDemo').then(module => ({ default: module.RichTextEditorDemo })));
 const ReflectionDemo = lazy(() => import('./pages/ReflectionDemo'));
 const AudioRecorderDemo = lazy(() => import('./components/audio/AudioRecorderDemo'));
+const AudioReflectionTest = lazy(() => import('./components/audio/AudioReflectionTest').then(module => ({ default: module.AudioReflectionTest })));
+const MobileAudioTest = lazy(() => import('./components/audio/MobileAudioTest').then(module => ({ default: module.MobileAudioTest })));
+const NotesDemo = lazy(() => import('./components/notes/NotesDemo').then(module => ({ default: module.NotesDemo })));
+const ReflectionsPage = lazy(() => import('./pages/ReflectionsPage'));
+const ResourcesPage = lazy(() => import('./pages/ResourcesPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const Offline = lazy(() => import('./pages/Offline'));
 
-// Loading fallback component
+// Loading component with Lumea design
 const LoadingFallback = () => (
-  <div className="loading-spinner">
-    <div>Loading...</div>
+  <div className="min-h-screen bg-gradient-background flex items-center justify-center">
+    <div className="glass-card-strong rounded-2xl p-8 text-center">
+      <div className="w-12 h-12 bg-gradient-teal-blue rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse-soft">
+        <div className="w-6 h-6 bg-white rounded-full"></div>
+      </div>
+      <p className="text-lg font-medium">טוען... / Loading...</p>
+    </div>
   </div>
 );
 
-interface ProtectedRouteProps {
-  allowedRoles: string[];
-}
-
-// Protected Route Component - redirect to /auth
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
-  const { session, profile, loading } = useAuth();
-
-  // Log the state received by ProtectedRoute
-  console.log('[ProtectedRoute] State:', {
-    loading,
-    sessionExists: !!session,
-    profileRole: profile?.role,
-    allowedRoles,
-  });
+// Enhanced Protected Route component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { session, loading } = useAuth();
 
   if (loading) {
-    console.log('[ProtectedRoute] Rendering Loading state');
     return <LoadingFallback />;
   }
 
   if (!session) {
-    // Redirect to /auth if not authenticated
-    console.log('[ProtectedRoute] No session, redirecting to /auth');
     return <Navigate to="/auth" replace />;
   }
 
-  // Added check for profile existence before role check
-  if (!profile) {
-    console.log('[ProtectedRoute] Session exists, but profile not yet loaded. Rendering loading.');
-    // It's possible to be authenticated but profile hasn't loaded yet
-    // Render loading or a placeholder, DO NOT redirect to /auth here
-    return <LoadingFallback />; // Use the consistent loading component
-  }
-
-  // Check if the user's role is in the allowedRoles array
-  if (allowedRoles && !allowedRoles.includes(profile.role)) {
-    console.log(
-      `[ProtectedRoute] Role mismatch (Profile: ${profile.role}, Allowed: ${allowedRoles}), redirecting to /`
-    );
-
-    // If they're logged in but wrong role, redirect to their appropriate dashboard
-    if (profile.role === 'coach') {
-      console.log('[ProtectedRoute] Redirecting coach to /coach/dashboard');
-      return <Navigate to="/coach/dashboard" replace />;
-    } else if (profile.role === 'client') {
-      console.log('[ProtectedRoute] Redirecting client to /client/dashboard');
-      return <Navigate to="/client/dashboard" replace />;
-    }
-
-    // Fallback if no recognized role
-    return <Navigate to="/" replace />;
-  }
-
-  console.log('[ProtectedRoute] Checks passed, rendering Outlet');
-  return <Outlet />;
+  return <>{children}</>;
 };
 
+// Role-based Route component
+const RoleProtectedRoute = ({ 
+  children, 
+  allowedRoles 
+}: { 
+  children: React.ReactNode;
+  allowedRoles: string[];
+}) => {
+  const { session, profile, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingFallback />;
+  }
+
+  if (!session) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (!profile?.role || !allowedRoles.includes(profile.role as string)) {
+    return (
+      <div className="min-h-screen bg-gradient-background flex items-center justify-center">
+        <div className="card-lumea-strong max-w-md mx-auto text-center">
+          <h2 className="text-2xl font-bold text-gradient-purple mb-4">
+            Access Denied / אין הרשאה
+          </h2>
+          <p className="opacity-80 mb-6">
+            You don't have permission to access this page. / אין לך הרשאה לגשת לדף זה.
+          </p>
+          <button
+            onClick={() => window.history.back()}
+            className="btn-primary"
+          >
+            Go Back / חזור
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+};
+
+// Layout component with Navigation
+const Layout = () => (
+  <div className="min-h-screen bg-gradient-background">
+    <Navigation />
+    <main className="flex-1">
+      <Outlet />
+    </main>
+  </div>
+);
+
+// Public layout for pages that don't need navigation
+const PublicLayout = () => (
+  <div className="min-h-screen bg-gradient-background">
+    <Outlet />
+  </div>
+);
+
+// 404 Not Found component
+const NotFound = () => (
+  <div className="min-h-screen bg-gradient-background flex items-center justify-center">
+    <div className="card-lumea-strong max-w-md mx-auto text-center">
+      <div className="w-16 h-16 bg-gradient-yellow-peach rounded-2xl flex items-center justify-center mx-auto mb-6">
+        <span className="text-2xl">🔍</span>
+      </div>
+      <h1 className="text-4xl font-bold text-gradient-purple mb-4">404</h1>
+      <h2 className="text-xl font-semibold mb-4">
+        Page Not Found / דף לא נמצא
+      </h2>
+      <p className="opacity-80 mb-6">
+        The page you're looking for doesn't exist. / הדף שאתה מחפש לא קיים.
+      </p>
+      <button
+        onClick={() => window.location.href = '/'}
+        className="btn-primary"
+      >
+        Go Home / עבור לעמוד הבית
+      </button>
+    </div>
+  </div>
+);
+
 const App: React.FC = () => {
-  const { session, profile, signOut, loading } = useAuth();
-  usePageTracking(); // Initialize page tracking
+  usePageTracking();
+  const { isOffline } = usePWA();
 
   return (
-    <div>
-      <nav>
-        <Link to="/">Home</Link> | <Link to="/test">Test Page</Link> |{' '}
-        <Link to="/debug">Debug</Link> | <Link to="/design-system">Design System</Link> |{' '}
-        <Link to="/rich-editor-demo">Rich Editor Demo</Link> |{' '}
-        <Link to="/reflection-demo">Reflection Demo</Link> |{' '}
-        <Link to="/audio-recorder-demo">Audio Recorder Demo</Link>
-        {/* Show different links based on auth state and role */}
-        {session && profile?.role === 'coach' && (
-          <>
-            | <Link to="/coach/dashboard">Dashboard</Link>|{' '}
-            <Link to="/coach/clients">My Clients</Link>
-          </>
+    <LanguageProvider>
+      <div className="App">
+        {/* PWA Install Prompt */}
+        <PWAInstallPrompt />
+        
+        {/* Offline indicator */}
+        {isOffline && (
+          <div className="fixed top-0 left-0 right-0 bg-amber-500 text-white text-center py-2 text-sm font-medium z-50">
+            You are currently offline. Some features may be limited.
+          </div>
         )}
-        {session && profile?.role === 'client' && (
-          <>
-            | <Link to="/client/dashboard">My Dashboard</Link>
-          </>
-        )}
-        {session && profile?.role === 'admin' && (
-          <>
-            | <Link to="/admin">Admin Console</Link>
-          </>
-        )}
-        {/* Add links for other roles/pages */}
-        <span style={{ float: 'right' }}>
-          {loading ? (
-            'Loading...'
-          ) : session ? (
-            <>
-              <span>
-                {(profile?.email as string) || 'User'} ({profile?.role as string})
-              </span>
-              <button onClick={signOut} style={{ marginLeft: '10px' }}>
-                Sign Out
-              </button>
-            </>
-          ) : (
-            <Link to="/auth">Login / Sign Up</Link> // Link to the combined auth page
-          )}
-        </span>
-      </nav>
-
-      <main style={{ paddingTop: '20px' }}>
+        
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<HomePage />} /> {/* Use HomePage component */}
-            <Route path="/auth" element={<AuthPage />} /> {/* Route for Auth component */}
-            <Route path="/test" element={<TestPage />} /> {/* New Test Page Route */}
-            <Route path="/debug" element={<DebugPage />} /> {/* Debug Page Route */}
-            <Route path="/design-system" element={<DesignSystemPage />} />{' '}
-            {/* Design System Route */}
-            <Route path="/rich-editor-demo" element={<RichTextEditorDemo />} />
-            <Route path="/reflection-demo" element={<ReflectionDemo />} />
-            <Route path="/audio-recorder-demo" element={<AudioRecorderDemo />} />
-            {/* Admin Protected Routes */}
-            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-              <Route path="/admin" element={<AdminDashboard />} />
+            {/* Public routes with Navigation */}
+            <Route element={<Layout />}>
+              <Route path="/" element={<HomePage />} />
             </Route>
-            {/* Coach Protected Routes */}
-            <Route element={<ProtectedRoute allowedRoles={['coach']} />}>
-              <Route path="/coach/dashboard" element={<Dashboard />} />
-              <Route path="/coach/clients" element={<ClientsPage />} />
-              <Route path="/coach/sessions" element={<SessionsPage />} />
-              <Route path="/coach/sessions/:sessionId" element={<SessionDetail />} />
-              <Route path="/coach/reflections" element={<div>Coach Reflections Page</div>} />
-              <Route path="/coach/resources" element={<div>Coach Resources Page</div>} />
-              <Route path="/coach/profile" element={<div>Coach Profile Page</div>} />
+
+            {/* Public routes without Navigation */}
+            <Route element={<PublicLayout />}>
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/offline" element={<Offline />} />
             </Route>
-            {/* Coach Protected Routes (legacy paths) */}
-            <Route element={<ProtectedRoute allowedRoles={['coach']} />}>
-              <Route path="/dashboard" element={<Navigate to="/coach/dashboard" replace />} />
-              <Route path="/clients" element={<Navigate to="/coach/clients" replace />} />
+
+            {/* Protected Coach Routes */}
+            <Route element={<Layout />}>
+              <Route 
+                path="/coach/dashboard" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['coach']}>
+                    <Dashboard />
+                  </RoleProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/coach/clients" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['coach']}>
+                    <ClientsPage />
+                  </RoleProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/coach/sessions" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['coach']}>
+                    <SessionsPage />
+                  </RoleProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/coach/sessions/:id" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['coach']}>
+                    <SessionDetail />
+                  </RoleProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/coach/reflections" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['coach']}>
+                    <ReflectionsPage />
+                  </RoleProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/coach/resources" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['coach']}>
+                    <ResourcesPage />
+                  </RoleProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/coach/profile" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['coach']}>
+                    <SettingsPage />
+                  </RoleProtectedRoute>
+                } 
+              />
             </Route>
-            {/* Client Protected Routes */}
-            <Route element={<ProtectedRoute allowedRoles={['client']} />}>
-              <Route path="/client/dashboard" element={<Dashboard />} />
-              <Route path="/client/sessions" element={<SessionsPage />} />
-              <Route path="/client/sessions/:sessionId" element={<SessionDetail />} />
-              <Route path="/client/reflections" element={<div>Client Reflections Page</div>} />
-              <Route path="/client/resources" element={<div>Client Resources Page</div>} />
-              <Route path="/client/profile" element={<div>Client Profile Page</div>} />
+
+            {/* Protected Client Routes */}
+            <Route element={<Layout />}>
+              <Route 
+                path="/client/dashboard" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['client']}>
+                    <Dashboard />
+                  </RoleProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/client/sessions" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['client']}>
+                    <SessionsPage />
+                  </RoleProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/client/sessions/:id" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['client']}>
+                    <SessionDetail />
+                  </RoleProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/client/reflections" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['client']}>
+                    <ReflectionsPage />
+                  </RoleProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/client/resources" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['client']}>
+                    <ResourcesPage />
+                  </RoleProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/client/profile" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['client']}>
+                    <SettingsPage />
+                  </RoleProtectedRoute>
+                } 
+              />
             </Route>
-            {/* Fallback 404 route */}
-            <Route
-              path="*"
-              element={
-                <div style={{ padding: '2rem', textAlign: 'center' }}>
-                  <h2>404 Not Found</h2>
-                  <p>The page you&apos;re looking for doesn&apos;t exist.</p>
-                  <div style={{ marginTop: '1rem' }}>
-                    <Link to="/">Go Home</Link>
-                  </div>
-                </div>
-              }
-            />
+
+            {/* Admin Routes */}
+            <Route element={<Layout />}>
+              <Route 
+                path="/admin" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <DebugPage />
+                  </RoleProtectedRoute>
+                } 
+              />
+            </Route>
+
+            {/* Development/Test Routes */}
+            <Route element={<Layout />}>
+              <Route 
+                path="/test" 
+                element={
+                  <ProtectedRoute>
+                    <TestPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/debug" 
+                element={
+                  <ProtectedRoute>
+                    <DebugPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/design-system" 
+                element={
+                  <ProtectedRoute>
+                    <DesignSystemPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/reflection-demo" 
+                element={
+                  <ProtectedRoute>
+                    <ReflectionDemo />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/rich-text-demo" 
+                element={
+                  <ProtectedRoute>
+                    <RichTextEditorDemo />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/audio-demo" 
+                element={
+                  <ProtectedRoute>
+                    <AudioRecorderDemo />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/audio-reflection-test" 
+                element={
+                  <ProtectedRoute>
+                    <AudioReflectionTest />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/mobile-audio-test" 
+                element={
+                  <ProtectedRoute>
+                    <MobileAudioTest />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/notes-demo" 
+                element={
+                  <ProtectedRoute>
+                    <NotesDemo />
+                  </ProtectedRoute>
+                } 
+              />
+            </Route>
+
+            {/* 404 Not Found */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
-      </main>
-    </div>
+      </div>
+    </LanguageProvider>
   );
 };
 

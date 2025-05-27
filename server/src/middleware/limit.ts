@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { APIError } from './error.js';
+import { APIError, ErrorCode } from './error.js';
 
 // Limit middleware options
 interface LimitOptions {
@@ -18,7 +18,7 @@ export const limitMiddleware = (options: LimitOptions = {}) => {
 
     // Check if content length exceeds max size
     if (contentLength > maxSize) {
-      throw new APIError(413, errorMessage);
+      throw new APIError(ErrorCode.REQUEST_TOO_LARGE, errorMessage, 413);
     }
 
     // Track request size
@@ -27,7 +27,7 @@ export const limitMiddleware = (options: LimitOptions = {}) => {
       size += chunk.length;
       if (size > maxSize) {
         req.destroy();
-        throw new APIError(413, errorMessage);
+        throw new APIError(ErrorCode.REQUEST_TOO_LARGE, errorMessage, 413);
       }
     });
 

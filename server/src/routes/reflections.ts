@@ -41,4 +41,15 @@ router.get('/client/all', reflectionController.getClientReflections);
 // GET /api/reflections/coach/all - Get all reflections for a coach (submitted only)
 router.get('/coach/all', reflectionController.getCoachReflections);
 
+// NEW REFLECTION HISTORY AND ANALYTICS ROUTES
+
+// GET /api/reflections/history - Get reflection history with advanced filtering
+router.get('/history', reflectionController.getReflectionHistory);
+
+// GET /api/reflections/analytics - Get reflection analytics and insights
+router.get('/analytics', reflectionController.getReflectionAnalytics);
+
+// GET /api/reflections/search - Search reflections with full-text capabilities
+router.get('/search', reflectionController.searchReflections);
+
 export default router;

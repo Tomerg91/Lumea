@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { CoachingSession, ICoachingSession, SessionStatus } from '../models/CoachingSession';
+import { notificationScheduler } from '../services/notificationSchedulerService';
+import { feedbackTriggerService } from '../services/feedbackTriggerService';
 import { z } from 'zod';
 import {
   getSessionById,
@@ -135,6 +137,14 @@ export const sessionController = {
         date: new Date(date),
         notes: notes || '',
       });
+
+      // Schedule notifications for the new session
+      try {
+        await notificationScheduler.scheduleSessionReminders(session);
+      } catch (error) {
+        console.error('Failed to schedule session reminders:', error);
+        // Don't fail the session creation if notification scheduling fails
+      }
 
       // Return created session
       res.status(201).json({
@@ -525,10 +535,11 @@ export const sessionController = {
 
       // Define valid status transitions
       const validTransitions: Record<SessionStatus, SessionStatus[]> = {
-        pending: ['in-progress', 'cancelled'],
+        pending: ['in-progress', 'cancelled', 'rescheduled'],
         'in-progress': ['completed', 'cancelled'],
         completed: [], // Completed sessions cannot be changed
         cancelled: ['pending'], // Cancelled sessions can only be reset to pending
+        rescheduled: ['pending', 'in-progress', 'cancelled'], // Rescheduled sessions can transition to any active state
       };
 
       // Check if the transition is valid
@@ -593,7 +604,18 @@ export const sessionController = {
           [`${newStatus}At`]: new Date(),
         },
         { new: true }
-      ).populate('clientId', 'firstName lastName email');
+      ).populate('clientId', 'firstName lastName email')
+      .populate('coachId', 'firstName lastName email');
+
+      // Trigger feedback requests when session is completed
+      if (newStatus === 'completed' && updatedSession) {
+        try {
+          await feedbackTriggerService.onSessionCompleted(updatedSession);
+        } catch (error) {
+          console.error('Error triggering feedback requests:', error);
+          // Don't fail the status update if feedback trigger fails
+        }
+      }
 
       res.json({
         message: 'Session status updated successfully',

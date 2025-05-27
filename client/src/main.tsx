@@ -8,8 +8,10 @@ import { initPerformanceMonitoring } from './utils/performanceMonitoring';
 import mobileOptimizations from './utils/mobileOptimizations';
 import { AuthProvider } from './contexts/AuthContext';
 
-// Initialize performance monitoring
-initPerformanceMonitoring();
+// Initialize performance monitoring only in production or when explicitly enabled
+if (import.meta.env.PROD || import.meta.env.VITE_ENABLE_PERFORMANCE_MONITORING === 'true') {
+  initPerformanceMonitoring();
+}
 
 // Apply mobile-specific optimizations
 mobileOptimizations.applyOptimizedStyles();
