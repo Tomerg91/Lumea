@@ -90,5 +90,19 @@
       "running": "פועל",
       "paused": "מושהה"
     }
+  },
+  "durationAdjustment": {
+    "sessionDuration": "משך המפגש",
+    "originalDuration": "משך זמן מקורי",
+    "adjustedDuration": "משך זמן מותאם",
+    "confirmAdjustment": "אשר התאמה",
+    "confirmSignificantChange": "אשר שינוי משמעותי",
+    "reviewAdjustment": "בדוק התאמה",
+    "durationRange": "משך הזמן חייב להיות בין 1-480 דקות (8 שעות)",
+    "characters": "תווים",
+    "increase": "הגדלה",
+    "decrease": "הקטנה",
+    "significantChangeTitle": "שינוי משמעותי",
+    "significantChangeWarning": "אתה מתאים את משך הזמן ב-{{difference}} דקות. אנא וודא שזה נכון."
   }
 }

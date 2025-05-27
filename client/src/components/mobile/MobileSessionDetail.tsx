@@ -22,6 +22,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useMobileDetection } from '../../hooks/useMobileDetection';
 import { cn } from '../../lib/utils';
 import MobileSessionTimer from './MobileSessionTimer';
+import MobileDurationAdjustment from './MobileDurationAdjustment';
 
 // Mobile-optimized status configuration
 const mobileStatusConfig = {
@@ -493,6 +494,14 @@ const MobileSessionDetail: React.FC = () => {
           sessionId={sessionId!}
           sessionStatus={session.status}
         />
+
+        {/* Duration Adjustment (for completed sessions) */}
+        {session.status === 'completed' && (
+          <MobileDurationAdjustment
+            sessionId={sessionId!}
+            sessionStatus={session.status}
+          />
+        )}
 
         {/* Client Information Card */}
         <div className="bg-white rounded-2xl p-6 shadow-sm">

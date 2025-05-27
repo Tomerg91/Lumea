@@ -170,5 +170,19 @@
       "running": "Running",
       "paused": "Paused"
     }
+  },
+  "durationAdjustment": {
+    "sessionDuration": "Session Duration",
+    "originalDuration": "Original Duration",
+    "adjustedDuration": "Adjusted Duration",
+    "confirmAdjustment": "Confirm Adjustment",
+    "confirmSignificantChange": "Confirm Significant Change",
+    "reviewAdjustment": "Review Adjustment",
+    "durationRange": "Duration must be between 1-480 minutes (8 hours)",
+    "characters": "characters",
+    "increase": "increase",
+    "decrease": "decrease",
+    "significantChangeTitle": "Significant Change",
+    "significantChangeWarning": "You are adjusting the duration by {{difference}} minutes. Please ensure this is correct."
   }
 }

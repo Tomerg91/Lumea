@@ -10,6 +10,7 @@ import { useMobileDetection } from '../hooks/useMobileDetection';
 import { SessionNotes } from '../components/notes';
 import MobileSessionDetail from '../components/mobile/MobileSessionDetail';
 import SessionTimer from '../components/SessionTimer';
+import DurationAdjustment from '../components/DurationAdjustment';
 
 // Status configuration for display (reused from SessionList)
 const statusConfig = {
@@ -345,6 +346,15 @@ const SessionDetail: React.FC = () => {
         sessionStatus={session.status}
         className="mb-6"
       />
+
+      {/* Duration Adjustment (for completed sessions) */}
+      {session.status === 'completed' && (
+        <DurationAdjustment
+          sessionId={sessionId!}
+          sessionStatus={session.status}
+          className="mb-6"
+        />
+      )}
 
       {/* Session Notes */}
       <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
