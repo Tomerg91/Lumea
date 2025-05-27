@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Play, 
@@ -8,7 +8,9 @@ import {
   Edit,
   RotateCcw,
   X,
-  CheckCircle
+  CheckCircle,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { useSessionTimer } from '../../hooks/useSessionTimer';
 import { useAuth } from '../../contexts/AuthContext';
@@ -27,6 +29,120 @@ interface MobileDurationAdjustmentModalProps {
   onAdjust: (data: DurationAdjustmentData) => Promise<void>;
   currentDuration: number;
   isLoading?: boolean;
+}
+
+// Enhanced mobile utilities
+class MobileTimerOptimizer {
+  private static wakeLock: any = null;
+  private static isOnline = navigator.onLine;
+  private static backgroundStartTime: number | null = null;
+
+  // Haptic feedback support
+  static triggerHapticFeedback(type: 'light' | 'medium' | 'heavy' | 'selection' = 'light') {
+    if ('vibrate' in navigator) {
+      const patterns = {
+        light: [50],
+        medium: [100],
+        heavy: [200],
+        selection: [10]
+      };
+      navigator.vibrate(patterns[type]);
+    }
+    
+    // iOS haptic feedback
+    if ('Haptics' in window && (window as any).Haptics) {
+      try {
+        switch (type) {
+          case 'light':
+            (window as any).Haptics.impact({ style: 'light' });
+            break;
+          case 'medium':
+            (window as any).Haptics.impact({ style: 'medium' });
+            break;
+          case 'heavy':
+            (window as any).Haptics.impact({ style: 'heavy' });
+            break;
+          case 'selection':
+            (window as any).Haptics.selection();
+            break;
+        }
+      } catch (e) {
+        console.log('Haptic feedback not available');
+      }
+    }
+  }
+
+  // Wake lock for keeping screen on during active timer
+  static async requestWakeLock() {
+    if ('wakeLock' in navigator) {
+      try {
+        this.wakeLock = await (navigator as any).wakeLock.request('screen');
+        console.log('Screen wake lock activated');
+        return true;
+      } catch (err) {
+        console.log('Wake lock failed:', err);
+        return false;
+      }
+    }
+    return false;
+  }
+
+  static async releaseWakeLock() {
+    if (this.wakeLock) {
+      try {
+        await this.wakeLock.release();
+        this.wakeLock = null;
+        console.log('Screen wake lock released');
+      } catch (err) {
+        console.log('Wake lock release failed:', err);
+      }
+    }
+  }
+
+  // Network status monitoring
+  static initNetworkMonitoring(onStatusChange: (isOnline: boolean) => void) {
+    const handleOnline = () => {
+      this.isOnline = true;
+      onStatusChange(true);
+    };
+    
+    const handleOffline = () => {
+      this.isOnline = false;
+      onStatusChange(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }
+
+  // Background timer handling for PWA
+  static handleVisibilityChange(isTimerRunning: boolean, currentDuration: number) {
+    if (document.hidden && isTimerRunning) {
+      this.backgroundStartTime = Date.now();
+      // Store in localStorage for PWA persistence
+      localStorage.setItem('timerBackgroundStart', this.backgroundStartTime.toString());
+      localStorage.setItem('timerDurationAtBackground', currentDuration.toString());
+    } else if (!document.hidden && this.backgroundStartTime) {
+      const backgroundDuration = Date.now() - this.backgroundStartTime;
+      this.backgroundStartTime = null;
+      localStorage.removeItem('timerBackgroundStart');
+      localStorage.removeItem('timerDurationAtBackground');
+      return backgroundDuration;
+    }
+    return 0;
+  }
+
+  // Performance optimization: reduce updates when not visible
+  static getOptimalRefreshInterval(isVisible: boolean, isTimerRunning: boolean): number {
+    if (!isVisible) return 5000; // Slow refresh when hidden
+    if (isTimerRunning) return 1000; // Standard refresh when active
+    return 3000; // Slower refresh when stopped
+  }
 }
 
 const MobileDurationAdjustmentModal: React.FC<MobileDurationAdjustmentModalProps> = ({
@@ -147,6 +263,11 @@ const MobileSessionTimer: React.FC<MobileSessionTimerProps> = ({
   const { profile } = useAuth();
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [isAdjusting, setIsAdjusting] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isVisible, setIsVisible] = useState(!document.hidden);
+  const [backgroundDuration, setBackgroundDuration] = useState(0);
+  const wakeLockRef = useRef<boolean>(false);
+  const visibilityHandlerRef = useRef<() => void>();
 
   const {
     timerData,
@@ -162,7 +283,7 @@ const MobileSessionTimer: React.FC<MobileSessionTimerProps> = ({
   } = useSessionTimer({
     sessionId,
     autoRefresh: true,
-    refreshInterval: 1000,
+    refreshInterval: 1000, // Use standard interval, will be optimized in effect
     onTimerUpdate: (data) => {
       onTimerStateChange?.(data.timerStatus === 'running' || data.timerStatus === 'paused');
     },
@@ -170,6 +291,64 @@ const MobileSessionTimer: React.FC<MobileSessionTimerProps> = ({
       console.error('Timer error:', error);
     },
   });
+
+  // Mobile optimizations and PWA features
+  useEffect(() => {
+    // Network status monitoring
+    const cleanupNetwork = MobileTimerOptimizer.initNetworkMonitoring(setIsOnline);
+
+    // Visibility change handling for background timer
+    const handleVisibilityChange = () => {
+      const wasVisible = isVisible;
+      const nowVisible = !document.hidden;
+      setIsVisible(nowVisible);
+
+      if (wasVisible && !nowVisible && isTimerActive) {
+        // Going to background with active timer
+        const extraDuration = MobileTimerOptimizer.handleVisibilityChange(
+          isTimerActive, 
+          timerData?.currentDuration || 0
+        );
+        setBackgroundDuration(extraDuration);
+      } else if (!wasVisible && nowVisible && isTimerActive) {
+        // Coming from background with active timer
+        const extraDuration = MobileTimerOptimizer.handleVisibilityChange(
+          isTimerActive, 
+          timerData?.currentDuration || 0
+        );
+        if (extraDuration > 0) {
+          setBackgroundDuration(extraDuration);
+        }
+      }
+    };
+
+    visibilityHandlerRef.current = handleVisibilityChange;
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      cleanupNetwork();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isVisible, isTimerActive, timerData?.currentDuration]);
+
+  // Wake lock management
+  useEffect(() => {
+    if (isTimerActive && timerData?.timerStatus === 'running' && !wakeLockRef.current) {
+      MobileTimerOptimizer.requestWakeLock().then((success) => {
+        wakeLockRef.current = success;
+      });
+    } else if ((!isTimerActive || timerData?.timerStatus !== 'running') && wakeLockRef.current) {
+      MobileTimerOptimizer.releaseWakeLock();
+      wakeLockRef.current = false;
+    }
+
+    return () => {
+      if (wakeLockRef.current) {
+        MobileTimerOptimizer.releaseWakeLock();
+        wakeLockRef.current = false;
+      }
+    };
+  }, [isTimerActive, timerData?.timerStatus]);
 
   const isCoach = profile?.role === 'coach';
   const canStart = isCoach && sessionStatus !== 'completed' && sessionStatus !== 'cancelled';
@@ -182,10 +361,52 @@ const MobileSessionTimer: React.FC<MobileSessionTimerProps> = ({
     setIsAdjusting(true);
     try {
       await adjustDuration(adjustmentData);
+      MobileTimerOptimizer.triggerHapticFeedback('medium');
     } finally {
       setIsAdjusting(false);
     }
   };
+
+  // Enhanced timer control functions with haptic feedback
+  const handleStartTimer = useCallback(async () => {
+    try {
+      await startTimer();
+      MobileTimerOptimizer.triggerHapticFeedback('medium');
+    } catch (error) {
+      console.error('Start timer failed:', error);
+      MobileTimerOptimizer.triggerHapticFeedback('heavy');
+    }
+  }, [startTimer]);
+
+  const handleStopTimer = useCallback(async () => {
+    try {
+      await stopTimer();
+      MobileTimerOptimizer.triggerHapticFeedback('heavy');
+    } catch (error) {
+      console.error('Stop timer failed:', error);
+      MobileTimerOptimizer.triggerHapticFeedback('heavy');
+    }
+  }, [stopTimer]);
+
+  const handlePauseTimer = useCallback(async () => {
+    try {
+      await pauseTimer();
+      MobileTimerOptimizer.triggerHapticFeedback('light');
+    } catch (error) {
+      console.error('Pause timer failed:', error);
+      MobileTimerOptimizer.triggerHapticFeedback('heavy');
+    }
+  }, [pauseTimer]);
+
+  const handleResumeTimer = useCallback(async () => {
+    try {
+      await resumeTimer();
+      MobileTimerOptimizer.triggerHapticFeedback('medium');
+    } catch (error) {
+      console.error('Resume timer failed:', error);
+      MobileTimerOptimizer.triggerHapticFeedback('heavy');
+    }
+  }, [resumeTimer]);
 
   const getTimerStatusIcon = () => {
     if (!timerData?.hasTimer) return <Clock className="w-6 h-6 text-gray-400" />;
@@ -242,7 +463,7 @@ const MobileSessionTimer: React.FC<MobileSessionTimerProps> = ({
           <div className="flex space-x-2">
             {timerData?.timerStatus === 'stopped' || !timerData?.hasTimer ? (
               <button
-                onClick={startTimer}
+                onClick={handleStartTimer}
                 disabled={!canStart || isLoading}
                 className="p-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 touch-manipulation"
               >
@@ -252,7 +473,7 @@ const MobileSessionTimer: React.FC<MobileSessionTimerProps> = ({
               <>
                 {canPause && (
                   <button
-                    onClick={pauseTimer}
+                    onClick={handlePauseTimer}
                     disabled={isLoading}
                     className="p-3 bg-yellow-600 text-white rounded-xl hover:bg-yellow-700 transition-colors disabled:opacity-50 touch-manipulation"
                   >
@@ -262,7 +483,7 @@ const MobileSessionTimer: React.FC<MobileSessionTimerProps> = ({
                 
                 {canResume && (
                   <button
-                    onClick={resumeTimer}
+                    onClick={handleResumeTimer}
                     disabled={isLoading}
                     className="p-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 touch-manipulation"
                   >
@@ -272,7 +493,7 @@ const MobileSessionTimer: React.FC<MobileSessionTimerProps> = ({
                 
                 {canStop && (
                   <button
-                    onClick={stopTimer}
+                    onClick={handleStopTimer}
                     disabled={isLoading}
                     className="p-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 touch-manipulation"
                   >
@@ -295,17 +516,33 @@ const MobileSessionTimer: React.FC<MobileSessionTimerProps> = ({
         <h3 className="text-lg font-semibold flex items-center space-x-2">
           <Clock className="w-5 h-5 text-lumea-primary" />
           <span>{t('sessionTimer.sessionTimer')}</span>
+          
+          {/* Network Status Indicator */}
+          {!isOnline && (
+            <div className="ml-2 p-1 bg-red-100 rounded-full">
+              <WifiOff className="w-4 h-4 text-red-600" />
+            </div>
+          )}
         </h3>
         
-        {canAdjust && (
-          <button
-            onClick={() => setShowAdjustModal(true)}
-            disabled={isLoading}
-            className="p-2 bg-lumea-light text-lumea-primary rounded-xl hover:bg-lumea-light-dark transition-colors disabled:opacity-50 touch-manipulation"
-          >
-            <Edit className="w-5 h-5" />
-          </button>
-        )}
+        <div className="flex items-center space-x-2">
+          {/* Background Timer Notification */}
+          {backgroundDuration > 0 && (
+            <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+              +{Math.round(backgroundDuration / 1000)}s
+            </div>
+          )}
+          
+          {canAdjust && (
+            <button
+              onClick={() => setShowAdjustModal(true)}
+              disabled={isLoading}
+              className="p-2 bg-lumea-light text-lumea-primary rounded-xl hover:bg-lumea-light-dark transition-colors disabled:opacity-50 touch-manipulation"
+            >
+              <Edit className="w-5 h-5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Timer Display */}
@@ -341,7 +578,7 @@ const MobileSessionTimer: React.FC<MobileSessionTimerProps> = ({
         <div className="grid grid-cols-2 gap-3 mb-6">
           {timerData?.timerStatus === 'stopped' || !timerData?.hasTimer ? (
             <button
-              onClick={startTimer}
+              onClick={handleStartTimer}
               disabled={!canStart || isLoading}
               className="col-span-2 flex items-center justify-center space-x-3 px-6 py-4 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation text-lg font-medium"
             >
@@ -352,7 +589,7 @@ const MobileSessionTimer: React.FC<MobileSessionTimerProps> = ({
             <>
               {canPause && (
                 <button
-                  onClick={pauseTimer}
+                  onClick={handlePauseTimer}
                   disabled={isLoading}
                   className="flex items-center justify-center space-x-2 px-4 py-4 bg-yellow-600 text-white rounded-xl hover:bg-yellow-700 transition-colors disabled:opacity-50 touch-manipulation font-medium"
                 >
@@ -363,7 +600,7 @@ const MobileSessionTimer: React.FC<MobileSessionTimerProps> = ({
               
               {canResume && (
                 <button
-                  onClick={resumeTimer}
+                  onClick={handleResumeTimer}
                   disabled={isLoading}
                   className="flex items-center justify-center space-x-2 px-4 py-4 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 touch-manipulation font-medium"
                 >
@@ -374,7 +611,7 @@ const MobileSessionTimer: React.FC<MobileSessionTimerProps> = ({
               
               {canStop && (
                 <button
-                  onClick={stopTimer}
+                  onClick={handleStopTimer}
                   disabled={isLoading}
                   className="flex items-center justify-center space-x-2 px-4 py-4 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 touch-manipulation font-medium"
                 >
