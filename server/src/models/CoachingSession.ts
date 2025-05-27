@@ -36,9 +36,12 @@ export interface ICoachingSession extends Document {
   coachId: Types.ObjectId | IUser;
   clientId: Types.ObjectId | IUser;
   date: Date;
-  duration: number; // Duration in minutes
+  duration: number; // Duration in minutes (planned duration)
   status: SessionStatus;
   notes: string;
+  
+  // Timer tracking reference
+  timingId?: Types.ObjectId; // Reference to SessionTiming document
   
   // Status change timestamps for audit trail
   pendingAt?: Date;
@@ -148,9 +151,13 @@ const CoachingSessionSchema = new Schema<ICoachingSession>(
     duration: {
       type: Number,
       required: true,
-      default: 60, // Default 60 minutes
+      default: 60, // Default 60 minutes (planned duration)
       min: 15,
       max: 240,
+    },
+    timingId: {
+      type: Schema.Types.ObjectId,
+      ref: 'SessionTiming',
     },
     status: {
       type: String,

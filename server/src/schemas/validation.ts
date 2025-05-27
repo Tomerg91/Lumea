@@ -356,10 +356,55 @@ export const search = {
   })
 };
 
+// Session Timer validation schemas
+export const sessionTimerSchemas = {
+  startTimer: z.object({
+    sessionId: commonValidators.objectId,
+  }),
+
+  stopTimer: z.object({
+    sessionId: commonValidators.objectId,
+  }),
+
+  pauseTimer: z.object({
+    sessionId: commonValidators.objectId,
+  }),
+
+  resumeTimer: z.object({
+    sessionId: commonValidators.objectId,
+  }),
+
+  adjustDuration: z.object({
+    sessionId: commonValidators.objectId,
+    adjustedDuration: z.number().min(0, 'Duration must be non-negative').max(86400, 'Duration cannot exceed 24 hours'), // Duration in seconds
+    reason: z.string().max(500, 'Reason cannot exceed 500 characters').optional(),
+  }),
+
+  getTimingData: z.object({
+    sessionId: commonValidators.objectId,
+  }),
+
+  analyticsQuery: z.object({
+    coachId: commonValidators.objectId.optional(),
+    clientId: commonValidators.objectId.optional(),
+    startDate: commonValidators.dateTime.optional(),
+    endDate: commonValidators.dateTime.optional(),
+    limit: z.coerce.number().min(1).max(100).default(50),
+    page: z.coerce.number().min(1).default(1),
+    sortBy: z.enum(['date', 'duration', 'actualDuration', 'adjustedDuration']).default('date'),
+    sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  }),
+
+  params: z.object({
+    id: commonValidators.objectId,
+  }),
+};
+
 // Export all schemas grouped by domain
 export const validationSchemas = {
   user: userSchemas,
   session: sessionSchemas,
+  sessionTimer: sessionTimerSchemas,
   coachNote: coachNoteSchemas,
   reflection: reflectionSchemas,
   file: fileSchemas,

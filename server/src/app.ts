@@ -15,6 +15,7 @@ import passwordResetRoutes from './routes/passwordResetRoutes';
 import adminRoutes from './routes/admin';
 import authRoutes from './routes/authRoutes';
 import sessionRoutes from './routes/sessionRoutes';
+import sessionTimerRoutes from './routes/sessionTimer';
 import clientRoutes from './routes/clientRoutes';
 import feedbackRoutes from './routes/feedbackRoutes';
 
@@ -88,6 +89,7 @@ app.use('/api', passwordResetRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', authRoutes);
 app.use('/api', sessionRoutes);
+app.use('/api/sessions/timer', sessionTimerRoutes);
 app.use('/api', clientRoutes);
 app.use('/api/feedback', feedbackRoutes);
 
