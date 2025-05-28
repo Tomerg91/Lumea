@@ -22,7 +22,10 @@ const router = express.Router();
 const signupSchema = z.object({
   name: z.string().min(2).max(100),
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z.string()
+    .min(12, 'Password must be at least 12 characters long')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, 
+           'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
   role: z.enum(['client', 'coach', 'admin']),
 });
 
@@ -37,7 +40,10 @@ const requestPasswordResetSchema = z.object({
 
 const resetPasswordSchema = z.object({
   token: z.string(),
-  newPassword: z.string().min(8),
+  newPassword: z.string()
+    .min(12, 'Password must be at least 12 characters long')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, 
+           'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
 });
 
 // Email transporter

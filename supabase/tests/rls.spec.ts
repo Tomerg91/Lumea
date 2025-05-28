@@ -9,13 +9,17 @@ dotenv.config();
 const SUPABASE_URL = process.env.SUPABASE_URL || 'http://localhost:54321';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
 
-// Test credentials (must match bootstrap.ts or .env values)
+// Test credentials (must be set in environment variables)
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@lumea.com';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'adminpassword123';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const COACH_EMAIL = process.env.COACH_EMAIL || 'coach@lumea.com';
-const COACH_PASSWORD = process.env.COACH_PASSWORD || 'coachpassword123';
+const COACH_PASSWORD = process.env.COACH_PASSWORD;
 const CLIENT_EMAIL = process.env.CLIENT_EMAIL || 'client@lumea.com';
-const CLIENT_PASSWORD = process.env.CLIENT_PASSWORD || 'clientpassword123';
+const CLIENT_PASSWORD = process.env.CLIENT_PASSWORD;
+
+if (!ADMIN_PASSWORD || !COACH_PASSWORD || !CLIENT_PASSWORD) {
+  throw new Error('Test passwords must be set in environment variables: ADMIN_PASSWORD, COACH_PASSWORD, CLIENT_PASSWORD');
+}
 
 // Global variables to store IDs for tests
 let sessionId: number;

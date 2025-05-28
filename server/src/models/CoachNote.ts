@@ -1,9 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import crypto from 'crypto';
-
-// Encryption key and IV for field-level encryption
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
-const ENCRYPTION_IV = process.env.ENCRYPTION_IV || crypto.randomBytes(16).toString('hex');
+import { EncryptionService } from '../services/encryptionService.js';
 
 // Privacy and access control enums
 export enum NoteAccessLevel {
@@ -56,6 +53,7 @@ export interface ICoachNote extends Document {
   tags?: string[];
   isEncrypted: boolean;
   searchableContent?: string;
+  encryptionIV?: string; // IV for encrypted content
   
   // Privacy and access control
   privacySettings: INotePrivacySettings;
@@ -177,6 +175,10 @@ const coachNoteSchema = new Schema<ICoachNote>(
     searchableContent: {
       type: String,
       trim: true,
+    },
+    encryptionIV: {
+      type: String,
+      required: function() { return this.isEncrypted; }
     },
     
     // Privacy and access control
@@ -300,14 +302,9 @@ coachNoteSchema.pre('save', function (next) {
   // Handle encryption
   if (this.isModified('textContent') && this.isEncrypted) {
     try {
-      const cipher = crypto.createCipheriv(
-        'aes-256-cbc',
-        Buffer.from(ENCRYPTION_KEY, 'hex'),
-        Buffer.from(ENCRYPTION_IV, 'hex')
-      );
-      let encrypted = cipher.update(this.textContent, 'utf8', 'hex');
-      encrypted += cipher.final('hex');
+      const { encrypted, iv } = EncryptionService.encrypt(this.textContent);
       this.textContent = encrypted;
+      this.encryptionIV = iv;
     } catch (error) {
       console.error('Error encrypting coach note text:', error);
       next(error as Error);
@@ -329,15 +326,13 @@ coachNoteSchema.methods.decryptText = function (): string {
     return this.textContent;
   }
 
+  if (!this.encryptionIV) {
+    console.error('Missing encryption IV for encrypted note');
+    return 'Error: Missing encryption IV';
+  }
+
   try {
-    const decipher = crypto.createDecipheriv(
-      'aes-256-cbc',
-      Buffer.from(ENCRYPTION_KEY, 'hex'),
-      Buffer.from(ENCRYPTION_IV, 'hex')
-    );
-    let decrypted = decipher.update(this.textContent, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted;
+    return EncryptionService.decrypt(this.textContent, this.encryptionIV);
   } catch (error) {
     console.error('Error decrypting coach note text:', error);
     return 'Error decrypting content';
@@ -351,13 +346,8 @@ coachNoteSchema.methods.encryptText = function (text: string): string {
   }
 
   try {
-    const cipher = crypto.createCipheriv(
-      'aes-256-cbc',
-      Buffer.from(ENCRYPTION_KEY, 'hex'),
-      Buffer.from(ENCRYPTION_IV, 'hex')
-    );
-    let encrypted = cipher.update(text, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
+    const { encrypted, iv } = EncryptionService.encrypt(text);
+    this.encryptionIV = iv;
     return encrypted;
   } catch (error) {
     console.error('Error encrypting text:', error);

@@ -2,7 +2,43 @@
 
 ## Overview
 
-The application follows a Monorepo architecture managed with npm workspaces, containing distinct `client` (frontend) and `server` (backend) applications, along with a `shared` directory for common types.
+The application follows a Monorepo architecture managed with npm workspaces, containing distinct `client` (frontend) and `server` (backend) applications, along with a `shared` directory for common types. **The system now implements enterprise-grade security patterns with comprehensive vulnerability remediation.**
+
+## Security Architecture (Enterprise-Grade)
+
+### 🔒 **Encryption & Data Protection**
+- **Encryption Service**: Custom `EncryptionService` using AES-256-CBC with random IV generation
+- **Data-at-Rest**: All sensitive data (coach notes) encrypted with unique IVs per operation
+- **Key Management**: 32-byte hex encryption keys with format validation
+- **Migration Support**: Secure migration scripts for transitioning existing encrypted data
+
+### 🛡️ **Authentication & Authorization**
+- **Strong Password Policy**: 12+ character minimum with complexity requirements
+  - Uppercase, lowercase, number, and special character mandatory
+  - Applied to registration, password reset, and updates
+- **Secret Management**: Zero default fallbacks, mandatory environment configuration
+- **JWT Security**: Separate access/refresh tokens with secure random secrets
+- **Session Security**: Hardened session configuration with secure cookies
+
+### 🌐 **Network Security**
+- **CORS Hardening**: Strict origin validation
+  - Production: Only specific CLIENT_URL allowed
+  - Development: Controlled localhost access only
+  - No permissive origin allowance
+- **Request Validation**: Comprehensive input validation and sanitization
+- **Rate Limiting**: Multi-tier protection against abuse
+
+### 🔍 **Environment & Configuration Security**
+- **Startup Validation**: Comprehensive environment variable checks
+- **Production Safeguards**: Specific validation for production deployments
+- **Secret Validation**: Detection and rejection of default/weak secrets
+- **Fail-Fast Approach**: Application terminates if security requirements not met
+
+### 📋 **Security Documentation & Migration**
+- **Setup Guides**: Complete security configuration instructions
+- **Migration Scripts**: Safe transition tools for existing data
+- **Audit Reports**: Detailed vulnerability analysis and remediation
+- **Emergency Procedures**: Critical fix guides for immediate response
 
 ## Frontend (`client`)
 
@@ -14,6 +50,7 @@ The application follows a Monorepo architecture managed with npm workspaces, con
 *   **State Management:** Likely relies on `@tanstack/react-query` for server state and React Context API or potentially Zustand/Jotai for global UI state if needed (though not explicitly listed as a primary tool).
 *   **Internationalization:** `i18next` is used for bilingual (Hebrew RTL / English LTR) support.
 *   **Build:** Vite handles development server and production builds.
+*   **Security:** CORS-protected API communication, secure authentication flows
 
 ## Backend (`server`)
 
@@ -24,6 +61,7 @@ The application follows a Monorepo architecture managed with npm workspaces, con
 *   **API Structure:** Routes are organized by resource/feature (e.g., `auth`, `sessions`, `admin`, `users`).
 *   **Middleware:** Custom middleware for authentication (`isAuthenticated`), role checks (`isCoach`, `isAdmin`), potentially caching, and error handling.
 *   **Deployment Structure (Vercel):** Designed to run as serverless functions. An entry point `server/api/index.ts` exports the Express app. `vercel.json` routes `/api/*` requests to this entry point.
+*   **Security:** Enterprise-grade encryption, environment validation, secure secret management
 
 ## Shared (`shared`)
 
@@ -47,6 +85,49 @@ The application follows a Monorepo architecture managed with npm workspaces, con
 *   **Session-Based Authentication with DB Store:** Provides stateful authentication, persisting sessions in PostgreSQL.
 *   **Utility-First CSS (Tailwind):** Promotes rapid UI development and consistency.
 *   **Query-Based Data Fetching (`@tanstack/react-query`):** Simplifies server state management on the frontend.
+*   **Security-First Architecture:** Enterprise-grade security patterns with defense-in-depth approach
+*   **Zero-Default Security:** No fallback values, mandatory secure configuration
+
+## Security Implementation Patterns
+
+### **Encryption Pattern**
+```typescript
+// Secure encryption with random IV
+const { encrypted, iv } = EncryptionService.encrypt(sensitiveData);
+// Store both encrypted data and IV
+model.encryptedField = encrypted;
+model.encryptionIV = iv;
+```
+
+### **Environment Validation Pattern**
+```typescript
+// Fail-fast validation at startup
+if (!process.env.REQUIRED_SECRET) {
+  console.error('FATAL ERROR: Required secret missing');
+  process.exit(1);
+}
+```
+
+### **CORS Security Pattern**
+```typescript
+// Strict origin validation
+origin: (origin, callback) => {
+  if (process.env.NODE_ENV === 'production') {
+    return origin === process.env.CLIENT_URL ? 
+      callback(null, true) : callback(new Error('Not allowed by CORS'));
+  }
+  // Development: controlled access only
+}
+```
+
+### **Password Validation Pattern**
+```typescript
+// Strong password requirements
+password: z.string()
+  .min(12, 'Password must be at least 12 characters')
+  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/, 
+         'Must contain uppercase, lowercase, number, and special character')
+```
 
 ## Areas for Improvement / Review
 
@@ -56,3 +137,13 @@ The application follows a Monorepo architecture managed with npm workspaces, con
 *   **Error Handling:** Centralized error handling exists, but integration with external logging services is needed for production.
 *   **Database Schema/Queries:** Not reviewed in detail; potential optimization opportunities exist (see `PERFORMANCE_IMPROVEMENTS.md`).
 *   **Testing Strategy:** While unit tests exist, comprehensive integration and E2E tests, especially covering deployed Vercel behavior, are likely needed.
+*   **Security Monitoring:** Consider implementing security event logging and monitoring for production environments.
+*   **Secret Rotation:** Implement automated secret rotation procedures for long-term security maintenance.
+
+## Security Compliance & Standards
+
+*   **Data Protection:** AES-256-CBC encryption with random IVs meets enterprise security standards
+*   **Authentication:** Strong password policies exceed common security requirements
+*   **Network Security:** Strict CORS policies prevent cross-origin attacks
+*   **Configuration Security:** Mandatory environment validation prevents misconfigurations
+*   **Documentation:** Comprehensive security setup and migration guides ensure proper implementation

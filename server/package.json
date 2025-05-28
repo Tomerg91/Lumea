@@ -11,6 +11,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "create-admin": "ts-node scripts/create-admin.ts",
+    "migrate:encryption": "tsx scripts/migrateEncryption.ts",
     "lint": "eslint . --ext ts",
     "typecheck": "tsc --noEmit --skipLibCheck",
     "typecheck-loose": "tsc --noEmit --skipLibCheck --noImplicitAny false --strictNullChecks false --strictFunctionTypes false"

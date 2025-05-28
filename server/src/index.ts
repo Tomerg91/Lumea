@@ -50,39 +50,59 @@ const validateEnvVariables = () => {
     'PORT',
     'CLIENT_URL',
     'DATABASE_URL',
-    'JWT_SECRET',
+    'JWT_ACCESS_SECRET',
+    'JWT_REFRESH_SECRET',
     'SESSION_SECRET',
-    // Add other critical variables, e.g., SMTP, Supabase, AWS keys if essential for startup
+    'ENCRYPTION_KEY',
   ];
 
   if (process.env.NODE_ENV !== 'test') {
-    // Skip for test environment or adjust as needed
-    requiredEnvVars.forEach((varName) => {
-      if (!process.env[varName]) {
-        logger.error(`FATAL ERROR: Environment variable ${varName} is not set. Exiting.`);
-        process.exit(1); // Exit if a required variable is missing
-      }
-    });
-    if (!['development', 'production', 'test'].includes(process.env.NODE_ENV!)) {
-      logger.error(`FATAL ERROR: Invalid NODE_ENV value: ${process.env.NODE_ENV}. Exiting.`);
+    // Check for missing required variables
+    const missing = requiredEnvVars.filter(varName => !process.env[varName]);
+    if (missing.length > 0) {
+      console.error(`FATAL ERROR: Missing required environment variables: ${missing.join(', ')}`);
       process.exit(1);
     }
-    if (!process.env.SESSION_SECRET) {
-      logger.error('FATAL ERROR: SESSION_SECRET is not defined. Exiting.');
-      process.exit(1);
-    }
-  }
 
-  // Validate specific values if necessary
-  if (
-    process.env.NODE_ENV !== 'development' &&
-    process.env.NODE_ENV !== 'production' &&
-    process.env.NODE_ENV !== 'test'
-  ) {
-    if (logger && typeof logger.error === 'function') {
-      logger.error(`FATAL ERROR: Invalid NODE_ENV: ${process.env.NODE_ENV}`);
-    } else {
-      console.error(`FATAL ERROR: Invalid NODE_ENV: ${process.env.NODE_ENV}`);
+    // Validate NODE_ENV
+    if (!['development', 'production', 'test'].includes(process.env.NODE_ENV!)) {
+      console.error(`FATAL ERROR: Invalid NODE_ENV value: ${process.env.NODE_ENV}. Must be development, production, or test.`);
+      process.exit(1);
+    }
+
+    // Validate JWT secrets are not defaults
+    if (process.env.JWT_ACCESS_SECRET === 'your_default_access_secret' ||
+        process.env.JWT_REFRESH_SECRET === 'your_default_refresh_secret') {
+      console.error('FATAL ERROR: Default JWT secrets detected. Change them immediately for security.');
+      process.exit(1);
+    }
+
+    // Validate session secret is not default
+    if (process.env.SESSION_SECRET === 'your_default_session_secret') {
+      console.error('FATAL ERROR: Default session secret detected. Change it immediately for security.');
+      process.exit(1);
+    }
+
+    // Validate encryption key format
+    if (process.env.ENCRYPTION_KEY) {
+      try {
+        const keyBuffer = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
+        if (keyBuffer.length !== 32) {
+          console.error('FATAL ERROR: ENCRYPTION_KEY must be 32 bytes (64 hex characters)');
+          process.exit(1);
+        }
+      } catch (error) {
+        console.error('FATAL ERROR: ENCRYPTION_KEY must be a valid hex string');
+        process.exit(1);
+      }
+    }
+
+    // Production-specific validations
+    if (process.env.NODE_ENV === 'production') {
+      if (!process.env.CLIENT_URL || process.env.CLIENT_URL.startsWith('http://localhost')) {
+        console.error('FATAL ERROR: CLIENT_URL must be set to production domain in production environment');
+        process.exit(1);
+      }
     }
   }
 };
@@ -113,24 +133,30 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      
-      // Check if the origin is in the allowed list or is the configured CLIENT_URL
-      if (allowedOrigins.includes(origin) || origin === process.env.CLIENT_URL) {
-        return callback(null, true);
-      }
-      
-      // In production, be more strict
+      // In production, only allow specific origins
       if (process.env.NODE_ENV === 'production') {
+        if (origin === process.env.CLIENT_URL) {
+          return callback(null, true);
+        }
         return callback(new Error('Not allowed by CORS'));
       }
       
-      // In development, allow all localhost origins
-      if (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:')) {
+      // In development, allow configured origins and localhost
+      const developmentOrigins = [
+        ...allowedOrigins,
+        process.env.CLIENT_URL
+      ].filter(Boolean);
+      
+      if (origin && developmentOrigins.includes(origin)) {
         return callback(null, true);
       }
       
+      // Allow localhost origins in development only
+      if (origin && (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:'))) {
+        return callback(null, true);
+      }
+      
+      // Reject all other origins
       return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
