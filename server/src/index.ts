@@ -17,6 +17,7 @@ import userRoutes from './routes/user.js';
 import analyticsRoutes from './routes/analytics.js';
 import metricsRoutes from './routes/metrics.js';
 import availabilityRoutes from './routes/availabilityRoutes.js';
+import hipaaComplianceRoutes from './routes/hipaaComplianceRoutes.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { 
   applySecurity, 
@@ -142,22 +143,29 @@ app.use(
         return callback(new Error('Not allowed by CORS'));
       }
       
-      // In development, allow configured origins and localhost
+      // In development, be more permissive
+      // Allow requests without origin (curl, postman, etc.)
+      if (!origin) {
+        return callback(null, true);
+      }
+      
+      // Allow any localhost origin in development
+      if (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:')) {
+        return callback(null, true);
+      }
+      
+      // Allow configured origins
       const developmentOrigins = [
         ...allowedOrigins,
         process.env.CLIENT_URL
       ].filter(Boolean);
       
-      if (origin && developmentOrigins.includes(origin)) {
+      if (developmentOrigins.includes(origin)) {
         return callback(null, true);
       }
       
-      // Allow localhost origins in development only
-      if (origin && (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:'))) {
-        return callback(null, true);
-      }
-      
-      // Reject all other origins
+      // In development, log rejected origins for debugging
+      console.log(`CORS: Rejecting origin: ${origin}`);
       return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
@@ -220,6 +228,7 @@ app.use('/api/users', apiLimiter, userRoutes);
 app.use('/api/analytics', apiLimiter, analyticsRoutes);
 app.use('/api/metrics', apiLimiter, metricsRoutes);
 app.use('/api/availability', apiLimiter, availabilityRoutes);
+app.use('/api/compliance', apiLimiter, hipaaComplianceRoutes);
 
 // Health check endpoint (no rate limiting)
 app.get('/api/health', (req: Request, res: Response) => {
