@@ -25,6 +25,7 @@ model User {
   coachPayments      Payment[]   @relation("CoachPayments")
   reflections        Reflection[]
   resources          ResourceUser[]
+  calendarIntegrations CalendarIntegration[] @relation("UserCalendarIntegrations")
   createdAt          DateTime    @default(now()) @map("created_at")
   updatedAt          DateTime    @updatedAt @map("updated_at")
 
@@ -46,6 +47,7 @@ model Session {
   payment       Payment?  @relation(fields: [paymentId], references: [id])
   reminderSent  Boolean   @default(false) @map("reminder_sent")
   audioFile     String?
+  calendarEvents CalendarEvent[] // Calendar events linked to this session
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
@@ -138,5 +140,104 @@ model PerformanceMetric {
   @@map("performance_metrics")
   @@index([userId])      // Note: If userId is optional and you index it, consider implications for NULLs
   @@index([timestamp])
+  @@schema("public")
+}
+
+// Calendar Integration Models
+model CalendarIntegration {
+  id                String   @id @default(cuid())
+  userId            String   // User who owns this calendar integration
+  user              User     @relation("UserCalendarIntegrations", fields: [userId], references: [id], onDelete: Cascade)
+  provider          String   // 'google', 'microsoft', 'apple'
+  providerAccountId String   // External account ID from the provider
+  accessToken       String   // Encrypted OAuth access token
+  refreshToken      String?  // Encrypted OAuth refresh token
+  tokenExpiry       DateTime? // When the access token expires
+  calendarId        String?  // Primary calendar ID from the provider
+  calendarName      String?  // Display name of the calendar
+  isActive          Boolean  @default(true)
+  syncEnabled       Boolean  @default(true)
+  lastSyncAt        DateTime?
+  syncErrors        Json?    // Store any sync errors
+  settings          Json?    // Provider-specific settings
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  calendarEvents    CalendarEvent[]
+  syncLogs          CalendarSyncLog[] @relation("CalendarSyncLogs")
+
+  @@unique([userId, provider])
+  @@map("calendar_integrations")
+  @@index([userId])
+  @@index([provider])
+  @@index([isActive])
+  @@schema("public")
+}
+
+model CalendarEvent {
+  id                   String              @id @default(cuid())
+  calendarIntegrationId String
+  calendarIntegration  CalendarIntegration @relation(fields: [calendarIntegrationId], references: [id], onDelete: Cascade)
+  providerEventId      String              // Event ID from the external calendar provider
+  title                String
+  description          String?
+  startTime            DateTime
+  endTime              DateTime
+  timezone             String              @default("UTC")
+  isAllDay             Boolean             @default(false)
+  location             String?
+  attendees            Json?               // Array of attendee objects
+  recurrenceRule       String?             // RRULE for recurring events
+  status               String              @default("confirmed") // confirmed, tentative, cancelled
+  visibility           String              @default("default")   // default, public, private
+  
+  // Satya Coaching specific fields
+  sessionId            String?             // Link to internal session if this event represents a coaching session
+  session              Session?            @relation(fields: [sessionId], references: [id])
+  isCoachingSession    Boolean             @default(false)
+  isBlocked            Boolean             @default(false)      // If this event blocks availability
+  
+  // Sync metadata
+  lastSyncAt           DateTime?
+  syncStatus           String              @default("synced")   // synced, pending, error
+  syncErrors           Json?
+  
+  createdAt            DateTime            @default(now()) @map("created_at")
+  updatedAt            DateTime            @updatedAt @map("updated_at")
+
+  @@unique([calendarIntegrationId, providerEventId])
+  @@map("calendar_events")
+  @@index([calendarIntegrationId])
+  @@index([startTime])
+  @@index([endTime])
+  @@index([sessionId])
+  @@index([isCoachingSession])
+  @@index([isBlocked])
+  @@schema("public")
+}
+
+model CalendarSyncLog {
+  id                   String              @id @default(cuid())
+  calendarIntegrationId String
+  calendarIntegration  CalendarIntegration @relation("CalendarSyncLogs", fields: [calendarIntegrationId], references: [id], onDelete: Cascade)
+  syncType             String              // 'full', 'incremental', 'manual'
+  direction            String              // 'import', 'export', 'bidirectional'
+  status               String              // 'started', 'completed', 'failed', 'partial'
+  eventsProcessed      Int                 @default(0)
+  eventsCreated        Int                 @default(0)
+  eventsUpdated        Int                 @default(0)
+  eventsDeleted        Int                 @default(0)
+  errors               Json?               // Array of error objects
+  startedAt            DateTime
+  completedAt          DateTime?
+  duration             Int?                // Duration in milliseconds
+  
+  createdAt            DateTime            @default(now()) @map("created_at")
+
+  @@map("calendar_sync_logs")
+  @@index([calendarIntegrationId])
+  @@index([status])
+  @@index([startedAt])
   @@schema("public")
 } 

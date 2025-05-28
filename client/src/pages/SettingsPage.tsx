@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { CalendarIntegration } from '../components/calendar/CalendarIntegration';
 import { 
   User, 
   Settings, 
@@ -45,7 +46,7 @@ interface PrivacySettings {
 const SettingsPage = () => {
   const { profile, session } = useAuth();
   const { t, isRTL, language, setLanguage } = useLanguage();
-  const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'privacy' | 'appearance'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'privacy' | 'appearance' | 'calendar'>('profile');
   const [loading, setLoading] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
 
@@ -109,8 +110,18 @@ const SettingsPage = () => {
     { id: 'profile', label: t('settings.profile'), icon: <User className="w-4 h-4" /> },
     { id: 'notifications', label: t('settings.notifications'), icon: <Bell className="w-4 h-4" /> },
     { id: 'privacy', label: t('settings.privacy'), icon: <Lock className="w-4 h-4" /> },
+    { id: 'calendar', label: 'Calendar Integration', icon: <Calendar className="w-4 h-4" /> },
     { id: 'appearance', label: t('settings.appearance'), icon: <Settings className="w-4 h-4" /> }
   ];
+
+  // Check URL params for tab selection
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab');
+    if (tab && ['profile', 'notifications', 'privacy', 'calendar', 'appearance'].includes(tab)) {
+      setActiveTab(tab as any);
+    }
+  }, []);
 
   return (
     <div className={`min-h-screen bg-gradient-background py-8 ${isRTL ? 'rtl-layout' : ''}`}>
@@ -396,6 +407,15 @@ const SettingsPage = () => {
                     <Save className="w-4 h-4" />
                     <span>{loading ? t('settings.saving') : t('settings.savePrivacy')}</span>
                   </button>
+                </div>
+              )}
+
+              {/* Calendar Tab */}
+              {activeTab === 'calendar' && (
+                <div className="space-y-6">
+                  <h2 className="text-xl font-semibold mb-6">{t('settings.calendar')}</h2>
+                  
+                  <CalendarIntegration />
                 </div>
               )}
 

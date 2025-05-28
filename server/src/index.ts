@@ -16,6 +16,7 @@ import coachNoteRoutes from './routes/coachNote.js';
 import userRoutes from './routes/user.js';
 import analyticsRoutes from './routes/analytics.js';
 import metricsRoutes from './routes/metrics.js';
+import availabilityRoutes from './routes/availabilityRoutes.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { 
   applySecurity, 
@@ -218,6 +219,7 @@ app.use('/api/coach-notes', coachNotesLimiter, coachNoteRoutes);
 app.use('/api/users', apiLimiter, userRoutes);
 app.use('/api/analytics', apiLimiter, analyticsRoutes);
 app.use('/api/metrics', apiLimiter, metricsRoutes);
+app.use('/api/availability', apiLimiter, availabilityRoutes);
 
 // Health check endpoint (no rate limiting)
 app.get('/api/health', (req: Request, res: Response) => {
