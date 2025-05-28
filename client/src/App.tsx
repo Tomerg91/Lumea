@@ -31,6 +31,7 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const Offline = lazy(() => import('./pages/Offline'));
 const CalendarCallback = lazy(() => import('./components/calendar/CalendarCallback').then(module => ({ default: module.CalendarCallback })));
+const BookingPage = lazy(() => import('./pages/BookingPage'));
 
 // Loading component with Lumea design
 const LoadingFallback = () => (
@@ -171,6 +172,7 @@ const App: React.FC = () => {
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/offline" element={<Offline />} />
               <Route path="/calendar/callback" element={<CalendarCallback />} />
+              <Route path="/book/:coachId" element={<BookingPage />} />
             </Route>
 
             {/* Protected Coach Routes */}

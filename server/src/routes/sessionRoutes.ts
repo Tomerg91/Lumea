@@ -461,4 +461,65 @@ router.get(
   }
 );
 
+/**
+ * POST /api/sessions/public-booking
+ * Create a new session through public booking (no authentication required)
+ */
+router.post(
+  '/public-booking',
+  [
+    body('coachId').isMongoId().withMessage('Valid coach ID is required'),
+    body('clientEmail').isEmail().withMessage('Valid email is required'),
+    body('clientFirstName').isLength({ min: 1, max: 50 }).withMessage('First name is required and must be 50 characters or less'),
+    body('clientLastName').isLength({ min: 1, max: 50 }).withMessage('Last name is required and must be 50 characters or less'),
+    body('clientPhone').optional().isLength({ max: 20 }).withMessage('Phone number must be 20 characters or less'),
+    body('date').isISO8601().withMessage('Valid date is required'),
+    body('duration').optional().isInt({ min: 15, max: 240 }).withMessage('Duration must be between 15 and 240 minutes'),
+    body('notes').optional().isLength({ max: 1000 }).withMessage('Notes must be 1000 characters or less'),
+  ],
+  async (req: Request, res: Response) => {
+    try {
+      // Check validation errors
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: errors.array(),
+        });
+      }
+
+      const { coachId, clientEmail, clientFirstName, clientLastName, clientPhone, date, duration = 60, notes } = req.body;
+
+      // Create session data for public booking
+      const sessionData = {
+        coachId,
+        clientEmail,
+        clientFirstName,
+        clientLastName,
+        clientPhone,
+        date: new Date(date),
+        duration,
+        notes,
+        status: 'scheduled' as const,
+        isPublicBooking: true,
+      };
+
+      const newSession = await SessionService.createPublicBookingSession(sessionData);
+
+      res.status(201).json({
+        success: true,
+        message: 'Session booked successfully',
+        session: newSession,
+      });
+    } catch (error) {
+      console.error('Error creating public booking session:', error);
+      res.status(400).json({
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to book session',
+      });
+    }
+  }
+);
+
 export default router;

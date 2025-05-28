@@ -5,10 +5,16 @@ import { Session, SessionStatus } from '../components/SessionList';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Type for session creation data
-interface CreateSessionData {
-  clientId: string;
+export interface CreateSessionData {
+  clientId?: string; // Optional for existing clients
+  coachId?: string; // For public booking
+  clientEmail?: string; // For public booking
+  clientFirstName?: string; // For public booking
+  clientLastName?: string; // For public booking
+  clientPhone?: string; // For public booking
   date: string;
-  notes: string;
+  duration?: number; // Session duration in minutes
+  notes?: string;
 }
 
 // Type for session status update data
@@ -150,6 +156,33 @@ export const createSession = async (sessionData: CreateSessionData): Promise<Ses
   
   const result = await response.json();
   // Backend returns { message: string, session: Session }
+  return result.session;
+};
+
+export const createPublicBookingSession = async (sessionData: CreateSessionData): Promise<Session> => {
+  console.log('Attempting to create public booking session with data:', sessionData);
+  
+  const response = await fetch(
+    `${API_BASE_URL}/sessions/public-booking`, 
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(sessionData),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ 
+      message: 'Failed to create public booking session and parse error' 
+    }));
+    throw new Error(errorData.message || 'Failed to create public booking session');
+  }
+  
+  const result = await response.json();
+  // Backend returns { success: boolean, message: string, session: Session }
   return result.session;
 };
 

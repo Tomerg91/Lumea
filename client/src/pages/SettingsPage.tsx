@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { CalendarIntegration } from '../components/calendar/CalendarIntegration';
+import NotificationPreferences from '../components/notifications/NotificationPreferences';
 import { 
   User, 
   Settings, 
@@ -259,78 +260,7 @@ const SettingsPage = () => {
               {/* Notifications Tab */}
               {activeTab === 'notifications' && (
                 <div className="space-y-6">
-                  <h2 className="text-xl font-semibold mb-6">{t('settings.notifications')}</h2>
-                  
-                  <div className="space-y-4">
-                    <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <div>
-                        <h3 className="font-medium">{t('settings.emailNotifications')}</h3>
-                        <p className="text-sm text-gray-600">{t('settings.emailNotificationsDesc')}</p>
-                      </div>
-                      <label className="switch">
-                        <input
-                          type="checkbox"
-                          checked={notifications.emailNotifications}
-                          onChange={(e) => setNotifications({...notifications, emailNotifications: e.target.checked})}
-                        />
-                        <span className="slider"></span>
-                      </label>
-                    </div>
-                    
-                    <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <div>
-                        <h3 className="font-medium">{t('settings.pushNotifications')}</h3>
-                        <p className="text-sm text-gray-600">{t('settings.pushNotificationsDesc')}</p>
-                      </div>
-                      <label className="switch">
-                        <input
-                          type="checkbox"
-                          checked={notifications.pushNotifications}
-                          onChange={(e) => setNotifications({...notifications, pushNotifications: e.target.checked})}
-                        />
-                        <span className="slider"></span>
-                      </label>
-                    </div>
-                    
-                    <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <div>
-                        <h3 className="font-medium">{t('settings.sessionReminders')}</h3>
-                        <p className="text-sm text-gray-600">{t('settings.sessionRemindersDesc')}</p>
-                      </div>
-                      <label className="switch">
-                        <input
-                          type="checkbox"
-                          checked={notifications.sessionReminders}
-                          onChange={(e) => setNotifications({...notifications, sessionReminders: e.target.checked})}
-                        />
-                        <span className="slider"></span>
-                      </label>
-                    </div>
-                    
-                    <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <div>
-                        <h3 className="font-medium">{t('settings.weeklyReports')}</h3>
-                        <p className="text-sm text-gray-600">{t('settings.weeklyReportsDesc')}</p>
-                      </div>
-                      <label className="switch">
-                        <input
-                          type="checkbox"
-                          checked={notifications.weeklyReports}
-                          onChange={(e) => setNotifications({...notifications, weeklyReports: e.target.checked})}
-                        />
-                        <span className="slider"></span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={handleSaveNotifications}
-                    disabled={loading}
-                    className="btn-primary flex items-center space-x-2"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>{loading ? t('settings.saving') : t('settings.saveNotifications')}</span>
-                  </button>
+                  <NotificationPreferences />
                 </div>
               )}
 

@@ -503,6 +503,124 @@ export class SessionService {
 
     return availableSlots;
   }
+
+  /**
+   * Create a session through public booking (no authentication required)
+   * This method handles client creation/lookup and session scheduling
+   */
+  static async createPublicBookingSession(sessionData: {
+    coachId: string;
+    clientEmail: string;
+    clientFirstName: string;
+    clientLastName: string;
+    clientPhone?: string;
+    date: Date;
+    duration?: number;
+    notes?: string;
+    status?: SessionStatus;
+    isPublicBooking?: boolean;
+  }): Promise<ICoachingSession> {
+    const {
+      coachId,
+      clientEmail,
+      clientFirstName,
+      clientLastName,
+      date,
+      duration = 60,
+      notes = '',
+      status = 'scheduled',
+    } = sessionData;
+
+    // Validate coach exists
+    const coach = await User.findById(coachId);
+    if (!coach) {
+      throw new Error('Coach not found');
+    }
+
+    // Check if coach has the coach role
+    const coachRole = typeof coach.role === 'object' && 'name' in coach.role 
+      ? coach.role.name 
+      : coach.role.toString();
+    
+    if (coachRole !== 'coach') {
+      throw new Error('User is not a coach');
+    }
+
+    // Validate session date is in the future
+    const now = new Date();
+    if (date <= now) {
+      throw new Error('Session date must be in the future');
+    }
+
+    // Check for scheduling conflicts
+    const conflictingSession = await CoachingSession.findOne({
+      coachId,
+      date: {
+        $gte: new Date(date.getTime() - (duration * 60 * 1000) / 2),
+        $lte: new Date(date.getTime() + (duration * 60 * 1000) / 2),
+      },
+      status: { $in: ['scheduled', 'in-progress'] },
+    });
+
+    if (conflictingSession) {
+      throw new Error('Coach is not available at the requested time');
+    }
+
+    // Find or create client
+    let client = await User.findOne({ email: clientEmail.toLowerCase() });
+    
+    if (!client) {
+      // Create new client
+      client = await User.create({
+        email: clientEmail.toLowerCase(),
+        firstName: clientFirstName,
+        lastName: clientLastName,
+        role: 'client',
+        passwordHash: 'temp', // Will be set when user creates account
+        passwordSalt: 'temp',
+      });
+    } else {
+      // Update existing client info if needed (in case they provided updated info)
+      const updateData: Partial<typeof client> = {};
+      if (client.firstName !== clientFirstName) updateData.firstName = clientFirstName;
+      if (client.lastName !== clientLastName) updateData.lastName = clientLastName;
+      
+      if (Object.keys(updateData).length > 0) {
+        await User.findByIdAndUpdate(client._id, updateData);
+      }
+    }
+
+    // Create the session
+    const session = await CoachingSession.create({
+      coachId: new Types.ObjectId(coachId),
+      clientId: client._id,
+      date,
+      duration,
+      notes,
+      status,
+      isPublicBooking: true,
+      createdAt: now,
+    });
+
+    // Schedule notifications for the new session
+    try {
+      await notificationScheduler.scheduleSessionReminders(session);
+    } catch (error) {
+      console.error('Failed to schedule session reminders:', error);
+      // Don't fail the session creation if notification scheduling fails
+    }
+
+    // Populate the session with coach and client info before returning
+    const populatedSession = await CoachingSession.findById(session._id)
+      .populate('coachId', 'firstName lastName email')
+      .populate('clientId', 'firstName lastName email');
+
+    if (!populatedSession) {
+      throw new Error('Failed to retrieve created session');
+    }
+
+    return populatedSession;
+  }
 }
 
 export default SessionService; 
