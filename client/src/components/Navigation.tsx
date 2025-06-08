@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import {
   Menu,
   X,
@@ -14,19 +14,21 @@ import {
   ChevronDown,
   Home,
   Users,
-  Globe,
   Sparkles
 } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
+import LanguageSwitcher from './LanguageSwitcher';
 
 const Navigation = () => {
   const { session, profile, signOut, loading } = useAuth();
-  const { language, isRTL, setLanguage, t } = useLanguage();
+  const { t, i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  
+  const currentLanguage = i18n.language || 'he';
+  const isRTL = currentLanguage === 'he';
 
   const handleSignOut = async () => {
     await signOut();
@@ -80,8 +82,8 @@ const Navigation = () => {
   };
 
   const toggleLanguage = () => {
-    setLanguage(language === 'he' ? 'en' : 'he');
-    setLanguageMenuOpen(false);
+    const newLang = currentLanguage === 'he' ? 'en' : 'he';
+    i18n.changeLanguage(newLang);
   };
 
   return (
@@ -90,10 +92,10 @@ const Navigation = () => {
         <div className={`flex justify-between items-center h-16 ${isRTL ? 'rtl-flex-row-reverse' : ''}`}>
           {/* Logo */}
           <Link to="/" className={`flex items-center space-x-3 ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
-            <div className="w-10 h-10 bg-gradient-teal-blue rounded-2xl flex items-center justify-center bubble-float">
+            <div className="w-10 h-10 bg-gradient-coral-teal rounded-2xl flex items-center justify-center bubble-float">
               <Sparkles className="w-5 h-5 text-white animate-pulse-soft" />
             </div>
-            <span className="text-2xl font-bold text-gradient-purple">
+            <span className="text-2xl font-bold text-gradient-teal">
               Lumea
             </span>
           </Link>
@@ -119,41 +121,11 @@ const Navigation = () => {
             {session && <NotificationCenter />}
 
             {/* Language Switcher */}
-            <div className="relative">
-              <button
-                onClick={() => setLanguageMenuOpen(!languageMenuOpen)}
-                className="flex items-center space-x-2 p-2 rounded-xl glass-card hover-lift transition-all duration-300"
-              >
-                <Globe className="w-4 h-4" />
-                <span className="text-sm font-medium">{language.toUpperCase()}</span>
-                <ChevronDown className="w-3 h-3" />
-              </button>
-
-              {languageMenuOpen && (
-                <div className="absolute right-0 mt-2 w-32 glass-card-strong rounded-xl shadow-lumea-medium overflow-hidden z-50">
-                  <button
-                    onClick={() => setLanguage('he')}
-                    className={`w-full px-4 py-2 text-sm hover:bg-gradient-background-subtle transition-colors duration-200 text-start ${
-                      language === 'he' ? 'bg-gradient-lavender' : ''
-                    }`}
-                  >
-                    עברית
-                  </button>
-                  <button
-                    onClick={() => setLanguage('en')}
-                    className={`w-full px-4 py-2 text-sm hover:bg-gradient-background-subtle transition-colors duration-200 text-start ${
-                      language === 'en' ? 'bg-gradient-lavender' : ''
-                    }`}
-                  >
-                    English
-                  </button>
-                </div>
-              )}
-            </div>
+            <LanguageSwitcher variant="dropdown" />
 
             {/* User Menu */}
             {loading ? (
-              <div className="w-10 h-10 rounded-2xl bg-gradient-lavender animate-pulse-soft"></div>
+              <div className="w-10 h-10 rounded-2xl bg-gradient-cream-peach animate-pulse-soft"></div>
             ) : session ? (
               <div className="relative">
                 <button
@@ -162,7 +134,7 @@ const Navigation = () => {
                     isRTL ? 'flex-row-reverse space-x-reverse' : ''
                   }`}
                 >
-                  <div className="w-8 h-8 rounded-xl bg-gradient-purple flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-coral-teal flex items-center justify-center">
                     <User className="w-4 h-4 text-white" />
                   </div>
                   <span className="text-sm font-medium max-w-24 truncate">
@@ -247,16 +219,8 @@ const Navigation = () => {
               {/* Mobile Language Switcher */}
               <div className="px-4 py-2">
                 <div className="flex items-center justify-between glass-card rounded-xl p-3">
-                  <div className={`flex items-center space-x-2 ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                    <Globe className="w-4 h-4" />
-                    <span className="text-sm font-medium">שפה / Language</span>
-                  </div>
-                  <button
-                    onClick={toggleLanguage}
-                    className="text-sm font-semibold px-3 py-1 rounded-lg bg-gradient-teal-blue text-white"
-                  >
-                    {language === 'he' ? 'English' : 'עברית'}
-                  </button>
+                  <span className="text-sm font-medium">שפה / Language</span>
+                  <LanguageSwitcher variant="toggle" />
                 </div>
               </div>
 
@@ -309,12 +273,11 @@ const Navigation = () => {
       </div>
 
       {/* Overlay for dropdowns */}
-      {(userMenuOpen || languageMenuOpen) && (
+      {userMenuOpen && (
         <div
           className="fixed inset-0 z-40"
           onClick={() => {
             setUserMenuOpen(false);
-            setLanguageMenuOpen(false);
           }}
         />
       )}

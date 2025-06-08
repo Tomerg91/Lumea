@@ -1,15 +1,29 @@
 # Client Environment Variables
-# Rename this file to .env.example and move it to the client/ directory
+# Rename this file to .env and place it in the client/ directory
 
-# URL of the backend API
-VITE_API_URL=http://localhost:3000
+# PRODUCTION DEPLOYMENT CONFIGURATION
+# For Vercel deployment, set these in Vercel project settings
 
-# Google Client ID for OAuth
-VITE_GOOGLE_CLIENT_ID=
+# Backend API URL (REQUIRED)
+# Development: http://localhost:3001/api
+# Production: https://your-domain.vercel.app/api
+VITE_API_URL=https://your-domain.vercel.app/api
 
-# Facebook Client ID for OAuth (if used)
-VITE_FACEBOOK_CLIENT_ID=
+# Vercel URL (automatically set by Vercel)
+VITE_VERCEL_URL=your-domain.vercel.app
 
-# Supabase Public Anon Key
-VITE_SUPABASE_URL=
-VITE_SUPABASE_ANON_KEY= 
+# OAuth Configuration (Optional)
+VITE_GOOGLE_CLIENT_ID=your-google-client-id
+VITE_FACEBOOK_CLIENT_ID=your-facebook-client-id
+
+# Supabase Configuration (if using Supabase)
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+
+# Feature Flags (Optional)
+VITE_ENABLE_PERFORMANCE_MONITORING=true
+VITE_ENABLE_DEBUG_MODE=false
+
+# Analytics (Optional)
+VITE_GOOGLE_ANALYTICS_ID=GA-XXXXXXXXX
+VITE_HOTJAR_ID=your-hotjar-id 

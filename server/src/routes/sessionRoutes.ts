@@ -501,7 +501,7 @@ router.post(
         date: new Date(date),
         duration,
         notes,
-        status: 'scheduled' as const,
+        status: 'pending' as const,
         isPublicBooking: true,
       };
 

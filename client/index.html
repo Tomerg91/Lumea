@@ -22,6 +22,17 @@
     <meta name="twitter:site" content="@lumea_coaching" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
 
+    <!-- Performance optimizations -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+    <link rel="dns-prefetch" href="//cdn.gpteng.co" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Resource hints for critical assets -->
+    <link rel="modulepreload" href="/src/main.tsx" />
+    <link rel="modulepreload" href="/src/App.tsx" />
+    
     <!-- PWA Meta Tags -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#8B5CF6" />
@@ -43,16 +54,123 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico" />
     <link rel="shortcut icon" href="/favicon.ico" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Optimized font loading with display=swap for better performance -->
     <link
       href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
+
+    <!-- Critical CSS for initial paint -->
+    <style>
+      /* Critical above-the-fold styles */
+      * {
+        box-sizing: border-box;
+      }
+      
+      body {
+        margin: 0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+      
+      #root {
+        min-height: 100vh;
+      }
+      
+      /* Loading state styles */
+      .loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+      
+      .loading-content {
+        text-align: center;
+        padding: 2rem;
+        border-radius: 1rem;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(8px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      }
+      
+      .loading-spinner {
+        width: 3rem;
+        height: 3rem;
+        margin: 0 auto 1rem;
+        border-radius: 1rem;
+        background: linear-gradient(135deg, #0d9488 0%, #0891b2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: pulse 2s infinite;
+      }
+      
+      .loading-spinner::after {
+        content: '';
+        width: 1.5rem;
+        height: 1.5rem;
+        background: white;
+        border-radius: 50%;
+      }
+      
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+      }
+      
+      .loading-text {
+        font-size: 1.125rem;
+        font-weight: 500;
+        color: #374151;
+        margin: 0;
+      }
+    </style>
   </head>
 
   <body>
+    <!-- Initial loading screen -->
+    <div id="initial-loading" class="loading-screen">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">טוען... / Loading...</p>
+      </div>
+    </div>
+    
     <div id="root"></div>
+    
+    <!-- Remove loading screen after app loads -->
+    <script>
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          const loading = document.getElementById('initial-loading');
+          if (loading) {
+            loading.style.opacity = '0';
+            loading.style.transition = 'opacity 0.3s ease';
+            setTimeout(function() {
+              loading.remove();
+            }, 300);
+          }
+        }, 100);
+      });
+    </script>
+    
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>

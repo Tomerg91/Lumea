@@ -185,21 +185,21 @@ const Dashboard = () => {
       title: 'הוסף לקוח חדש / Add New Client',
       description: 'צור פרופיל לקוח חדש / Create new client profile',
       action: () => navigate('/coach/clients?action=add'),
-      gradient: 'bg-gradient-teal-blue'
+      gradient: 'bg-gradient-coral-teal'
     },
     {
       icon: <Calendar className="w-6 h-6" />,
       title: 'תזמן מפגש / Schedule Session',
       description: 'הזמן מפגש עם לקוח / Schedule a client session',
       action: () => navigate('/coach/sessions?action=schedule'),
-      gradient: 'bg-gradient-purple'
+      gradient: 'bg-gradient-yellow-coral'
     },
     {
       icon: <PenTool className="w-6 h-6" />,
       title: 'כתוב הערכה / Write Assessment',
       description: 'צור הערכה חדשה / Create new assessment',
       action: () => navigate('/coach/assessments'),
-      gradient: 'bg-gradient-yellow-peach'
+      gradient: 'bg-gradient-warm'
     }
   ] : [
     {
@@ -207,21 +207,21 @@ const Dashboard = () => {
       title: 'הזמן מפגש / Book Session',
       description: 'הזמן מפגש חדש / Schedule new session',
       action: () => navigate('/client/sessions?action=book'),
-      gradient: 'bg-gradient-teal-blue'
+      gradient: 'bg-gradient-coral-teal'
     },
     {
       icon: <PenTool className="w-6 h-6" />,
       title: 'כתוב הרהור / Write Reflection',
       description: 'שתף את המחשבות שלך / Share your thoughts',
       action: () => navigate('/client/reflections?action=new'),
-      gradient: 'bg-gradient-purple'
+      gradient: 'bg-gradient-yellow-coral'
     },
     {
       icon: <Target className="w-6 h-6" />,
       title: 'עדכן מטרות / Update Goals',
       description: 'עקוב אחר ההתקדמות / Track your progress',
       action: () => navigate('/client/goals'),
-      gradient: 'bg-gradient-yellow-peach'
+      gradient: 'bg-gradient-warm'
     }
   ];
 
@@ -229,7 +229,7 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen bg-gradient-background flex items-center justify-center">
         <div className="glass-card-strong rounded-2xl p-8 text-center">
-          <div className="w-12 h-12 bg-gradient-teal-blue rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse-soft">
+          <div className="w-12 h-12 bg-gradient-coral-teal rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse-soft">
             <Activity className="w-6 h-6 text-white" />
           </div>
           <p className="text-lg font-medium">טוען נתונים... / Loading data...</p>
@@ -243,7 +243,7 @@ const Dashboard = () => {
       <div className="min-h-screen bg-gradient-background flex items-center justify-center">
         <div className="card-lumea-strong max-w-md mx-auto text-center">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gradient-purple mb-4">
+          <h2 className="text-2xl font-bold text-gradient-coral mb-4">
             שגיאה / Error
           </h2>
           <p className="opacity-80 mb-6">{error}</p>
@@ -262,15 +262,15 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gradient-background">
       {/* Floating Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-pink rounded-full opacity-10 animate-float"></div>
-        <div className="absolute top-60 right-20 w-24 h-24 bg-gradient-lavender rounded-full opacity-15 animate-float-delayed"></div>
-        <div className="absolute bottom-32 left-32 w-40 h-40 bg-gradient-yellow-peach rounded-full opacity-10 animate-float"></div>
+        <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-coral-teal rounded-full opacity-10 animate-float"></div>
+        <div className="absolute top-60 right-20 w-24 h-24 bg-gradient-cream-peach rounded-full opacity-15 animate-float-delayed"></div>
+        <div className="absolute bottom-32 left-32 w-40 h-40 bg-gradient-warm rounded-full opacity-10 animate-float"></div>
       </div>
 
       <div className={`container mx-auto px-4 py-8 ${isRTL ? 'rtl-text-right' : ''}`}>
         {/* Header */}
         <div className="mb-8 animate-fade-in">
-          <h1 className="text-4xl lg:text-5xl font-bold text-gradient-purple mb-4">
+          <h1 className="text-4xl lg:text-5xl font-bold text-gradient-coral mb-4">
             {isCoach 
               ? 'ברוך הבא, מאמן / Welcome, Coach' 
               : 'ברוך הבא / Welcome'
@@ -294,7 +294,7 @@ const Dashboard = () => {
                     {isCoach ? '12' : stats.totalSessions}
                   </p>
                 </div>
-                <div className="w-12 h-12 bg-gradient-teal-blue rounded-xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-gradient-coral-teal rounded-xl flex items-center justify-center">
                   <Users className="w-6 h-6 text-white" />
                 </div>
               </div>
@@ -306,11 +306,11 @@ const Dashboard = () => {
                   <p className="text-sm opacity-70 mb-1">
                     מפגשים השבוע / This Week's Sessions
                   </p>
-                  <p className="text-3xl font-bold text-gradient-purple">
+                  <p className="text-3xl font-bold text-gradient-coral">
                     {stats.upcomingSessions}
                   </p>
                 </div>
-                <div className="w-12 h-12 bg-gradient-purple rounded-xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-gradient-yellow-coral rounded-xl flex items-center justify-center">
                   <Calendar className="w-6 h-6 text-white" />
                 </div>
               </div>
@@ -326,7 +326,7 @@ const Dashboard = () => {
                     {stats.totalReflections}
                   </p>
                 </div>
-                <div className="w-12 h-12 bg-gradient-yellow-peach rounded-xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-gradient-warm rounded-xl flex items-center justify-center">
                   <MessageSquare className="w-6 h-6 text-white" />
                 </div>
               </div>
@@ -338,11 +338,11 @@ const Dashboard = () => {
                   <p className="text-sm opacity-70 mb-1">
                     התקדמות / Progress
                   </p>
-                  <p className="text-3xl font-bold text-gradient-purple">
+                  <p className="text-3xl font-bold text-gradient-coral">
                     {stats.weeklyProgress}%
                   </p>
                 </div>
-                <div className="w-12 h-12 bg-gradient-pink rounded-xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-gradient-coral-teal rounded-xl flex items-center justify-center">
                   <TrendingUp className="w-6 h-6 text-white" />
                 </div>
               </div>
@@ -422,7 +422,7 @@ const Dashboard = () => {
           {/* Quick Actions */}
           <div className="space-y-6">
             <div className="card-lumea-strong">
-              <h2 className="text-2xl font-bold text-gradient-purple mb-6">
+              <h2 className="text-2xl font-bold text-gradient-coral mb-6">
                 פעולות מהירות / Quick Actions
               </h2>
               <div className="space-y-4">
@@ -449,7 +449,7 @@ const Dashboard = () => {
             {/* Recent Reflections */}
             <div className="card-lumea-strong">
               <div className={`flex items-center justify-between mb-6 ${isRTL ? 'rtl-flex-row-reverse' : ''}`}>
-                <h2 className="text-2xl font-bold text-gradient-purple">
+                <h2 className="text-2xl font-bold text-gradient-coral">
                   הרהורים אחרונים / Recent Reflections
                 </h2>
                 <button 
@@ -484,14 +484,14 @@ const Dashboard = () => {
             <div className="card-lumea-strong">
               <div className={`flex items-center justify-between mb-6 ${isRTL ? 'rtl-flex-row-reverse' : ''}`}>
                 <div>
-                  <h2 className="text-2xl font-bold text-gradient-purple mb-2">
+                  <h2 className="text-2xl font-bold text-gradient-coral mb-2">
                     ניתוח משך מפגשים / Session Duration Analytics
                   </h2>
                   <p className="text-sm opacity-70">
                     מעקב אחר מגמות זמן מפגשים ומדדי יעילות / Track session timing trends and efficiency metrics
                   </p>
                 </div>
-                <div className="w-12 h-12 bg-gradient-purple rounded-xl flex items-center justify-center">
+                <div className="w-12 h-12 bg-gradient-coral-teal rounded-xl flex items-center justify-center">
                   <BarChart3 className="w-6 h-6 text-white" />
                 </div>
               </div>

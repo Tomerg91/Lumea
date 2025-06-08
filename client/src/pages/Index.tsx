@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, CheckCircle, Users, Calendar, TrendingUp, Star, Sparkles, Heart, Zap } from 'lucide-react';
+import { ArrowRight, CheckCircle, Users, Calendar, TrendingUp, Star, Sparkles, Heart, Zap, MessageSquare, BarChart3 } from 'lucide-react';
 
 const HomePage = () => {
   const { session, profile } = useAuth();
@@ -26,19 +26,19 @@ const HomePage = () => {
       icon: <Users className="w-10 h-10 text-white" />,
       title: t('home.features.coaches.title'),
       description: t('home.features.coaches.description'),
-      gradient: 'bg-gradient-teal-blue'
+      gradient: 'bg-gradient-coral-teal'
     },
     {
       icon: <Calendar className="w-10 h-10 text-white" />,
       title: t('home.features.scheduling.title'),
       description: t('home.features.scheduling.description'),
-      gradient: 'bg-gradient-purple'
+      gradient: 'bg-gradient-yellow-coral'
     },
     {
       icon: <TrendingUp className="w-10 h-10 text-white" />,
       title: t('home.features.progress.title'),
       description: t('home.features.progress.description'),
-      gradient: 'bg-gradient-yellow-peach'
+      gradient: 'bg-gradient-warm'
     }
   ];
 
@@ -67,10 +67,10 @@ const HomePage = () => {
     <div className="min-h-screen bg-gradient-background">
       {/* Floating Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-64 h-64 bg-gradient-pink rounded-full opacity-20 animate-float"></div>
-        <div className="absolute top-40 right-20 w-48 h-48 bg-gradient-lavender rounded-full opacity-25 animate-float-delayed"></div>
-        <div className="absolute bottom-32 left-32 w-80 h-80 bg-gradient-yellow-peach rounded-full opacity-15 animate-float"></div>
-        <div className="absolute bottom-20 right-10 w-56 h-56 bg-gradient-teal-blue rounded-full opacity-20 animate-float-delayed"></div>
+        <div className="absolute top-20 left-10 w-64 h-64 bg-gradient-coral-teal rounded-full opacity-20 animate-float"></div>
+        <div className="absolute top-40 right-20 w-48 h-48 bg-gradient-cream-peach rounded-full opacity-25 animate-float-delayed"></div>
+        <div className="absolute bottom-32 left-32 w-80 h-80 bg-gradient-warm rounded-full opacity-15 animate-float"></div>
+        <div className="absolute bottom-20 right-10 w-56 h-56 bg-gradient-coral-teal rounded-full opacity-20 animate-float-delayed"></div>
       </div>
 
       {/* Hero Section */}
@@ -81,7 +81,7 @@ const HomePage = () => {
               <h1 className="text-5xl lg:text-7xl font-bold leading-tight mb-6">
                 <span className="text-gradient-teal">{t('home.hero.title')}</span>
                 <br />
-                <span className="text-gradient-purple">{t('home.hero.subtitle')}</span>
+                <span className="text-gradient-coral">{t('home.hero.subtitle')}</span>
               </h1>
               <p className="text-xl opacity-80 mb-8 leading-relaxed max-w-2xl mx-auto lg:mx-0">
                 {t('home.hero.description')}
@@ -118,7 +118,7 @@ const HomePage = () => {
 
             <div className={`relative animate-slide-up ${isRTL ? 'lg:order-first' : ''}`}>
               <div className="relative card-lumea-strong p-8 transform rotate-2 hover:rotate-0 transition-transform duration-500">
-                <div className="absolute -top-4 -right-4 w-12 h-12 bg-gradient-teal-blue rounded-2xl flex items-center justify-center animate-pulse-soft">
+                <div className="absolute -top-4 -right-4 w-12 h-12 bg-gradient-coral-teal rounded-2xl flex items-center justify-center animate-pulse-soft">
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
                 <div className="space-y-6">
@@ -149,7 +149,7 @@ const HomePage = () => {
       <section className="py-20 relative">
         <div className="container mx-auto px-4">
           <div className={`text-center mb-16 animate-fade-in ${isRTL ? 'rtl-text-right' : ''}`}>
-            <h2 className="text-4xl lg:text-5xl font-bold text-gradient-purple mb-6">
+            <h2 className="text-4xl lg:text-5xl font-bold text-gradient-coral mb-6">
               {t('home.features.title')}
             </h2>
             <p className="text-xl opacity-80 max-w-3xl mx-auto">
@@ -210,7 +210,7 @@ const HomePage = () => {
                   <p className="font-semibold">{testimonial.name}</p>
                   <p className="text-sm opacity-60">{testimonial.role}</p>
                 </div>
-                <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-pink rounded-full flex items-center justify-center">
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-yellow-coral rounded-full flex items-center justify-center">
                   <Heart className="w-4 h-4 text-white" />
                 </div>
               </div>
@@ -221,13 +221,13 @@ const HomePage = () => {
 
       {/* CTA Section */}
       <section className="py-20 relative">
-        <div className="absolute inset-0 bg-gradient-purple opacity-10"></div>
+        <div className="absolute inset-0 bg-gradient-coral-teal opacity-10"></div>
         <div className="container mx-auto px-4 text-center relative">
           <div className="card-lumea-strong max-w-4xl mx-auto p-12">
-            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 w-12 h-12 bg-gradient-yellow-peach rounded-2xl flex items-center justify-center">
+            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 w-12 h-12 bg-gradient-warm rounded-2xl flex items-center justify-center">
               <Zap className="w-6 h-6 text-white" />
             </div>
-            <h2 className="text-4xl lg:text-5xl font-bold text-gradient-purple mb-6">
+            <h2 className="text-4xl lg:text-5xl font-bold text-gradient-coral mb-6">
               {t('home.cta.title')}
             </h2>
             <p className="text-xl opacity-80 mb-8 max-w-2xl mx-auto">

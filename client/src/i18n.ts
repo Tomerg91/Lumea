@@ -32,14 +32,30 @@ i18n
       order: ['localStorage', 'cookie', 'navigator'],
       // Caching detected language
       caches: ['localStorage'],
-      // Override detected language with Hebrew unless explicitly changed
+      // Look for language preference in localStorage
       lookupLocalStorage: 'i18nextLng',
     },
     // Performance optimizations
     load: 'languageOnly', // Load only language, not region
-    preload: ['he'], // Preload only Hebrew
+    preload: ['he', 'en'], // Preload both languages
     cleanCode: true, // Clean language codes
     nonExplicitSupportedLngs: true,
   });
+
+// Set document direction and language on language change
+i18n.on('languageChanged', (lng) => {
+  const isRTL = lng === 'he';
+  document.documentElement.setAttribute('dir', isRTL ? 'rtl' : 'ltr');
+  document.documentElement.setAttribute('lang', lng);
+  
+  // Store in localStorage for persistence
+  localStorage.setItem('i18nextLng', lng);
+});
+
+// Initialize direction on first load
+const currentLang = i18n.language || 'he';
+const isRTL = currentLang === 'he';
+document.documentElement.setAttribute('dir', isRTL ? 'rtl' : 'ltr');
+document.documentElement.setAttribute('lang', currentLang);
 
 export default i18n;

@@ -87,12 +87,16 @@ export default defineConfig(({ mode }) => {
       minify: 'terser',
       terserOptions: {
         compress: {
-          drop_console: true,
+          drop_console: mode === 'production',
           drop_debugger: true,
-          pure_funcs: ['console.log', 'console.debug', 'console.trace'],
+          pure_funcs: mode === 'production' ? ['console.log', 'console.debug', 'console.trace'] : [],
+          passes: 2, // Multiple passes for better compression
         },
         output: {
           comments: false, // Remove all comments
+        },
+        mangle: {
+          safari10: true, // Fix Safari 10 issues
         },
       },
       // Configure code splitting
@@ -101,20 +105,34 @@ export default defineConfig(({ mode }) => {
           manualChunks: (id) => {
             // Create vendor chunks based on node_modules
             if (id.includes('node_modules')) {
+              // Heavy libraries that should be isolated
+              if (id.includes('framer-motion')) {
+                return 'vendor-animation';
+              }
+              if (id.includes('react-beautiful-dnd')) {
+                return 'vendor-dnd';
+              }
+              if (id.includes('recharts')) {
+                return 'vendor-charts';
+              }
+              if (id.includes('socket.io-client')) {
+                return 'vendor-socket';
+              }
+              
               // React and core dependencies
               if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
                 return 'vendor-react';
               }
               // UI component libraries
-              if (id.includes('@headlessui') || id.includes('@radix-ui')) {
+              if (id.includes('@radix-ui') || id.includes('@headlessui')) {
                 return 'vendor-ui';
               }
               // Data handling and API libraries
-              if (id.includes('axios') || id.includes('swr') || id.includes('zustand')) {
+              if (id.includes('@tanstack/react-query') || id.includes('axios') || id.includes('zod')) {
                 return 'vendor-data';
               }
               // Utilities
-              if (id.includes('date-fns') || id.includes('lodash') || id.includes('uuid')) {
+              if (id.includes('date-fns') || id.includes('clsx') || id.includes('tailwind-merge') || id.includes('lucide-react')) {
                 return 'vendor-utils';
               }
               // Fallback for other node_modules
@@ -128,31 +146,55 @@ export default defineConfig(({ mode }) => {
             if (id.includes('/src/pages/')) {
               return 'app-pages';
             }
-            if (id.includes('/src/utils/')) {
+            if (id.includes('/src/utils/') || id.includes('/src/lib/')) {
               return 'app-utils';
             }
-            if (id.includes('/src/hooks/')) {
+            if (id.includes('/src/hooks/') || id.includes('/src/contexts/')) {
               return 'app-hooks';
             }
+            if (id.includes('/src/services/')) {
+              return 'app-services';
+            }
             // Default chunk for other app code
-            return 'app-core';
+            return undefined; // Let Vite decide
           },
           // Ensure chunk size is reasonable
-          chunkFileNames: 'assets/[name]-[hash].js',
+          chunkFileNames: (chunkInfo) => {
+            const facadeModuleId = chunkInfo.facadeModuleId ? chunkInfo.facadeModuleId.split('/').pop() : 'chunk';
+            return `assets/[name]-[hash].js`;
+          },
           entryFileNames: 'assets/[name]-[hash].js',
-          assetFileNames: 'assets/[name]-[hash].[ext]',
+          assetFileNames: (assetInfo) => {
+            const info = assetInfo.name!.split('.');
+            const ext = info[info.length - 1];
+            if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
+              return `assets/images/[name]-[hash].[ext]`;
+            }
+            if (/woff2?|eot|ttf|otf/i.test(ext)) {
+              return `assets/fonts/[name]-[hash].[ext]`;
+            }
+            return `assets/[name]-[hash].[ext]`;
+          },
         },
+        // External dependencies that should not be bundled
+        external: mode === 'production' ? [] : [],
       },
       // Improve tree-shaking with module mode
       cssCodeSplit: true,
-      // Source maps in development, none in production
-      sourcemap: mode !== 'production',
-      // Create assets manifest
+      // Source maps in development, none in production for security
+      sourcemap: mode === 'development',
+      // Create assets manifest for better caching
       manifest: true,
       // Chunk naming strategy
       chunkSizeWarningLimit: 1000, // 1MB warning limit
       // Emit the correct CSS sourcemaps in production
-      cssMinify: true,
+      cssMinify: mode === 'production' ? 'esbuild' : false,
+      // Target modern browsers for smaller bundles
+      target: mode === 'production' ? 'es2020' : 'esnext',
+      // Optimize for production
+      reportCompressedSize: mode === 'production',
+      // Write bundle info
+      write: true,
     },
     server: {
       host: '::',

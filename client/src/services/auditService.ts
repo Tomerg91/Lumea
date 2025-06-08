@@ -1,4 +1,5 @@
 import { AuditAction, AuditEntry, BulkOperation } from '../types/coachNote';
+import { createFetchConfig } from './api';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
@@ -19,7 +20,63 @@ interface CreateBulkOperationRequest {
   details?: Record<string, any>;
 }
 
+export interface AuditLogFilters {
+  startDate?: string;
+  endDate?: string;
+  userId?: string;
+  action?: string;
+  resource?: string;
+  eventType?: string;
+  eventCategory?: string;
+  riskLevel?: string;
+  phiAccessed?: boolean;
+  suspicious?: boolean;
+  investigationStatus?: string;
+  searchText?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface AuditLogResponse {
+  success: boolean;
+  data: {
+    logs: any[];
+    total: number;
+    page: number;
+    totalPages: number;
+  };
+  pagination: {
+    page: number;
+    totalPages: number;
+    total: number;
+    limit: number;
+  };
+}
+
+export interface AuditStatisticsResponse {
+  success: boolean;
+  data: {
+    totalLogs: number;
+    phiAccessCount: number;
+    suspiciousActivityCount: number;
+    riskLevelBreakdown: Record<string, number>;
+    eventTypeBreakdown: Record<string, number>;
+    topUsers: Array<{ userId: string; userEmail: string; count: number }>;
+    topResources: Array<{ resource: string; count: number }>;
+    recentActivity: any[];
+    complianceMetrics: {
+      hipaaCompliantLogs: number;
+      retentionCompliance: number;
+      dataClassificationBreakdown: Record<string, number>;
+    };
+  };
+}
+
 class AuditService {
+  private baseUrl = '/api/audit';
+
   private async makeRequest(endpoint: string, options: RequestInit = {}): Promise<any> {
     const token = localStorage.getItem('authToken');
     
@@ -198,6 +255,117 @@ class AuditService {
     await this.updateBulkOperation(operationId, {
       status: 'failed',
       errorMessage: error
+    });
+  }
+
+  /**
+   * Get audit logs with filtering and pagination
+   */
+  async getLogs(filters: AuditLogFilters = {}): Promise<AuditLogResponse> {
+    const params = new URLSearchParams();
+    
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.append(key, value.toString());
+      }
+    });
+
+    return this.makeRequest(`${this.baseUrl}/logs?${params.toString()}`);
+  }
+
+  /**
+   * Get audit statistics for dashboard
+   */
+  async getStatistics(startDate?: string, endDate?: string): Promise<AuditStatisticsResponse> {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+
+    return this.makeRequest(`${this.baseUrl}/statistics?${params.toString()}`);
+  }
+
+  /**
+   * Get audit logs for a specific user
+   */
+  async getUserLogs(userId: string, limit = 100): Promise<{ success: boolean; data: any[] }> {
+    return this.makeRequest(`${this.baseUrl}/user/${userId}?limit=${limit}`);
+  }
+
+  /**
+   * Get PHI access logs
+   */
+  async getPHIAccessLogs(startDate?: string, endDate?: string, limit = 100): Promise<{ success: boolean; data: any[] }> {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    params.append('limit', limit.toString());
+
+    return this.makeRequest(`${this.baseUrl}/phi-access?${params.toString()}`);
+  }
+
+  /**
+   * Get suspicious activity logs
+   */
+  async getSuspiciousActivity(limit = 100): Promise<{ success: boolean; data: any[] }> {
+    return this.makeRequest(`${this.baseUrl}/suspicious?limit=${limit}`);
+  }
+
+  /**
+   * Mark audit log as suspicious
+   */
+  async markSuspicious(auditLogId: string, flaggedReason: string, investigationStatus = 'pending'): Promise<{ success: boolean; message: string }> {
+    return this.makeRequest(`${this.baseUrl}/${auditLogId}/suspicious`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        flaggedReason,
+        investigationStatus
+      })
+    });
+  }
+
+  /**
+   * Update investigation status
+   */
+  async updateInvestigationStatus(auditLogId: string, investigationStatus: string, notes?: string): Promise<{ success: boolean; message: string }> {
+    return this.makeRequest(`${this.baseUrl}/${auditLogId}/investigation`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        investigationStatus,
+        notes
+      })
+    });
+  }
+
+  /**
+   * Export audit logs
+   */
+  async exportLogs(format: 'json' | 'csv', filters: AuditLogFilters = {}): Promise<void> {
+    const params = new URLSearchParams();
+    
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.append(key, value.toString());
+      }
+    });
+    
+    params.append('format', format);
+
+    // Create a temporary link to download the file
+    const url = `${this.baseUrl}/export?${params.toString()}`;
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `audit-logs-${new Date().toISOString().split('T')[0]}.${format}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  /**
+   * Clean up expired logs (admin only)
+   */
+  async cleanupExpiredLogs(): Promise<{ success: boolean; message: string; deletedCount: number }> {
+    return this.makeRequest(`${this.baseUrl}/cleanup`, {
+      method: 'DELETE'
     });
   }
 }

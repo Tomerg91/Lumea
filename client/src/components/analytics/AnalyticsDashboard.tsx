@@ -168,7 +168,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         <div className="card-lumea p-4 lg:p-6">
           <div className="flex items-center justify-between mb-3 lg:mb-4">
-            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-teal-blue rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-coral-teal rounded-xl flex items-center justify-center">
               <TrendingUp className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
             </div>
             <span className="text-xs lg:text-sm font-medium text-green-600">
@@ -183,7 +183,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
         <div className="card-lumea p-4 lg:p-6">
           <div className="flex items-center justify-between mb-3 lg:mb-4">
-            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-purple rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-yellow-coral rounded-xl flex items-center justify-center">
               <UserCheck className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
             </div>
             <span className="text-xs lg:text-sm font-medium text-blue-600">
@@ -198,7 +198,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
         <div className="card-lumea p-4 lg:p-6">
           <div className="flex items-center justify-between mb-3 lg:mb-4">
-            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-yellow-peach rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-warm rounded-xl flex items-center justify-center">
               <Clock className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
             </div>
             <span className="text-xs lg:text-sm font-medium text-purple-600">
@@ -213,7 +213,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
         <div className="card-lumea p-4 lg:p-6">
           <div className="flex items-center justify-between mb-3 lg:mb-4">
-            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-pink rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-coral-teal rounded-xl flex items-center justify-center">
               <Activity className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
             </div>
             <span className="text-xs lg:text-sm font-medium text-emerald-600">

@@ -9,55 +9,52 @@
 
 @layer base {
   :root {
-    /* Lumea App Color System */
+    /* New Color Palette */
     
-    /* Teal to Light Blue Gradient */
-    --gradient-teal-blue: linear-gradient(135deg, #20B2AA 0%, #87CEEB 100%);
-    --teal-primary: #20B2AA;
-    --light-blue-primary: #87CEEB;
+    /* Primary Colors from User Palette */
+    --cream-light: #FEE6BB;        /* Light cream/beige */
+    --peach-light: #EEC492;        /* Light orange/peach */
+    --golden-yellow: #F2C864;      /* Golden yellow */
+    --coral-salmon: #F48676;       /* Coral/salmon */
+    --teal-sage: #6D9496;          /* Teal/sage green */
+    --navy-dark: #0B4251;          /* Dark teal/navy */
     
-    /* Lavender & Purple Spectrum */
-    --lavender-soft: #E6E6FA;
-    --lavender-medium: #D8BFD8;
-    --purple-mid: #9370DB;
-    --purple-pink: #DDA0DD;
-    --gradient-lavender: linear-gradient(135deg, #E6E6FA 0%, #D8BFD8 100%);
-    --gradient-purple: linear-gradient(135deg, #9370DB 0%, #DDA0DD 100%);
+    /* Gradient Combinations using new palette */
+    --gradient-warm: linear-gradient(135deg, #FEE6BB 0%, #EEC492 50%, #F2C864 100%);
+    --gradient-coral-teal: linear-gradient(135deg, #F48676 0%, #6D9496 100%);
+    --gradient-yellow-coral: linear-gradient(135deg, #F2C864 0%, #F48676 100%);
+    --gradient-cream-peach: linear-gradient(135deg, #FEE6BB 0%, #EEC492 100%);
+    --gradient-teal-navy: linear-gradient(135deg, #6D9496 0%, #0B4251 100%);
     
-    /* Pale Yellow to Peach/Orange Gradient */
-    --gradient-yellow-peach: linear-gradient(135deg, #FFF8DC 0%, #FFDAB9 100%);
-    --pale-yellow: #FFF8DC;
-    --soft-peach: #FFDAB9;
-    --light-orange: #FFE4B5;
+    /* Main Background Gradient */
+    --gradient-background: linear-gradient(135deg, #FEE6BB 0%, #EEC492 25%, #F2C864 50%, #F48676 75%, #6D9496 100%);
+    --gradient-background-subtle: linear-gradient(135deg, rgba(254, 230, 187, 0.3) 0%, rgba(238, 196, 146, 0.2) 100%);
     
-    /* Cream & Soft Beige Tones */
-    --cream-soft: #FFF8DC;
-    --beige-light: #F5F5DC;
-    --beige-medium: #F0E68C;
-    --gradient-cream: linear-gradient(135deg, #FFF8DC 0%, #F5F5DC 100%);
+    /* Text Colors optimized for new palette */
+    --text-primary: #0B4251;         /* Dark navy for main text */
+    --text-secondary: #1A5A6B;       /* Slightly lighter navy */
+    --text-light: #6D9496;           /* Teal for subtle text */
+    --text-contrast: #0B4251;        /* Navy for high contrast */
+    --text-on-light: #0B4251;        /* Navy on light backgrounds */
+    --text-on-dark: #FEE6BB;         /* Cream on dark backgrounds */
     
-    /* Soft Pink & Rose Tones */
-    --pink-soft: #FFB6C1;
-    --rose-light: #FFC0CB;
-    --pink-blush: #FFCCCB;
-    --gradient-pink: linear-gradient(135deg, #FFB6C1 0%, #FFC0CB 100%);
+    /* Component Colors */
+    --primary: #6D9496;              /* Teal primary */
+    --primary-light: #8FAAA5;        /* Lighter teal */
+    --primary-dark: #0B4251;         /* Navy */
+    --secondary: #F48676;            /* Coral secondary */
+    --secondary-light: #F7A593;      /* Lighter coral */
+    --secondary-dark: #E6654E;       /* Darker coral */
+    --accent: #F2C864;               /* Golden yellow accent */
+    --accent-light: #F5D481;         /* Lighter golden */
+    --accent-dark: #E6B347;          /* Darker golden */
     
-    /* Overall Background Gradient */
-    --gradient-background: linear-gradient(135deg, #E6E6FA 0%, #FFB6C1 25%, #FFF8DC 50%, #87CEEB 75%, #DDA0DD 100%);
-    --gradient-background-subtle: linear-gradient(135deg, rgba(230, 230, 250, 0.3) 0%, rgba(255, 182, 193, 0.2) 100%);
-    
-    /* Text Colors */
-    --text-primary: #4A4A4A;
-    --text-secondary: #6B6B6B;
-    --text-light: #8A8A8A;
-    --text-contrast: #2D2D2D;
-    
-    /* Accessibility & System Colors */
+    /* System Colors */
     --white: #FFFFFF;
-    --black: #000000;
-    --shadow-soft: 0 8px 32px rgba(147, 112, 219, 0.15);
-    --shadow-medium: 0 12px 40px rgba(147, 112, 219, 0.2);
-    --shadow-strong: 0 16px 48px rgba(147, 112, 219, 0.25);
+    --black: #0B4251;                /* Use navy instead of pure black */
+    --shadow-soft: 0 8px 32px rgba(11, 66, 81, 0.15);
+    --shadow-medium: 0 12px 40px rgba(11, 66, 81, 0.2);
+    --shadow-strong: 0 16px 48px rgba(11, 66, 81, 0.25);
     
     /* Border Radius */
     --radius-sm: 0.5rem;
@@ -75,12 +72,14 @@
   }
 
   .dark {
-    /* Dark mode adaptations while maintaining the soft aesthetic */
-    --gradient-background: linear-gradient(135deg, rgba(57, 45, 80, 0.9) 0%, rgba(80, 45, 60, 0.8) 100%);
-    --text-primary: #E6E6FA;
-    --text-secondary: #D8BFD8;
-    --text-light: #C0C0C0;
-    --text-contrast: #FFFFFF;
+    /* Dark mode using darker tones from the palette */
+    --gradient-background: linear-gradient(135deg, rgba(11, 66, 81, 0.9) 0%, rgba(109, 148, 150, 0.3) 100%);
+    --text-primary: #FEE6BB;
+    --text-secondary: #EEC492;
+    --text-light: #F2C864;
+    --text-contrast: #FEE6BB;
+    --text-on-dark: #FEE6BB;
+    --text-on-light: #0B4251;
   }
 }
 
@@ -135,29 +134,25 @@
 }
 
 @layer utilities {
-  /* Gradient Utilities */
-  .bg-gradient-teal-blue {
-    background: var(--gradient-teal-blue);
+  /* Gradient Utilities using new palette */
+  .bg-gradient-warm {
+    background: var(--gradient-warm);
   }
   
-  .bg-gradient-lavender {
-    background: var(--gradient-lavender);
+  .bg-gradient-coral-teal {
+    background: var(--gradient-coral-teal);
   }
   
-  .bg-gradient-purple {
-    background: var(--gradient-purple);
+  .bg-gradient-yellow-coral {
+    background: var(--gradient-yellow-coral);
   }
   
-  .bg-gradient-yellow-peach {
-    background: var(--gradient-yellow-peach);
+  .bg-gradient-cream-peach {
+    background: var(--gradient-cream-peach);
   }
   
-  .bg-gradient-cream {
-    background: var(--gradient-cream);
-  }
-  
-  .bg-gradient-pink {
-    background: var(--gradient-pink);
+  .bg-gradient-teal-navy {
+    background: var(--gradient-teal-navy);
   }
   
   .bg-gradient-background {
@@ -168,18 +163,18 @@
     background: var(--gradient-background-subtle);
   }
 
-  /* Glass Morphism Effects */
+  /* Glass Morphism Effects with new colors */
   .glass-card {
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(254, 230, 187, 0.25);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(254, 230, 187, 0.18);
     box-shadow: var(--shadow-soft);
   }
   
   .glass-card-strong {
-    background: rgba(255, 255, 255, 0.35);
+    background: rgba(254, 230, 187, 0.35);
     backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(254, 230, 187, 0.25);
     box-shadow: var(--shadow-medium);
   }
 
@@ -200,162 +195,193 @@
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
-  
+
   .animate-float-delayed {
-    animation: float 6s ease-in-out infinite 2s;
+    animation: float 6s ease-in-out 2s infinite;
   }
-  
+
   .animate-pulse-soft {
     animation: pulseSoft 4s ease-in-out infinite;
   }
-  
+
   .animate-fade-in {
-    animation: fadeIn 0.8s ease-out;
+    animation: fadeIn 0.8s ease-out forwards;
   }
-  
+
   .animate-slide-up {
-    animation: slideUp 0.6s ease-out;
+    animation: slideUp 0.6s ease-out forwards;
+    opacity: 0;
+    transform: translateY(20px);
   }
 
-  /* Interactive States */
   .hover-lift {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  
-  .hover-lift:hover {
-    transform: translateY(-8px);
-    box-shadow: var(--shadow-strong);
-  }
-  
-  .hover-glow:hover {
-    box-shadow: 0 0 30px rgba(147, 112, 219, 0.3);
+    transition: all 0.3s ease;
   }
 
-  /* Bubble Effects */
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-medium);
+  }
+
+  .hover-glow:hover {
+    box-shadow: 0 0 20px rgba(109, 148, 150, 0.4);
+  }
+
   .bubble-float {
     position: relative;
     overflow: hidden;
   }
-  
+
   .bubble-float::before {
     content: '';
     position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-    animation: bubbleFloat 8s linear infinite;
-    pointer-events: none;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(242, 200, 100, 0.3);
+    transition: all 0.6s ease;
+    transform: translate(-50%, -50%);
+    z-index: -1;
+    animation: bubbleFloat 4s ease-in-out infinite;
   }
 
-  /* Text Utilities */
+  /* Text Gradients using new palette */
   .text-gradient-teal {
-    background: var(--gradient-teal-blue);
+    background: linear-gradient(135deg, #6D9496 0%, #0B4251 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    color: transparent;
   }
-  
-  .text-gradient-purple {
-    background: var(--gradient-purple);
+
+  .text-gradient-coral {
+    background: linear-gradient(135deg, #F48676 0%, #F2C864 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    color: transparent;
   }
 
   /* RTL Support */
   .rtl-flip {
-    transform: scaleX(-1);
-  }
-  
-  [dir="rtl"] .rtl-flip {
     transform: scaleX(1);
   }
-  
+
+  [dir="rtl"] .rtl-flip {
+    transform: scaleX(-1);
+  }
+
   .rtl-margin-start {
-    margin-inline-start: var(--spacing-md);
+    margin-left: 1rem;
   }
-  
+
   .rtl-margin-end {
-    margin-inline-end: var(--spacing-md);
+    margin-right: 1rem;
   }
-}
 
-@layer components {
-  /* Button Components */
+  [dir="rtl"] .rtl-margin-start {
+    margin-left: 0;
+    margin-right: 1rem;
+  }
+
+  [dir="rtl"] .rtl-margin-end {
+    margin-right: 0;
+    margin-left: 1rem;
+  }
+
+  /* Component Styles using new palette */
   .btn-primary {
-    @apply px-8 py-4 font-semibold text-white rounded-2xl shadow-lumea-soft hover-lift hover-glow;
-    background: var(--gradient-teal-blue);
+    background: var(--gradient-coral-teal);
+    color: var(--text-on-dark);
+    box-shadow: var(--shadow-soft);
   }
-  
+
   .btn-secondary {
-    @apply px-6 py-3 font-medium rounded-xl shadow-lumea-soft hover-lift;
-    background: var(--gradient-yellow-peach);
-    color: var(--text-contrast);
+    background: var(--gradient-cream-peach);
+    color: var(--text-on-light);
+    border: 1px solid var(--teal-sage);
+    box-shadow: var(--shadow-soft);
   }
-  
+
   .btn-tertiary {
-    @apply px-4 py-2 font-medium rounded-lg;
-    background: var(--gradient-lavender);
-    color: var(--text-primary);
+    background: rgba(109, 148, 150, 0.1);
+    color: var(--primary);
+    border: 1px solid var(--primary);
+    box-shadow: var(--shadow-soft);
   }
-  
+
   .btn-glass {
-    @apply glass-card px-6 py-3 font-medium rounded-xl hover-lift;
-    color: var(--text-contrast);
+    background: rgba(254, 230, 187, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(254, 230, 187, 0.3);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-soft);
   }
 
-  /* Card Components */
   .card-lumea {
-    @apply glass-card rounded-2xl p-6 hover-lift;
+    background: rgba(254, 230, 187, 0.4);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(254, 230, 187, 0.3);
   }
-  
+
   .card-lumea-strong {
-    @apply glass-card-strong rounded-2xl p-8 hover-lift;
+    background: rgba(238, 196, 146, 0.6);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(238, 196, 146, 0.4);
   }
-  
+
   .card-gradient {
-    @apply rounded-2xl p-6 shadow-lumea-medium hover-lift;
-    background: var(--gradient-cream);
+    background: var(--gradient-cream-peach);
+    border: 1px solid rgba(109, 148, 150, 0.2);
+    box-shadow: var(--shadow-soft);
   }
 
-  /* Navigation Components */
   .nav-lumea {
-    @apply glass-card-strong sticky top-0 z-50;
+    background: rgba(254, 230, 187, 0.9);
     backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(109, 148, 150, 0.2);
+    box-shadow: var(--shadow-soft);
   }
 
-  /* Input Components */
   .input-lumea {
-    @apply glass-card rounded-xl px-4 py-3 border-0 focus:outline-none focus:ring-2 focus:ring-purple-500;
-    background: rgba(255, 255, 255, 0.4);
+    background: rgba(254, 230, 187, 0.5);
+    border: 1px solid rgba(109, 148, 150, 0.3);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .input-lumea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(109, 148, 150, 0.1);
   }
 }
 
-/* Keyframe Animations */
 @keyframes float {
   0%, 100% {
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(-20px);
+    transform: translateY(-10px);
   }
 }
 
 @keyframes pulseSoft {
   0%, 100% {
-    opacity: 1;
+    opacity: 0.8;
+    transform: scale(1);
   }
   50% {
-    opacity: 0.7;
+    opacity: 1;
+    transform: scale(1.02);
   }
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -364,10 +390,6 @@
 }
 
 @keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(50px);
-  }
   to {
     opacity: 1;
     transform: translateY(0);
@@ -375,20 +397,24 @@
 }
 
 @keyframes bubbleFloat {
-  0% {
-    transform: rotate(0deg);
+  0%, 100% {
+    width: 0;
+    height: 0;
+    opacity: 0.7;
   }
-  100% {
-    transform: rotate(360deg);
+  50% {
+    width: 100px;
+    height: 100px;
+    opacity: 0.2;
   }
 }
 
-/* RTL Specific Styles */
+/* RTL specific styles */
 [dir="rtl"] {
   .rtl-text-right {
     text-align: right;
   }
-  
+
   .rtl-flex-row-reverse {
     flex-direction: row-reverse;
   }

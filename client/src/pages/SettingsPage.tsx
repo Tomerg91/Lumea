@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import { CalendarIntegration } from '../components/calendar/CalendarIntegration';
 import NotificationPreferences from '../components/notifications/NotificationPreferences';
 import { 
@@ -46,7 +47,10 @@ interface PrivacySettings {
 
 const SettingsPage = () => {
   const { profile, session } = useAuth();
-  const { t, isRTL, language, setLanguage } = useLanguage();
+  const { t, i18n } = useTranslation();
+  
+  const currentLanguage = i18n.language || 'he';
+  const isRTL = currentLanguage === 'he';
   const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'privacy' | 'appearance' | 'calendar'>('profile');
   const [loading, setLoading] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
@@ -357,14 +361,7 @@ const SettingsPage = () => {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium mb-2">{t('settings.language')}</label>
-                      <select
-                        value={language}
-                        onChange={(e) => setLanguage(e.target.value as 'en' | 'he')}
-                        className="glass-input w-full"
-                      >
-                        <option value="en">English</option>
-                        <option value="he">עברית</option>
-                      </select>
+                      <LanguageSwitcher variant="select" />
                     </div>
                     
                     <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>

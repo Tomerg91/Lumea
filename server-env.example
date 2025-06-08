@@ -1,51 +1,56 @@
 # Server Environment Variables
-# Rename this file to .env.example and move it to the server/ directory
+# Rename this file to .env and place it in the server/ directory
 
-# Database Connection URL (MongoDB or PostgreSQL via Supabase)
-DATABASE_URL=
+# CRITICAL: Generate secure values for production
+# Use: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
-# JWT Secret Key for signing tokens
-JWT_SECRET=
+# Environment Configuration
+NODE_ENV=production
+PORT=3001
+CLIENT_URL=https://your-domain.vercel.app
 
-# Port the server will listen on
-PORT=3000
+# Database Configuration (REQUIRED)
+DATABASE_URL=postgresql://user:password@host:port/database
 
-# Node environment (development, production, test)
-NODE_ENV=development
+# JWT Configuration (REQUIRED - Generate secure random secrets)
+JWT_ACCESS_SECRET=your_secure_random_access_secret_here
+JWT_REFRESH_SECRET=your_secure_random_refresh_secret_here
 
-# URL of the frontend client (for CORS)
-CLIENT_URL=http://localhost:5173
+# Session Configuration (REQUIRED - Generate secure random secret)
+SESSION_SECRET=your_secure_random_session_secret_here
 
-# Email Service Configuration (SMTP)
-SMTP_HOST=
-SMTP_PORT=
-SMTP_SECURE=false # true for SSL, false for TLS/none
-SMTP_USER=
-SMTP_PASS=
-SMTP_FROM= # Email address to send from
+# Encryption Configuration (REQUIRED - Generate 32-byte hex key)
+ENCRYPTION_KEY=your_32_byte_hex_encryption_key_here
 
-# OAuth Configuration (ensure these match client-side IDs)
-GOOGLE_CLIENT_ID=
-# FACEBOOK_CLIENT_ID=
-# FACEBOOK_CLIENT_SECRET=
+# Email Service Configuration (REQUIRED for notifications)
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@example.com
+SMTP_PASS=your-email-password
+SMTP_FROM=your-email@example.com
 
-# Encryption Key and IV for sensitive data (generate securely)
-# Generate ENCRYPTION_KEY (32 bytes hex): node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-ENCRYPTION_KEY=
-# Generate ENCRYPTION_IV (16 bytes hex): node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"
-ENCRYPTION_IV=
+# OAuth Configuration (Optional)
+GOOGLE_CLIENT_ID=your-google-client-id
+FACEBOOK_CLIENT_ID=your-facebook-client-id
+FACEBOOK_CLIENT_SECRET=your-facebook-client-secret
 
-# AWS S3 Configuration (Optional - if used for file storage)
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-AWS_REGION=
-AWS_S3_BUCKET=
+# AWS S3 Configuration (Optional - for file storage)
+AWS_ACCESS_KEY_ID=your-aws-access-key
+AWS_SECRET_ACCESS_KEY=your-aws-secret-key
+AWS_REGION=us-east-1
+AWS_S3_BUCKET=your-bucket-name
 
-# Supabase Configuration (if using Supabase for DB and Auth)
-# Public URL and Anon Key are usually for client-side, but service key is for backend.
-SUPABASE_URL=
-SUPABASE_ANON_KEY= # Often same as VITE_SUPABASE_ANON_KEY
-SUPABASE_SERVICE_KEY= # For admin-level backend operations
+# Supabase Configuration (if using Supabase)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_KEY=your-service-key
 
-# Session Secret
-SESSION_SECRET= 
+# Production Monitoring (Optional)
+SENTRY_DSN=your-sentry-dsn
+NEW_RELIC_LICENSE_KEY=your-newrelic-key
+NEW_RELIC_APP_NAME=lumea-coaching-api
+
+# Security Configuration
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100 

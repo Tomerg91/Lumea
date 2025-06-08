@@ -4,6 +4,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { AlertCircle, BarChart3, Download } from 'lucide-react';
 import { AnalyticsDashboard } from '../components/analytics/AnalyticsDashboard';
 import { DateRangePicker } from '../components/analytics/DateRangePicker';
+import HIPAAComplianceDashboard from '../components/analytics/HIPAAComplianceDashboard';
 
 interface AnalyticsData {
   overview: {
@@ -351,6 +352,11 @@ const AnalyticsPage: React.FC = () => {
             <AnalyticsDashboard data={analyticsData} />
           </div>
         )}
+
+        {/* HIPAA Compliance Dashboard */}
+        <div className="mt-8 animate-fade-in">
+          <HIPAAComplianceDashboard />
+        </div>
 
         {/* Refresh Indicator */}
         {refreshing && (

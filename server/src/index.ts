@@ -18,6 +18,11 @@ import analyticsRoutes from './routes/analytics.js';
 import metricsRoutes from './routes/metrics.js';
 import availabilityRoutes from './routes/availabilityRoutes.js';
 import hipaaComplianceRoutes from './routes/hipaaComplianceRoutes.js';
+import auditRoutes from './routes/auditRoutes.js';
+import advancedAuditRoutes from './routes/advancedAuditRoutes.js';
+import encryptionRoutes from './routes/encryptionRoutes.js';
+import consentRoutes from './routes/consentRoutes.js';
+import dataRetentionRoutes from './routes/dataRetentionRoutes.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { 
   applySecurity, 
@@ -37,11 +42,13 @@ import {
   sustainedLimiter,
   cleanupRateLimiters
 } from './middleware/rateLimit.js';
+import { auditMiddleware } from './middleware/auditMiddleware.js';
 import http from 'http';
 import connectPgSimple from 'connect-pg-simple';
 import pg from 'pg';
 import { logger } from './services/logger';
 import './services/monitoring'; // Initialize Monitoring Service early
+import { encryptionService } from './services/encryptionService';
 
 config();
 
@@ -99,10 +106,33 @@ const validateEnvVariables = () => {
       }
     }
 
+    // Validate DATABASE_URL format
+    if (process.env.DATABASE_URL) {
+      const dbUrl = process.env.DATABASE_URL;
+      const isPostgreSQL = dbUrl.startsWith('postgresql://') || dbUrl.startsWith('postgres://');
+      const isMongoDB = dbUrl.startsWith('mongodb://') || dbUrl.startsWith('mongodb+srv://');
+      
+      if (!isPostgreSQL && !isMongoDB) {
+        console.error('FATAL ERROR: DATABASE_URL must be a valid PostgreSQL or MongoDB connection string');
+        process.exit(1);
+      }
+      
+      // Log database type for debugging
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Database type detected: ${isPostgreSQL ? 'PostgreSQL' : 'MongoDB'}`);
+      }
+    }
+
     // Production-specific validations
     if (process.env.NODE_ENV === 'production') {
       if (!process.env.CLIENT_URL || process.env.CLIENT_URL.startsWith('http://localhost')) {
         console.error('FATAL ERROR: CLIENT_URL must be set to production domain in production environment');
+        process.exit(1);
+      }
+      
+      // Validate HTTPS in production
+      if (!process.env.CLIENT_URL.startsWith('https://')) {
+        console.error('FATAL ERROR: CLIENT_URL must use HTTPS in production environment');
         process.exit(1);
       }
     }
@@ -213,6 +243,9 @@ app.use(sustainedLimiter);
 // Apply anonymous user rate limiting
 app.use(anonymousLimiter);
 
+// Apply audit middleware for HIPAA compliance logging
+app.use(auditMiddleware);
+
 // Route-specific rate limiting and middleware
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/auth/reset-password', passwordResetLimiter); // Extra protection for password resets
@@ -229,6 +262,11 @@ app.use('/api/analytics', apiLimiter, analyticsRoutes);
 app.use('/api/metrics', apiLimiter, metricsRoutes);
 app.use('/api/availability', apiLimiter, availabilityRoutes);
 app.use('/api/compliance', apiLimiter, hipaaComplianceRoutes);
+app.use('/api/audit', apiLimiter, auditRoutes);
+app.use('/api/audit/advanced', apiLimiter, advancedAuditRoutes);
+app.use('/api/encryption', apiLimiter, encryptionRoutes);
+app.use('/api/consent', apiLimiter, consentRoutes);
+app.use('/api/data-retention', apiLimiter, dataRetentionRoutes);
 
 // Health check endpoint (no rate limiting)
 app.get('/api/health', (req: Request, res: Response) => {
@@ -263,6 +301,9 @@ app.use(notFoundHandler);
 
 // Global Error Handler (Must be defined AFTER all other app.use() and routes calls)
 app.use(errorHandler);
+
+// Initialize encryption service (singleton pattern)
+console.log('🔐 Encryption service initialized');
 
 // Create HTTP server
 const server = http.createServer(app);
