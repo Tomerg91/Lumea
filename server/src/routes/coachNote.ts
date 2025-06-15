@@ -5,6 +5,7 @@ import { validateBody, validateParams, validateQuery, validateMultiple } from '.
 import { validationSchemas } from '../schemas/validation.js';
 import { abac } from '../middleware/abac.js';
 import { CoachNote } from '../models/CoachNote.js';
+import { requireAccessReason } from '../middleware/accessReason.js';
 
 const router = express.Router();
 
@@ -39,6 +40,7 @@ router.get('/:id',
   isAuthenticated,
   validateParams(validationSchemas.coachNote.params),
   loadNoteResource,
+  requireAccessReason(),
   abac('isOwnerOrAdmin'),
   coachNoteController.getCoachNote
 );
@@ -65,6 +67,7 @@ router.put('/:id',
     body: validationSchemas.coachNote.update
   }),
   loadNoteResource,
+  requireAccessReason(),
   abac('isOwnerOrAdmin'),
   coachNoteController.updateCoachNote
 );
@@ -74,6 +77,7 @@ router.delete('/:id',
   isAuthenticated,
   validateParams(validationSchemas.coachNote.params),
   loadNoteResource,
+  requireAccessReason(),
   abac('isOwnerOrAdmin'),
   coachNoteController.deleteCoachNote
 );

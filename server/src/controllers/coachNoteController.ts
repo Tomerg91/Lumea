@@ -33,14 +33,14 @@ const checkNoteAccess = async (
 ): Promise<boolean> => {
   try {
     // Log the access attempt
-    const auditEntry = {
+    const auditEntry: any = {
       action,
       userId,
       userRole,
       timestamp: new Date(),
       ipAddress: getClientIp(req),
       userAgent: req.headers['user-agent'] || 'unknown',
-      details: { noteId: note._id.toString() }
+      details: { noteId: note._id.toString(), reasonForAccess: (req as any).accessReason }
     };
 
     // Check access based on privacy settings
