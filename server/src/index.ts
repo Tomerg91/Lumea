@@ -23,6 +23,7 @@ import advancedAuditRoutes from './routes/advancedAuditRoutes.js';
 import encryptionRoutes from './routes/encryptionRoutes.js';
 import consentRoutes from './routes/consentRoutes.js';
 import dataRetentionRoutes from './routes/dataRetentionRoutes.js';
+import securityMonitoringRoutes from './routes/securityMonitoringRoutes.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { 
   applySecurity, 
@@ -267,6 +268,7 @@ app.use('/api/audit/advanced', apiLimiter, advancedAuditRoutes);
 app.use('/api/encryption', apiLimiter, encryptionRoutes);
 app.use('/api/consent', apiLimiter, consentRoutes);
 app.use('/api/data-retention', apiLimiter, dataRetentionRoutes);
+app.use('/api/security-monitoring', apiLimiter, securityMonitoringRoutes);
 
 // Health check endpoint (no rate limiting)
 app.get('/api/health', (req: Request, res: Response) => {
