@@ -340,14 +340,35 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Listen on specified port
 if (process.env.NODE_ENV !== 'test') {
-  server.listen(port, () => {
-    logger.info(`🚀 Server is running on port ${port} in ${process.env.NODE_ENV} mode`);
-    logger.info(`🔒 Security middleware enabled`);
-    logger.info(`⚡ Rate limiting configured`);
-    if (process.env.NODE_ENV === 'development') {
-      logger.info(`Client URL (server expects): ${process.env.CLIENT_URL}`);
-    }
-  });
+  let currentPort = port;
+  const maxRetries = 10;
+
+  const listen = (attempt = 0) => {
+    server.listen(currentPort, () => {
+      logger.info(`🚀 Server is running on port ${currentPort} in ${process.env.NODE_ENV} mode`);
+      logger.info(`🔒 Security middleware enabled`);
+      logger.info(`⚡ Rate limiting configured`);
+      if (process.env.NODE_ENV === 'development' && currentPort !== port) {
+        logger.warn(`Port ${port} was busy, dev server started on ${currentPort}`);
+      }
+      if (process.env.NODE_ENV === 'development') {
+        logger.info(`Client URL (server expects): ${process.env.CLIENT_URL}`);
+      }
+    });
+
+    server.once('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EADDRINUSE' && process.env.NODE_ENV === 'development' && attempt < maxRetries) {
+        logger.warn(`Port ${currentPort} in use, trying ${currentPort + 1}...`);
+        currentPort += 1;
+        listen(attempt + 1);
+      } else {
+        logger.error('Unhandled server error:', err);
+        process.exit(1);
+      }
+    });
+  };
+
+  listen();
 }
 
 // Ensure SESSION_SECRET handling is robust
