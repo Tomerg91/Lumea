@@ -1,19 +1,16 @@
 import express, { Request, Response, NextFunction } from 'express';
-import passport from 'passport';
 import { z } from 'zod';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
-import { isAuthenticated } from '../middleware/auth.js';
-import { signup } from '../controllers/authController.js';
-import { User as DrizzleUser, users } from '../../../shared/schema';
+import { supabaseAuth, isAuthenticated } from '../middleware/supabaseAuth.js';
+import { users } from '../../../shared/schema';
 import { eq, and, gt } from 'drizzle-orm';
-import { db } from '../../db';
+import { supabase } from '../lib/supabase';
 import bcrypt from 'bcryptjs';
 
 const router = express.Router();
 
-// Validation schemas
-// These are now handled in the controller, but can be kept for other routes or reference
+// Validation schemas for password reset (if not handled by Supabase)
 const requestPasswordResetSchema = z.object({
   email: z.string().email(),
 });
@@ -26,7 +23,7 @@ const resetPasswordSchema = z.object({
            'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
 });
 
-// Email transporter
+// Email transporter (if needed for custom email functionality)
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: parseInt(process.env.SMTP_PORT || '587'),
@@ -37,80 +34,92 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Middleware to ensure user is authenticated
-const ensureAuthenticated = (
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction
-) => {
-  if (req.isAuthenticated()) {
-    return next();
-  }
-  res.status(401).json({ message: 'Not authenticated' });
-};
+// NOTE: Login and Signup are now handled by Supabase Auth directly on the frontend
+// These routes are kept for potential API compatibility but should not be used
 
-// Routes
-router.post('/signup', signup);
-
-router.post('/login', (req, res, next) => {
-  passport.authenticate(
-    'local',
-    (err: Error | null, user: DrizzleUser | false, info?: { message: string }) => {
-      if (err) {
-        return next(err);
-      }
-      if (!user) {
-        return res.status(401).json({ message: info?.message || 'Authentication failed' });
-      }
-
-      req.login(user, (errLogin) => {
-        if (errLogin) {
-          return next(errLogin);
-        }
-        // Exclude password from the response
-        const { password, ...userResponse } = user;
-        return res.json(userResponse);
-      });
-    }
-  )(req, res, next);
-});
-
-router.post('/logout', (req, res, next) => {
-  req.logout((err) => {
-    if (err) {
-      return res.status(500).json({ message: 'Error logging out' });
-    }
-    req.session.destroy((err) => {
-      if (err) {
-        return res.status(500).json({ message: 'Error destroying session' });
-      }
-      res.clearCookie('connect.sid');
-      res.json({ message: 'Logged out successfully' });
-    });
-  });
-});
-
-router.get('/current-user', isAuthenticated, (req, res) => {
-  // req.user is now the Drizzle User object
+// Current user endpoint - this gets user info for authenticated requests
+router.get('/me', supabaseAuth, (req, res) => {
+  // req.user is now populated by supabaseAuth middleware
   if (!req.user) {
     return res.status(401).json({ message: 'Not authenticated' });
   }
-  // Exclude password from the response
-  const { password, ...userResponse } = req.user;
-  res.json(userResponse);
+  
+  // Return user info (password is not included in Supabase user object)
+  res.json(req.user);
 });
 
-router.post('/request-password-reset', async (req, res, next) => {
-  res.status(501).json({ message: 'Not Implemented - Blocked by Linter Issue' });
+// Legacy route for compatibility
+router.get('/current-user', supabaseAuth, (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Not authenticated' });
+  }
+  res.json(req.user);
 });
 
-router.post('/reset-password', async (req, res, next) => {
-  res.status(501).json({ message: 'Not Implemented - Blocked by Linter Issue' });
+// Profile update endpoint
+router.put('/profile', supabaseAuth, async (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Not authenticated' });
+  }
+
+  try {
+    const { name, bio, phone } = req.body;
+    
+    // Update user profile in Supabase
+    const { data, error } = await supabase
+      .from('users')
+      .update({ 
+        name, 
+        bio, 
+        phone,
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', req.user.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating profile:', error);
+      return res.status(400).json({ message: 'Failed to update profile' });
+    }
+
+    res.json({ message: 'Profile updated successfully', user: data });
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 });
 
-// Profile routes
-// These will need to be refactored
-// router.get('/me', isAuthenticated, authController.getCurrentUser);
-// router.put('/profile', isAuthenticated, authController.updateProfile);
+// NOTE: Password reset can be handled by Supabase Auth or custom implementation
+// For now, using Supabase's built-in password reset is recommended
+
+router.post('/request-password-reset', async (req, res) => {
+  try {
+    const { email } = requestPasswordResetSchema.parse(req.body);
+    
+    // Use Supabase's built-in password reset
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${process.env.CLIENT_URL}/reset-password`,
+    });
+
+    if (error) {
+      console.error('Password reset error:', error);
+      return res.status(400).json({ message: 'Failed to send password reset email' });
+    }
+
+    res.json({ message: 'Password reset email sent successfully' });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: 'Invalid email address' });
+    }
+    console.error('Password reset error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Health check endpoint
+router.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 export default router;

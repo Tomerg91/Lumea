@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 // Define AuthenticatedUser interface directly here
 // Ideally, share this type with the backend (e.g., via a shared package)
 export interface AuthenticatedUser {
@@ -63,9 +65,8 @@ interface Resource {
 }
 
 /**
- * Performs a fetch request to the API.
- * Handles common headers, base URL, and basic error handling.
- * Credentials ('include') are crucial for sending/receiving session cookies.
+ * Performs a fetch request to the API with Supabase authentication.
+ * Automatically includes Authorization header with Supabase JWT token.
  */
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
@@ -74,13 +75,22 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
     Accept: 'application/json',
   };
 
+  // Get the current session to extract the access token
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  // Add Authorization header if user is authenticated
+  if (session?.access_token) {
+    defaultHeaders['Authorization'] = `Bearer ${session.access_token}`;
+  }
+
   const config: RequestInit = {
     ...options,
     headers: {
       ...defaultHeaders,
       ...options.headers,
     },
-    credentials: 'include', // Essential for session cookies!
+    // Remove session cookies since we're using JWT tokens now
+    // credentials: 'include', 
   };
 
   try {
