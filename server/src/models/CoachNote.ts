@@ -246,7 +246,6 @@ const coachNoteSchema = new Schema<ICoachNote>(
 );
 
 // Indexes for faster queries and security
-coachNoteSchema.index({ sessionId: 1 });
 coachNoteSchema.index({ coachId: 1 });
 coachNoteSchema.index({ coach: 1 });
 coachNoteSchema.index({ client: 1 });

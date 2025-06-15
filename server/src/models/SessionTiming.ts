@@ -90,7 +90,6 @@ const SessionTimingSchema = new Schema<ISessionTiming>(
       ref: 'CoachingSession',
       required: true,
       unique: true, // One timing record per session
-      index: true,
     },
     timerStatus: {
       type: String,
@@ -122,9 +121,6 @@ const SessionTimingSchema = new Schema<ISessionTiming>(
   },
   { timestamps: true }
 );
-
-// Add index for efficient querying by session
-SessionTimingSchema.index({ sessionId: 1 });
 
 // Add virtual for getting current active duration
 SessionTimingSchema.virtual('currentDuration').get(function() {
