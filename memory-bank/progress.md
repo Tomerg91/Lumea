@@ -486,3 +486,13 @@ The SatyaCoaching platform has successfully completed the comprehensive booking 
 
 ### Next
 • Migrate rate-limiter & security stores to Redis (26.11).
+
+## 📅 Update – June 15, 2025 – Duplicate Index Cleanup Round 2
+
+### ✅ Completed
+1. Removed field-level `index: true` from `timestamp` in `SessionHistory` (TTL index retained).
+2. Removed redundant `{ coachId: 1 }` schema index in `CoachAvailability`; kept unique field index.
+3. Removed `index: true` from `createdAt` and `expiresAt` fields in `EncryptionKeyMetadata` to avoid duplicates with schema indexes.
+
+### 🟡 Remaining
+• Warnings for `{ createdAt: 1 }` in `CoachNote` and `Consent` schemas.
