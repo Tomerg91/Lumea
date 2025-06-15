@@ -254,7 +254,6 @@ coachNoteSchema.index({ accessLevel: 1 });
 coachNoteSchema.index({ 'auditTrail.action': 1 });
 coachNoteSchema.index({ 'auditTrail.userId': 1 });
 coachNoteSchema.index({ lastAccessedAt: 1 });
-coachNoteSchema.index({ createdAt: 1 });
 
 // Full-text search indexes
 coachNoteSchema.index({ 

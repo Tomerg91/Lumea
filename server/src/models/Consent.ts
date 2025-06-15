@@ -66,8 +66,7 @@ const consentSchema = new Schema<IConsent>({
   userId: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
-    index: true
+    required: true
   },
   consentType: {
     type: String,
@@ -110,12 +109,10 @@ const consentSchema = new Schema<IConsent>({
     default: Date.now
   },
   withdrawnAt: {
-    type: Date,
-    index: true
+    type: Date
   },
   expiresAt: {
-    type: Date,
-    index: true
+    type: Date
   },
   lastUpdated: {
     type: Date,
@@ -241,7 +238,6 @@ const consentSchema = new Schema<IConsent>({
 consentSchema.index({ userId: 1, consentType: 1 });
 consentSchema.index({ status: 1 });
 consentSchema.index({ expiresAt: 1 });
-consentSchema.index({ createdAt: 1 });
 consentSchema.index({ 'complianceFlags': 1 });
 
 // TTL index for expired consents (auto-cleanup after retention period)
