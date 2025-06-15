@@ -1,10 +1,5 @@
 import { Request, Response } from 'express';
-import { User, IUser } from '../models/User.js';
-import { Session } from '../models/Session.js';
-import { Reflection } from '../models/Reflection.js';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { supabase } from '../lib/supabase.js';
 
 export const userController = {
   // Export user data
@@ -17,17 +12,30 @@ export const userController = {
       const userId = req.user.id;
 
       // Fetch user's sessions
-      const sessions = await Session.find({
-        $or: [{ coachId: userId }, { clientId: userId }],
-      })
-        .populate('coachId', 'name email')
-        .populate('clientId', 'name email')
-        .lean();
+      const { data: sessions, error: sessionsError } = await supabase
+        .from('sessions')
+        .select(`
+          *,
+          coach:coach_id!inner(id, name, email),
+          client:client_id!inner(id, name, email)
+        `)
+        .or(`coach_id.eq.${userId},client_id.eq.${userId}`);
+
+      if (sessionsError) {
+        console.error('Error fetching sessions for export:', sessionsError);
+        return res.status(500).json({ error: 'Failed to fetch sessions data' });
+      }
 
       // Fetch user's reflections
-      const reflections = await Reflection.find({
-        userId,
-      }).lean();
+      const { data: reflections, error: reflectionsError } = await supabase
+        .from('reflections')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (reflectionsError) {
+        console.error('Error fetching reflections for export:', reflectionsError);
+        return res.status(500).json({ error: 'Failed to fetch reflections data' });
+      }
 
       // Prepare data for export
       const exportData = {
@@ -37,8 +45,9 @@ export const userController = {
           email: req.user.email,
           role: req.user.role,
         },
-        sessions,
-        reflections,
+        sessions: sessions || [],
+        reflections: reflections || [],
+        exportedAt: new Date().toISOString(),
       };
 
       // Set headers for file download
@@ -71,29 +80,30 @@ export const userController = {
     }
 
     try {
-      const dataToUpdate: { name?: string; bio?: string } = {};
+      const dataToUpdate: { name?: string; bio?: string; updated_at?: string } = {};
       if (name !== undefined) dataToUpdate.name = name;
       if (bio !== undefined) dataToUpdate.bio = bio;
 
       if (Object.keys(dataToUpdate).length === 0) {
-        // If only bio was provided, and it's commented out, this might trigger.
-        // For now, if only name is updatable, this means name was not provided.
         return res
           .status(400)
           .json({ message: 'No updateable fields provided (name is required if bio is disabled)' });
       }
 
-      const updatedUser = await prisma.user.update({
-        where: { id: userId },
-        data: dataToUpdate,
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          bio: true,
-        },
-      });
+      // Add timestamp
+      dataToUpdate.updated_at = new Date().toISOString();
+
+      const { data: updatedUser, error } = await supabase
+        .from('users')
+        .update(dataToUpdate)
+        .eq('id', userId)
+        .select('id, email, name, role, bio')
+        .single();
+
+      if (error) {
+        console.error('Error updating user profile:', error);
+        return res.status(500).json({ message: 'Error updating profile' });
+      }
 
       // Construct payload similar to AuthenticatedUserPayload
       const responsePayload = {

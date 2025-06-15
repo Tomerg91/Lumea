@@ -1,8 +1,5 @@
 import { Request, Response } from 'express';
-import mongoose from 'mongoose';
-import { User } from '../models/User';
-import { Role } from '../models/Role';
-import { InviteToken } from '../models/InviteToken';
+import { supabase } from '../lib/supabase.js';
 import { createInviteToken } from '../utils/tokenHelpers';
 import { sendInvite } from '../mail/sendInvite';
 
@@ -41,7 +38,12 @@ export const inviteClient = async (req: Request, res: Response): Promise<void> =
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
+
     if (existingUser) {
       res.status(400).json({ message: 'A user with this email already exists' });
       return;
@@ -60,12 +62,19 @@ export const inviteClient = async (req: Request, res: Response): Promise<void> =
     // Check current rate limit
     const rateLimit = rateLimitCache.get(coachId) || { count: 0, timestamp: now };
 
-    // Check pending invites count
-    const pendingInvitesCount = await InviteToken.countDocuments({
-      coachId: new mongoose.Types.ObjectId(coachId),
-    });
+    // Check pending invites count from database (assuming we have an invite_tokens table)
+    const { count: pendingInvitesCount, error: countError } = await supabase
+      .from('invite_tokens')
+      .select('*', { count: 'exact', head: true })
+      .eq('coach_id', coachId);
 
-    const totalInvites = pendingInvitesCount + rateLimit.count;
+    if (countError) {
+      console.error('Error counting pending invites:', countError);
+      res.status(500).json({ message: 'Error checking pending invites' });
+      return;
+    }
+
+    const totalInvites = (pendingInvitesCount || 0) + rateLimit.count;
 
     if (totalInvites >= MAX_INVITES) {
       res.status(429).json({
@@ -118,42 +127,79 @@ export const getMyClients = async (req: Request, res: Response): Promise<void> =
     const limit = parseInt((req.query.limit as string) || '10');
     const skip = (page - 1) * limit;
 
-    // Get client role id
-    const clientRole = await Role.findOne({ name: 'client' });
+    // Get clients through sessions (since coach-client relationship is established through sessions)
+    const { data: sessions, error: sessionsError } = await supabase
+      .from('sessions')
+      .select('client_id')
+      .eq('coach_id', coachId);
 
-    if (!clientRole) {
-      res.status(500).json({ message: 'Client role not found' });
+    if (sessionsError) {
+      console.error('Error fetching coach sessions:', sessionsError);
+      res.status(500).json({ message: 'Error retrieving clients' });
       return;
     }
 
-    // Get clients
-    const clients = await User.find({
-      coachId,
-      role: clientRole._id,
-    })
-      .select('_id firstName lastName email isApproved createdAt')
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 });
+    // Get unique client IDs
+    const clientIds = [...new Set(sessions?.map(s => s.client_id) || [])];
 
-    // Get total count for pagination
-    const totalClients = await User.countDocuments({
-      coachId,
-      role: clientRole._id,
-    });
+    if (clientIds.length === 0) {
+      res.status(200).json({
+        clients: [],
+        pendingInvites: [],
+        pagination: {
+          total: 0,
+          currentPage: page,
+          totalPages: 0,
+          limit,
+        },
+      });
+      return;
+    }
 
-    // Get pending invites
-    const pendingInvites = await InviteToken.find({ coachId })
-      .select('email createdAt expires')
-      .sort({ createdAt: -1 });
+    // Get clients with pagination
+    const { data: clients, error: clientsError } = await supabase
+      .from('users')
+      .select('id, name, email, status, created_at')
+      .in('id', clientIds)
+      .eq('role', 'client')
+      .range(skip, skip + limit - 1)
+      .order('created_at', { ascending: false });
+
+    if (clientsError) {
+      console.error('Error fetching clients:', clientsError);
+      res.status(500).json({ message: 'Error retrieving clients' });
+      return;
+    }
+
+    // Get total count
+    const { count: totalClients, error: countError } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .in('id', clientIds)
+      .eq('role', 'client');
+
+    if (countError) {
+      console.error('Error counting clients:', countError);
+    }
+
+    // Get pending invites (assuming we have an invite_tokens table)
+    const { data: pendingInvites, error: invitesError } = await supabase
+      .from('invite_tokens')
+      .select('email, created_at, expires')
+      .eq('coach_id', coachId)
+      .order('created_at', { ascending: false });
+
+    if (invitesError) {
+      console.error('Error fetching pending invites:', invitesError);
+    }
 
     res.status(200).json({
-      clients,
-      pendingInvites,
+      clients: clients || [],
+      pendingInvites: pendingInvites || [],
       pagination: {
-        total: totalClients,
+        total: totalClients || 0,
         currentPage: page,
-        totalPages: Math.ceil(totalClients / limit),
+        totalPages: Math.ceil((totalClients || 0) / limit),
         limit,
       },
     });

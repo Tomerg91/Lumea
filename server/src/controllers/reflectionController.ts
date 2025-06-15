@@ -9,7 +9,7 @@ import {
   IReflectionTemplate,
 } from '../models/ReflectionTemplate';
 import { CoachingSession } from '../models/CoachingSession';
-import { User } from '../models/User';
+// import { User } from '../models/User'; // Temporarily disabled during Supabase migration
 
 // Validation schema for reflection answers
 const reflectionAnswerSchema = z.object({

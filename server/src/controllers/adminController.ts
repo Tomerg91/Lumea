@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import { Request, Response } from 'express';
-import { User } from '../models/User';
-import { Session } from '../models/Session.js';
+import { supabase } from '../lib/supabase.js';
 import { EmailService } from '../services/emailService.js';
 
 const emailService = new EmailService();
@@ -16,20 +14,18 @@ export const adminController = {
       }
 
       // Find all coaches with pending status
-      const pendingCoaches = await User.find({
-        status: 'pending',
-      }).select('_id email firstName lastName createdAt');
+      const { data: pendingCoaches, error } = await supabase
+        .from('users')
+        .select('id, email, name, created_at')
+        .eq('status', 'pending')
+        .eq('role', 'coach');
 
-      // Filter coaches based on role
-      const filteredCoaches = pendingCoaches.filter((coach) => {
-        const roleValue =
-          typeof coach.role === 'object' && coach.role !== null && 'name' in coach.role
-            ? coach.role.name
-            : String(coach.role);
-        return roleValue === 'coach';
-      });
+      if (error) {
+        console.error('Error getting pending coaches:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+      }
 
-      return res.status(200).json({ coaches: filteredCoaches });
+      return res.status(200).json({ coaches: pendingCoaches || [] });
     } catch (error) {
       console.error('Error getting pending coaches:', error);
       return res.status(500).json({ message: 'Internal server error' });
@@ -39,22 +35,35 @@ export const adminController = {
   // Get platform stats
   getStats: async (req: Request, res: Response) => {
     try {
-      const [totalCoaches, totalClients, totalSessions] = await Promise.all([
-        User.countDocuments({
-          role: 'coach',
-          status: 'active',
-        }),
-        User.countDocuments({
-          role: 'client',
-          status: 'active',
-        }),
-        Session.countDocuments(),
+      const [coachesResult, clientsResult, sessionsResult] = await Promise.all([
+        supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+          .eq('role', 'coach')
+          .eq('status', 'active'),
+        supabase
+          .from('users')
+          .select('*', { count: 'exact', head: true })
+          .eq('role', 'client')
+          .eq('status', 'active'),
+        supabase
+          .from('sessions')
+          .select('*', { count: 'exact', head: true })
       ]);
 
+      if (coachesResult.error || clientsResult.error || sessionsResult.error) {
+        console.error('Error fetching platform stats:', {
+          coaches: coachesResult.error,
+          clients: clientsResult.error,
+          sessions: sessionsResult.error,
+        });
+        return res.status(500).json({ message: 'Failed to fetch platform stats' });
+      }
+
       res.json({
-        totalCoaches,
-        totalClients,
-        totalSessions,
+        totalCoaches: coachesResult.count || 0,
+        totalClients: clientsResult.count || 0,
+        totalSessions: sessionsResult.count || 0,
       });
     } catch (error) {
       console.error('Error fetching platform stats:', error);
@@ -72,34 +81,29 @@ export const adminController = {
         return res.status(403).json({ message: 'Admin access required' });
       }
 
-      // Find the coach by ID
-      const coach = await User.findById(id);
+      // Find and update the coach
+      const { data: coach, error } = await supabase
+        .from('users')
+        .update({ 
+          status: 'active',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .eq('role', 'coach')
+        .eq('status', 'pending')
+        .select('id, email, name, status')
+        .single();
 
-      if (!coach) {
-        return res.status(404).json({ message: 'Coach not found' });
+      if (error || !coach) {
+        return res.status(404).json({ message: 'Coach not found or not pending' });
       }
-
-      // Check if user has coach role - handling different role formats
-      const roleValue =
-        typeof coach.role === 'object' && coach.role !== null && 'name' in coach.role
-          ? coach.role.name
-          : String(coach.role);
-
-      if (roleValue !== 'coach') {
-        return res.status(400).json({ message: 'User is not a coach' });
-      }
-
-      // Update coach status to active
-      coach.status = 'active';
-      await coach.save();
 
       return res.status(200).json({
         message: 'Coach approved successfully',
         coach: {
-          id: coach._id,
+          id: coach.id,
           email: coach.email,
-          firstName: coach.firstName,
-          lastName: coach.lastName,
+          name: coach.name,
           status: coach.status,
         },
       });
@@ -114,19 +118,19 @@ export const adminController = {
     const { id } = req.params;
 
     try {
-      const coach = await User.findOneAndUpdate(
-        {
-          _id: id,
-          role: 'coach',
-          status: 'pending',
-        },
-        {
+      const { data: coach, error } = await supabase
+        .from('users')
+        .update({ 
           status: 'rejected',
-        },
-        { new: true }
-      );
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .eq('role', 'coach')
+        .eq('status', 'pending')
+        .select('id, email, name')
+        .single();
 
-      if (!coach) {
+      if (error || !coach) {
         return res.status(404).json({ message: 'Coach not found' });
       }
 
@@ -134,8 +138,8 @@ export const adminController = {
       await emailService.sendEmail({
         to: coach.email,
         subject: 'Coach Application Status',
-        text: `Dear ${coach.firstName} ${coach.lastName},\n\nThank you for your interest in becoming a coach. After careful review, we regret to inform you that we cannot approve your application at this time.\n\nBest regards,\nSatya Coaching Team`,
-        html: `<p>Dear ${coach.firstName} ${coach.lastName},</p><p>Thank you for your interest in becoming a coach. After careful review, we regret to inform you that we cannot approve your application at this time.</p><p>Best regards,<br>Satya Coaching Team</p>`,
+        text: `Dear ${coach.name},\n\nThank you for your interest in becoming a coach. After careful review, we regret to inform you that we cannot approve your application at this time.\n\nBest regards,\nSatya Coaching Team`,
+        html: `<p>Dear ${coach.name},</p><p>Thank you for your interest in becoming a coach. After careful review, we regret to inform you that we cannot approve your application at this time.</p><p>Best regards,<br>Satya Coaching Team</p>`,
       });
 
       res.json({ message: 'Coach rejected successfully' });
@@ -155,18 +159,24 @@ export const adminController = {
 
     try {
       // Get all active users
-      const users = await User.find({
-        status: 'active',
-      }).select('email firstName lastName');
+      const { data: users, error } = await supabase
+        .from('users')
+        .select('email, name')
+        .eq('status', 'active');
+
+      if (error) {
+        console.error('Error fetching users for announcement:', error);
+        return res.status(500).json({ message: 'Failed to send announcement' });
+      }
 
       // Send announcement email to all users
       await Promise.all(
-        users.map((user) =>
+        (users || []).map((user) =>
           emailService.sendEmail({
             to: user.email,
             subject: 'Platform Announcement',
-            text: `Dear ${user.firstName} ${user.lastName},\n\n${message}\n\nBest regards,\nSatya Coaching Team`,
-            html: `<p>Dear ${user.firstName} ${user.lastName},</p><p>${message}</p><p>Best regards,<br>Satya Coaching Team</p>`,
+            text: `Dear ${user.name},\n\n${message}\n\nBest regards,\nSatya Coaching Team`,
+            html: `<p>Dear ${user.name},</p><p>${message}</p><p>Best regards,<br>Satya Coaching Team</p>`,
           })
         )
       );

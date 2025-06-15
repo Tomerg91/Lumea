@@ -1,8 +1,11 @@
 // @ts-nocheck
 import type { Express, Request, Response, NextFunction } from 'express';
 import { createServer, type Server } from 'http';
-import { storage, ResourceFilters } from './storage';
+import { SupabaseStorageAdapter, ResourceFilters } from './src/lib/storageAdapter.js';
 import { setupAuth } from './auth';
+
+// Initialize the new Supabase storage adapter
+const storage = new SupabaseStorageAdapter();
 import { registerAudioRoutes } from './routes/audio';
 import { z } from 'zod';
 import { getNumericUserId, validateWithSchema } from './utils';

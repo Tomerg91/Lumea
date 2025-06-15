@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
-import { Resource } from '../models/Resource.js';
-import { User, IUser } from '../models/User.js';
-import mongoose from 'mongoose';
+import { supabase } from '../lib/supabase.js';
+import { validate as uuidValidate } from 'uuid';
 
 export const resourceController = {
   // Create a new resource
@@ -13,14 +12,23 @@ export const resourceController = {
 
       const { title, description, fileId, tags } = req.body;
 
-      const resource = await Resource.create({
-        title,
-        description,
-        fileId,
-        coachId: req.user.id,
-        tags,
-        assignedClientIds: [],
-      });
+      const { data: resource, error } = await supabase
+        .from('resources')
+        .insert({
+          title,
+          description,
+          file_id: fileId,
+          coach_id: req.user.id,
+          tags: tags || [],
+          assigned_client_ids: [],
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating resource:', error);
+        return res.status(500).json({ error: 'Failed to create resource' });
+      }
 
       res.status(201).json(resource);
     } catch (error) {
@@ -36,20 +44,22 @@ export const resourceController = {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      const query: Record<string, unknown> = {};
+      let query = supabase.from('resources').select('*');
 
       if (req.user.role === 'coach') {
-        query.coachId = req.user.id;
+        query = query.eq('coach_id', req.user.id);
       } else if (req.user.role === 'client') {
-        query.assignedClientIds = req.user.id;
+        query = query.contains('assigned_client_ids', [req.user.id]);
       }
 
-      const resources = await Resource.find(query)
-        .populate('fileId')
-        .populate('tags')
-        .sort({ createdAt: -1 });
+      const { data: resources, error } = await query.order('created_at', { ascending: false });
 
-      res.json(resources);
+      if (error) {
+        console.error('Error getting resources:', error);
+        return res.status(500).json({ error: 'Failed to get resources' });
+      }
+
+      res.json(resources || []);
     } catch (error) {
       console.error('Error getting resources:', error);
       res.status(500).json({ error: 'Failed to get resources' });
@@ -63,19 +73,24 @@ export const resourceController = {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      const resource = await Resource.findById(req.params.id).populate('fileId').populate('tags');
+      const { data: resource, error } = await supabase
+        .from('resources')
+        .select('*')
+        .eq('id', req.params.id)
+        .single();
 
-      if (!resource) {
+      if (error || !resource) {
         return res.status(404).json({ error: 'Resource not found' });
       }
 
-      if (req.user.role === 'coach' && resource.coachId.toString() !== req.user.id.toString()) {
+      // Check authorization
+      if (req.user.role === 'coach' && resource.coach_id !== req.user.id) {
         return res.status(403).json({ error: 'Not authorized to view this resource' });
       }
 
       if (
         req.user.role === 'client' &&
-        !resource.assignedClientIds.map((id) => id.toString()).includes(req.user.id.toString())
+        !resource.assigned_client_ids?.includes(req.user.id)
       ) {
         return res.status(403).json({ error: 'Not authorized to view this resource' });
       }
@@ -94,30 +109,39 @@ export const resourceController = {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      const resource = await Resource.findById(req.params.id);
+      // First, check if resource exists and user has permission
+      const { data: existingResource, error: fetchError } = await supabase
+        .from('resources')
+        .select('*')
+        .eq('id', req.params.id)
+        .single();
 
-      if (!resource) {
+      if (fetchError || !existingResource) {
         return res.status(404).json({ error: 'Resource not found' });
       }
 
-      if (resource.coachId.toString() !== req.user.id.toString()) {
+      if (existingResource.coach_id !== req.user.id) {
         return res.status(403).json({ error: 'Not authorized to update this resource' });
       }
 
       const { title, description, fileId, tags } = req.body;
 
-      const updatedResource = await Resource.findByIdAndUpdate(
-        req.params.id,
-        {
+      const { data: updatedResource, error } = await supabase
+        .from('resources')
+        .update({
           title,
           description,
-          fileId,
-          tags,
-        },
-        { new: true }
-      )
-        .populate('fileId')
-        .populate('tags');
+          file_id: fileId,
+          tags: tags || [],
+        })
+        .eq('id', req.params.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating resource:', error);
+        return res.status(500).json({ error: 'Failed to update resource' });
+      }
 
       res.json(updatedResource);
     } catch (error) {
@@ -133,17 +157,30 @@ export const resourceController = {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      const resource = await Resource.findById(req.params.id);
+      // First, check if resource exists and user has permission
+      const { data: existingResource, error: fetchError } = await supabase
+        .from('resources')
+        .select('*')
+        .eq('id', req.params.id)
+        .single();
 
-      if (!resource) {
+      if (fetchError || !existingResource) {
         return res.status(404).json({ error: 'Resource not found' });
       }
 
-      if (resource.coachId.toString() !== req.user.id.toString()) {
+      if (existingResource.coach_id !== req.user.id) {
         return res.status(403).json({ error: 'Not authorized to delete this resource' });
       }
 
-      await Resource.findByIdAndDelete(req.params.id);
+      const { error } = await supabase
+        .from('resources')
+        .delete()
+        .eq('id', req.params.id);
+
+      if (error) {
+        console.error('Error deleting resource:', error);
+        return res.status(500).json({ error: 'Failed to delete resource' });
+      }
 
       res.json({ message: 'Resource deleted successfully' });
     } catch (error) {
@@ -159,41 +196,54 @@ export const resourceController = {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      const resource = await Resource.findById(req.params.id);
+      // First, check if resource exists and user has permission
+      const { data: existingResource, error: fetchError } = await supabase
+        .from('resources')
+        .select('*')
+        .eq('id', req.params.id)
+        .single();
 
-      if (!resource) {
+      if (fetchError || !existingResource) {
         return res.status(404).json({ error: 'Resource not found' });
       }
 
-      if (resource.coachId.toString() !== req.user.id.toString()) {
+      if (existingResource.coach_id !== req.user.id) {
         return res.status(403).json({ error: 'Not authorized to assign this resource' });
       }
 
       const { clientIds } = req.body;
 
+      // Validate clientIds are valid UUIDs
       if (
         !Array.isArray(clientIds) ||
-        !clientIds.every((id) => mongoose.Types.ObjectId.isValid(id))
+        !clientIds.every((id) => uuidValidate(id))
       ) {
         return res.status(400).json({ error: 'Invalid client IDs provided' });
       }
 
-      const clients = await User.find({
-        _id: { $in: clientIds },
-        role: 'client',
-      });
+      // Verify all provided IDs are valid clients
+      const { data: clients, error: clientsError } = await supabase
+        .from('users')
+        .select('id, role')
+        .in('id', clientIds)
+        .eq('role', 'client');
 
-      if (clients.length !== clientIds.length) {
+      if (clientsError || !clients || clients.length !== clientIds.length) {
         return res.status(400).json({ error: 'One or more client IDs are invalid or not clients' });
       }
 
-      const updatedResource = await Resource.findByIdAndUpdate(
-        req.params.id,
-        { assignedClientIds: clientIds },
-        { new: true }
-      )
-        .populate('fileId')
-        .populate('tags');
+      // Update resource with assigned client IDs
+      const { data: updatedResource, error } = await supabase
+        .from('resources')
+        .update({ assigned_client_ids: clientIds })
+        .eq('id', req.params.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error assigning resource:', error);
+        return res.status(500).json({ error: 'Failed to assign resource' });
+      }
 
       res.json(updatedResource);
     } catch (error) {

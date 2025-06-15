@@ -11,8 +11,7 @@ import {
   deleteSession,
   updateSessionSchema,
 } from '../storage.js';
-import { User } from '../models/User.js';
-import { IUser } from '../models/User.js';
+import { supabase } from '../lib/supabase.js';
 import { getNumericUserId } from '../../utils';
 import mongoose from 'mongoose';
 
@@ -305,12 +304,14 @@ export const sessionController = {
 
       if (validatedData.clientId) {
         // Validate that the client exists and belongs to this coach
-        const client = await User.findOne({
-          _id: validatedData.clientId,
-          role: 'client',
-        });
+        const { data: client, error: clientError } = await supabase
+          .from('users')
+          .select('id, role')
+          .eq('id', validatedData.clientId)
+          .eq('role', 'client')
+          .single();
 
-        if (!client) {
+        if (clientError || !client) {
           return res.status(400).json({ error: 'Invalid client ID' });
         }
 
@@ -482,15 +483,19 @@ export const sessionController = {
       }
 
       // Get client details
-      const client = await User.findById(session.clientId).select('firstName lastName email');
+      const { data: client, error: clientError } = await supabase
+        .from('users')
+        .select('id, name, email')
+        .eq('id', session.clientId)
+        .single();
 
-      if (!client) {
+      if (clientError || !client) {
         return res.status(404).json({ error: 'Client not found' });
       }
 
       // Send reminder email (implementation omitted for brevity)
       console.log(
-        `Reminder triggered for session ${sessionId} with client ${client.firstName} ${client.lastName} (${client.email})`
+        `Reminder triggered for session ${sessionId} with client ${client.name} (${client.email})`
       );
 
       // Update the session to mark that a reminder was sent
