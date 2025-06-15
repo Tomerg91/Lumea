@@ -338,6 +338,19 @@ const gracefulShutdown = (signal: string) => {
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
+// Global error handlers to prevent silent crashes
+process.on('uncaughtException', (err: Error) => {
+  logger.error('Uncaught exception:', err);
+  // Attempt graceful shutdown then exit
+  gracefulShutdown('uncaughtException');
+});
+
+process.on('unhandledRejection', (reason: any) => {
+  logger.error('Unhandled promise rejection:', reason);
+  // Attempt graceful shutdown then exit
+  gracefulShutdown('unhandledRejection');
+});
+
 // Listen on specified port
 if (process.env.NODE_ENV !== 'test') {
   let currentPort = port;
