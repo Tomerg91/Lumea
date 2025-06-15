@@ -101,45 +101,27 @@ const AuditLogSchema = new Schema<IAuditLog>({
   timestamp: {
     type: Date,
     default: Date.now,
-    required: true,
-    index: true
+    required: true
   },
   
   // User and session information
-  userId: {
-    type: String,
-    index: true
-  },
-  userEmail: {
-    type: String,
-    index: true
-  },
-  userRole: {
-    type: String,
-    index: true
-  },
-  sessionId: {
-    type: String,
-    index: true
-  },
+  userId: String,
+  userEmail: String,
+  userRole: String,
+  sessionId: String,
   
   // Request information
   ipAddress: {
     type: String,
-    required: true,
-    index: true
+    required: true
   },
   userAgent: String,
-  requestId: {
-    type: String,
-    index: true
-  },
+  requestId: String,
   
   // Action details
   action: {
     type: String,
     required: true,
-    index: true,
     enum: [
       'CREATE', 'READ', 'UPDATE', 'DELETE',
       'LOGIN', 'LOGOUT', 'LOGIN_FAILED',
@@ -153,19 +135,14 @@ const AuditLogSchema = new Schema<IAuditLog>({
   },
   resource: {
     type: String,
-    required: true,
-    index: true
+    required: true
   },
-  resourceId: {
-    type: String,
-    index: true
-  },
+  resourceId: String,
   
   // HIPAA-specific fields
   phiAccessed: {
     type: Boolean,
-    default: false,
-    index: true
+    default: false
   },
   phiType: {
     type: String,
@@ -178,8 +155,7 @@ const AuditLogSchema = new Schema<IAuditLog>({
   dataClassification: {
     type: String,
     required: true,
-    enum: ['public', 'internal', 'confidential', 'restricted'],
-    index: true
+    enum: ['public', 'internal', 'confidential', 'restricted']
   },
   
   // Security context
@@ -190,22 +166,19 @@ const AuditLogSchema = new Schema<IAuditLog>({
   riskLevel: {
     type: String,
     required: true,
-    enum: ['low', 'medium', 'high', 'critical'],
-    index: true
+    enum: ['low', 'medium', 'high', 'critical']
   },
   
   // Event details
   eventType: {
     type: String,
     required: true,
-    enum: ['user_action', 'system_event', 'security_event', 'data_access', 'admin_action'],
-    index: true
+    enum: ['user_action', 'system_event', 'security_event', 'data_access', 'admin_action']
   },
   eventCategory: {
     type: String,
     required: true,
-    enum: ['authentication', 'authorization', 'data_access', 'data_modification', 'system_admin', 'security_incident'],
-    index: true
+    enum: ['authentication', 'authorization', 'data_access', 'data_modification', 'system_admin', 'security_incident']
   },
   
   // Request/Response details
@@ -232,23 +205,20 @@ const AuditLogSchema = new Schema<IAuditLog>({
   // Compliance and retention
   retentionDate: {
     type: Date,
-    required: true,
-    index: true
+    required: true
   },
   complianceFlags: [String],
   
   // Security flags
   suspicious: {
     type: Boolean,
-    default: false,
-    index: true
+    default: false
   },
   flaggedReason: String,
   investigationStatus: {
     type: String,
     enum: ['none', 'pending', 'in_progress', 'resolved', 'escalated'],
-    default: 'none',
-    index: true
+    default: 'none'
   },
   
   // Geolocation
@@ -264,23 +234,14 @@ const AuditLogSchema = new Schema<IAuditLog>({
   applicationVersion: String,
   
   // Correlation
-  correlationId: {
-    type: String,
-    index: true
-  },
-  parentEventId: {
-    type: String,
-    index: true
-  },
+  correlationId: String,
+  parentEventId: String,
   
   // Tamper-proof logging enhancements
   integrityHash: String,
   previousLogHash: String,
   digitalSignature: String,
-  sequenceNumber: {
-    type: Number,
-    index: true
-  },
+  sequenceNumber: Number,
   
   // Advanced analytics
   anomalyScore: {
