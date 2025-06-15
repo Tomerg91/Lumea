@@ -2,7 +2,8 @@ import rateLimit from 'express-rate-limit';
 import { Request, Response, NextFunction } from 'express';
 import { APIError, ErrorCode } from './error.js';
 // @ts-ignore – package may not have TypeScript types installed
-import { RateLimitRedisStore } from 'rate-limit-redis';
+// eslint-disable-next-line import/default
+import RedisStore from 'rate-limit-redis';
 import redisClient from '../utils/cache.js';
 
 // Sliding window rate limiter using in-memory store
@@ -76,7 +77,7 @@ const slidingWindowStore = new SlidingWindowStore();
 let sharedRateLimitStore: any;
 if (redisClient && (redisClient as any).isReady) {
   try {
-    sharedRateLimitStore = new RateLimitRedisStore({
+    sharedRateLimitStore = new (RedisStore as any)({
       // redis v4: use sendCommand
       sendCommand: (...args: string[]) => (redisClient as any).sendCommand(args as any),
     });
