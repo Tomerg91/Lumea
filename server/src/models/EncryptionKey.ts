@@ -47,12 +47,10 @@ const encryptionKeyMetadataSchema = new Schema<IEncryptionKeyMetadata>({
   },
   createdAt: {
     type: Date,
-    default: Date.now,
-    index: true
+    default: Date.now
   },
   expiresAt: {
-    type: Date,
-    index: true
+    type: Date
   },
   rotatedAt: {
     type: Date
@@ -211,4 +209,6 @@ encryptionKeyMetadataSchema.index(
 export const EncryptionKeyMetadata = mongoose.model<IEncryptionKeyMetadata>(
   'EncryptionKeyMetadata',
   encryptionKeyMetadataSchema
-); 
+);
+
+export const EncryptionKey = EncryptionKeyMetadata; 

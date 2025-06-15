@@ -88,7 +88,6 @@ const SessionHistorySchema = new Schema<ISessionHistory>(
       type: Date,
       required: true,
       default: Date.now,
-      index: true,
     },
     previousValues: {
       type: Schema.Types.Mixed,

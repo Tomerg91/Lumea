@@ -142,7 +142,6 @@ const CoachAvailabilitySchema = new Schema<ICoachAvailability>(
       ref: 'User',
       required: true,
       unique: true,
-      index: true,
     },
     timezone: {
       type: String,
@@ -200,8 +199,7 @@ const CoachAvailabilitySchema = new Schema<ICoachAvailability>(
 );
 
 // Indexes for efficient querying
-CoachAvailabilitySchema.index({ coachId: 1 });
-CoachAvailabilitySchema.index({ 'dateOverrides.date': 1 });
+// Removed duplicate single-field index; unique field already indexed
 
 // Virtual for getting current availability status
 CoachAvailabilitySchema.virtual('isCurrentlyAvailable').get(function() {
