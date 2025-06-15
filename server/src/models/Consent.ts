@@ -237,7 +237,6 @@ const consentSchema = new Schema<IConsent>({
 // Indexes for performance
 consentSchema.index({ userId: 1, consentType: 1 });
 consentSchema.index({ status: 1 });
-consentSchema.index({ expiresAt: 1 });
 consentSchema.index({ 'complianceFlags': 1 });
 
 // TTL index for expired consents (auto-cleanup after retention period)

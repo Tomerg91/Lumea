@@ -60,7 +60,6 @@ const SessionHistorySchema = new Schema<ISessionHistory>(
       type: Schema.Types.ObjectId,
       ref: 'CoachingSession',
       required: true,
-      index: true,
     },
     action: {
       type: String,
@@ -76,13 +75,11 @@ const SessionHistorySchema = new Schema<ISessionHistory>(
         'notes_updated'
       ],
       required: true,
-      index: true,
     },
     actionBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      index: true,
     },
     timestamp: {
       type: Date,
