@@ -42,7 +42,8 @@ export function abac(policyName: string | ABACPolicy) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = (req as any).user as ABACContext['user'];
-      const ctx: ABACContext = { req, user };
+      const resource = (req as any).resource as ABACContext['resource'];
+      const ctx: ABACContext = { req, user, resource };
 
       // Policy lookup or direct function
       const policyFn: ABACPolicy | undefined =

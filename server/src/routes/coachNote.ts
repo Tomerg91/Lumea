@@ -3,8 +3,29 @@ import { isAuthenticated, isCoach } from '../middleware/auth.js';
 import { coachNoteController } from '../controllers/coachNoteController.js';
 import { validateBody, validateParams, validateQuery, validateMultiple } from '../middleware/validate.js';
 import { validationSchemas } from '../schemas/validation.js';
+import { abac } from '../middleware/abac.js';
+import { CoachNote } from '../models/CoachNote.js';
 
 const router = express.Router();
+
+// Middleware to load note and attach resource for ABAC policies
+async function loadNoteResource(req: any, res: any, next: any) {
+  try {
+    const id = req.params.id;
+    if (!id) return next();
+    const note = await CoachNote.findById(id).select('coachId privacySettings sharedWith').lean();
+    if (note) {
+      req.resource = {
+        ownerId: note.coachId?.toString(),
+        privacy: note.privacySettings,
+        sharedWith: note.sharedWith,
+      };
+    }
+    return next();
+  } catch (err) {
+    return next(err);
+  }
+}
 
 // Create a new coach note
 router.post('/', 
@@ -14,9 +35,11 @@ router.post('/',
 );
 
 // Get a specific coach note
-router.get('/:id', 
-  isAuthenticated, 
+router.get('/:id',
+  isAuthenticated,
   validateParams(validationSchemas.coachNote.params),
+  loadNoteResource,
+  abac('isOwnerOrAdmin'),
   coachNoteController.getCoachNote
 );
 
@@ -35,19 +58,23 @@ router.get('/',
 );
 
 // Update a coach note
-router.put('/:id', 
-  isAuthenticated, 
+router.put('/:id',
+  isAuthenticated,
   validateMultiple({
     params: validationSchemas.coachNote.params,
     body: validationSchemas.coachNote.update
   }),
+  loadNoteResource,
+  abac('isOwnerOrAdmin'),
   coachNoteController.updateCoachNote
 );
 
 // Delete a coach note
-router.delete('/:id', 
-  isAuthenticated, 
+router.delete('/:id',
+  isAuthenticated,
   validateParams(validationSchemas.coachNote.params),
+  loadNoteResource,
+  abac('isOwnerOrAdmin'),
   coachNoteController.deleteCoachNote
 );
 
