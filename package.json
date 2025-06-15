@@ -7,9 +7,10 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "concurrently \"cd client && npm run dev\" \"cd server && npm run dev\"",
+    "dev": "npm run dev --workspace client & npm run dev --workspace server",
     "install:all": "npm install && cd client && npm install && cd ../server && npm install",
-    "build": "cd client && npm run build && cd ../server && npm run build",
+    "build": "npm run build --workspace client && npm run build --workspace server",
+    "typecheck": "npm run typecheck --workspace client && npm run typecheck --workspace server",
     "check": "cd client && npm run typecheck && cd ../server && npm run typecheck",
     "ci-check": "npm run check",
     "lint": "eslint . --ext .ts,.tsx",
@@ -19,7 +20,9 @@
     "db:migrate": "supabase db reset",
     "db:seed": "ts-node scripts/bootstrap.ts",
     "test:rls": "vitest run supabase/tests/rls.spec.ts",
-    "prepare": "[ -z \"$CI\" ] && husky || echo 'Skipping husky setup in CI environment'"
+    "prepare": "[ -z \"$CI\" ] && husky || echo 'Skipping husky setup in CI environment'",
+    "migrate-data": "tsx scripts/migrate-data.ts",
+    "test-supabase": "tsx scripts/migrate-data.ts"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
