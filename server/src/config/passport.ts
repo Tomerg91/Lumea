@@ -1,7 +1,10 @@
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 // import scrypt from 'scrypt-js'; // scrypt logic is now handled in storage.ts if needed for password verification, or by bcrypt in User model
-import { getFullUserByEmailForAuth, getUserByEmail, getUserById } from '../storage.js';
+import { db } from '../../db'; // Import Drizzle db instance
+import { users, User as DrizzleUser } from '../../../shared/schema'; // Import Drizzle schema and type
+import { eq } from 'drizzle-orm';
+import bcrypt from 'bcryptjs';
 // import { User } from '../models/User.js'; // No longer directly using User model here
 // import { HydratedDocument } from 'mongoose'; // Not needed
 import { AuthenticatedUserPayload } from '../types/user.js'; // Import the correct payload type
@@ -27,7 +30,7 @@ const SCRYPT_dkLen = 64;
 */
 
 export function configurePassport() {
-  // Configure Local Strategy
+  // Configure Local Strategy to use Drizzle
   passport.use(
     new LocalStrategy(
       {
@@ -36,40 +39,26 @@ export function configurePassport() {
       },
       async (email, password, done) => {
         try {
-          console.log('[LocalStrategy] Attempting to authenticate user:', email);
-          const fullUser: IUser | null = await getFullUserByEmailForAuth(email);
+          console.log('[LocalStrategy] Attempting to authenticate user with Drizzle:', email);
+          
+          const user = await db.query.users.findFirst({
+            where: eq(users.email, email),
+          });
 
-          if (!fullUser || !fullUser.passwordHash) {
-            // passwordHash implies passwordSalt also exists if schema is consistent
-            console.log('[LocalStrategy] User not found or user data incomplete:', email);
-            return done(null, false);
+          if (!user) {
+            console.log('[LocalStrategy] User not found:', email);
+            return done(null, false, { message: 'Incorrect email or password.' });
           }
 
-          // Verify password using the method from User model
-          const isValid = await fullUser.verifyPassword(password);
+          const isValid = await bcrypt.compare(password, user.password);
 
           if (!isValid) {
             console.log('[LocalStrategy] Invalid password for user:', email);
-            return done(null, false);
+            return done(null, false, { message: 'Incorrect email or password.' });
           }
-
-          // Password is valid, now get the payload for the session
-          const authenticatedUserPayload = await getUserByEmail(email);
-
-          if (!authenticatedUserPayload) {
-            // This should ideally not happen if fullUser was found and password was valid,
-            // but as a safeguard if getUserByEmail has further checks or fails.
-            console.error(
-              '[LocalStrategy] Could not retrieve AuthenticatedUserPayload for verified user:',
-              email
-            );
-            return done(
-              new Error('User authentication succeeded but failed to prepare session data.')
-            );
-          }
-
+          
           console.log('[LocalStrategy] Authentication successful for user:', email);
-          return done(null, authenticatedUserPayload);
+          return done(null, user); // Pass the full Drizzle user object
         } catch (error) {
           console.error('[LocalStrategy] Error during authentication:', error);
           return done(error);
@@ -78,24 +67,27 @@ export function configurePassport() {
     )
   );
 
-  // Configure serialization
-  passport.serializeUser((user: AuthenticatedUserPayload, done) => {
+  // Configure serialization for Drizzle
+  passport.serializeUser((user: DrizzleUser, done) => {
     console.log('[serializeUser] Serializing user:', user.id);
-    done(null, user.id); // user.id is already a string
+    done(null, user.id);
   });
 
-  // Configure deserialization
-  passport.deserializeUser(async (id: string, done) => {
+  // Configure deserialization for Drizzle
+  passport.deserializeUser(async (id: number, done) => {
     console.log('[deserializeUser] Attempting to deserialize user with ID:', id);
     try {
-      // getUserById now returns AuthenticatedUserPayload or null
-      const user = await getUserById(id);
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, id),
+      });
+
       if (!user) {
         console.error('[deserializeUser] User not found for ID:', id);
-        return done(null, false);
+        return done(new Error('User not found.'));
       }
+      
       console.log('[deserializeUser] Successfully deserialized user:', id);
-      done(null, user); // user is already AuthenticatedUserPayload
+      done(null, user);
     } catch (error) {
       console.error('[deserializeUser] Error deserializing user:', error);
       done(error);

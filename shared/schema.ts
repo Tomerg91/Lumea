@@ -1,17 +1,21 @@
-import { pgTable, text, serial, integer, boolean, timestamp, real } from 'drizzle-orm/pg-core';
+import { pgTable, text, serial, integer, boolean, timestamp, real, pgEnum } from 'drizzle-orm/pg-core';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
 // User model - both coaches and clients
+export const roleEnum = pgEnum('role', ['client', 'coach']);
+
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
   password: text('password').notNull(),
-  role: text('role', { enum: ['coach', 'client'] }).notNull(),
+  role: roleEnum('role').notNull(),
   profilePicture: text('profile_picture'),
   phone: text('phone'),
   bio: text('bio'),
+  passwordResetToken: text('password_reset_token'),
+  passwordResetExpires: timestamp('password_reset_expires'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

@@ -1,9 +1,13 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { User, IUser } from '../models/User';
 import { Role } from '../models/Role';
 import { z } from 'zod';
 import { validateInviteToken, invalidateInviteToken } from '../utils/tokenHelpers';
 import bcrypt from 'bcryptjs';
+import { db } from '../../db';
+import { users, insertUserSchema, User as DrizzleUser } from '../../../shared/schema';
+import { eq } from 'drizzle-orm';
+import mongoose from 'mongoose';
 
 // Validation schema for profile update
 const profileUpdateSchema = z.object({
@@ -20,146 +24,57 @@ const clientRegisterSchema = z.object({
   password: z.string().min(8).max(100),
 });
 
-export const authController = {
-  // Register a client with an invitation token
-  registerWithInvite: async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { token } = req.params;
+// Zod schema for signup validation
+const signupSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  password: z.string()
+    .min(12, 'Password must be at least 12 characters long')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+           'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
+  role: z.enum(['client', 'coach']), // 'admin' role should not be assignable via public signup
+});
 
-      if (!token) {
-        res.status(400).json({ message: 'Invitation token is required' });
-        return;
-      }
+// Define a type for the data validated by the schema
+type SignupData = z.infer<typeof signupSchema>;
 
-      // Validate invitation token
-      const inviteToken = await validateInviteToken(token);
+export const signup = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name, email, password, role } = signupSchema.parse(req.body);
 
-      if (!inviteToken) {
-        res.status(400).json({ message: 'Invalid or expired invitation token' });
-        return;
-      }
+    const existingUser = await db.query.users.findFirst({
+      where: eq(users.email, email),
+    });
 
-      // Validate request body
-      try {
-        clientRegisterSchema.parse(req.body);
-      } catch (error) {
-        if (error instanceof z.ZodError) {
-          res.status(400).json({ message: 'Invalid registration data', errors: error.errors });
-          return;
-        }
-        throw error;
-      }
-
-      const { firstName, lastName, email, password } = req.body;
-
-      // Verify email matches the invited email
-      if (email.toLowerCase() !== inviteToken.email.toLowerCase()) {
-        res.status(400).json({ message: 'Email does not match the invitation' });
-        return;
-      }
-
-      // Check if user already exists
-      const existingUser = await User.findOne({ email });
-      if (existingUser) {
-        res.status(400).json({ message: 'A user with this email already exists' });
-        return;
-      }
-
-      // Hash password
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-
-      // Get client role
-      const clientRole = await Role.findOne({ name: 'client' });
-
-      if (!clientRole) {
-        res.status(500).json({ message: 'Client role not found' });
-        return;
-      }
-
-      // Create user
-      const user = await User.create({
-        firstName,
-        lastName,
-        email,
-        password: hashedPassword,
-        role: clientRole._id,
-        coachId: inviteToken.coachId,
-        isActive: true,
-        isApproved: true,
-      });
-
-      // Invalidate the used token
-      await invalidateInviteToken(token);
-
-      // Return success response with non-sensitive user data
-      res.status(201).json({
-        message: 'Registration successful',
-        user: {
-          id: user._id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          role: 'client',
-        },
-      });
-    } catch (error) {
-      console.error('Error registering client with invite:', error);
-      res.status(500).json({ message: 'Error processing registration' });
+    if (existingUser) {
+      return res.status(409).json({ message: 'Email already exists' });
     }
-  },
 
-  // Update user profile
-  updateProfile: async (req: Request, res: Response) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const [newUser] = await db.insert(users).values({
+      name,
+      email,
+      password: hashedPassword,
+      role,
+    }).returning();
+
+    req.login(newUser, (err) => {
+      if (err) {
+        return next(err);
       }
+      
+      const { password, ...userResponse } = newUser;
+      return res.status(201).json(userResponse);
+    });
 
-      const userId = req.user.id;
-      const data = profileUpdateSchema.parse(req.body);
-
-      const updatedUser = await User.findByIdAndUpdate(
-        userId,
-        { $set: data },
-        { new: true, select: '_id name email role language timezone createdAt updatedAt' }
-      );
-
-      if (!updatedUser) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-
-      res.json(updatedUser);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: 'Invalid profile data', errors: error.errors });
-      }
-      console.error('Error updating profile:', error);
-      res.status(500).json({ message: 'Failed to update profile' });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: 'Validation error', errors: error.errors });
     }
-  },
-
-  // Get current user
-  getCurrentUser: async (req: Request, res: Response) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
-      }
-
-      const userId = req.user.id;
-
-      const user = await User.findById(userId).select(
-        '_id name email role language timezone createdAt updatedAt'
-      );
-
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-
-      res.json(user);
-    } catch (error) {
-      console.error('Error fetching current user:', error);
-      res.status(500).json({ message: 'Failed to fetch current user' });
-    }
-  },
+    return next(error);
+  }
 };
+
+// Other controller functions can be defined and exported here
+// e.g. export const updateProfile = ...
