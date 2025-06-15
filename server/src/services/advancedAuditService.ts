@@ -4,6 +4,7 @@ import { AuditService, AuditLogEntry } from './auditService.js';
 import { logger } from './logger.js';
 import fs from 'fs';
 import path from 'path';
+import mongoose from 'mongoose';
 
 interface IntegrityCheckResult {
   isValid: boolean;
@@ -101,8 +102,20 @@ export class AdvancedAuditService extends AuditService {
    */
   private async initializeSequenceCounter(): Promise<void> {
     try {
-      const lastLog = await AuditLog.findOne({}, {}, { sort: { sequenceNumber: -1 } });
-      this.sequenceCounter = lastLog?.sequenceNumber || 0;
+      // Wait for MongoDB connection if not ready yet (0 = disconnected, 1 = connected)
+      if (mongoose.connection.readyState !== 1) {
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('MongoDB connection timeout for sequence counter init')), 10000);
+          mongoose.connection.once('connected', () => {
+            clearTimeout(timeout);
+            resolve();
+          });
+        });
+      }
+
+      // Use lean & projection for minimal overhead and force index via sort
+      const lastLog = await AuditLog.findOne({}, { sequenceNumber: 1 }, { sort: { sequenceNumber: -1 }, lean: true }).hint({ sequenceNumber: -1 });
+      this.sequenceCounter = (lastLog as any)?.sequenceNumber || 0;
     } catch (error) {
       logger.error('Failed to initialize sequence counter', error);
       this.sequenceCounter = 0;
