@@ -1,0 +1,119 @@
+# Supabase Migration with Row-Level Security (RLS)
+
+## 1. Overview
+Our application currently relies on a traditional PostgreSQL database served through a Node.js/Prisma backend. We want to migrate fully to Supabase to leverage its hosted Postgres offering, built-in authentication, serverless functions, real-time capabilities, and especially Row-Level Security (RLS) to tighten data-access control. The migration must be seamless for end-users and maintain parity (or improvements) in performance, security, and developer experience.
+
+## 2. Goals
+- Replace the self-hosted database & Prisma layer with Supabase Postgres.
+- Implement Supabase Auth for user management while preserving existing user accounts.
+- Configure comprehensive RLS policies for all tables to enforce least-privilege access.
+- Migrate all data with zero permanent loss and minimal downtime (<5 min).
+- Refactor backend APIs and client data-access code to use Supabase SDK instead of direct Prisma calls.
+- Introduce real-time subscriptions where beneficial (e.g., chat, notifications).
+- Update CI/CD, env variables, infrastructure, and documentation.
+- Provide rollback strategy and observability during and after cut-over.
+
+## 3. Non-Goals
+- Major UI redesigns (except needed API integration tweaks).
+- Switching mobile push infrastructure—handled separately.
+- Migrating analytics/BI pipelines.
+
+## 4. Assumptions
+- All current production data resides in a single Postgres instance.
+- Typescript codebase already modular; DI facilitates swapping data layer.
+- Team has admin access to Supabase organization & billing.
+- We target Supabase Postgres version ≥ 15 which supports RLS and PG-bouncer.
+
+## 5. Technical Requirements
+### 5.1 Database & Data
+- Design target schema in Supabase matching existing tables; leverage generated columns where useful.
+- Create staging + production Supabase projects.
+- Use `supabase db dump` / `pg_dump` with custom scripts for data transfer.
+- Enable logical replication if needed for near-zero downtime cut-over.
+
+### 5.2 Row-Level Security
+- Globally enable RLS.
+- Write explicit policies for CRUD operations per table.
+- Cover multi-tenant isolation (users access only their tenant rows).
+- Add unit tests to validate RLS behavior using `supabase-js` and `postgrest`.
+
+### 5.3 Application Layer
+- Replace Prisma with `@supabase/supabase-js` (client) and Supabase Server-Side Helpers.
+- Implement Supabase Edge Functions where existing server endpoints map 1-to-1.
+- Update backend auth middleware to verify Supabase JWT.
+- Provide migration helpers for password hashing differences.
+
+### 5.4 CI/CD & Infrastructure
+- Store Supabase service role & anon keys in GitHub Actions Secrets / Vercel.
+- Add Supabase CLI to CI for migrations.
+- Update Terraform (if any) to manage Supabase config.
+
+### 5.5 Monitoring & Observability
+- Enable Supabase Logs & Dashboard alerts.
+- Integrate with Datadog/NewRelic for DB metrics.
+
+## 6. User Stories & Acceptance Criteria
+1. **As an existing user**, I can log in during migration without noticing downtime.
+2. **As a developer**, I can create a new RLS policy and apply it via CI in <30 sec.
+3. **As a user**, I cannot access data belonging to another tenant.
+4. **As DevOps**, I can roll back to the old database within 10 min if issues arise.
+
+Acceptance Criteria:
+- All API integration tests pass using Supabase backend.
+- RLS policy tests achieve 100 % coverage of critical tables.
+- Data discrepancy between old and new DBs ≤ 0.01 %.
+- Dashboard shows <100 ms p95 query latency post-migration.
+
+## 7. Migration Phases
+1. **Preparation & Schema Alignment**
+   - Audit current schema and ER-diagrams.
+   - Draft Supabase schema SQL and review.
+2. **Supabase Project Setup**
+   - Create staging project; configure Auth, storage buckets.
+3. **Data Migration POC**
+   - Run initial dump & import into staging; verify integrity.
+4. **RLS Policy Implementation**
+   - Write policies; unit-test via pgTAP / sqlc.
+5. **Code Refactor (Backend)**
+   - Abstract data layer, integrate Supabase SDK, update endpoints.
+6. **Code Refactor (Frontend/Web & Mobile)**
+   - Replace fetchers/hooks to use Supabase client.
+7. **Real-Time Features & Edge Functions**
+   - Implement subscriptions, functions if applicable.
+8. **End-to-End Testing & Load Testing**
+   - Regression suites, performance benchmarks.
+9. **Production Cut-over Plan**
+   - Enable logical replication; switch read/write gradually.
+10. **Post-Migration Cleanup & Monitoring**
+    - Remove Prisma, deprecate old infra, refine alerts.
+
+## 8. Timeline (Estimate)
+| Phase | Duration |
+|-------|----------|
+| Preparation           | 1 week |
+| Supabase Setup        | 2 days |
+| Data Migration POC    | 3 days |
+| RLS Implementation    | 1.5 weeks |
+| Code Refactor Backend | 2 weeks |
+| Code Refactor Frontend| 1 week |
+| Real-Time & Edge Fns  | 1 week |
+| Testing & Hardening   | 1 week |
+| Cut-over & Validation | 3 days |
+| Cleanup               | 2 days |
+
+## 9. Risks & Mitigations
+- **Performance Regression** → Run load tests; enable Supabase Index Advisor.
+- **RLS Misconfiguration** → Implement thorough policy tests + security audit.
+- **Migration Downtime** → Use logical replication, cut-over during low-traffic window.
+- **Auth Token Conflicts** → Run dual-auth during transition, clear stale cookies.
+
+## 10. Success Metrics
+- 0 critical incidents in first 30 days post-migration.
+- <1 % user-reported auth/login failures.
+- Query p95 latency maintained or improved vs. baseline.
+- Developer on-boarding time to create a new table with RLS <10 min.
+
+## 11. Appendices
+- **Existing ER Diagram** (link TBD)
+- **Supabase CLI commands cheat-sheet**
+- **Rollback Procedure Doc** 

@@ -1,7 +1,11 @@
 import crypto from 'crypto';
 import { InviteToken, IInviteToken } from '../models/InviteToken';
-import { PasswordResetToken, IPasswordResetToken } from '../models/PasswordResetToken';
 import { Types } from 'mongoose';
+import {
+  createPasswordResetToken as createPasswordResetTokenPrisma,
+  validatePasswordResetToken as validatePasswordResetTokenPrisma,
+  invalidatePasswordResetToken as invalidatePasswordResetTokenPrisma,
+} from '../services/passwordResetTokenService';
 
 /**
  * Generate a secure random token (48-byte hex string)

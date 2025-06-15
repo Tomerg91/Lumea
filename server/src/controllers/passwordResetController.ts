@@ -1,13 +1,14 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import { User, IUser } from '../models/User';
+import { PrismaClient } from '@prisma/client';
 import {
   createPasswordResetToken,
   validatePasswordResetToken,
   invalidatePasswordResetToken,
-} from '../utils/tokenHelpers';
+} from '../services/passwordResetTokenService';
 import { sendReset } from '../mail/sendReset';
-import mongoose, { Types } from 'mongoose';
+
+const prisma = new PrismaClient();
 
 /**
  * Request a password reset
@@ -22,7 +23,7 @@ export const requestPasswordReset = async (req: Request, res: Response): Promise
     }
 
     // Find the user by email
-    const user = await User.findOne({ email });
+    const user = await prisma.user.findUnique({ where: { email } });
 
     // Even if we don't find a user, send a 200 response for security reasons
     // This prevents user enumeration attacks
@@ -34,10 +35,10 @@ export const requestPasswordReset = async (req: Request, res: Response): Promise
     }
 
     // Generate a password reset token
-    const token = await createPasswordResetToken(user._id.toString());
+    const token = await createPasswordResetToken(user.id.toString());
 
     // Send the reset email
-    await sendReset(user.email, token, `${user.firstName} ${user.lastName}`);
+    await sendReset(user.email, token, `${user.name}`);
 
     res.status(200).json({
       message: 'If your email is in our system, you will receive a password reset link shortly',
@@ -60,9 +61,9 @@ export const validateResetToken = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    const resetToken = await validatePasswordResetToken(token);
+    const userIdCheck = await validatePasswordResetToken(token);
 
-    if (!resetToken) {
+    if (!userIdCheck) {
       res.status(400).json({ message: 'Invalid or expired token' });
       return;
     }
@@ -93,15 +94,15 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     }
 
     // Validate the token
-    const resetToken = await validatePasswordResetToken(token);
+    const userIdFromToken = await validatePasswordResetToken(token);
 
-    if (!resetToken) {
+    if (!userIdFromToken) {
       res.status(400).json({ message: 'Invalid or expired token' });
       return;
     }
 
     // Find the user
-    const user = await User.findById(resetToken.userId);
+    const user = await prisma.user.findUnique({ where: { id: userIdFromToken } });
 
     if (!user) {
       res.status(404).json({ message: 'User not found' });
@@ -112,9 +113,11 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Update the user's password using the mongoose document as any to access password
-    (user as any).password = hashedPassword;
-    await user.save();
+    // Update the user's password using the Prisma client
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword },
+    });
 
     // Invalidate the token
     await invalidatePasswordResetToken(token);

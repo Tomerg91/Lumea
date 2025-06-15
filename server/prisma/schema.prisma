@@ -7,56 +7,56 @@ datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   schemas   = ["public", "auth"]
-  directUrl = env("DIRECT_URL") // Prisma uses this for migrations
 }
 
 model User {
-  id                 String    @id @default(cuid())
-  email              String    @unique
-  name               String?
-  bio                String?   // Temporarily commented out
-  password           String
-  resetToken         String?
-  resetTokenExpiry   DateTime?
-  role               String    @default("user")
-  clientSessions     Session[]   @relation("ClientSessions")
-  coachSessions      Session[]   @relation("CoachSessions")
-  clientPayments     Payment[]   @relation("ClientPayments")
-  coachPayments      Payment[]   @relation("CoachPayments")
-  reflections        Reflection[]
-  resources          ResourceUser[]
+  id                   String                @id @default(cuid())
+  email                String                @unique
+  name                 String?
+  bio                  String? // Temporarily commented out
+  password             String
+  resetToken           String?
+  resetTokenExpiry     DateTime?
+  role                 String                @default("user")
+  clientSessions       Session[]             @relation("ClientSessions")
+  coachSessions        Session[]             @relation("CoachSessions")
+  clientPayments       Payment[]             @relation("ClientPayments")
+  coachPayments        Payment[]             @relation("CoachPayments")
+  reflections          Reflection[]
+  resources            ResourceUser[]
   calendarIntegrations CalendarIntegration[] @relation("UserCalendarIntegrations")
-  createdAt          DateTime    @default(now()) @map("created_at")
-  updatedAt          DateTime    @updatedAt @map("updated_at")
+  passwordResetTokens  PasswordResetToken[] // Relation to password reset tokens
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
 
-  @@map("users")
   @@index([role])
+  @@map("users")
   @@schema("public")
 }
 
 model Session {
-  id            String    @id @default(cuid())
-  date          DateTime  @map("date")
-  status        String    @default("Upcoming")
-  notes         String?
-  clientId      String    // Changed from ObjectId, type String matches User.id
-  client        User      @relation("ClientSessions", fields: [clientId], references: [id])
-  coachId       String    // Changed from ObjectId, type String matches User.id
-  coach         User      @relation("CoachSessions", fields: [coachId], references: [id])
-  paymentId     String?   // Changed from ObjectId, type String matches Payment.id
-  payment       Payment?  @relation(fields: [paymentId], references: [id])
-  reminderSent  Boolean   @default(false) @map("reminder_sent")
-  audioFile     String?
+  id             String          @id @default(cuid())
+  date           DateTime        @map("date")
+  status         String          @default("Upcoming")
+  notes          String?
+  clientId       String // Changed from ObjectId, type String matches User.id
+  client         User            @relation("ClientSessions", fields: [clientId], references: [id])
+  coachId        String // Changed from ObjectId, type String matches User.id
+  coach          User            @relation("CoachSessions", fields: [coachId], references: [id])
+  paymentId      String? // Changed from ObjectId, type String matches Payment.id
+  payment        Payment?        @relation(fields: [paymentId], references: [id])
+  reminderSent   Boolean         @default(false) @map("reminder_sent")
+  audioFile      String?
   calendarEvents CalendarEvent[] // Calendar events linked to this session
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
 
-  @@map("sessions")
   @@index([clientId])
   @@index([coachId])
   @@index([date])
   @@index([status])
   @@index([paymentId])
+  @@map("sessions")
   @@schema("public")
 }
 
@@ -65,179 +65,193 @@ model Payment {
   amount          Float
   status          String    @default("Due")
   dueDate         DateTime  @map("due_date")
-  clientId        String    // Changed from ObjectId, type String matches User.id
+  clientId        String // Changed from ObjectId, type String matches User.id
   client          User      @relation("ClientPayments", fields: [clientId], references: [id])
-  coachId         String    // Changed from ObjectId, type String matches User.id
+  coachId         String // Changed from ObjectId, type String matches User.id
   coach           User      @relation("CoachPayments", fields: [coachId], references: [id])
   sessions        Session[]
   reminderSent    Boolean   @default(false) @map("reminder_sent")
-  sessionsCovered String[]  // Assuming this was intended to be an array of strings
+  sessionsCovered String[] // Assuming this was intended to be an array of strings
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  @@map("payments")
   @@index([clientId])
   @@index([coachId])
   @@index([status])
   @@index([dueDate])
+  @@map("payments")
   @@schema("public")
 }
 
 model Reflection {
   id        String   @id @default(cuid())
   content   String
-  userId    String   // Changed from ObjectId, type String matches User.id
+  userId    String // Changed from ObjectId, type String matches User.id
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@map("reflections")
   @@index([userId])
   @@index([createdAt])
+  @@map("reflections")
   @@schema("public")
 }
 
 model Resource {
-  id          String        @id @default(cuid())
-  title       String
-  content     String
-  type        String
-  users       ResourceUser[]
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
+  id        String         @id @default(cuid())
+  title     String
+  content   String
+  type      String
+  users     ResourceUser[]
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
 
-  @@map("resources")
   @@index([type])
   @@index([title])
+  @@map("resources")
   @@schema("public")
 }
 
 model ResourceUser {
   id         String   @id @default(cuid())
-  userId     String   // Changed from ObjectId, type String matches User.id
+  userId     String // Changed from ObjectId, type String matches User.id
   user       User     @relation(fields: [userId], references: [id])
-  resourceId String   // Changed from ObjectId, type String matches Resource.id
+  resourceId String // Changed from ObjectId, type String matches Resource.id
   resource   Resource @relation(fields: [resourceId], references: [id])
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  @@map("resource_users")
   @@index([userId])
   @@index([resourceId])
+  @@map("resource_users")
   @@schema("public")
 }
 
 model PerformanceMetric {
   id        String   @id @default(cuid())
-  userId    String?  // Changed from ObjectId, type String matches User.id
+  userId    String? // Changed from ObjectId, type String matches User.id
   url       String?
   userAgent String?  @map("user_agent")
   ipAddress String?  @map("ip_address")
   timestamp DateTime @default(now())
-  metrics   Json     // Json type is valid in PostgreSQL
+  metrics   Json // Json type is valid in PostgreSQL
   createdAt DateTime @default(now()) @map("created_at")
 
-  @@map("performance_metrics")
-  @@index([userId])      // Note: If userId is optional and you index it, consider implications for NULLs
+  @@index([userId]) // Note: If userId is optional and you index it, consider implications for NULLs
   @@index([timestamp])
+  @@map("performance_metrics")
   @@schema("public")
 }
 
 // Calendar Integration Models
 model CalendarIntegration {
-  id                String   @id @default(cuid())
-  userId            String   // User who owns this calendar integration
-  user              User     @relation("UserCalendarIntegrations", fields: [userId], references: [id], onDelete: Cascade)
-  provider          String   // 'google', 'microsoft', 'apple'
-  providerAccountId String   // External account ID from the provider
-  accessToken       String   // Encrypted OAuth access token
-  refreshToken      String?  // Encrypted OAuth refresh token
+  id                String    @id @default(cuid())
+  userId            String // User who owns this calendar integration
+  user              User      @relation("UserCalendarIntegrations", fields: [userId], references: [id], onDelete: Cascade)
+  provider          String // 'google', 'microsoft', 'apple'
+  providerAccountId String // External account ID from the provider
+  accessToken       String // Encrypted OAuth access token
+  refreshToken      String? // Encrypted OAuth refresh token
   tokenExpiry       DateTime? // When the access token expires
-  calendarId        String?  // Primary calendar ID from the provider
-  calendarName      String?  // Display name of the calendar
-  isActive          Boolean  @default(true)
-  syncEnabled       Boolean  @default(true)
+  calendarId        String? // Primary calendar ID from the provider
+  calendarName      String? // Display name of the calendar
+  isActive          Boolean   @default(true)
+  syncEnabled       Boolean   @default(true)
   lastSyncAt        DateTime?
-  syncErrors        Json?    // Store any sync errors
-  settings          Json?    // Provider-specific settings
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  syncErrors        Json? // Store any sync errors
+  settings          Json? // Provider-specific settings
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  calendarEvents    CalendarEvent[]
-  syncLogs          CalendarSyncLog[] @relation("CalendarSyncLogs")
+  calendarEvents CalendarEvent[]
+  syncLogs       CalendarSyncLog[] @relation("CalendarSyncLogs")
 
   @@unique([userId, provider])
-  @@map("calendar_integrations")
   @@index([userId])
   @@index([provider])
   @@index([isActive])
+  @@map("calendar_integrations")
   @@schema("public")
 }
 
 model CalendarEvent {
-  id                   String              @id @default(cuid())
+  id                    String              @id @default(cuid())
   calendarIntegrationId String
-  calendarIntegration  CalendarIntegration @relation(fields: [calendarIntegrationId], references: [id], onDelete: Cascade)
-  providerEventId      String              // Event ID from the external calendar provider
-  title                String
-  description          String?
-  startTime            DateTime
-  endTime              DateTime
-  timezone             String              @default("UTC")
-  isAllDay             Boolean             @default(false)
-  location             String?
-  attendees            Json?               // Array of attendee objects
-  recurrenceRule       String?             // RRULE for recurring events
-  status               String              @default("confirmed") // confirmed, tentative, cancelled
-  visibility           String              @default("default")   // default, public, private
-  
+  calendarIntegration   CalendarIntegration @relation(fields: [calendarIntegrationId], references: [id], onDelete: Cascade)
+  providerEventId       String // Event ID from the external calendar provider
+  title                 String
+  description           String?
+  startTime             DateTime
+  endTime               DateTime
+  timezone              String              @default("UTC")
+  isAllDay              Boolean             @default(false)
+  location              String?
+  attendees             Json? // Array of attendee objects
+  recurrenceRule        String? // RRULE for recurring events
+  status                String              @default("confirmed") // confirmed, tentative, cancelled
+  visibility            String              @default("default") // default, public, private
+
   // Satya Coaching specific fields
-  sessionId            String?             // Link to internal session if this event represents a coaching session
-  session              Session?            @relation(fields: [sessionId], references: [id])
-  isCoachingSession    Boolean             @default(false)
-  isBlocked            Boolean             @default(false)      // If this event blocks availability
-  
+  sessionId         String? // Link to internal session if this event represents a coaching session
+  session           Session? @relation(fields: [sessionId], references: [id])
+  isCoachingSession Boolean  @default(false)
+  isBlocked         Boolean  @default(false) // If this event blocks availability
+
   // Sync metadata
-  lastSyncAt           DateTime?
-  syncStatus           String              @default("synced")   // synced, pending, error
-  syncErrors           Json?
-  
-  createdAt            DateTime            @default(now()) @map("created_at")
-  updatedAt            DateTime            @updatedAt @map("updated_at")
+  lastSyncAt DateTime?
+  syncStatus String    @default("synced") // synced, pending, error
+  syncErrors Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@unique([calendarIntegrationId, providerEventId])
-  @@map("calendar_events")
   @@index([calendarIntegrationId])
   @@index([startTime])
   @@index([endTime])
   @@index([sessionId])
   @@index([isCoachingSession])
   @@index([isBlocked])
+  @@map("calendar_events")
   @@schema("public")
 }
 
 model CalendarSyncLog {
-  id                   String              @id @default(cuid())
+  id                    String              @id @default(cuid())
   calendarIntegrationId String
-  calendarIntegration  CalendarIntegration @relation("CalendarSyncLogs", fields: [calendarIntegrationId], references: [id], onDelete: Cascade)
-  syncType             String              // 'full', 'incremental', 'manual'
-  direction            String              // 'import', 'export', 'bidirectional'
-  status               String              // 'started', 'completed', 'failed', 'partial'
-  eventsProcessed      Int                 @default(0)
-  eventsCreated        Int                 @default(0)
-  eventsUpdated        Int                 @default(0)
-  eventsDeleted        Int                 @default(0)
-  errors               Json?               // Array of error objects
-  startedAt            DateTime
-  completedAt          DateTime?
-  duration             Int?                // Duration in milliseconds
-  
-  createdAt            DateTime            @default(now()) @map("created_at")
+  calendarIntegration   CalendarIntegration @relation("CalendarSyncLogs", fields: [calendarIntegrationId], references: [id], onDelete: Cascade)
+  syncType              String // 'full', 'incremental', 'manual'
+  direction             String // 'import', 'export', 'bidirectional'
+  status                String // 'started', 'completed', 'failed', 'partial'
+  eventsProcessed       Int                 @default(0)
+  eventsCreated         Int                 @default(0)
+  eventsUpdated         Int                 @default(0)
+  eventsDeleted         Int                 @default(0)
+  errors                Json? // Array of error objects
+  startedAt             DateTime
+  completedAt           DateTime?
+  duration              Int? // Duration in milliseconds
 
-  @@map("calendar_sync_logs")
+  createdAt DateTime @default(now()) @map("created_at")
+
   @@index([calendarIntegrationId])
   @@index([status])
   @@index([startedAt])
+  @@map("calendar_sync_logs")
   @@schema("public")
-} 
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+  @@schema("public")
+}

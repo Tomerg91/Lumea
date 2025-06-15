@@ -1,31 +1,65 @@
 # Active Context
 
-**Last Updated**: [Current Date]
-**Latest Achievement**: Core authentication system refactored from Mongoose to Drizzle ORM.
-**Current Focus**: Resolve persistent linter error blocking password reset implementation.
+**Last Updated**: June 15, 2025
+**Latest Achievement**: ✅ **Epic 8.1 Complete: Database Schema Migration to Supabase**
+**Current Focus**: Continue Supabase migration with authentication system (Epic 8.2)
 
-## 🎯 Current Blocker: Linter Error in Password Reset
+## 🚀 Major Milestone: Supabase Database Schema Migration Complete
 
-We are currently blocked on implementing the password reset functionality (**Subtask 1.6**). There is a persistent linter error in `server/src/routes/auth.ts` that prevents the app from recognizing the `passwordResetToken` and `passwordResetExpires` fields on the Drizzle `users` table.
+We have successfully completed **Task 8.1: Database Schema Migration to Supabase**, which represents a major architectural transformation of the Lumea coaching platform.
 
-**Error Details:**
-- **File**: `server/src/routes/auth.ts`
-- **Error Message**: `Object literal may only specify known properties, and 'passwordResetToken' does not exist in type '{...}'`
-- **Problem**: This error occurs in the `db.update(users).set({...})` call within the password reset routes. It indicates that the TypeScript language server has a stale or incorrect type definition for the `users` schema, despite the schema file (`shared/schema.ts`) being correct.
-- **Attempted Fixes**: Restarting the TypeScript server did not resolve the issue.
+### ✅ **What Was Accomplished:**
 
-## ✅ Refactor Summary: Mongoose to Drizzle
+**📋 Complete Schema Analysis & Migration:**
+- Analyzed all 12 Prisma PostgreSQL models + 15+ MongoDB collections
+- Created unified Supabase PostgreSQL schema with proper relationships
+- Migrated all data models: Users, Sessions, Payments, Reflections, Resources, Coach Notes, Files, Notifications, Calendar Integrations, Audit Logs, Consents, Password Reset Tokens, Performance Metrics, Session Feedback
 
-We have successfully completed a major refactor of the user authentication system. All core authentication logic now uses the Drizzle ORM with a PostgreSQL database, and Mongoose has been removed from this part of the codebase.
+**🏗️ Comprehensive Migration Files Created:**
+- `20250219120000_core_tables_migration.sql` - All 16 core tables with relationships
+- `20250219120001_indexes_and_constraints.sql` - Performance indexes and data integrity
+- `20250219120002_rls_policies.sql` - Multi-tenant Row Level Security policies
+- `20250219120003_triggers_and_functions.sql` - Business logic, audit logging, automated processes
+- `20250219120004_storage_setup.sql` - Supabase Storage buckets and access policies
 
-**Completed Subtasks:**
-- **1.1: Configure Passport.js for Drizzle**: `serializeUser` and `deserializeUser` now use Drizzle.
-- **1.2: Rewrite Passport's LocalStrategy**: The login strategy now queries the Drizzle database.
-- **1.3: Update Express `req.user` Type Definition**: The `req.user` object is now strongly typed to the Drizzle `User` model.
-- **1.4: Refactor /login and /signup Routes**: These routes are fully operational with the new Drizzle-based system.
-- **1.5: Refactor /current-user Route**: This route correctly returns the Drizzle user from the session.
-- **1.7: Remove Mongoose from Authentication**: The Mongoose `User` model has been deleted and the `mongoose` package has been removed from `package.json`.
+**🔐 Security & Performance Features:**
+- Multi-tenant RLS policies for coach-client data separation
+- Comprehensive indexes for optimal query performance
+- Automated audit logging for compliance and security
+- Business logic triggers for data consistency
+- Secure file storage with proper access controls
 
-## 下一步
+## 🎯 Current Status: Epic 8 - Supabase Migration
 
-The immediate next step is for **you, the user, to manually resolve the linter error** in `server/src/routes/auth.ts`. Once that is fixed, I can proceed with implementing the password reset functionality and completing the rest of Epic 1.
+**✅ Completed:**
+- **8.1: Database Schema Migration** - Complete unified schema ready for deployment
+
+**🔄 Next Up:**
+- **8.2: Authentication Migration** - Replace Passport.js with Supabase Auth
+- **8.3: Data Migration** - Transfer existing data from MongoDB + Prisma to Supabase
+- **8.4: API Migration** - Replace Express routes with Supabase client-side calls
+- **8.5: File Storage Migration** - Move to Supabase Storage
+- **8.6: Row Level Security Implementation** - Deploy RLS policies
+- **8.7: Real-time Features** - Implement Supabase real-time subscriptions
+- **8.8: React Frontend Integration** - Update to use @supabase/supabase-js SDK
+
+## 💡 Architecture Transformation
+
+**From:** Mixed Node.js/Express + PostgreSQL (Prisma) + MongoDB (Mongoose) + AWS S3
+**To:** Unified Supabase (PostgreSQL + Auth + Storage + Real-time + Edge Functions)
+
+**Benefits:**
+- Single database instead of mixed PostgreSQL + MongoDB
+- Built-in authentication replacing custom Passport.js setup
+- Integrated file storage replacing AWS S3
+- Real-time subscriptions for live updates
+- Row Level Security replacing custom authorization logic
+- Simplified deployment and maintenance
+
+## 🚀 Ready for Next Phase
+
+The database foundation is now ready. We can proceed with authentication migration (8.2) since we have:
+- User tables structured for Supabase Auth integration
+- Automated profile creation triggers
+- RLS policies ready for secure authentication flows
+- All necessary business logic functions in place
