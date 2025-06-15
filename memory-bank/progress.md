@@ -470,3 +470,19 @@ The SatyaCoaching platform has successfully completed the comprehensive booking 
 - **Process Lifecycle**: Servers handle graceful shutdown and restart
 - **Database Connections**: MongoDB and Redis maintain stable connections
 - **Environment Variables**: All secrets properly configured in server/.env
+
+## 📅 Update – June 15, 2025 – Security Quick-Wins
+
+### ✅ Completed
+1. **26.10 – Persist audit signature key securely**
+   • Implemented `loadOrCreateAuditKey()` in `AdvancedAuditService`.
+   • Key loaded from `AUDIT_SIGNATURE_KEY` env var, else first-run file in `config/audit_key` (0600 perms).
+2. **26.12 – Optimise audit_logs sequence counter query**
+   • Added `{ sequenceNumber: -1 }` index; removed duplicate `{ retentionDate: 1 }` index in `AuditLog` model.
+   • Startup no longer times-out on `findOne()`.
+
+### 🔨 In Progress
+• **26.9 – Fix duplicate MongoDB index definitions** (remove redundant single-field indexes across models).
+
+### Next
+• Migrate rate-limiter & security stores to Redis (26.11).

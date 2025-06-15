@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import crypto from 'crypto';
 
 export interface IDeletionCertificate extends Document {
   // Certificate identification
@@ -239,7 +240,6 @@ deletionCertificateSchema.methods.generateCertificateNumber = function(): string
 };
 
 deletionCertificateSchema.methods.calculateHash = function(records: any[]): string {
-  const crypto = require('crypto');
   const recordIds = records.map(r => r._id || r.id).sort();
   const hashInput = recordIds.join(',') + this.executedAt.toISOString();
   return crypto.createHash('sha256').update(hashInput).digest('hex');
@@ -248,7 +248,7 @@ deletionCertificateSchema.methods.calculateHash = function(records: any[]): stri
 deletionCertificateSchema.methods.verify = async function(): Promise<boolean> {
   try {
     // Verify the integrity of the certificate
-    const crypto = require('crypto');
+    
     const expectedHash = crypto.createHash('sha256')
       .update(`${this.certificateId}${this.executedAt.toISOString()}${this.recordsDeleted}`)
       .digest('hex');

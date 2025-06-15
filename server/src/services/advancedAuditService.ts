@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import { AuditLog, IAuditLog } from '../models/AuditLog.js';
 import { AuditService, AuditLogEntry } from './auditService.js';
 import { logger } from './logger.js';
+import fs from 'fs';
+import path from 'path';
 
 interface IntegrityCheckResult {
   isValid: boolean;
@@ -34,7 +36,7 @@ export class AdvancedAuditService extends AuditService {
 
   private constructor() {
     super();
-    this.auditKey = process.env.AUDIT_SIGNATURE_KEY || this.generateAuditKey();
+    this.auditKey = this.loadOrCreateAuditKey();
     this.initializeSequenceCounter();
   }
 
@@ -43,6 +45,46 @@ export class AdvancedAuditService extends AuditService {
       AdvancedAuditService.advancedInstance = new AdvancedAuditService();
     }
     return AdvancedAuditService.advancedInstance;
+  }
+
+  /**
+   * Load the audit key from ENV, disk, or generate a new one the first time.
+   * The key is written with mode 600 so only the running user can read it.
+   * NOTE: In production you should replace this with a proper secrets
+   * manager (AWS/GCP/Vault).  This implementation is a quick win to avoid
+   * regenerating the key on every restart in dev / single-node deployments.
+   */
+  private loadOrCreateAuditKey(): string {
+    // Priority 1 – Environment variable (e.g. from KMS / secrets manager)
+    if (process.env.AUDIT_SIGNATURE_KEY && process.env.AUDIT_SIGNATURE_KEY.trim().length > 0) {
+      return process.env.AUDIT_SIGNATURE_KEY.trim();
+    }
+
+    // Priority 2 – Local key file (useful for dev / Docker volume)
+    const keyFilePath = path.resolve(process.cwd(), 'config', 'audit_key');
+    try {
+      if (fs.existsSync(keyFilePath)) {
+        const keyFromFile = fs.readFileSync(keyFilePath, 'utf8').trim();
+        if (keyFromFile.length >= 64) {
+          return keyFromFile;
+        }
+        logger.warn('Audit key file found but contents look invalid, regenerating.');
+      }
+    } catch (fileErr) {
+      logger.error('Error reading audit key file', fileErr);
+    }
+
+    // Priority 3 – Generate a new key and persist it
+    const newKey = this.generateAuditKey();
+    try {
+      // Ensure directory exists
+      fs.mkdirSync(path.dirname(keyFilePath), { recursive: true });
+      fs.writeFileSync(keyFilePath, newKey, { mode: 0o600 });
+      logger.info(`Persisted new audit signature key to ${keyFilePath}`);
+    } catch (writeErr) {
+      logger.error('Failed to persist audit key to disk. Consider setting AUDIT_SIGNATURE_KEY env var.', writeErr);
+    }
+    return newKey;
   }
 
   /**

@@ -207,8 +207,8 @@ const notificationPreferencesSchema = new Schema<INotificationPreferences>(
   }
 );
 
-// Add indexes for performance
-notificationPreferencesSchema.index({ userId: 1 });
+// Removed redundant single-field index on userId; the unique constraint on userId already creates an index.
+// If future queries need additional compound indexes, add them here.
 
 // Static method to get or create preferences for a user
 notificationPreferencesSchema.statics.getOrCreateForUser = async function(

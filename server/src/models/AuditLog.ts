@@ -317,8 +317,10 @@ AuditLogSchema.index({ userId: 1, timestamp: -1 });
 AuditLogSchema.index({ phiAccessed: 1, timestamp: -1 });
 AuditLogSchema.index({ eventType: 1, eventCategory: 1, timestamp: -1 });
 AuditLogSchema.index({ riskLevel: 1, suspicious: 1, timestamp: -1 });
-AuditLogSchema.index({ retentionDate: 1 }); // For cleanup jobs
 AuditLogSchema.index({ correlationId: 1, timestamp: 1 });
+
+// Optimize retrieval of latest logs by sequenceNumber
+AuditLogSchema.index({ sequenceNumber: -1 });
 
 // Text index for searching descriptions and metadata
 AuditLogSchema.index({

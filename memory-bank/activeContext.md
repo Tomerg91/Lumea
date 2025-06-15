@@ -1,11 +1,11 @@
 # Active Context
 
-## 🎯 Current Status: TASK 26.5 COMPLETE - AUTOMATED DATA RETENTION POLICIES ✅
+## 🎯 Current Status: SUBTASKS 26.10 & 26.12 COMPLETE – SECURITY QUICK WINS ✅
 
-**Last Updated**: June 8, 2025  
-**Latest Achievement**: Task 26.5 Automated Data Retention Policies COMPLETED  
-**Current Focus**: Task 26.6 - Security Monitoring Dashboard  
-**Status**: Comprehensive data retention system fully implemented and operational
+**Last Updated**: June 15, 2025  
+**Latest Achievement**: 26.10 Persist audit signature key & 26.12 Optimise sequence-counter query COMPLETED  
+**Current Focus**: Subtask 26.9 – Fix duplicate MongoDB index definitions  
+**Status**: Initial security quick-wins merged; duplicate-index cleanup in progress
 
 ## 📊 Recent Implementation Summary
 - ✅ **Task 26.1**: HIPAA Compliance Framework Implementation - COMPLETED

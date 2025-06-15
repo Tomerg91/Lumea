@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+
 import crypto from 'crypto';
 import DataRetentionPolicy, { IDataRetentionPolicy } from '../models/DataRetentionPolicy';
 import DeletionCertificate from '../models/DeletionCertificate';
@@ -7,21 +7,21 @@ import { EncryptionService } from './encryptionService';
 import { logger } from '../utils/logger';
 
 // Import all models that can have retention policies
-import User from '../models/User';
-import Session from '../models/Session';
-import Reflection from '../models/Reflection';
-import CoachNote from '../models/CoachNote';
-import AuditLog from '../models/AuditLog';
-import Notification from '../models/Notification';
-import SessionFeedback from '../models/SessionFeedback';
-import File from '../models/File';
-import SessionHistory from '../models/SessionHistory';
-import Consent from '../models/Consent';
-import EncryptionKey from '../models/EncryptionKey';
-import PasswordResetToken from '../models/PasswordResetToken';
-import InviteToken from '../models/InviteToken';
-import SessionTiming from '../models/SessionTiming';
-import CoachAvailability from '../models/CoachAvailability';
+import { User } from '../models/User';
+import { Session } from '../models/Session';
+import { Reflection } from '../models/Reflection';
+import { CoachNote } from '../models/CoachNote';
+import { AuditLog } from '../models/AuditLog';
+import { Notification } from '../models/Notification';
+import { SessionFeedback } from '../models/SessionFeedback';
+import { File } from '../models/File';
+import { SessionHistory } from '../models/SessionHistory';
+import { Consent } from '../models/Consent';
+import { EncryptionKey } from '../models/EncryptionKey';
+import { PasswordResetToken } from '../models/PasswordResetToken';
+import { InviteToken } from '../models/InviteToken';
+import { SessionTiming } from '../models/SessionTiming';
+import { CoachAvailability } from '../models/CoachAvailability';
 
 interface DeletionResult {
   success: boolean;

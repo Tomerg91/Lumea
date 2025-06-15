@@ -14,7 +14,7 @@ import {
   ChevronDown,
   Home,
   Users,
-  Sparkles
+  Heart
 } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -87,29 +87,32 @@ const Navigation = () => {
   };
 
   return (
-    <nav className="nav-lumea">
-      <div className={`container mx-auto px-4 ${isRTL ? 'rtl-text-right' : ''}`}>
+    <nav className="nav-modern sticky top-0 z-50">
+      <div className={`container-wide ${isRTL ? 'rtl-text-right' : ''}`}>
         <div className={`flex justify-between items-center h-16 ${isRTL ? 'rtl-flex-row-reverse' : ''}`}>
           {/* Logo */}
-          <Link to="/" className={`flex items-center space-x-3 ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
-            <div className="w-10 h-10 bg-gradient-coral-teal rounded-2xl flex items-center justify-center bubble-float">
-              <Sparkles className="w-5 h-5 text-white animate-pulse-soft" />
+          <Link 
+            to="/" 
+            className={`flex items-center space-x-3 hover:opacity-80 transition-opacity ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}
+          >
+            <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center hover:scale-105 transition-transform">
+              <Heart className="w-5 h-5 text-white" />
             </div>
-            <span className="text-2xl font-bold text-gradient-teal">
+            <span className="text-2xl font-bold text-gray-900">
               Lumea
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-6">
+          <div className="hidden md:flex items-center space-x-1">
             {session && roleLinks.map((link) => (
               <Link
                 key={link.to}
                 to={link.to}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover-lift ${
+                className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-gray-50 ${
                   location.pathname === link.to
-                    ? 'glass-card-strong text-gradient-teal'
-                    : 'glass-card hover-glow'
+                    ? 'bg-teal-50 text-teal-700 border border-teal-100'
+                    : 'text-gray-600 hover:text-gray-900'
                 } ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}
               >
                 {link.icon}
@@ -118,55 +121,61 @@ const Navigation = () => {
             ))}
 
             {/* Notification Center */}
-            {session && <NotificationCenter />}
+            {session && (
+              <div className="mx-2">
+                <NotificationCenter />
+              </div>
+            )}
 
             {/* Language Switcher */}
-            <LanguageSwitcher variant="dropdown" />
+            <div className="mx-2">
+              <LanguageSwitcher variant="dropdown" />
+            </div>
 
             {/* User Menu */}
             {loading ? (
-              <div className="w-10 h-10 rounded-2xl bg-gradient-cream-peach animate-pulse-soft"></div>
+              <div className="w-10 h-10 rounded-xl bg-gray-100 animate-pulse"></div>
             ) : session ? (
-              <div className="relative">
+              <div className="relative ml-2">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className={`flex items-center space-x-3 p-2 rounded-xl glass-card hover-lift transition-all duration-300 ${
+                  className={`flex items-center space-x-3 p-2 rounded-xl hover:bg-gray-50 transition-all duration-200 focus-ring ${
                     isRTL ? 'flex-row-reverse space-x-reverse' : ''
                   }`}
                 >
-                  <div className="w-8 h-8 rounded-xl bg-gradient-coral-teal flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
                     <User className="w-4 h-4 text-white" />
                   </div>
-                  <span className="text-sm font-medium max-w-24 truncate">
+                  <span className="text-sm font-medium max-w-24 truncate text-gray-700">
                     {getProfileName()}
                   </span>
-                  <ChevronDown className="w-3 h-3" />
+                  <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {userMenuOpen && (
-                  <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} mt-2 w-56 glass-card-strong rounded-2xl shadow-lumea-strong overflow-hidden z-50`}>
-                    <div className="p-4 bg-gradient-background-subtle border-b border-white/20">
-                      <p className="text-sm font-semibold truncate">
+                  <div className={`absolute ${isRTL ? 'left-0' : 'right-0'} mt-2 w-56 card bg-white rounded-2xl shadow-lg overflow-hidden z-50 animate-fade-in`}>
+                    <div className="p-4 bg-gray-50 border-b border-gray-100">
+                      <p className="text-sm font-semibold truncate text-gray-900">
                         {getProfileName()}
                       </p>
-                      <p className="text-xs opacity-70 capitalize">
+                      <p className="text-xs text-gray-500 capitalize">
                         {getProfileRole()}
                       </p>
                     </div>
                     <div className="py-2">
                       <Link
                         to={profile?.role === 'coach' ? '/coach/profile' : '/client/profile'}
-                        className={`flex items-center space-x-3 px-4 py-3 text-sm hover:bg-gradient-background-subtle transition-colors duration-200 ${
+                        className={`flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 ${
                           isRTL ? 'flex-row-reverse space-x-reverse' : ''
                         }`}
                         onClick={() => setUserMenuOpen(false)}
                       >
-                        <Settings className="w-4 h-4" />
+                        <Settings className="w-4 h-4 text-gray-400" />
                         <span>{t('nav.settings')}</span>
                       </Link>
                       <button
                         onClick={handleSignOut}
-                        className={`w-full flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50/30 transition-colors duration-200 ${
+                        className={`w-full flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200 ${
                           isRTL ? 'flex-row-reverse space-x-reverse text-start' : 'text-start'
                         }`}
                       >
@@ -180,7 +189,7 @@ const Navigation = () => {
             ) : (
               <button
                 onClick={() => navigate('/auth')}
-                className="btn-primary"
+                className="btn btn-primary ml-4"
               >
                 {t('nav.signIn')}
               </button>
@@ -190,7 +199,7 @@ const Navigation = () => {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 rounded-xl glass-card hover-lift transition-all duration-300"
+            className="md:hidden p-2 rounded-xl hover:bg-gray-50 transition-all duration-200 focus-ring"
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -198,89 +207,91 @@ const Navigation = () => {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="md:hidden border-t border-white/20 animate-slide-up">
-            <div className="py-4 space-y-2">
-              {session && roleLinks.map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 ${
-                    location.pathname === link.to
-                      ? 'glass-card-strong text-gradient-teal'
-                      : 'glass-card hover-glow'
-                  } ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}
-                >
-                  {link.icon}
-                  <span>{link.label}</span>
-                </Link>
-              ))}
-
-              {/* Mobile Language Switcher */}
-              <div className="px-4 py-2">
-                <div className="flex items-center justify-between glass-card rounded-xl p-3">
-                  <span className="text-sm font-medium">שפה / Language</span>
-                  <LanguageSwitcher variant="toggle" />
-                </div>
-              </div>
-
-              {session ? (
-                <div className="border-t border-white/20 pt-4 mt-4">
-                  <div className="px-4 py-2">
-                    <p className="text-sm font-semibold truncate">
-                      {getProfileName()}
-                    </p>
-                    <p className="text-xs opacity-70 capitalize">
-                      {getProfileRole()}
-                    </p>
-                  </div>
+          <div className="md:hidden absolute top-16 left-0 right-0 bg-white border-b border-gray-100 shadow-lg animate-fade-in">
+            <div className="container-wide py-4">
+              {/* Mobile Menu Items */}
+              <div className="space-y-2">
+                {session && roleLinks.map((link) => (
                   <Link
-                    to={profile?.role === 'coach' ? '/coach/profile' : '/client/profile'}
-                    className={`flex items-center space-x-3 px-4 py-3 text-sm glass-card mx-2 rounded-xl hover-glow transition-colors duration-200 ${
-                      isRTL ? 'flex-row-reverse space-x-reverse' : ''
-                    }`}
+                    key={link.to}
+                    to={link.to}
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                      location.pathname === link.to
+                        ? 'bg-teal-50 text-teal-700 border border-teal-100'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    } ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}
                     onClick={() => setIsOpen(false)}
                   >
-                    <Settings className="w-4 h-4" />
-                    <span>{t('nav.settings')}</span>
+                    {link.icon}
+                    <span>{link.label}</span>
                   </Link>
-                  <button
-                    onClick={handleSignOut}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 mx-2 mt-2 text-sm text-red-600 glass-card rounded-xl hover:bg-red-50/30 transition-colors duration-200 ${
-                      isRTL ? 'flex-row-reverse space-x-reverse text-start' : 'text-start'
-                    }`}
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>{t('nav.signOut')}</span>
-                  </button>
+                ))}
+
+                {/* Mobile User Section */}
+                {session && (
+                  <div className="pt-4 mt-4 border-t border-gray-100">
+                    <div className="flex items-center space-x-3 px-4 py-3">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
+                        <User className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {getProfileName()}
+                        </div>
+                        <div className="text-xs text-gray-500 capitalize">
+                          {getProfileRole()}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-1 mt-2">
+                      <Link
+                        to={profile?.role === 'coach' ? '/coach/profile' : '/client/profile'}
+                        className={`flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 rounded-xl ${
+                          isRTL ? 'flex-row-reverse space-x-reverse' : ''
+                        }`}
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <Settings className="w-4 h-4 text-gray-400" />
+                        <span>{t('nav.settings')}</span>
+                      </Link>
+                      <button
+                        onClick={handleSignOut}
+                        className={`w-full flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200 rounded-xl ${
+                          isRTL ? 'flex-row-reverse space-x-reverse text-start' : 'text-start'
+                        }`}
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>{t('nav.signOut')}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Mobile Auth Button */}
+                {!session && (
+                  <div className="pt-4 mt-4 border-t border-gray-100">
+                    <button
+                      onClick={() => {
+                        navigate('/auth');
+                        setIsOpen(false);
+                      }}
+                      className="w-full btn btn-primary"
+                    >
+                      {t('nav.signIn')}
+                    </button>
+                  </div>
+                )}
+
+                {/* Mobile Language Switcher */}
+                <div className="pt-4 mt-4 border-t border-gray-100">
+                  <LanguageSwitcher variant="mobile" />
                 </div>
-              ) : (
-                <div className="border-t border-white/20 pt-4 mt-4 px-4">
-                  <button
-                    onClick={() => {
-                      navigate('/auth');
-                      setIsOpen(false);
-                    }}
-                    className="w-full btn-primary"
-                  >
-                    {t('nav.signIn')}
-                  </button>
-                </div>
-              )}
+              </div>
             </div>
           </div>
         )}
       </div>
-
-      {/* Overlay for dropdowns */}
-      {userMenuOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => {
-            setUserMenuOpen(false);
-          }}
-        />
-      )}
     </nav>
   );
 };
