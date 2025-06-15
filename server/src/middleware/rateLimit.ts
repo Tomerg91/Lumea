@@ -1,6 +1,9 @@
 import rateLimit from 'express-rate-limit';
 import { Request, Response, NextFunction } from 'express';
 import { APIError, ErrorCode } from './error.js';
+// @ts-ignore – package may not have TypeScript types installed
+import { RateLimitRedisStore } from 'rate-limit-redis';
+import redisClient from '../utils/cache.js';
 
 // Sliding window rate limiter using in-memory store
 // In production, use Redis for distributed rate limiting
@@ -69,6 +72,20 @@ class SlidingWindowStore {
 
 const slidingWindowStore = new SlidingWindowStore();
 
+// Choose store: Redis if available, else in-memory sliding window
+let sharedRateLimitStore: any;
+if (redisClient && (redisClient as any).isReady) {
+  try {
+    sharedRateLimitStore = new RateLimitRedisStore({
+      // redis v4: use sendCommand
+      sendCommand: (...args: string[]) => (redisClient as any).sendCommand(args as any),
+    });
+    console.log('Rate limiter using Redis store');
+  } catch (err) {
+    console.error('Failed to initialize Redis rate-limit store, falling back to memory:', err);
+  }
+}
+
 // Enhanced rate limiter factory
 const createRateLimiter = (options: {
   windowMs: number;
@@ -85,7 +102,7 @@ const createRateLimiter = (options: {
     message: options.message,
     standardHeaders: true,
     legacyHeaders: false,
-    store: slidingWindowStore as any,
+    store: (sharedRateLimitStore ?? slidingWindowStore) as any,
     keyGenerator: options.keyGenerator || ((req: Request) => {
       // Default key: IP + User ID (if authenticated)
       const ip = req.ip || req.socket.remoteAddress || 'unknown';
