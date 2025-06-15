@@ -26,6 +26,23 @@ const saveReflectionSchema = z.object({
   actualCompletionMinutes: z.number().optional(),
 });
 
+function maskReflectionForUser(reflection: any, user: { id: string; role: string }) {
+  if (!user) return reflection;
+  const isClient = reflection.clientId?._id?.toString?.() === user.id || reflection.clientId?.toString?.() === user.id;
+  const isAdmin = user.role === 'admin';
+  const isCoach = reflection.coachId?._id?.toString?.() === user.id || reflection.coachId?.toString?.() === user.id;
+  const coachCanView = isCoach && reflection.sharedWithCoach;
+  if (isClient || isAdmin || coachCanView) {
+    return reflection;
+  }
+  // Else redact answers
+  const obj = JSON.parse(JSON.stringify(reflection));
+  if (Array.isArray(obj.answers)) {
+    obj.answers = obj.answers.map((ans: any) => ({ ...ans, value: '[REDACTED]', followUpAnswer: undefined }));
+  }
+  return obj;
+}
+
 export const reflectionController = {
   // Get reflection form template for a session
   async getReflectionForm(req: Request, res: Response) {
@@ -134,7 +151,7 @@ export const reflectionController = {
         return res.status(403).json({ error: 'Not authorized to access this reflection' });
       }
 
-      res.json(reflection);
+      res.json(maskReflectionForUser(reflection, req.user));
     } catch (error) {
       console.error('Error getting reflection:', error);
       res.status(500).json({ error: 'Failed to get reflection' });
@@ -225,7 +242,7 @@ export const reflectionController = {
           validatedData.status === 'submitted'
             ? 'Reflection submitted successfully'
             : 'Reflection saved as draft',
-        reflection,
+        reflection: maskReflectionForUser(reflection, req.user),
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -311,7 +328,7 @@ export const reflectionController = {
       const total = await Reflection.countDocuments({ clientId });
 
       res.json({
-        reflections,
+        reflections: reflections.map(r => maskReflectionForUser(r, req.user)),
         pagination: {
           total,
           page,
@@ -362,7 +379,7 @@ export const reflectionController = {
       const total = await Reflection.countDocuments(query);
 
       res.json({
-        reflections,
+        reflections: reflections.map(r => maskReflectionForUser(r, req.user)),
         pagination: {
           total,
           page,
@@ -440,7 +457,7 @@ export const reflectionController = {
           validatedData.status === 'submitted'
             ? 'Reflection submitted successfully'
             : 'Reflection created as draft',
-        reflection,
+        reflection: maskReflectionForUser(reflection, req.user),
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -494,7 +511,7 @@ export const reflectionController = {
       const total = await Reflection.countDocuments(query);
 
       res.json({
-        reflections,
+        reflections: reflections.map(r => maskReflectionForUser(r, req.user)),
         pagination: {
           total,
           page,
@@ -549,7 +566,7 @@ export const reflectionController = {
         .populate('coachId', 'firstName lastName email')
         .sort({ submittedAt: -1, lastSavedAt: -1 });
 
-      res.json({ reflections });
+      res.json({ reflections: reflections.map(r => maskReflectionForUser(r, req.user)) });
     } catch (error) {
       console.error('Error getting session reflections:', error);
       res.status(500).json({ error: 'Failed to get session reflections' });
@@ -617,7 +634,7 @@ export const reflectionController = {
           validatedData.status === 'submitted'
             ? 'Reflection submitted successfully'
             : 'Reflection updated successfully',
-        reflection,
+        reflection: maskReflectionForUser(reflection, req.user),
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -666,7 +683,7 @@ export const reflectionController = {
 
       res.json({
         message: 'Reflection shared with coach successfully',
-        reflection,
+        reflection: maskReflectionForUser(reflection, req.user),
       });
     } catch (error) {
       console.error('Error sharing reflection:', error);
@@ -797,7 +814,7 @@ export const reflectionController = {
       const total = result.count[0]?.total || 0;
 
       res.json({
-        reflections,
+        reflections: reflections.map(r => maskReflectionForUser(r, req.user)),
         pagination: {
           total,
           page: pageNum,
