@@ -13,6 +13,7 @@ import { ICoachNote, AuditAction, NoteAccessLevel } from '../models/CoachNote.js
 import { validationSchemas } from '../schemas/validation.js';
 import { APIError, ErrorCode } from '../middleware/error.js';
 import CoachNoteSearchService from '../services/searchService.js';
+import { applyMask, FieldMaskRule } from '../utils/dataMasking.js';
 
 // Helper function to get client IP
 const getClientIp = (req: Request): string => {
@@ -66,6 +67,25 @@ const checkNoteAccess = async (
   }
 };
 
+// ---------------------------------------
+// Masking helper
+// ---------------------------------------
+function maskNoteForUser(note: ICoachNote, user: { id: string; role: string }) {
+  const isOwner = note.coachId.toString() === user.id;
+  const isAdmin = user.role === 'admin';
+  if (isOwner || isAdmin) {
+    return note.toSafeObject();
+  }
+
+  const rules: FieldMaskRule[] = [
+    { path: 'textContent', strategy: 'redact' },
+    { path: 'searchableContent', strategy: 'redact' },
+    { path: 'audioFileId', strategy: 'redact' },
+  ];
+
+  return applyMask(note.toSafeObject(), rules);
+}
+
 export const coachNoteController = {
   // Create a new coach note
   async createCoachNote(req: Request, res: Response) {
@@ -104,7 +124,7 @@ export const coachNoteController = {
 
       res.status(201).json({
         message: 'Coach note created successfully',
-        note: coachNote.toSafeObject()
+        note: maskNoteForUser(coachNote, req.user)
       });
     } catch (error) {
       if (error instanceof APIError) {
@@ -144,7 +164,7 @@ export const coachNoteController = {
       }
 
       res.json({
-        note: coachNote.toSafeObject(),
+        note: maskNoteForUser(coachNote, req.user),
         auditTrail: coachNote.auditTrail.slice(-10) // Last 10 audit entries
       });
     } catch (error) {
@@ -193,7 +213,7 @@ export const coachNoteController = {
         );
         
         if (hasAccess) {
-          accessibleNotes.push(note.toSafeObject());
+          accessibleNotes.push(maskNoteForUser(note, req.user));
         }
       }
 
@@ -257,7 +277,7 @@ export const coachNoteController = {
       const endIndex = startIndex + limit;
 
       const paginatedNotes = filteredNotes.slice(startIndex, endIndex);
-      const safeNotes = paginatedNotes.map(note => note.toSafeObject());
+      const safeNotes = paginatedNotes.map(note => maskNoteForUser(note, req.user));
 
       res.json({
         notes: safeNotes,
@@ -320,7 +340,7 @@ export const coachNoteController = {
 
       res.json({
         message: 'Coach note updated successfully',
-        note: updatedNote.toSafeObject()
+        note: maskNoteForUser(updatedNote, req.user)
       });
     } catch (error) {
       if (error instanceof APIError) {
@@ -571,7 +591,7 @@ export const coachNoteController = {
 
       // Decrypt notes for display
       const decryptedNotes = searchResult.notes.map(note => {
-        const safeNote = note.toSafeObject();
+        const safeNote = maskNoteForUser(note, req.user);
         // Decrypt content if user has access
         if (note.isEncrypted) {
           safeNote.textContent = note.decryptText();
