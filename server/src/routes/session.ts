@@ -31,7 +31,13 @@ router.put('/:id/status', isCoach, sessionController.updateSessionStatus);
 // Delete a session (coach only)
 router.delete('/:id', isCoach, sessionController.deleteSession);
 
-// Send reminder for a session (coach only)
-router.post('/:id/send-reminder', isCoach, sessionController.sendReminder);
+// Cancel a session (coach only)
+router.post('/:id/cancel', isCoach, sessionController.cancelSession);
+
+// Reschedule a session (coach only)
+router.post('/:id/reschedule', isCoach, sessionController.rescheduleSession);
+
+// Get available time slots for rescheduling
+router.get('/:id/available-slots', isAuthenticated, sessionController.getAvailableSlots);
 
 export default router;

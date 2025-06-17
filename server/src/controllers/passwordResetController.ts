@@ -1,33 +1,44 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import { PrismaClient } from '@prisma/client';
+import { z } from 'zod';
+import { supabase, serverTables } from '../lib/supabase.js';
 import {
   createPasswordResetToken,
   validatePasswordResetToken,
   invalidatePasswordResetToken,
-} from '../services/passwordResetTokenService';
-import { sendReset } from '../mail/sendReset';
+} from '../services/passwordResetTokenService.js';
+import { sendReset } from '../mail/sendReset.js';
+import type { User } from '../../../shared/types/database.js';
 
-const prisma = new PrismaClient();
+// Validation schema for password reset request
+const resetRequestSchema = z.object({
+  email: z.string().email('Valid email address is required'),
+});
+
+// Validation schema for password reset
+const resetPasswordSchema = z.object({
+  password: z.string()
+    .min(12, 'Password must be at least 12 characters long')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+           'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
+});
 
 /**
  * Request a password reset
  */
 export const requestPasswordReset = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email } = req.body;
+    const validatedData = resetRequestSchema.parse(req.body);
 
-    if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      res.status(400).json({ message: 'Valid email address is required' });
-      return;
-    }
-
-    // Find the user by email
-    const user = await prisma.user.findUnique({ where: { email } });
+    // Find the user by email using Supabase
+    const { data: user, error } = await serverTables.users()
+      .select('id, email, name')
+      .eq('email', validatedData.email)
+      .single();
 
     // Even if we don't find a user, send a 200 response for security reasons
     // This prevents user enumeration attacks
-    if (!user) {
+    if (error || !user) {
       res.status(200).json({
         message: 'If your email is in our system, you will receive a password reset link shortly',
       });
@@ -35,15 +46,22 @@ export const requestPasswordReset = async (req: Request, res: Response): Promise
     }
 
     // Generate a password reset token
-    const token = await createPasswordResetToken(user.id.toString());
+    const token = await createPasswordResetToken(user.id);
 
     // Send the reset email
-    await sendReset(user.email, token, `${user.name}`);
+    await sendReset(user.email, token, user.name);
 
     res.status(200).json({
       message: 'If your email is in our system, you will receive a password reset link shortly',
     });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ 
+        message: 'Validation error',
+        errors: error.errors 
+      });
+      return;
+    }
     console.error('Error requesting password reset:', error);
     res.status(500).json({ message: 'Error processing password reset request' });
   }
@@ -81,15 +99,10 @@ export const validateResetToken = async (req: Request, res: Response): Promise<v
 export const resetPassword = async (req: Request, res: Response): Promise<void> => {
   try {
     const { token } = req.params;
-    const { password } = req.body;
+    const validatedData = resetPasswordSchema.parse(req.body);
 
     if (!token) {
       res.status(400).json({ message: 'Token is required' });
-      return;
-    }
-
-    if (!password || password.length < 8) {
-      res.status(400).json({ message: 'Password must be at least 8 characters long' });
       return;
     }
 
@@ -101,29 +114,47 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Find the user
-    const user = await prisma.user.findUnique({ where: { id: userIdFromToken } });
+    // Find the user using Supabase
+    const { data: user, error: userError } = await serverTables.users()
+      .select('id, email')
+      .eq('id', userIdFromToken)
+      .single();
 
-    if (!user) {
+    if (userError || !user) {
       res.status(404).json({ message: 'User not found' });
       return;
     }
 
     // Hash the new password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const salt = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash(validatedData.password, salt);
 
-    // Update the user's password using the Prisma client
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { password: hashedPassword },
-    });
+    // Update the user's password using Supabase
+    const { error: updateError } = await serverTables.users()
+      .update({ 
+        password: hashedPassword,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', user.id);
+
+    if (updateError) {
+      console.error('Error updating user password:', updateError);
+      res.status(500).json({ message: 'Error updating password' });
+      return;
+    }
 
     // Invalidate the token
     await invalidatePasswordResetToken(token);
 
     res.status(200).json({ message: 'Password has been reset successfully' });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ 
+        message: 'Validation error',
+        errors: error.errors 
+      });
+      return;
+    }
     console.error('Error resetting password:', error);
     res.status(500).json({ message: 'Error resetting password' });
   }

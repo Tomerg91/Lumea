@@ -1,7 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { supabase, serverTables } from '../lib/supabase.js';
 import crypto from 'crypto';
-
-const prisma = new PrismaClient();
+import type { PasswordResetToken, PasswordResetTokenInsert } from '../../../shared/types/database.js';
 
 const TOKEN_BYTES = 32; // 32 bytes -> 64-char hex string
 const TOKEN_TTL_MINUTES = 30; // token valid for 30 minutes
@@ -13,18 +12,31 @@ const TOKEN_TTL_MINUTES = 30; // token valid for 30 minutes
  */
 export async function createPasswordResetToken(userId: string): Promise<string> {
   // Remove previous tokens for this user to ensure single active token
-  await prisma.passwordResetToken.deleteMany({ where: { userId } });
+  const { error: deleteError } = await serverTables.password_reset_tokens()
+    .delete()
+    .eq('user_id', userId);
+
+  if (deleteError) {
+    console.warn('Warning: Could not delete existing tokens:', deleteError);
+  }
 
   const token = crypto.randomBytes(TOKEN_BYTES).toString('hex');
   const expiresAt = new Date(Date.now() + TOKEN_TTL_MINUTES * 60 * 1000);
 
-  await prisma.passwordResetToken.create({
-    data: {
-      token,
-      userId,
-      expiresAt,
-    },
-  });
+  const tokenData: PasswordResetTokenInsert = {
+    token,
+    user_id: userId,
+    expires_at: expiresAt.toISOString(),
+    created_at: new Date().toISOString(),
+  };
+
+  const { error: createError } = await serverTables.password_reset_tokens()
+    .insert(tokenData);
+
+  if (createError) {
+    console.error('Error creating password reset token:', createError);
+    throw new Error('Failed to create password reset token');
+  }
 
   return token;
 }
@@ -34,21 +46,36 @@ export async function createPasswordResetToken(userId: string): Promise<string> 
  * Returns the associated userId if valid, otherwise null.
  */
 export async function validatePasswordResetToken(token: string): Promise<string | null> {
-  const record = await prisma.passwordResetToken.findUnique({ where: { token } });
-  if (!record) return null;
-  if (record.expiresAt < new Date()) {
-    // expired – clean up
-    await prisma.passwordResetToken.delete({ where: { token } });
+  const { data: record, error } = await serverTables.password_reset_tokens()
+    .select('user_id, expires_at')
+    .eq('token', token)
+    .single();
+
+  if (error || !record) {
     return null;
   }
-  return record.userId;
+
+  const expiresAt = new Date(record.expires_at);
+  if (expiresAt < new Date()) {
+    // expired – clean up
+    await serverTables.password_reset_tokens()
+      .delete()
+      .eq('token', token);
+    return null;
+  }
+
+  return record.user_id;
 }
 
 /**
  * Invalidate a token after successful password reset.
  */
 export async function invalidatePasswordResetToken(token: string): Promise<void> {
-  await prisma.passwordResetToken.delete({ where: { token } }).catch(() => {
-    /* token may already be removed */
-  });
+  const { error } = await serverTables.password_reset_tokens()
+    .delete()
+    .eq('token', token);
+
+  if (error) {
+    console.warn('Warning: Could not invalidate token:', error);
+  }
 } 

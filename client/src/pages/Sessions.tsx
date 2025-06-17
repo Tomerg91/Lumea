@@ -26,6 +26,7 @@ import {
 import MainLayout from '@/components/MainLayout';
 import { useToast } from '@/hooks/use-toast';
 import { useSessions, useCreateSession, Session, CreateSessionData } from '@/hooks/useSessions';
+import { useAvailableCoaches } from '@/hooks/useCoaches';
 import { useAuth } from '@/contexts/AuthContext';
 import { CancelSessionModal } from '@/components/ui/CancelSessionModal';
 import { RescheduleSessionModal } from '@/components/ui/RescheduleSessionModal';
@@ -53,6 +54,9 @@ const Sessions = () => {
   } = useSessions();
 
   const createSessionMutation = useCreateSession();
+  
+  // Get available coaches
+  const { data: availableCoaches = [], isLoading: coachesLoading } = useAvailableCoaches();
 
   const [newSessionData, setNewSessionData] = useState<NewSessionFormData>({
     date: new Date(),
@@ -100,11 +104,26 @@ const Sessions = () => {
       return;
     }
 
+    if (!newSessionData.time || !newSessionData.coach || !newSessionData.type) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all required fields.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
+      // Combine date and time into a proper ISO string
+      const [hours, minutes] = newSessionData.time.split(':');
+      const sessionDateTime = new Date(newSessionData.date);
+      sessionDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      
       // Transform form data to match CreateSessionData interface
       const createSessionPayload: CreateSessionData = {
         client_id: user.id,
-        date: format(newSessionData.date, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\''),
+        coach_id: newSessionData.coach,
+        date: sessionDateTime.toISOString(),
         notes: newSessionData.notes,
       };
 
@@ -225,14 +244,22 @@ const Sessions = () => {
                   <Select
                     value={newSessionData.coach}
                     onValueChange={(value) => setNewSessionData({ ...newSessionData, coach: value })}
+                    disabled={coachesLoading}
                   >
                     <SelectTrigger id="coach">
-                      <SelectValue placeholder="Select a coach" />
+                      <SelectValue placeholder={coachesLoading ? "Loading coaches..." : "Select a coach"} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Sarah Johnson">Sarah Johnson</SelectItem>
-                      <SelectItem value="Michael Chen">Michael Chen</SelectItem>
-                      <SelectItem value="Emma Rodriguez">Emma Rodriguez</SelectItem>
+                      {availableCoaches.map((coach) => (
+                        <SelectItem key={coach.id} value={coach.id}>
+                          {coach.firstName} {coach.lastName}
+                        </SelectItem>
+                      ))}
+                      {availableCoaches.length === 0 && !coachesLoading && (
+                        <SelectItem value="" disabled>
+                          No coaches available
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
