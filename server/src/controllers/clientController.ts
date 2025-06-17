@@ -29,8 +29,8 @@ export const clientController = {
         .from('sessions')
         .select('*', { count: 'exact', head: true })
         .eq('client_id', clientId)
-        .gte('scheduled_date', new Date().toISOString())
-        .lte('scheduled_date', sevenDaysFromNow.toISOString())
+        .gte('date', new Date().toISOString())
+        .lte('date', sevenDaysFromNow.toISOString())
         .neq('status', 'cancelled');
 
       if (upcomingError) {
@@ -43,14 +43,13 @@ export const clientController = {
         .from('sessions')
         .select(`
           id,
-          scheduled_date,
-          duration,
+          date,
           status,
           notes,
           coach:coach_id!inner(id, name, email)
         `)
         .eq('client_id', clientId)
-        .order('scheduled_date', { ascending: false })
+        .order('date', { ascending: false })
         .limit(5);
 
       if (recentError) {
@@ -62,8 +61,7 @@ export const clientController = {
         const coach = Array.isArray(session.coach) ? session.coach[0] : session.coach;
         return {
           id: session.id,
-          date: session.scheduled_date,
-          duration: session.duration,
+          date: session.date,
           status: session.status,
           coach: {
             id: coach.id,
@@ -98,20 +96,18 @@ export const clientController = {
         .from('sessions')
         .select(`
           id,
-          scheduled_date,
-          duration,
+          date,
           status,
           notes,
-          video_url,
           coach:coach_id!inner(id, name, email)
         `)
         .eq('client_id', clientId)
-        .order('scheduled_date', { ascending: true });
+        .order('date', { ascending: true });
 
       if (startDate && endDate) {
         query = query
-          .gte('scheduled_date', startDate as string)
-          .lte('scheduled_date', endDate as string);
+          .gte('date', startDate as string)
+          .lte('date', endDate as string);
       }
 
       const { data: sessions, error } = await query;
@@ -125,8 +121,7 @@ export const clientController = {
         const coach = Array.isArray(session.coach) ? session.coach[0] : session.coach;
         return {
           id: session.id,
-          date: session.scheduled_date,
-          duration: session.duration,
+          date: session.date,
           status: session.status,
           coach: {
             id: coach.id,
@@ -134,7 +129,6 @@ export const clientController = {
             email: coach.email,
           },
           notes: session.notes || '',
-          videoUrl: session.video_url || '',
         };
       }) || [];
 
@@ -172,10 +166,10 @@ export const clientController = {
       // Get all sessions with this coach
       const { data: sessions, error: sessionsError } = await supabase
         .from('sessions')
-        .select('id, scheduled_date, duration, status, notes, video_url')
+        .select('id, date, status, notes')
         .eq('client_id', clientId)
         .eq('coach_id', coach.id)
-        .order('scheduled_date', { ascending: false });
+        .order('date', { ascending: false });
 
       if (sessionsError) {
         console.error('Error fetching sessions with coach:', sessionsError);
@@ -184,11 +178,9 @@ export const clientController = {
 
       const formattedSessions = sessions?.map(session => ({
         id: session.id,
-        date: session.scheduled_date,
-        duration: session.duration,
+        date: session.date,
         status: session.status,
         notes: session.notes || '',
-        videoUrl: session.video_url || '',
       })) || [];
 
       res.json({
@@ -229,30 +221,10 @@ export const clientController = {
         return res.status(404).json({ error: 'Session not found or access denied' });
       }
 
-      // Update session with feedback
-      const { data: updatedSession, error: updateError } = await supabase
-        .from('sessions')
-        .update({ 
-          client_feedback: feedback,
-          client_rating: rating,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', sessionId)
-        .select('id, client_feedback, client_rating')
-        .single();
-
-      if (updateError) {
-        console.error('Error updating session feedback:', updateError);
-        return res.status(500).json({ error: 'Failed to update feedback' });
-      }
-
-      res.json({ 
-        message: 'Feedback updated successfully',
-        session: {
-          id: updatedSession.id,
-          feedback: updatedSession.client_feedback,
-          rating: updatedSession.client_rating,
-        }
+      // Note: client_feedback and client_rating columns don't exist in current schema
+      // This endpoint would need schema updates to store feedback
+      res.status(501).json({ 
+        error: 'Feedback functionality not implemented - requires schema updates'
       });
     } catch (error) {
       console.error('Error updating session feedback:', error);

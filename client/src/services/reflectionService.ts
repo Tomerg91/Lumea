@@ -8,6 +8,25 @@ import {
 
 const API_BASE = process.env.REACT_APP_API_URL || '/api';
 
+/**
+ * @deprecated This service is being migrated to Supabase.
+ * Use the useReflections hook from '../hooks/useReflections' instead.
+ * 
+ * Migration Guide:
+ * - Replace reflectionService.getClientReflections() with useReflections()
+ * - Replace reflectionService.saveReflection() with useCreateReflection()
+ * - Replace reflectionService.updateReflection() with useUpdateReflection()
+ * - Replace reflectionService.deleteReflection() with useDeleteReflection()
+ * - Replace reflectionService.getReflectionAnalytics() with useReflectionStats()
+ * 
+ * Benefits of migration:
+ * - Real-time updates
+ * - Better caching with React Query
+ * - Automatic error handling
+ * - Optimistic updates
+ * - Better TypeScript support
+ */
+
 // New interfaces for enhanced functionality
 export interface ReflectionHistoryFilters {
   page?: number;
@@ -94,8 +113,17 @@ export interface ReflectionSearchResponse {
 }
 
 class ReflectionService {
+  private logDeprecationWarning(method: string): void {
+    console.warn(`⚠️ reflectionService.${method}() is deprecated. Please migrate to useReflections hook for better performance and real-time updates.`);
+  }
+
   // Get available reflection templates
+  /**
+   * @deprecated Use useReflectionTemplates() hook instead
+   */
   async getAvailableTemplates(): Promise<{ type: ReflectionTemplateType; name: string; description: string; estimatedMinutes: number }[]> {
+    this.logDeprecationWarning('getAvailableTemplates');
+    
     const response = await fetch(`${API_BASE}/reflections/templates`, {
       credentials: 'include',
     });
@@ -109,10 +137,15 @@ class ReflectionService {
   }
 
   // Get reflection form for a session
+  /**
+   * @deprecated Use useReflectionForm() hook instead
+   */
   async getReflectionForm(
     sessionId: string, 
     templateType: ReflectionTemplateType = 'standard'
   ): Promise<GetReflectionFormResponse> {
+    this.logDeprecationWarning('getReflectionForm');
+    
     const response = await fetch(
       `${API_BASE}/reflections/form/${sessionId}?template=${templateType}`,
       {
@@ -128,7 +161,12 @@ class ReflectionService {
   }
 
   // Get existing reflection for a session
+  /**
+   * @deprecated Use useReflection(sessionId) hook instead
+   */
   async getReflection(sessionId: string): Promise<Reflection> {
+    this.logDeprecationWarning('getReflection');
+    
     const response = await fetch(`${API_BASE}/reflections/${sessionId}`, {
       credentials: 'include',
     });
@@ -144,10 +182,15 @@ class ReflectionService {
   }
 
   // Save or update reflection
+  /**
+   * @deprecated Use useCreateReflection() hook instead
+   */
   async saveReflection(
     sessionId: string, 
     data: SaveReflectionRequest
   ): Promise<SaveReflectionResponse> {
+    this.logDeprecationWarning('saveReflection');
+    
     const response = await fetch(`${API_BASE}/reflections/${sessionId}`, {
       method: 'POST',
       headers: {
@@ -165,10 +208,15 @@ class ReflectionService {
   }
 
   // Update existing reflection
+  /**
+   * @deprecated Use useUpdateReflection() hook instead
+   */
   async updateReflection(
     sessionId: string, 
     data: SaveReflectionRequest
   ): Promise<SaveReflectionResponse> {
+    this.logDeprecationWarning('updateReflection');
+    
     const response = await fetch(`${API_BASE}/reflections/${sessionId}`, {
       method: 'PUT',
       headers: {
@@ -186,7 +234,12 @@ class ReflectionService {
   }
 
   // Delete reflection (drafts only)
+  /**
+   * @deprecated Use useDeleteReflection() hook instead
+   */
   async deleteReflection(sessionId: string): Promise<{ message: string }> {
+    this.logDeprecationWarning('deleteReflection');
+    
     const response = await fetch(`${API_BASE}/reflections/${sessionId}`, {
       method: 'DELETE',
       credentials: 'include',

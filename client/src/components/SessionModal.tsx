@@ -5,23 +5,24 @@ import { Cross2Icon } from '@radix-ui/react-icons';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { Client } from './ClientsTable';
+import { useCreateSession } from '../hooks/useSessions';
+import { useToast } from '../hooks/use-toast';
 
 interface SessionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateSession: (data: { clientId: string; date: string; notes: string }) => void;
-  isLoading: boolean;
   clients: Client[];
 }
 
 const SessionModal: React.FC<SessionModalProps> = ({
   isOpen,
   onClose,
-  onCreateSession,
-  isLoading,
   clients,
 }) => {
   const { t, i18n } = useTranslation();
+  const { toast } = useToast();
+  const createSession = useCreateSession();
+  
   const isRTL = i18n.language === 'he';
   const locale = isRTL ? he : undefined;
   const [clientId, setClientId] = useState('');
@@ -61,10 +62,26 @@ const SessionModal: React.FC<SessionModalProps> = ({
     }
 
     // Submit the form
-    onCreateSession({
-      clientId,
+    createSession.mutate({
+      client_id: clientId,
       date,
       notes,
+    }, {
+      onSuccess: () => {
+        toast({
+          title: t('sessions.created'),
+          description: t('sessions.createdSuccessfully'),
+        });
+        resetForm();
+        onClose();
+      },
+      onError: (error) => {
+        toast({
+          title: t('common.error'),
+          description: error.message || t('sessions.createError'),
+          variant: 'destructive',
+        });
+      },
     });
   };
 
@@ -146,16 +163,16 @@ const SessionModal: React.FC<SessionModalProps> = ({
                 type="button"
                 onClick={handleClose}
                 className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-                disabled={isLoading}
+                disabled={createSession.isPending}
               >
                 {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 className="px-4 py-2 bg-lumea-primary text-white rounded-md hover:bg-lumea-primary-dark transition-colors flex items-center justify-center min-w-[100px]"
-                disabled={isLoading}
+                disabled={createSession.isPending}
               >
-                {isLoading ? (
+                {createSession.isPending ? (
                   <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
                 ) : (
                   t('sessions.create')

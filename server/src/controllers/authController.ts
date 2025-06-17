@@ -87,8 +87,7 @@ export const signup = async (req: Request, res: Response, next: NextFunction) =>
 
     // For compatibility with existing session-based auth, we can create a session token
     // In a full Supabase migration, this would be replaced with Supabase Auth tokens
-    const { password: _, ...userResponse } = newUser;
-    return res.status(201).json(userResponse);
+    return res.status(201).json(newUser);
 
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -122,8 +121,7 @@ export const updateProfile = async (req: Request, res: Response) => {
       return res.status(500).json({ message: 'Failed to update profile' });
     }
 
-    const { password: _, ...userResponse } = updatedUser;
-    return res.json(userResponse);
+    return res.json(updatedUser);
 
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -198,10 +196,9 @@ export const registerWithInvite = async (req: Request, res: Response) => {
     // Invalidate the invite token
     await invalidateInviteToken(token);
 
-    const { password: _, ...userResponse } = newUser;
     return res.status(201).json({
       message: 'Registration successful',
-      user: userResponse
+      user: newUser
     });
 
   } catch (error) {

@@ -5,7 +5,6 @@ import { logger } from '../services/logger';
 
 interface AuthenticatedRequest extends Request {
   user?: {
-    _id: string;
     id: string;
     role: string;
     email: string;
@@ -18,7 +17,7 @@ export class ConsentController {
    */
   async grantConsent(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = req.user?._id;
+      const userId = req.user?.id;
       if (!userId) {
         res.status(401).json({ error: 'Authentication required' });
         return;
@@ -97,7 +96,7 @@ export class ConsentController {
    */
   async withdrawConsent(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = req.user?._id;
+      const userId = req.user?.id;
       if (!userId) {
         res.status(401).json({ error: 'Authentication required' });
         return;
@@ -152,7 +151,7 @@ export class ConsentController {
    */
   async getUserConsents(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = req.user?._id;
+      const userId = req.user?.id;
       if (!userId) {
         res.status(401).json({ error: 'Authentication required' });
         return;
@@ -194,7 +193,7 @@ export class ConsentController {
    */
   async getConsentHistory(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = req.user?._id;
+      const userId = req.user?.id;
       if (!userId) {
         res.status(401).json({ error: 'Authentication required' });
         return;
@@ -231,7 +230,7 @@ export class ConsentController {
    */
   async checkConsent(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = req.user?._id;
+      const userId = req.user?.id;
       if (!userId) {
         res.status(401).json({ error: 'Authentication required' });
         return;
@@ -266,7 +265,7 @@ export class ConsentController {
    */
   async renewConsent(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = req.user?._id;
+      const userId = req.user?.id;
       if (!userId) {
         res.status(401).json({ error: 'Authentication required' });
         return;
@@ -323,7 +322,7 @@ export class ConsentController {
    */
   async withdrawAllConsents(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = req.user?._id;
+      const userId = req.user?.id;
       if (!userId) {
         res.status(401).json({ error: 'Authentication required' });
         return;
@@ -361,7 +360,7 @@ export class ConsentController {
    */
   async exportUserData(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = req.user?._id;
+      const userId = req.user?.id;
       if (!userId) {
         res.status(401).json({ error: 'Authentication required' });
         return;
@@ -409,7 +408,7 @@ export class ConsentController {
    */
   async validateConsentForAction(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const userId = req.user?._id;
+      const userId = req.user?.id;
       if (!userId) {
         res.status(401).json({ error: 'Authentication required' });
         return;

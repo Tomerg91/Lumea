@@ -2,7 +2,9 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { Alert } from '../ui/alert';
+import { useToast } from '../ui/use-toast';
 import AudioPlayer from './AudioPlayer';
+import { useAudioStorage } from '../../hooks/useSupabaseStorage';
 
 // Audio recording states
 export type RecordingState = 'idle' | 'requesting' | 'recording' | 'paused' | 'completed' | 'error';
@@ -32,7 +34,7 @@ const isTouchDevice = () => {
 };
 
 export interface AudioRecorderProps {
-  onRecordingComplete?: (audioBlob: Blob, duration: number) => void;
+  onRecordingComplete?: (audioBlob: Blob, duration: number, uploadResult?: any) => void;
   onRecordingError?: (error: string) => void;
   maxDuration?: number; // in seconds
   className?: string;
@@ -50,6 +52,10 @@ export interface AudioRecorderProps {
   // Mobile-specific props
   mobileOptimized?: boolean;
   compactMode?: boolean;
+  // Supabase Storage options
+  autoUpload?: boolean; // Automatically upload to Supabase after recording
+  uploadOnComplete?: boolean; // Upload when recording is complete
+  storageFolder?: string; // Custom folder in storage bucket
 }
 
 export interface RecordingData {
@@ -57,6 +63,8 @@ export interface RecordingData {
   url: string;
   duration: number;
   mimeType: string;
+  uploadResult?: any; // Supabase upload result
+  isUploaded?: boolean;
 }
 
 const AudioRecorder: React.FC<AudioRecorderProps> = ({
@@ -76,9 +84,14 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
     autoPlay: false
   },
   mobileOptimized = false,
-  compactMode = false
+  compactMode = false,
+  autoUpload = false,
+  uploadOnComplete = false,
+  storageFolder
 }) => {
   const { t } = useTranslation();
+  const { toast } = useToast();
+  const { uploadAudio, isUploading, uploadProgress, uploadError } = useAudioStorage();
   
   // Detect mobile environment
   const [isMobileDevice] = useState(() => mobileOptimized || isMobile());
@@ -254,7 +267,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         }
       };
 
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: supportedMimeType });
         const audioUrl = URL.createObjectURL(audioBlob);
         
@@ -262,14 +275,71 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
           blob: audioBlob,
           url: audioUrl,
           duration,
-          mimeType: supportedMimeType
+          mimeType: supportedMimeType,
+          isUploaded: false
         };
 
         setRecordingData(recordingData);
         setRecordingState('completed');
-        
-        if (onRecordingComplete) {
-          onRecordingComplete(audioBlob, duration);
+
+        // Handle Supabase upload if enabled
+        if ((autoUpload || uploadOnComplete) && !isUploading) {
+          try {
+            toast({
+              title: t('audioRecorder.uploading', 'Uploading audio...'),
+              description: t('audioRecorder.uploadingDescription', 'Please wait while your audio is being saved.'),
+            });
+
+            const uploadResult = await uploadAudio({
+              audioBlob,
+              filename: `recording-${Date.now()}.${supportedMimeType.split('/')[1]}`,
+              duration,
+              options: {
+                folder: storageFolder,
+                onProgress: (progress) => {
+                  // Progress is already handled by the useAudioStorage hook
+                  console.log('Upload progress:', progress.percentage + '%');
+                }
+              }
+            });
+
+            // Update recording data with upload result
+            const updatedRecordingData: RecordingData = {
+              ...recordingData,
+              uploadResult,
+              isUploaded: true
+            };
+
+            setRecordingData(updatedRecordingData);
+
+            toast({
+              title: t('audioRecorder.uploadSuccess', 'Audio uploaded successfully'),
+              description: t('audioRecorder.uploadSuccessDescription', 'Your audio recording has been saved.'),
+            });
+
+            // Call completion callback with upload result
+            if (onRecordingComplete) {
+              onRecordingComplete(audioBlob, duration, uploadResult);
+            }
+          } catch (error) {
+            console.error('Audio upload failed:', error);
+            
+            toast({
+              title: t('audioRecorder.uploadError', 'Upload failed'),
+              description: error instanceof Error ? error.message : t('audioRecorder.uploadErrorDescription', 'Failed to save audio recording.'),
+              variant: 'destructive',
+            });
+
+            // Still call completion callback without upload result
+            if (onRecordingComplete) {
+              onRecordingComplete(audioBlob, duration);
+            }
+          }
+        } else {
+          // No upload - just call completion callback
+          if (onRecordingComplete) {
+            onRecordingComplete(audioBlob, duration);
+          }
         }
       };
 
@@ -609,18 +679,73 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
         )}
 
         {recordingState === 'completed' && (
-          <Button
-            onClick={resetRecording}
-            variant="outline"
-            size={isMobileDevice ? "lg" : "lg"}
-            className={`${isMobileDevice ? 'px-8 py-4 text-lg min-h-[52px] min-w-[160px]' : ''} 
-              ${isTouchScreen ? 'active:scale-95' : ''} transition-transform`}
-          >
-            <svg className={`${isMobileDevice ? 'w-6 h-6' : 'w-5 h-5'} mr-2`} fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-            </svg>
-            {t('audioRecorder.recordAgain')}
-          </Button>
+          <>
+            <Button
+              onClick={resetRecording}
+              variant="outline"
+              size={isMobileDevice ? "lg" : "lg"}
+              className={`${isMobileDevice ? 'px-8 py-4 text-lg min-h-[52px] min-w-[160px]' : ''} 
+                ${isTouchScreen ? 'active:scale-95' : ''} transition-transform`}
+            >
+              <svg className={`${isMobileDevice ? 'w-6 h-6' : 'w-5 h-5'} mr-2`} fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+              </svg>
+              {t('audioRecorder.recordAgain')}
+            </Button>
+
+            {/* Manual Upload Button - Show only if not auto-uploaded and not currently uploading */}
+            {!autoUpload && !uploadOnComplete && recordingData && !recordingData.isUploaded && !isUploading && (
+              <Button
+                onClick={async () => {
+                  if (recordingData) {
+                    try {
+                      toast({
+                        title: t('audioRecorder.uploading', 'Uploading audio...'),
+                        description: t('audioRecorder.uploadingDescription', 'Please wait while your audio is being saved.'),
+                      });
+
+                      const uploadResult = await uploadAudio({
+                        audioBlob: recordingData.blob,
+                        filename: `recording-${Date.now()}.${recordingData.mimeType.split('/')[1]}`,
+                        duration: recordingData.duration,
+                        options: {
+                          folder: storageFolder,
+                        }
+                      });
+
+                      // Update recording data with upload result
+                      setRecordingData({
+                        ...recordingData,
+                        uploadResult,
+                        isUploaded: true
+                      });
+
+                      toast({
+                        title: t('audioRecorder.uploadSuccess', 'Audio uploaded successfully'),
+                        description: t('audioRecorder.uploadSuccessDescription', 'Your audio recording has been saved.'),
+                      });
+                    } catch (error) {
+                      console.error('Manual upload failed:', error);
+                      toast({
+                        title: t('audioRecorder.uploadError', 'Upload failed'),
+                        description: error instanceof Error ? error.message : t('audioRecorder.uploadErrorDescription', 'Failed to save audio recording.'),
+                        variant: 'destructive',
+                      });
+                    }
+                  }
+                }}
+                variant="lumea"
+                size={isMobileDevice ? "lg" : "lg"}
+                className={`${isMobileDevice ? 'px-8 py-4 text-lg min-h-[52px] min-w-[160px]' : ''} 
+                  ${isTouchScreen ? 'active:scale-95' : ''} transition-transform`}
+              >
+                <svg className={`${isMobileDevice ? 'w-6 h-6' : 'w-5 h-5'} mr-2`} fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
+                {t('audioRecorder.uploadToCloud', 'Save to Cloud')}
+              </Button>
+            )}
+          </>
         )}
       </div>
 
@@ -633,8 +758,67 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
               <p>{t('audioRecorder.duration')}: {formatDuration(recordingData.duration)}</p>
               <p>{t('audioRecorder.size')}: {(recordingData.blob.size / 1024).toFixed(1)} KB</p>
             </div>
+            
+            {/* Upload Status */}
+            {recordingData.isUploaded && (
+              <div className="flex items-center space-x-2 mt-2 text-green-600">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span className="text-sm font-medium">{t('audioRecorder.uploadedToCloud', 'Saved to cloud')}</span>
+              </div>
+            )}
           </div>
         </div>
+      )}
+
+      {/* Upload Progress Display */}
+      {isUploading && uploadProgress && (
+        <div className={`${compactMode ? 'mt-2' : 'mt-4'} p-4 bg-blue-50 border border-blue-200 rounded-lg`}>
+          <div className="flex items-center justify-between mb-2">
+            <span className={`font-medium text-blue-900 ${isMobileDevice ? 'text-base' : 'text-sm'}`}>
+              {t('audioRecorder.uploading', 'Uploading audio...')}
+            </span>
+            <span className={`text-blue-700 ${isMobileDevice ? 'text-base' : 'text-sm'}`}>
+              {uploadProgress.percentage.toFixed(0)}%
+            </span>
+          </div>
+          
+          <div className="w-full bg-blue-200 rounded-full h-2 mb-2">
+            <div
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${uploadProgress.percentage}%` }}
+            />
+          </div>
+          
+          {uploadProgress.timeRemaining && (
+            <div className={`text-blue-600 ${isMobileDevice ? 'text-sm' : 'text-xs'}`}>
+              {t('audioRecorder.timeRemaining', 'Time remaining: {{time}}s', {
+                time: Math.round(uploadProgress.timeRemaining),
+              })}
+            </div>
+          )}
+          
+          {uploadProgress.speed && (
+            <div className={`text-blue-600 ${isMobileDevice ? 'text-sm' : 'text-xs'}`}>
+              {t('audioRecorder.uploadSpeed', 'Speed: {{speed}} KB/s', {
+                speed: (uploadProgress.speed / 1024).toFixed(1),
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Upload Error Display */}
+      {uploadError && (
+        <Alert variant="destructive" className={`${compactMode ? 'mt-2' : 'mt-4'}`}>
+          <div className="space-y-2">
+            <p className="font-medium">{t('audioRecorder.uploadError', 'Upload failed')}</p>
+            <p className="text-sm">
+              {uploadError instanceof Error ? uploadError.message : t('audioRecorder.uploadErrorDescription', 'Failed to save audio recording.')}
+            </p>
+          </div>
+        </Alert>
       )}
 
       {/* Audio Player */}
@@ -659,6 +843,13 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
             // Mobile optimizations
             mobileOptimized={isMobileDevice}
             compactMode={compactMode}
+            // Storage metadata
+            storageMetadata={recordingData.uploadResult ? {
+              fileName: recordingData.uploadResult.fileName,
+              fileSize: recordingData.blob.size,
+              uploadedAt: recordingData.uploadResult.uploadedAt,
+              isFromStorage: recordingData.isUploaded
+            } : undefined}
           />
         </div>
       )}

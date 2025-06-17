@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 export interface AudioPlayerProps {
-  audioBlob: Blob;
+  audioBlob?: Blob;
   audioUrl: string;
   duration: number;
   className?: string;
@@ -30,6 +30,13 @@ export interface AudioPlayerProps {
   // Mobile optimization props
   mobileOptimized?: boolean;
   compactMode?: boolean;
+  // Supabase Storage props
+  storageMetadata?: {
+    fileName?: string;
+    fileSize?: number;
+    uploadedAt?: string;
+    isFromStorage?: boolean;
+  };
 }
 
 export type PlaybackState = 'idle' | 'loading' | 'playing' | 'paused' | 'ended' | 'error';
@@ -51,7 +58,8 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   onEnded,
   onError,
   mobileOptimized = false,
-  compactMode = false
+  compactMode = false,
+  storageMetadata
 }) => {
   const { t } = useTranslation();
   
@@ -131,13 +139,26 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
   // Generate waveform data
   const generateWaveform = useCallback(async () => {
-    if (!audioBlob || !showWaveform) return;
+    if (!showWaveform) return;
 
     setIsLoadingWaveform(true);
     
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const arrayBuffer = await audioBlob.arrayBuffer();
+      let arrayBuffer: ArrayBuffer;
+
+      // Get audio data from blob or fetch from URL
+      if (audioBlob) {
+        arrayBuffer = await audioBlob.arrayBuffer();
+      } else {
+        // Fetch from Supabase Storage URL or other URL
+        const response = await fetch(audioUrl);
+        if (!response.ok) {
+          throw new Error('Failed to fetch audio data');
+        }
+        arrayBuffer = await response.arrayBuffer();
+      }
+
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
       
       const channelData = audioBuffer.getChannelData(0);
@@ -167,7 +188,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     } finally {
       setIsLoadingWaveform(false);
     }
-  }, [audioBlob, showWaveform]);
+  }, [audioBlob, audioUrl, showWaveform]);
 
   // Generate waveform when audio loads
   useEffect(() => {
@@ -281,7 +302,25 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const handleDownload = () => {
     const link = document.createElement('a');
     link.href = audioUrl;
-    link.download = `audio-recording-${Date.now()}.${audioBlob.type.split('/')[1]}`;
+    
+    // Determine filename
+    let filename = 'audio-recording';
+    if (storageMetadata?.fileName) {
+      filename = storageMetadata.fileName;
+    } else if (audioBlob) {
+      filename = `audio-${Date.now()}.${audioBlob.type.split('/')[1] || 'webm'}`;
+    } else {
+      // Extract filename from URL if possible
+      const urlParts = audioUrl.split('/');
+      const urlFilename = urlParts[urlParts.length - 1];
+      if (urlFilename && urlFilename.includes('.')) {
+        filename = urlFilename.split('?')[0]; // Remove query parameters
+      } else {
+        filename = `audio-${Date.now()}.mp3`;
+      }
+    }
+    
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -520,6 +559,37 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
           </div>
         )}
       </div>
+
+      {/* Storage Metadata Display */}
+      {storageMetadata?.isFromStorage && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-between text-sm text-gray-600">
+            <div className="flex items-center space-x-2">
+              <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+              <span className="font-medium">{t('audioPlayer.storedInCloud', 'Stored in cloud')}</span>
+            </div>
+            
+            {storageMetadata.uploadedAt && (
+              <span>
+                {t('audioPlayer.uploaded', 'Uploaded')}: {new Date(storageMetadata.uploadedAt).toLocaleDateString()}
+              </span>
+            )}
+          </div>
+          
+          {(storageMetadata.fileName || storageMetadata.fileSize) && (
+            <div className="mt-2 text-xs text-gray-500 space-y-1">
+              {storageMetadata.fileName && (
+                <div>{t('audioPlayer.fileName', 'File')}: {storageMetadata.fileName}</div>
+              )}
+              {storageMetadata.fileSize && (
+                <div>{t('audioPlayer.fileSize', 'Size')}: {(storageMetadata.fileSize / 1024).toFixed(1)} KB</div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

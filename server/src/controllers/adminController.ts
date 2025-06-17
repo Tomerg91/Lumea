@@ -13,11 +13,10 @@ export const adminController = {
         return res.status(403).json({ message: 'Admin access required' });
       }
 
-      // Find all coaches with pending status
+      // Find all coaches (no status column in current schema)
       const { data: pendingCoaches, error } = await supabase
         .from('users')
         .select('id, email, name, created_at')
-        .eq('status', 'pending')
         .eq('role', 'coach');
 
       if (error) {
@@ -39,13 +38,11 @@ export const adminController = {
         supabase
           .from('users')
           .select('*', { count: 'exact', head: true })
-          .eq('role', 'coach')
-          .eq('status', 'active'),
+          .eq('role', 'coach'),
         supabase
           .from('users')
           .select('*', { count: 'exact', head: true })
-          .eq('role', 'client')
-          .eq('status', 'active'),
+          .eq('role', 'client'),
         supabase
           .from('sessions')
           .select('*', { count: 'exact', head: true })
@@ -81,21 +78,16 @@ export const adminController = {
         return res.status(403).json({ message: 'Admin access required' });
       }
 
-      // Find and update the coach
+      // Find the coach (no status updates in current schema)
       const { data: coach, error } = await supabase
         .from('users')
-        .update({ 
-          status: 'active',
-          updated_at: new Date().toISOString(),
-        })
+        .select('id, email, name')
         .eq('id', id)
         .eq('role', 'coach')
-        .eq('status', 'pending')
-        .select('id, email, name, status')
         .single();
 
       if (error || !coach) {
-        return res.status(404).json({ message: 'Coach not found or not pending' });
+        return res.status(404).json({ message: 'Coach not found' });
       }
 
       return res.status(200).json({
@@ -104,7 +96,6 @@ export const adminController = {
           id: coach.id,
           email: coach.email,
           name: coach.name,
-          status: coach.status,
         },
       });
     } catch (error) {
@@ -120,14 +111,9 @@ export const adminController = {
     try {
       const { data: coach, error } = await supabase
         .from('users')
-        .update({ 
-          status: 'rejected',
-          updated_at: new Date().toISOString(),
-        })
+        .select('id, email, name')
         .eq('id', id)
         .eq('role', 'coach')
-        .eq('status', 'pending')
-        .select('id, email, name')
         .single();
 
       if (error || !coach) {
@@ -158,11 +144,10 @@ export const adminController = {
     }
 
     try {
-      // Get all active users
+      // Get all users
       const { data: users, error } = await supabase
         .from('users')
-        .select('email, name')
-        .eq('status', 'active');
+        .select('email, name');
 
       if (error) {
         console.error('Error fetching users for announcement:', error);

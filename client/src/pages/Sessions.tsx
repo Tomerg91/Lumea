@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,8 +25,7 @@ import {
 } from '@/components/ui/select';
 import MainLayout from '@/components/MainLayout';
 import { useToast } from '@/hooks/use-toast';
-import { fetchSessions, createSession as apiCreateSession, CreateSessionData } from '@/services/sessionService';
-import { Session } from '@/components/SessionList';
+import { useSessions, useCreateSession, Session, CreateSessionData } from '@/hooks/useSessions';
 import { useAuth } from '@/contexts/AuthContext';
 import { CancelSessionModal } from '@/components/ui/CancelSessionModal';
 import { RescheduleSessionModal } from '@/components/ui/RescheduleSessionModal';
@@ -45,30 +44,15 @@ const Sessions = () => {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadSessions = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const fetchedSessions = await fetchSessions();
-        setSessions(fetchedSessions);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load sessions');
-        toast({
-          title: 'Error',
-          description: 'Could not fetch sessions. Displaying mock data or an empty list.',
-          variant: 'destructive',
-        });
-      }
-      setIsLoading(false);
-    };
+  // Use the Supabase sessions hooks
+  const { 
+    data: sessions = [], 
+    isLoading, 
+    error
+  } = useSessions();
 
-    loadSessions();
-  }, [toast]);
+  const createSessionMutation = useCreateSession();
 
   const [newSessionData, setNewSessionData] = useState<NewSessionFormData>({
     date: new Date(),
@@ -90,12 +74,7 @@ const Sessions = () => {
   };
 
   const handleCancelSuccess = (cancelledSession: Session) => {
-    // Update the sessions list with the cancelled session
-    setSessions(prevSessions => 
-      prevSessions.map(session => 
-        session._id === cancelledSession._id ? cancelledSession : session
-      )
-    );
+    // The hook will automatically update the cache
     setCancelModalOpen(false);
     setSessionToCancel(null);
   };
@@ -106,12 +85,7 @@ const Sessions = () => {
   };
 
   const handleRescheduleSuccess = (rescheduledSession: Session) => {
-    // Update the sessions list with the rescheduled session
-    setSessions(prevSessions => 
-      prevSessions.map(session => 
-        session._id === rescheduledSession._id ? rescheduledSession : session
-      )
-    );
+    // The hook will automatically update the cache
     setRescheduleModalOpen(false);
     setSessionToReschedule(null);
   };
@@ -126,17 +100,15 @@ const Sessions = () => {
       return;
     }
 
-    setIsLoading(true);
     try {
       // Transform form data to match CreateSessionData interface
       const createSessionPayload: CreateSessionData = {
-        clientId: user.id,
+        client_id: user.id,
         date: format(newSessionData.date, 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\''),
         notes: newSessionData.notes,
       };
 
-      const createdSession = await apiCreateSession(createSessionPayload);
-      setSessions(prevSessions => [...prevSessions, createdSession]);
+      await createSessionMutation.mutateAsync(createSessionPayload);
       setIsDialogOpen(false);
       setNewSessionData({
         date: new Date(),
@@ -147,17 +119,15 @@ const Sessions = () => {
       });
       toast({
         title: 'Success',
-        description: 'Your session has been scheduled (mocked).',
+        description: 'Your session has been scheduled.',
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create session');
       toast({
         title: 'Error',
-        description: 'Could not create session.',
+        description: err instanceof Error ? err.message : 'Could not create session.',
         variant: 'destructive',
       });
     }
-    setIsLoading(false);
   };
 
   const sessionsByDate = sessions.reduce<Record<string, Session[]>>((acc, session) => {

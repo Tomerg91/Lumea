@@ -100,14 +100,13 @@ export const coachController = {
         .from('sessions')
         .select(`
           id,
-          scheduled_date,
-          duration,
+          date,
           status,
           notes,
           client:client_id!inner(id, name, email)
         `)
         .eq('coach_id', coachId)
-        .order('scheduled_date', { ascending: false })
+        .order('date', { ascending: false })
         .limit(5);
 
       if (recentError) {
@@ -119,8 +118,7 @@ export const coachController = {
         const client = Array.isArray(session.client) ? session.client[0] : session.client;
         return {
           id: session.id,
-          date: session.scheduled_date,
-          duration: session.duration,
+          date: session.date,
           status: session.status,
           client: {
             id: client.id,
@@ -156,20 +154,18 @@ export const coachController = {
         .from('sessions')
         .select(`
           id,
-          scheduled_date,
-          duration,
+          date,
           status,
           notes,
-          video_url,
           client:client_id!inner(id, name, email)
         `)
         .eq('coach_id', coachId)
-        .order('scheduled_date', { ascending: true });
+        .order('date', { ascending: true });
 
       if (startDate && endDate) {
         query = query
-          .gte('scheduled_date', startDate as string)
-          .lte('scheduled_date', endDate as string);
+          .gte('date', startDate as string)
+          .lte('date', endDate as string);
       }
 
       const { data: sessions, error } = await query;

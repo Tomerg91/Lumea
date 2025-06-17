@@ -6,7 +6,7 @@ import { Reflection } from '../models/Reflection.js';
 import { CoachNote } from '../models/CoachNote.js';
 import { SessionFeedback } from '../models/SessionFeedback.js';
 import { SessionTiming } from '../models/SessionTiming.js';
-import { User } from '../models/User.js';
+import { supabase } from '../lib/supabase.js';
 
 export interface AnalyticsDateRange {
   startDate?: Date;
@@ -353,7 +353,10 @@ class AnalyticsService {
       coach.averageSessionDuration = Math.round((coach.averageSessionDuration || 0) * 10) / 10;
     }
 
-    const totalCoaches = await User.countDocuments({ role: 'coach' });
+    const { count: totalCoaches } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('role', 'coach');
     const activeCoaches = coachData.filter(coach => coach.totalSessions > 0).length;
 
     return {
@@ -471,7 +474,7 @@ class AnalyticsService {
     const [totalSessions, totalClients, totalCoaches, totalReflections] = await Promise.all([
       CoachingSession.countDocuments(this.buildDateMatchStage('date', startDate, endDate)),
       CoachingSession.distinct('clientId', this.buildDateMatchStage('date', startDate, endDate)).then(ids => ids.length),
-      User.countDocuments({ role: 'coach' }),
+      supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'coach').then(r => r.count),
       Reflection.countDocuments(this.buildDateMatchStage('createdAt', startDate, endDate))
     ]);
 

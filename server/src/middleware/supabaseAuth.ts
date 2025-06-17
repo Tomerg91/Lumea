@@ -1,18 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import { createClient } from '@supabase/supabase-js';
+import type { Database, TypedSupabaseClient, DatabaseUser } from '../../../shared/types/database';
 
-// Create Supabase client for server-side use
+// Create typed Supabase client for middleware use
 const supabaseUrl = process.env.SUPABASE_URL || 'https://humlrpbtrbjnpnsusils.supabase.co';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1bWxycGJ0cmJqbnBuc3VzaWxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU4MjQ3MzcsImV4cCI6MjA2MTQwMDczN30.ywX7Zpywze07KqPHwiwn_hECuiblnc4-_dEl0QNU7nU';
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const supabase: TypedSupabaseClient = createClient<Database>(supabaseUrl, supabaseServiceKey);
 
-// Define the user object that will be attached to req.user
-export interface SupabaseUser {
-  id: string;
-  email: string;
-  name?: string;
-  role?: string;
+// Define the user object that will be attached to req.user (based on database schema)
+export interface SupabaseUser extends Omit<DatabaseUser, 'created_at' | 'updated_at'> {
+  // Add any additional properties that might be needed
   [key: string]: unknown;
 }
 
@@ -43,7 +41,7 @@ export const supabaseAuth = async (req: Request, res: Response, next: NextFuncti
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
 
-    // Get additional user data from our users table
+    // Get additional user data from our users table with proper typing
     const { data: userData, error: userDataError } = await supabase
       .from('users')
       .select('*')
@@ -55,12 +53,18 @@ export const supabaseAuth = async (req: Request, res: Response, next: NextFuncti
       // Continue with basic user data from auth
     }
 
-    // Populate req.user with combined data
+    // Populate req.user with combined data using proper types
     req.user = {
       id: user.id,
-      email: user.email || '',
+      email: userData?.email || user.email || '',
       name: userData?.name || user.user_metadata?.name || '',
       role: userData?.role || user.user_metadata?.role || 'client',
+      phone: userData?.phone || null,
+      avatar_url: userData?.avatar_url || null,
+      timezone: userData?.timezone || null,
+      preferences: userData?.preferences || null,
+      is_active: userData?.is_active ?? true,
+      last_login_at: userData?.last_login_at || null,
       ...userData, // Include any additional fields from users table
     };
 
@@ -141,7 +145,7 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (!error && user) {
-      // Get additional user data
+      // Get additional user data with proper typing
       const { data: userData } = await supabase
         .from('users')
         .select('*')
@@ -150,9 +154,15 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
 
       req.user = {
         id: user.id,
-        email: user.email || '',
+        email: userData?.email || user.email || '',
         name: userData?.name || user.user_metadata?.name || '',
         role: userData?.role || user.user_metadata?.role || 'client',
+        phone: userData?.phone || null,
+        avatar_url: userData?.avatar_url || null,
+        timezone: userData?.timezone || null,
+        preferences: userData?.preferences || null,
+        is_active: userData?.is_active ?? true,
+        last_login_at: userData?.last_login_at || null,
         ...userData,
       };
     }
@@ -163,4 +173,8 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
     console.error('Optional auth error:', error);
     next();
   }
-}; 
+};
+
+// Export the typed client for use in other middleware/controllers
+export { supabase };
+export type { TypedSupabaseClient, Database }; 

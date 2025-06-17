@@ -15,7 +15,10 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "types:generate": "supabase gen types typescript --project-id=humlrpbtrbjnpnsusils --schema=public > src/types/database.types.ts",
+    "types:generate:local": "supabase gen types typescript --local --schema=public > src/types/database.types.ts",
+    "types:update": "npm run types:generate && npm run typecheck"
   },
   "dependencies": {
     "@capacitor/core": "^7.2.0",

@@ -2,6 +2,25 @@ import { CoachNote, CreateCoachNoteRequest, UpdateCoachNoteRequest, CoachNoteFil
 
 const API_BASE_URL = '/api/coach-notes';
 
+/**
+ * @deprecated This service is being migrated to Supabase.
+ * Use the useCoachNotes hook from '../hooks/useCoachNotes' instead.
+ * 
+ * Migration Guide:
+ * - Replace coachNoteService.getAllNotes() with useCoachNotes()
+ * - Replace coachNoteService.createNote() with useCreateCoachNote()
+ * - Replace coachNoteService.updateNote() with useUpdateCoachNote()
+ * - Replace coachNoteService.deleteNote() with useDeleteCoachNote()
+ * - Replace coachNoteService.searchNotes() with useSearchCoachNotes()
+ * 
+ * Benefits of migration:
+ * - Real-time updates
+ * - Better caching with React Query
+ * - Automatic error handling
+ * - Optimistic updates
+ * - Better TypeScript support
+ */
+
 // Enhanced search options interface
 export interface SearchOptions {
   query?: string;
@@ -71,6 +90,8 @@ class CoachNoteService {
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}, useCache: boolean = false): Promise<T> {
+    console.warn('⚠️ coachNoteService is deprecated. Please migrate to useCoachNotes hook for better performance and real-time updates.');
+    
     const cacheKey = this.getCacheKey(endpoint, options.body);
     
     // Check cache for GET requests
@@ -120,6 +141,9 @@ class CoachNoteService {
   }
 
   // Create a new coach note
+  /**
+   * @deprecated Use useCreateCoachNote() hook instead
+   */
   async createNote(data: CreateCoachNoteRequest): Promise<CoachNote> {
     const result = await this.request<CoachNote>('/', {
       method: 'POST',
@@ -134,6 +158,9 @@ class CoachNoteService {
   }
 
   // Get a specific coach note by ID
+  /**
+   * @deprecated Use useCoachNote(id) hook instead
+   */
   async getNote(id: string, accessReason?: string): Promise<CoachNote> {
     const body = accessReason ? { accessReason } : undefined;
     return this.request<CoachNote>(`/${id}`, {
@@ -143,6 +170,9 @@ class CoachNoteService {
   }
 
   // Get paginated coach notes with server-side filtering
+  /**
+   * @deprecated Use useCoachNotes() hook instead
+   */
   async getPaginatedNotes(options: {
     page?: number;
     limit?: number;
@@ -171,6 +201,9 @@ class CoachNoteService {
   }
 
   // Get all coach notes for the current coach (legacy method - use getPaginatedNotes for better performance)
+  /**
+   * @deprecated Use useCoachNotes() hook instead
+   */
   async getAllNotes(filters?: CoachNoteFilters): Promise<CoachNote[]> {
     const queryParams = new URLSearchParams();
     
@@ -194,6 +227,9 @@ class CoachNoteService {
   }
 
   // Advanced search with server-side processing
+  /**
+   * @deprecated Use useSearchCoachNotes() hook instead
+   */
   async searchNotes(options: SearchOptions): Promise<SearchResult> {
     const queryParams = new URLSearchParams();
     

@@ -1,10 +1,31 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import './index.css';
 import App from './App';
 import './i18n';
 import { AuthProvider } from './contexts/AuthContext';
+
+// Create a client with optimized settings for Supabase
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Reduce refetch frequency for better performance
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+      // Retry less aggressively for better user experience
+      retry: 1,
+      refetchOnWindowFocus: false,
+      // Enable error boundaries for better error handling
+      throwOnError: false,
+    },
+    mutations: {
+      // Retry mutations once on failure
+      retry: 1,
+    },
+  },
+});
 
 // Optimize performance monitoring - only load when needed
 const initOptimizedPerformanceMonitoring = async () => {
@@ -70,11 +91,13 @@ const initApp = async () => {
   // Render app immediately - don't wait for optimizations
   root.render(
     <React.StrictMode>
-      <BrowserRouter>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
     </React.StrictMode>
   );
 

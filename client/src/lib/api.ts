@@ -67,6 +67,10 @@ interface Resource {
 /**
  * Performs a fetch request to the API with Supabase authentication.
  * Automatically includes Authorization header with Supabase JWT token.
+ * 
+ * NOTE: This should only be used for operations that require backend processing
+ * beyond what Supabase can handle directly (e.g., complex business logic,
+ * third-party integrations, email sending, etc.)
  */
 async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
@@ -131,48 +135,127 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
   }
 }
 
-// --- Auth API Calls ---
+// --- Backend-Only API Calls ---
+// These endpoints require backend processing beyond what Supabase can handle
+// Examples: email sending, complex business logic, third-party integrations
 
-export const login = (credentials: { email: string; password: string }): Promise<User> => {
-  return apiFetch<User>('/auth/login', {
+/**
+ * Send password reset email
+ * This requires backend processing for email delivery
+ */
+export const requestPasswordReset = (email: string) => {
+  return apiFetch('/auth/request-password-reset', {
     method: 'POST',
-    body: JSON.stringify(credentials),
+    body: JSON.stringify({ email })
   });
 };
 
-export const register = (userData: {
-  name?: string;
-  email: string;
-  password: string;
-  role?: string;
-}): Promise<{ message: string; user: User }> => {
-  return apiFetch<{ message: string; user: User }>('/auth/register', {
+/**
+ * Reset password with token
+ * This requires backend processing for token validation
+ */
+export const resetPassword = (token: string, newPassword: string) => {
+  return apiFetch('/auth/reset-password', {
     method: 'POST',
-    body: JSON.stringify(userData),
+    body: JSON.stringify({ token, newPassword })
   });
 };
 
-export const logout = (): Promise<{ message: string }> => {
-  return apiFetch<{ message: string }>('/auth/logout', {
+/**
+ * Send invitation email to new coach/client
+ * This requires backend processing for email delivery
+ */
+export const sendInvitation = (email: string, role: 'coach' | 'client', inviterName: string) => {
+  return apiFetch('/auth/send-invitation', {
     method: 'POST',
+    body: JSON.stringify({ email, role, inviterName })
   });
 };
 
-export const getCurrentUser = (): Promise<User> => {
-  return apiFetch<User>('/auth/me', {
-    method: 'GET',
+/**
+ * Process payment for coaching sessions
+ * This requires backend processing for payment gateway integration
+ */
+export const processPayment = (paymentData: {
+  sessionId: string;
+  amount: number;
+  paymentMethodId: string;
+}) => {
+  return apiFetch('/payments/process', {
+    method: 'POST',
+    body: JSON.stringify(paymentData)
   });
 };
 
-// --- Mock Session/Resource API Calls (Example) ---
-// We will use these later, pointing to the mock endpoints for now
-
-export const getClientSessions = (): Promise<Session[]> => {
-  return apiFetch<Session[]>('/sessions/client', { method: 'GET' });
+/**
+ * Send notification (email/SMS) to users
+ * This requires backend processing for notification delivery
+ */
+export const sendNotification = (notificationData: {
+  userId: string;
+  type: 'email' | 'sms' | 'push';
+  subject?: string;
+  message: string;
+  templateId?: string;
+}) => {
+  return apiFetch('/notifications/send', {
+    method: 'POST',
+    body: JSON.stringify(notificationData)
+  });
 };
 
-export const getClientResources = (): Promise<Resource[]> => {
-  return apiFetch<Resource[]>('/resources/client', { method: 'GET' });
+/**
+ * Generate and send reports (PDF, etc.)
+ * This requires backend processing for document generation
+ */
+export const generateReport = (reportData: {
+  type: 'session_summary' | 'progress_report' | 'analytics';
+  userId: string;
+  dateRange?: { startDate: string; endDate: string };
+  format?: 'pdf' | 'excel';
+}) => {
+  return apiFetch('/reports/generate', {
+    method: 'POST',
+    body: JSON.stringify(reportData)
+  });
 };
 
-// Add other API calls for sessions, resources, profile etc. as needed
+/**
+ * Integrate with external calendar systems
+ * This requires backend processing for OAuth and API integration
+ */
+export const syncCalendar = (calendarData: {
+  provider: 'google' | 'outlook' | 'apple';
+  authCode?: string;
+  action: 'connect' | 'sync' | 'disconnect';
+}) => {
+  return apiFetch('/calendar/sync', {
+    method: 'POST',
+    body: JSON.stringify(calendarData)
+  });
+};
+
+// --- Deprecated API Calls ---
+// These functions are deprecated and should be replaced with Supabase hooks
+// They are kept temporarily for backward compatibility during migration
+
+/**
+ * @deprecated Use useSessions hook instead
+ * This will be removed in a future version
+ */
+export const getClientSessions = (): Promise<any[]> => {
+  console.warn('getClientSessions is deprecated. Use useSessions hook instead.');
+  return apiFetch<any[]>('/sessions/client', { method: 'GET' });
+};
+
+/**
+ * @deprecated Use useResources hook instead  
+ * This will be removed in a future version
+ */
+export const getClientResources = (): Promise<any[]> => {
+  console.warn('getClientResources is deprecated. Use useResources hook instead.');
+  return apiFetch<any[]>('/resources/client', { method: 'GET' });
+};
+
+// Export the apiFetch function for services that need custom backend endpoints
+export { apiFetch };

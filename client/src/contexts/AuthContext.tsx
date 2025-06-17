@@ -10,7 +10,7 @@ interface UserProfile {
   updated_at?: string;
   email?: string;
   name?: string;
-  role?: string;
+  role?: 'client' | 'coach' | 'admin';
   [key: string]: unknown;
 }
 
@@ -318,7 +318,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       let profileData = null;
       try {
         const { data, error } = await supabase
-          .from('profiles')
+          .from('users')
           .select('id,name,email,role,created_at,updated_at')
           .eq('id', userId)
           .maybeSingle();
@@ -486,7 +486,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const client = supabase;
 
       const { data, error } = await client
-        .from('profiles')
+        .from('users')
         .update(updates)
         .eq('id', user.id)
         .select('*')
