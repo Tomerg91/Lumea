@@ -12,6 +12,8 @@
 
 export type UserRole = 'client' | 'coach' | 'admin';
 
+export type UserStatus = 'active' | 'pending_approval' | 'approved' | 'rejected' | 'suspended';
+
 export type SessionStatus = 'Upcoming' | 'Completed' | 'Cancelled' | 'Rescheduled';
 
 export type PaymentStatus = 'Due' | 'Paid' | 'Overdue' | 'Cancelled';
@@ -191,6 +193,7 @@ export interface User {
   name: string | null;
   bio: string | null;
   role: UserRole;
+  status: UserStatus;
   created_at: string;
   updated_at: string;
 }
@@ -201,6 +204,7 @@ export interface UserInsert {
   name?: string | null;
   bio?: string | null;
   role?: UserRole;
+  status?: UserStatus;
   created_at?: string;
   updated_at?: string;
 }
@@ -211,6 +215,7 @@ export interface UserUpdate {
   name?: string | null;
   bio?: string | null;
   role?: UserRole;
+  status?: UserStatus;
   created_at?: string;
   updated_at?: string;
 }

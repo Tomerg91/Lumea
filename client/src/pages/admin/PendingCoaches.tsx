@@ -1,180 +1,563 @@
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { he } from 'date-fns/locale';
-import axios from 'axios';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import EmptyState from '../../components/ui/EmptyState';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Badge } from '../../components/ui/badge';
+import { Input } from '../../components/ui/input';
+import { Textarea } from '../../components/ui/textarea';
+import { Checkbox } from '../../components/ui/checkbox';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '../../components/ui/select';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '../../components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '../../components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '../../components/ui/dialog';
+import { Label } from '../../components/ui/label';
+import { useToast } from '../../hooks/use-toast';
+import { 
+  CheckCircle, 
+  XCircle, 
+  Clock, 
+  User, 
+  Mail, 
+  Calendar,
+  Filter,
+  Search,
+  CheckCheck,
+  MessageSquare
+} from 'lucide-react';
+import { createFetchConfig } from '../../services/api';
+import type { User, UserStatus } from '../../../shared/types/database';
 
-// Types
-type Coach = {
-  _id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  createdAt: string;
-};
+// Extended user type with coach-specific fields
+interface CoachApplication extends User {
+  application_date?: string;
+  experience?: string;
+  specialization?: string;
+}
 
-type PendingCoachesResponse = {
-  coaches: Coach[];
-  pagination: {
-    total: number;
-    currentPage: number;
-    totalPages: number;
-    limit: number;
-  };
-};
+interface PendingCoachesResponse {
+  coaches: CoachApplication[];
+  count: number;
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const PendingCoaches: React.FC = () => {
-  const { t, i18n } = useTranslation();
-  const isRTL = i18n.language === 'he';
-  const queryClient = useQueryClient();
-  const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const [coaches, setCoaches] = useState<CoachApplication[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCoaches, setSelectedCoaches] = useState<Set<string>>(new Set());
+  const [statusFilter, setStatusFilter] = useState<UserStatus>('pending_approval');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [batchComment, setBatchComment] = useState('');
+  const [individualComment, setIndividualComment] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [showBatchDialog, setShowBatchDialog] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [selectedCoachForAction, setSelectedCoachForAction] = useState<string | null>(null);
+  
+  const { toast } = useToast();
 
-  // Fetch pending coaches
-  const { data, isLoading, error } = useQuery<PendingCoachesResponse>({
-    queryKey: ['pending-coaches', page, limit],
-    queryFn: async () => {
-      const { data } = await axios.get(`/api/admin/pending-coaches?page=${page}&limit=${limit}`);
-      return data;
-    },
-  });
+  // Fetch coaches based on status filter
+  const fetchCoaches = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `${API_BASE_URL}/admin/pending-coaches?status=${statusFilter}`,
+        createFetchConfig()
+      );
 
-  // Approve coach mutation
-  const approveMutation = useMutation({
-    mutationFn: async (coachId: string) => {
-      await axios.patch(`/api/admin/coaches/${coachId}/approve`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pending-coaches'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
-    },
-  });
+      if (!response.ok) {
+        throw new Error('Failed to fetch coaches');
+      }
 
-  // Reject coach mutation
-  const rejectMutation = useMutation({
-    mutationFn: async (coachId: string) => {
-      await axios.delete(`/api/admin/coaches/${coachId}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pending-coaches'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
-    },
-  });
-
-  // Handle coach approval
-  const handleApprove = (coachId: string) => {
-    if (confirm(t('admin.confirmApprove'))) {
-      approveMutation.mutate(coachId);
+      const data: PendingCoachesResponse = await response.json();
+      setCoaches(data.coaches);
+    } catch (error) {
+      console.error('Error fetching coaches:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load coach applications',
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handle coach rejection
-  const handleReject = (coachId: string) => {
-    if (confirm(t('admin.confirmReject'))) {
-      rejectMutation.mutate(coachId);
+  useEffect(() => {
+    fetchCoaches();
+  }, [statusFilter]);
+
+  // Filter coaches based on search term
+  const filteredCoaches = coaches.filter(coach =>
+    coach.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    coach.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Individual coach approval
+  const approveCoach = async (coachId: string) => {
+    try {
+      setActionLoading(coachId);
+      const response = await fetch(
+        `${API_BASE_URL}/admin/coaches/${coachId}/approve`,
+        {
+          ...createFetchConfig(),
+          method: 'POST',
+          body: JSON.stringify({ comment: individualComment }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to approve coach');
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Coach approved successfully',
+      });
+
+      setIndividualComment('');
+      await fetchCoaches();
+    } catch (error) {
+      console.error('Error approving coach:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to approve coach',
+      });
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  // Format date based on locale
-  const formatDate = (date: string) => {
-    const dateObj = new Date(date);
-    if (isRTL) {
-      return format(dateObj, 'PPP', { locale: he });
+  // Individual coach rejection
+  const rejectCoach = async (coachId: string) => {
+    try {
+      setActionLoading(coachId);
+      const response = await fetch(
+        `${API_BASE_URL}/admin/coaches/${coachId}/reject`,
+        {
+          ...createFetchConfig(),
+          method: 'POST',
+          body: JSON.stringify({ 
+            reason: rejectionReason,
+            comment: individualComment 
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to reject coach');
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Coach application rejected',
+      });
+
+      setIndividualComment('');
+      setRejectionReason('');
+      setShowRejectDialog(false);
+      setSelectedCoachForAction(null);
+      await fetchCoaches();
+    } catch (error) {
+      console.error('Error rejecting coach:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to reject coach',
+      });
+    } finally {
+      setActionLoading(null);
     }
-    return format(dateObj, 'PPP');
   };
 
-  if (isLoading) {
+  // Batch approve coaches
+  const batchApproveCoaches = async () => {
+    try {
+      setActionLoading('batch');
+      const response = await fetch(
+        `${API_BASE_URL}/admin/coaches/batch-approve`,
+        {
+          ...createFetchConfig(),
+          method: 'POST',
+          body: JSON.stringify({
+            coach_ids: Array.from(selectedCoaches),
+            comment: batchComment,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to batch approve coaches');
+      }
+
+      const result = await response.json();
+      
+      toast({
+        title: 'Success',
+        description: result.message,
+      });
+
+      setSelectedCoaches(new Set());
+      setBatchComment('');
+      setShowBatchDialog(false);
+      await fetchCoaches();
+    } catch (error) {
+      console.error('Error batch approving coaches:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to approve coaches',
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Toggle coach selection
+  const toggleCoachSelection = (coachId: string) => {
+    const newSelection = new Set(selectedCoaches);
+    if (newSelection.has(coachId)) {
+      newSelection.delete(coachId);
+    } else {
+      newSelection.add(coachId);
+    }
+    setSelectedCoaches(newSelection);
+  };
+
+  // Select all visible coaches
+  const selectAllCoaches = () => {
+    if (selectedCoaches.size === filteredCoaches.length) {
+      setSelectedCoaches(new Set());
+    } else {
+      setSelectedCoaches(new Set(filteredCoaches.map(c => c.id)));
+    }
+  };
+
+  const getStatusBadge = (status: UserStatus) => {
+    const statusConfig = {
+      pending_approval: { color: 'bg-yellow-100 text-yellow-800', label: 'Pending' },
+      approved: { color: 'bg-green-100 text-green-800', label: 'Approved' },
+      rejected: { color: 'bg-red-100 text-red-800', label: 'Rejected' },
+      active: { color: 'bg-blue-100 text-blue-800', label: 'Active' },
+      suspended: { color: 'bg-gray-100 text-gray-800', label: 'Suspended' },
+    };
+
+    const config = statusConfig[status];
     return (
-      <div className="flex justify-center py-10">
-        <LoadingSpinner size="large" />
-      </div>
+      <Badge className={config.color}>
+        {config.label}
+      </Badge>
     );
-  }
-
-  if (error) {
-    return <div className="text-red-500">{t('admin.errorLoadingCoaches')}</div>;
-  }
-
-  if (!data?.coaches.length) {
-    return (
-      <EmptyState
-        title={t('admin.noPendingCoaches')}
-        description={t('admin.noPendingCoachesDescription')}
-        icon="🎉"
-      />
-    );
-  }
+  };
 
   return (
-    <div>
-      <h2 className="text-xl font-semibold mb-4">{t('admin.pendingCoaches')}</h2>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Coach Applications Management
+          </CardTitle>
+          <CardDescription>
+            Review and manage coach applications for the platform
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Filters and Actions */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search coaches..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-64"
+                />
+              </div>
+              
+              <Select value={statusFilter} onValueChange={(value: UserStatus) => setStatusFilter(value)}>
+                <SelectTrigger className="w-40">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending_approval">Pending</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
-          <thead className="bg-gray-100 dark:bg-gray-700">
-            <tr>
-              <th className="py-3 px-4 text-left">{t('admin.name')}</th>
-              <th className="py-3 px-4 text-left">{t('admin.email')}</th>
-              <th className="py-3 px-4 text-left">{t('admin.registered')}</th>
-              <th className="py-3 px-4 text-center">{t('admin.actions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.coaches.map((coach) => (
-              <tr key={coach._id} className="border-b border-gray-200 dark:border-gray-700">
-                <td className="py-3 px-4">
-                  {coach.firstName} {coach.lastName}
-                </td>
-                <td className="py-3 px-4">{coach.email}</td>
-                <td className="py-3 px-4">{formatDate(coach.createdAt)}</td>
-                <td className="py-3 px-4 flex justify-center space-x-2">
-                  <button
-                    onClick={() => handleApprove(coach._id)}
-                    disabled={approveMutation.isPending}
-                    className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600"
-                  >
-                    {t('admin.approve')}
-                  </button>
-                  <button
-                    onClick={() => handleReject(coach._id)}
-                    disabled={rejectMutation.isPending}
-                    className="px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600"
-                  >
-                    {t('admin.reject')}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            {selectedCoaches.size > 0 && statusFilter === 'pending_approval' && (
+              <div className="flex gap-2">
+                <Dialog open={showBatchDialog} onOpenChange={setShowBatchDialog}>
+                  <DialogTrigger asChild>
+                    <Button className="flex items-center gap-2">
+                      <CheckCheck className="h-4 w-4" />
+                      Approve Selected ({selectedCoaches.size})
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Batch Approve Coaches</DialogTitle>
+                      <DialogDescription>
+                        Are you sure you want to approve {selectedCoaches.size} selected coaches?
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="batch-comment">Comment (optional)</Label>
+                        <Textarea
+                          id="batch-comment"
+                          placeholder="Add a comment for the approved coaches..."
+                          value={batchComment}
+                          onChange={(e) => setBatchComment(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowBatchDialog(false)}>
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={batchApproveCoaches}
+                        disabled={actionLoading === 'batch'}
+                      >
+                        {actionLoading === 'batch' ? 'Processing...' : 'Approve All'}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            )}
+          </div>
 
-      {/* Pagination */}
-      {data.pagination.totalPages > 1 && (
-        <div className="flex justify-center mt-4 space-x-2">
-          <button
-            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-            disabled={page === 1}
-            className="px-3 py-1 rounded-md bg-gray-200 dark:bg-gray-700 disabled:opacity-50"
-          >
-            {t('admin.previous')}
-          </button>
-          <span className="px-3 py-1">
-            {t('admin.pageOf', { current: page, total: data.pagination.totalPages })}
-          </span>
-          <button
-            onClick={() => setPage((prev) => Math.min(prev + 1, data.pagination.totalPages))}
-            disabled={page === data.pagination.totalPages}
-            className="px-3 py-1 rounded-md bg-gray-200 dark:bg-gray-700 disabled:opacity-50"
-          >
-            {t('admin.next')}
-          </button>
-        </div>
-      )}
+          {/* Coaches Table */}
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {statusFilter === 'pending_approval' && (
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={selectedCoaches.size === filteredCoaches.length && filteredCoaches.length > 0}
+                        onCheckedChange={selectAllCoaches}
+                      />
+                    </TableHead>
+                  )}
+                  <TableHead>Coach</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Applied</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={statusFilter === 'pending_approval' ? 5 : 4} className="text-center py-8">
+                      Loading coaches...
+                    </TableCell>
+                  </TableRow>
+                ) : filteredCoaches.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={statusFilter === 'pending_approval' ? 5 : 4} className="text-center py-8">
+                      No coaches found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredCoaches.map((coach) => (
+                    <TableRow key={coach.id}>
+                      {statusFilter === 'pending_approval' && (
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedCoaches.has(coach.id)}
+                            onCheckedChange={() => toggleCoachSelection(coach.id)}
+                          />
+                        </TableCell>
+                      )}
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="font-medium">{coach.name || 'No Name'}</div>
+                          <div className="text-sm text-gray-500 flex items-center gap-1">
+                            <Mail className="h-3 w-3" />
+                            {coach.email}
+                          </div>
+                          {coach.bio && (
+                            <div className="text-sm text-gray-600 max-w-md truncate">
+                              {coach.bio}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(coach.status)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm text-gray-500 flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(coach.created_at).toLocaleDateString()}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          {statusFilter === 'pending_approval' && (
+                            <>
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button 
+                                    size="sm" 
+                                    variant="default"
+                                    disabled={actionLoading === coach.id}
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-1" />
+                                    Approve
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>Approve Coach Application</DialogTitle>
+                                    <DialogDescription>
+                                      Approve {coach.name || coach.email} as a coach on the platform?
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <div className="space-y-4">
+                                    <div>
+                                      <Label htmlFor="individual-comment">Comment (optional)</Label>
+                                      <Textarea
+                                        id="individual-comment"
+                                        placeholder="Add a comment for the coach..."
+                                        value={individualComment}
+                                        onChange={(e) => setIndividualComment(e.target.value)}
+                                      />
+                                    </div>
+                                  </div>
+                                  <DialogFooter>
+                                    <Button variant="outline">Cancel</Button>
+                                    <Button onClick={() => approveCoach(coach.id)}>
+                                      Approve Coach
+                                    </Button>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
+
+                              <AlertDialog open={showRejectDialog && selectedCoachForAction === coach.id} onOpenChange={(open) => {
+                                if (!open) {
+                                  setShowRejectDialog(false);
+                                  setSelectedCoachForAction(null);
+                                  setRejectionReason('');
+                                  setIndividualComment('');
+                                }
+                              }}>
+                                <AlertDialogTrigger asChild>
+                                  <Button 
+                                    size="sm" 
+                                    variant="destructive"
+                                    disabled={actionLoading === coach.id}
+                                    onClick={() => {
+                                      setSelectedCoachForAction(coach.id);
+                                      setShowRejectDialog(true);
+                                    }}
+                                  >
+                                    <XCircle className="h-4 w-4 mr-1" />
+                                    Reject
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Reject Coach Application</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will reject {coach.name || coach.email}'s application and send them a notification email.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <div className="space-y-4">
+                                    <div>
+                                      <Label htmlFor="rejection-reason">Reason for rejection</Label>
+                                      <Select value={rejectionReason} onValueChange={setRejectionReason}>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select a reason..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="insufficient_experience">Insufficient Experience</SelectItem>
+                                          <SelectItem value="incomplete_application">Incomplete Application</SelectItem>
+                                          <SelectItem value="qualifications_not_met">Qualifications Not Met</SelectItem>
+                                          <SelectItem value="capacity_full">Capacity Full</SelectItem>
+                                          <SelectItem value="other">Other</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div>
+                                      <Label htmlFor="rejection-comment">Additional feedback (optional)</Label>
+                                      <Textarea
+                                        id="rejection-comment"
+                                        placeholder="Provide additional feedback for the applicant..."
+                                        value={individualComment}
+                                        onChange={(e) => setIndividualComment(e.target.value)}
+                                      />
+                                    </div>
+                                  </div>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => rejectCoach(coach.id)}
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      Reject Application
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Summary */}
+          <div className="text-sm text-gray-500">
+            Showing {filteredCoaches.length} of {coaches.length} coaches
+            {selectedCoaches.size > 0 && ` • ${selectedCoaches.size} selected`}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

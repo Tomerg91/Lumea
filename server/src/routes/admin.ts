@@ -10,8 +10,9 @@ router.use(isAdmin);
 
 // Pending coaches
 router.get('/pending-coaches', adminController.getPendingCoaches);
+router.post('/coaches/batch-approve', adminController.batchApproveCoaches);
 router.post('/coaches/:id/approve', adminController.approveCoach);
-router.delete('/coaches/:id', adminController.rejectCoach);
+router.post('/coaches/:id/reject', adminController.rejectCoach);
 
 // Platform stats
 router.get('/stats', adminController.getStats);
