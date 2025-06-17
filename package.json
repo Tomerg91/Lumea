@@ -22,7 +22,10 @@
     "test:rls": "vitest run supabase/tests/rls.spec.ts",
     "prepare": "[ -z \"$CI\" ] && husky || echo 'Skipping husky setup in CI environment'",
     "migrate-data": "tsx scripts/migrate-data.ts",
-    "test-supabase": "tsx scripts/migrate-data.ts"
+    "test-supabase": "tsx scripts/migrate-data.ts",
+    "types:generate": "supabase gen types typescript --local --schema public > shared/types/database.ts",
+    "types:generate:remote": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID --schema public > shared/types/database.ts",
+    "types:setup": "mkdir -p shared/types && npm run types:generate"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
