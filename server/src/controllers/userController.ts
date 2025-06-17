@@ -1,41 +1,67 @@
 import { Request, Response } from 'express';
-import { supabase } from '../lib/supabase.js';
+import { z } from 'zod';
+import { supabase, serverTables } from '../lib/supabase.js';
+import type { User, UserUpdate } from '../../../shared/types/database';
+
+// Validation schema for user profile updates
+const updateProfileSchema = z.object({
+  name: z.string().min(1, 'Name cannot be empty').optional(),
+  bio: z.string().optional(),
+});
 
 export const userController = {
   // Export user data
-  async exportData(req: Request, res: Response) {
+  exportData: async (req: Request, res: Response): Promise<void> => {
     try {
       if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
+        res.status(401).json({ error: 'Not authenticated' });
+        return;
       }
 
       const userId = req.user.id;
 
-      // Fetch user's sessions
-      const { data: sessions, error: sessionsError } = await supabase
-        .from('sessions')
+      // Fetch user's sessions using typed tables
+      const { data: sessions, error: sessionsError } = await serverTables.sessions()
         .select(`
           *,
-          coach:coach_id!inner(id, name, email),
-          client:client_id!inner(id, name, email)
+          coach:users!sessions_coach_id_fkey(id, name, email),
+          client:users!sessions_client_id_fkey(id, name, email)
         `)
         .or(`coach_id.eq.${userId},client_id.eq.${userId}`);
 
       if (sessionsError) {
         console.error('Error fetching sessions for export:', sessionsError);
-        return res.status(500).json({ error: 'Failed to fetch sessions data' });
+        res.status(500).json({ error: 'Failed to fetch sessions data' });
+        return;
       }
 
-      // Fetch user's reflections
-      const { data: reflections, error: reflectionsError } = await supabase
-        .from('reflections')
+      // Fetch user's reflections using typed tables
+      const { data: reflections, error: reflectionsError } = await serverTables.reflections()
         .select('*')
         .eq('user_id', userId);
 
       if (reflectionsError) {
         console.error('Error fetching reflections for export:', reflectionsError);
-        return res.status(500).json({ error: 'Failed to fetch reflections data' });
+        res.status(500).json({ error: 'Failed to fetch reflections data' });
+        return;
       }
+
+      // Fetch user's coach notes if they are a coach
+      let coachNotes = null;
+      if (req.user.role === 'coach') {
+        const { data: notes, error: notesError } = await serverTables.coach_notes()
+          .select('*')
+          .eq('coach_id', userId);
+
+        if (!notesError) {
+          coachNotes = notes;
+        }
+      }
+
+      // Fetch user's files
+      const { data: files, error: filesError } = await serverTables.files()
+        .select('*')
+        .eq('uploaded_by', userId);
 
       // Prepare data for export
       const exportData = {
@@ -47,6 +73,8 @@ export const userController = {
         },
         sessions: sessions || [],
         reflections: reflections || [],
+        ...(coachNotes && { coachNotes }),
+        files: files || [],
         exportedAt: new Date().toISOString(),
       };
 
@@ -63,61 +91,143 @@ export const userController = {
   },
 
   // Update current user's profile
-  async updateCurrentUserProfile(req: Request, res: Response) {
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-
-    const userId = req.user.id;
-    const { name, bio } = req.body;
-
-    // Basic validation
-    if (name !== undefined && typeof name !== 'string') {
-      return res.status(400).json({ message: 'Invalid name format' });
-    }
-    if (bio !== undefined && typeof bio !== 'string') {
-      return res.status(400).json({ message: 'Invalid bio format' });
-    }
-
+  updateCurrentUserProfile: async (req: Request, res: Response): Promise<void> => {
     try {
-      const dataToUpdate: { name?: string; bio?: string; updated_at?: string } = {};
-      if (name !== undefined) dataToUpdate.name = name;
-      if (bio !== undefined) dataToUpdate.bio = bio;
-
-      if (Object.keys(dataToUpdate).length === 0) {
-        return res
-          .status(400)
-          .json({ message: 'No updateable fields provided (name is required if bio is disabled)' });
+      if (!req.user || !req.user.id) {
+        res.status(401).json({ message: 'Unauthorized' });
+        return;
       }
 
-      // Add timestamp
-      dataToUpdate.updated_at = new Date().toISOString();
+      const userId = req.user.id;
 
-      const { data: updatedUser, error } = await supabase
-        .from('users')
-        .update(dataToUpdate)
-        .eq('id', userId)
-        .select('id, email, name, role, bio')
-        .single();
+      // Validate request body
+      try {
+        const validatedData = updateProfileSchema.parse(req.body);
+        const { name, bio } = validatedData;
 
-      if (error) {
-        console.error('Error updating user profile:', error);
-        return res.status(500).json({ message: 'Error updating profile' });
+        if (!name && bio === undefined) {
+          res.status(400).json({ message: 'No updateable fields provided' });
+          return;
+        }
+
+        // Prepare update data with proper typing
+        const updateData: UserUpdate = {
+          updated_at: new Date().toISOString(),
+        };
+
+        if (name !== undefined) updateData.name = name;
+        if (bio !== undefined) updateData.bio = bio;
+
+        const { data: updatedUser, error } = await serverTables.users()
+          .update(updateData)
+          .eq('id', userId)
+          .select('id, email, name, role, bio')
+          .single();
+
+        if (error) {
+          console.error('Error updating user profile:', error);
+          res.status(500).json({ message: 'Error updating profile' });
+          return;
+        }
+
+        if (!updatedUser) {
+          res.status(404).json({ message: 'User not found' });
+          return;
+        }
+
+        // Construct response payload
+        const responsePayload = {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          name: updatedUser.name || undefined,
+          role: updatedUser.role,
+          bio: updatedUser.bio || undefined,
+        };
+
+        res.json(responsePayload);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          res.status(400).json({ message: 'Invalid profile data', details: error.errors });
+          return;
+        }
+        throw error;
       }
-
-      // Construct payload similar to AuthenticatedUserPayload
-      const responsePayload = {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        name: updatedUser.name || undefined,
-        role: updatedUser.role as 'client' | 'coach' | 'admin',
-        bio: updatedUser.bio || undefined,
-      };
-
-      res.json(responsePayload);
     } catch (error) {
       console.error('Error updating user profile:', error);
       res.status(500).json({ message: 'Error updating profile' });
+    }
+  },
+
+  // Get current user profile
+  getCurrentUserProfile: async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!req.user || !req.user.id) {
+        res.status(401).json({ message: 'Unauthorized' });
+        return;
+      }
+
+      const userId = req.user.id;
+
+      const { data: user, error } = await serverTables.users()
+        .select('id, email, name, role, bio, created_at')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        res.status(500).json({ message: 'Error fetching profile' });
+        return;
+      }
+
+      if (!user) {
+        res.status(404).json({ message: 'User not found' });
+        return;
+      }
+
+      res.json({
+        id: user.id,
+        email: user.email,
+        name: user.name || undefined,
+        role: user.role,
+        bio: user.bio || undefined,
+        memberSince: user.created_at,
+      });
+    } catch (error) {
+      console.error('Error getting user profile:', error);
+      res.status(500).json({ message: 'Error getting profile' });
+    }
+  },
+
+  // Delete current user account (GDPR compliance)
+  deleteCurrentUser: async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!req.user || !req.user.id) {
+        res.status(401).json({ message: 'Unauthorized' });
+        return;
+      }
+
+      const userId = req.user.id;
+
+      // Note: In a real implementation, you might want to:
+      // 1. Anonymize rather than delete data
+      // 2. Handle cascading deletes more carefully
+      // 3. Send confirmation emails
+      // 4. Log the deletion for audit purposes
+
+      const { error } = await serverTables.users()
+        .delete()
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Error deleting user account:', error);
+        res.status(500).json({ message: 'Error deleting account' });
+        return;
+      }
+
+      res.json({ message: 'Account deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting user account:', error);
+      res.status(500).json({ message: 'Error deleting account' });
     }
   },
 };

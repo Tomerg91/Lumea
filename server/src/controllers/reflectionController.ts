@@ -1,291 +1,348 @@
 // @ts-nocheck
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import mongoose from 'mongoose';
-import { Reflection, IReflectionAnswer, IReflectionQuestion } from '../models/Reflection';
-import {
-  ReflectionTemplates,
-  ReflectionTemplateType,
-  IReflectionTemplate,
-} from '../models/ReflectionTemplate';
-import { CoachingSession } from '../models/CoachingSession';
-// import { User } from '../models/User'; // Temporarily disabled during Supabase migration
+import { supabase, serverTables } from '../lib/supabase.js';
+import type { Reflection, ReflectionInsert, ReflectionUpdate } from '../../../shared/types/database';
 
-// Validation schema for reflection answers
-const reflectionAnswerSchema = z.object({
-  questionId: z.string().min(1),
-  value: z.union([z.string(), z.number(), z.boolean()]),
-  followUpAnswer: z.string().optional(),
+// Validation schema for reflection creation
+const createReflectionSchema = z.object({
+  content: z.string().min(1, 'Reflection content is required'),
+  session_id: z.string().uuid().optional(),
+  mood: z.enum(['positive', 'neutral', 'negative', 'mixed']).optional(),
 });
 
-// Validation schema for saving/updating reflections
-const saveReflectionSchema = z.object({
-  answers: z.array(reflectionAnswerSchema),
-  status: z.enum(['draft', 'submitted']).optional(),
-  estimatedCompletionMinutes: z.number().optional(),
-  actualCompletionMinutes: z.number().optional(),
+// Validation schema for reflection updates
+const updateReflectionSchema = z.object({
+  content: z.string().min(1).optional(),
+  session_id: z.string().uuid().optional(),
+  mood: z.enum(['positive', 'neutral', 'negative', 'mixed']).optional(),
 });
 
-function maskReflectionForUser(reflection: any, user: { id: string; role: string }) {
-  if (!user) return reflection;
-  const isClient = reflection.clientId?._id?.toString?.() === user.id || reflection.clientId?.toString?.() === user.id;
-  const isAdmin = user.role === 'admin';
-  const isCoach = reflection.coachId?._id?.toString?.() === user.id || reflection.coachId?.toString?.() === user.id;
-  const coachCanView = isCoach && reflection.sharedWithCoach;
-  if (isClient || isAdmin || coachCanView) {
-    return reflection;
-  }
-  // Else redact answers
-  const obj = JSON.parse(JSON.stringify(reflection));
-  if (Array.isArray(obj.answers)) {
-    obj.answers = obj.answers.map((ans: any) => ({ ...ans, value: '[REDACTED]', followUpAnswer: undefined }));
-  }
-  return obj;
-}
+// Validation schema for query parameters
+const getReflectionsQuerySchema = z.object({
+  session_id: z.string().uuid().optional(),
+  mood: z.enum(['positive', 'neutral', 'negative', 'mixed']).optional(),
+  limit: z.coerce.number().min(1).max(100).optional().default(10),
+  page: z.coerce.number().min(1).optional().default(1),
+});
 
 export const reflectionController = {
-  // Get reflection form template for a session
-  async getReflectionForm(req: Request, res: Response) {
+  // Create a new reflection
+  createReflection: async (req: Request, res: Response): Promise<void> => {
     try {
       if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
+        res.status(401).json({ error: 'Not authenticated' });
+        return;
       }
 
-      const sessionId = req.params.sessionId;
-      const templateType = (req.query.template as ReflectionTemplateType) || 'standard';
+      // Validate request body
+      try {
+        const validatedData = createReflectionSchema.parse(req.body);
+        
+        // If session_id is provided, verify the session exists and user has access
+        if (validatedData.session_id) {
+          const { data: session, error: sessionError } = await serverTables.sessions()
+            .select('id, client_id, coach_id, status')
+            .eq('id', validatedData.session_id)
+            .single();
 
-      // Validate ObjectId format
-      if (!mongoose.Types.ObjectId.isValid(sessionId)) {
-        return res.status(400).json({ error: 'Invalid session ID format' });
-      }
+          if (sessionError || !session) {
+            res.status(404).json({ error: 'Session not found' });
+            return;
+          }
 
-      // Check if session exists and user has access
-      const session = await CoachingSession.findById(sessionId)
-        .populate('clientId', 'firstName lastName email')
-        .populate('coachId', 'firstName lastName email');
+          // Check authorization - only the client can create reflections for their session
+          if (req.user.role !== 'admin' && session.client_id !== req.user.id) {
+            res.status(403).json({ error: 'Only clients can create reflections for their own sessions' });
+            return;
+          }
+        }
 
-      if (!session) {
-        return res.status(404).json({ error: 'Session not found' });
-      }
+        const reflectionData: ReflectionInsert = {
+          content: validatedData.content,
+          user_id: req.user.id,
+          session_id: validatedData.session_id || null,
+          mood: validatedData.mood || null,
+        };
 
-      // Check authorization - clients can only access their own sessions, coaches can access their sessions
-      if (
-        req.user.role !== 'admin' &&
-        session.clientId._id.toString() !== req.user.id.toString() &&
-        session.coachId._id.toString() !== req.user.id.toString()
-      ) {
-        return res.status(403).json({ error: 'Not authorized to access this session' });
-      }
+        const { data: reflection, error } = await serverTables.reflections()
+          .insert(reflectionData)
+          .select('*, users!reflections_user_id_fkey(name, email), sessions!reflections_session_id_fkey(date, status)')
+          .single();
 
-      // Only allow reflection forms for completed sessions
-      if (session.status !== 'completed') {
-        return res.status(400).json({
-          error: 'Reflection forms are only available for completed sessions',
-          sessionStatus: session.status,
+        if (error) {
+          console.error('Error creating reflection:', error);
+          res.status(500).json({ error: 'Failed to create reflection', details: error.message });
+          return;
+        }
+
+        res.status(201).json({
+          message: 'Reflection created successfully',
+          reflection,
         });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          res.status(400).json({ error: 'Invalid reflection data', details: error.errors });
+          return;
+        }
+        throw error;
       }
-
-      // Get the reflection template
-      const template = ReflectionTemplates.getTemplate(templateType);
-
-      // Also provide backward-compatible simple questions
-      const questions = ReflectionTemplates.templateToQuestions(template);
-
-      // Get available templates for template selection
-      const availableTemplates = ReflectionTemplates.getAvailableTemplates();
-
-      res.json({
-        sessionId: session._id,
-        sessionDate: session.date,
-        client: {
-          _id: (session.clientId as any)._id,
-          firstName: (session.clientId as any).firstName,
-          lastName: (session.clientId as any).lastName,
-        },
-        coach: {
-          _id: (session.coachId as any)._id,
-          firstName: (session.coachId as any).firstName,
-          lastName: (session.coachId as any).lastName,
-        },
-        template, // Enhanced template with sections
-        questions, // Backward-compatible flat questions
-        availableTemplates, // List of available templates
-        estimatedCompletionMinutes: template.estimatedMinutes,
-      });
     } catch (error) {
-      console.error('Error getting reflection form:', error);
-      res.status(500).json({ error: 'Failed to get reflection form' });
+      console.error('Error creating reflection:', error);
+      res.status(500).json({ error: 'Failed to create reflection' });
     }
   },
 
-  // Get existing reflection for a session
-  async getReflection(req: Request, res: Response) {
+  // Get reflections for the authenticated user
+  getReflections: async (req: Request, res: Response): Promise<void> => {
     try {
       if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
+        res.status(401).json({ error: 'Not authenticated' });
+        return;
       }
 
-      const sessionId = req.params.sessionId;
+      // Validate query parameters
+      try {
+        const validatedQuery = getReflectionsQuerySchema.parse(req.query);
+        const { session_id, mood, limit, page } = validatedQuery;
 
-      // Validate ObjectId format
-      if (!mongoose.Types.ObjectId.isValid(sessionId)) {
-        return res.status(400).json({ error: 'Invalid session ID format' });
+        // Build query for reflections table
+        let query = serverTables.reflections()
+          .select('*, users!reflections_user_id_fkey(name, email), sessions!reflections_session_id_fkey(date, status)')
+          .order('created_at', { ascending: false });
+
+        // Filter by user role
+        if (req.user.role === 'client') {
+          query = query.eq('user_id', req.user.id);
+        } else if (req.user.role === 'coach') {
+          // Coaches can see reflections from their sessions
+          query = query
+            .select('*, users!reflections_user_id_fkey(name, email), sessions!inner(date, status, coach_id)')
+            .eq('sessions.coach_id', req.user.id);
+        }
+        // Admin can see all reflections (no additional filtering)
+
+        // Apply optional filters
+        if (session_id) {
+          query = query.eq('session_id', session_id);
+        }
+        if (mood) {
+          query = query.eq('mood', mood);
+        }
+
+        // Apply pagination
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+        
+        const { data: reflections, error, count } = await query
+          .range(from, to)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching reflections:', error);
+          res.status(500).json({ error: 'Failed to fetch reflections', details: error.message });
+          return;
+        }
+
+        // Return reflections with pagination info
+        res.json({
+          reflections: reflections || [],
+          pagination: {
+            total: count || 0,
+            page,
+            limit,
+            pages: Math.ceil((count || 0) / limit),
+          },
+        });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          res.status(400).json({ error: 'Invalid query parameters', details: error.errors });
+          return;
+        }
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error getting reflections:', error);
+      res.status(500).json({ error: 'Failed to get reflections' });
+    }
+  },
+
+  // Get a specific reflection by ID
+  getReflection: async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Not authenticated' });
+        return;
       }
 
-      // Find the reflection
-      const reflection = await Reflection.findOne({ sessionId })
-        .populate('sessionId')
-        .populate('clientId', 'firstName lastName email')
-        .populate('coachId', 'firstName lastName email');
+      const reflectionId = req.params.id;
+
+      // Validate UUID format
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(reflectionId)) {
+        res.status(400).json({ error: 'Invalid reflection ID format' });
+        return;
+      }
+
+      const { data: reflection, error } = await serverTables.reflections()
+        .select('*, users!reflections_user_id_fkey(name, email), sessions!reflections_session_id_fkey(date, status, coach_id)')
+        .eq('id', reflectionId)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          res.status(404).json({ error: 'Reflection not found' });
+          return;
+        }
+        console.error('Error fetching reflection:', error);
+        res.status(500).json({ error: 'Failed to fetch reflection' });
+        return;
+      }
 
       if (!reflection) {
-        return res.status(404).json({ error: 'Reflection not found' });
+        res.status(404).json({ error: 'Reflection not found' });
+        return;
       }
 
-      // Check authorization - clients can access their own, coaches can access their clients'
+      // Check authorization - users can see their own reflections, coaches can see reflections from their sessions
       if (
         req.user.role !== 'admin' &&
-        reflection.clientId._id.toString() !== req.user.id.toString() &&
-        reflection.coachId._id.toString() !== req.user.id.toString()
+        reflection.user_id !== req.user.id &&
+        !(req.user.role === 'coach' && reflection.sessions?.coach_id === req.user.id)
       ) {
-        return res.status(403).json({ error: 'Not authorized to access this reflection' });
+        res.status(403).json({ error: 'Not authorized to view this reflection' });
+        return;
       }
 
-      res.json(maskReflectionForUser(reflection, req.user));
+      res.json({ reflection });
     } catch (error) {
       console.error('Error getting reflection:', error);
       res.status(500).json({ error: 'Failed to get reflection' });
     }
   },
 
-  // Save or update reflection
-  async saveReflection(req: Request, res: Response) {
+  // Update a reflection
+  updateReflection: async (req: Request, res: Response): Promise<void> => {
     try {
       if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
+        res.status(401).json({ error: 'Not authenticated' });
+        return;
       }
 
-      const sessionId = req.params.sessionId;
-
-      // Validate ObjectId format
-      if (!mongoose.Types.ObjectId.isValid(sessionId)) {
-        return res.status(400).json({ error: 'Invalid session ID format' });
-      }
+      const reflectionId = req.params.id;
 
       // Validate request body
-      const validatedData = saveReflectionSchema.parse(req.body);
+      try {
+        const validatedData = updateReflectionSchema.parse(req.body);
 
-      // Check if session exists and verify it's completed
-      const session = await CoachingSession.findById(sessionId);
+        // First, get the existing reflection to check authorization
+        const { data: existingReflection, error: fetchError } = await serverTables.reflections()
+          .select('*')
+          .eq('id', reflectionId)
+          .single();
 
-      if (!session) {
-        return res.status(404).json({ error: 'Session not found' });
-      }
+        if (fetchError || !existingReflection) {
+          res.status(404).json({ error: 'Reflection not found' });
+          return;
+        }
 
-      // Only clients can save reflections for their own sessions
-      if (req.user.role !== 'admin' && session.clientId.toString() !== req.user.id.toString()) {
-        return res.status(403).json({ error: 'Only clients can save their own reflections' });
-      }
+        // Check authorization - only the reflection owner can update it
+        if (req.user.role !== 'admin' && existingReflection.user_id !== req.user.id) {
+          res.status(403).json({ error: 'Not authorized to update this reflection' });
+          return;
+        }
 
-      // Only allow reflections for completed sessions
-      if (session.status !== 'completed') {
-        return res.status(400).json({
-          error: 'Reflections can only be saved for completed sessions',
-          sessionStatus: session.status,
+        // If session_id is being updated, verify the session exists and user has access
+        if (validatedData.session_id) {
+          const { data: session, error: sessionError } = await serverTables.sessions()
+            .select('id, client_id, coach_id, status')
+            .eq('id', validatedData.session_id)
+            .single();
+
+          if (sessionError || !session) {
+            res.status(404).json({ error: 'Session not found' });
+            return;
+          }
+
+          // Check authorization for the session
+          if (req.user.role !== 'admin' && session.client_id !== req.user.id) {
+            res.status(403).json({ error: 'Cannot link reflection to sessions you do not own' });
+            return;
+          }
+        }
+
+        // Prepare update data
+        const updateData: ReflectionUpdate = {};
+        if (validatedData.content) updateData.content = validatedData.content;
+        if (validatedData.session_id !== undefined) updateData.session_id = validatedData.session_id;
+        if (validatedData.mood !== undefined) updateData.mood = validatedData.mood;
+        
+        updateData.updated_at = new Date().toISOString();
+
+        const { data: reflection, error } = await serverTables.reflections()
+          .update(updateData)
+          .eq('id', reflectionId)
+          .select('*, users!reflections_user_id_fkey(name, email), sessions!reflections_session_id_fkey(date, status)')
+          .single();
+
+        if (error) {
+          console.error('Error updating reflection:', error);
+          res.status(500).json({ error: 'Failed to update reflection' });
+          return;
+        }
+
+        res.json({
+          message: 'Reflection updated successfully',
+          reflection,
         });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          res.status(400).json({ error: 'Invalid reflection data', details: error.errors });
+          return;
+        }
+        throw error;
       }
-
-      // Find existing reflection or create new one
-      let reflection = await Reflection.findOne({ sessionId, clientId: req.user.id });
-
-      if (reflection) {
-        // Update existing reflection
-        reflection.answers = validatedData.answers as IReflectionAnswer[];
-        reflection.status = validatedData.status || reflection.status;
-        reflection.version += 1; // Increment version for concurrency control
-
-        if (validatedData.estimatedCompletionMinutes) {
-          reflection.estimatedCompletionMinutes = validatedData.estimatedCompletionMinutes;
-        }
-
-        if (validatedData.actualCompletionMinutes) {
-          reflection.actualCompletionMinutes = validatedData.actualCompletionMinutes;
-        }
-
-        if (validatedData.status === 'submitted' && !reflection.submittedAt) {
-          reflection.submittedAt = new Date();
-        }
-
-        await reflection.save();
-      } else {
-        // Create new reflection
-        reflection = new Reflection({
-          sessionId,
-          clientId: req.user.id,
-          coachId: session.coachId,
-          answers: validatedData.answers,
-          status: validatedData.status || 'draft',
-          estimatedCompletionMinutes: validatedData.estimatedCompletionMinutes,
-          actualCompletionMinutes: validatedData.actualCompletionMinutes,
-          submittedAt: validatedData.status === 'submitted' ? new Date() : undefined,
-        });
-
-        await reflection.save();
-      }
-
-      // Populate related data for response
-      await reflection.populate('clientId', 'firstName lastName email');
-      await reflection.populate('coachId', 'firstName lastName email');
-
-      res.json({
-        message:
-          validatedData.status === 'submitted'
-            ? 'Reflection submitted successfully'
-            : 'Reflection saved as draft',
-        reflection: maskReflectionForUser(reflection, req.user),
-      });
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation failed', details: error.errors });
-      } else {
-        console.error('Error saving reflection:', error);
-        res.status(500).json({ error: 'Failed to save reflection' });
-      }
+      console.error('Error updating reflection:', error);
+      res.status(500).json({ error: 'Failed to update reflection' });
     }
   },
 
-  // Delete reflection
-  async deleteReflection(req: Request, res: Response) {
+  // Delete a reflection
+  deleteReflection: async (req: Request, res: Response): Promise<void> => {
     try {
       if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
+        res.status(401).json({ error: 'Not authenticated' });
+        return;
       }
 
-      const sessionId = req.params.sessionId;
+      const reflectionId = req.params.id;
 
-      // Validate ObjectId format
-      if (!mongoose.Types.ObjectId.isValid(sessionId)) {
-        return res.status(400).json({ error: 'Invalid session ID format' });
+      // First, get the existing reflection to check authorization
+      const { data: existingReflection, error: fetchError } = await serverTables.reflections()
+        .select('*')
+        .eq('id', reflectionId)
+        .single();
+
+      if (fetchError || !existingReflection) {
+        res.status(404).json({ error: 'Reflection not found' });
+        return;
       }
 
-      // Find the reflection
-      const reflection = await Reflection.findOne({ sessionId });
-
-      if (!reflection) {
-        return res.status(404).json({ error: 'Reflection not found' });
+      // Check authorization - only the reflection owner can delete it
+      if (req.user.role !== 'admin' && existingReflection.user_id !== req.user.id) {
+        res.status(403).json({ error: 'Not authorized to delete this reflection' });
+        return;
       }
 
-      // Only clients can delete their own reflections (and admins)
-      if (req.user.role !== 'admin' && reflection.clientId.toString() !== req.user.id.toString()) {
-        return res.status(403).json({ error: 'Not authorized to delete this reflection' });
-      }
+      const { error } = await serverTables.reflections()
+        .delete()
+        .eq('id', reflectionId);
 
-      // Don't allow deletion of submitted reflections
-      if (reflection.status === 'submitted') {
-        return res.status(400).json({ error: 'Cannot delete submitted reflections' });
+      if (error) {
+        console.error('Error deleting reflection:', error);
+        res.status(500).json({ error: 'Failed to delete reflection' });
+        return;
       }
-
-      await Reflection.findByIdAndDelete(reflection._id);
 
       res.json({ message: 'Reflection deleted successfully' });
     } catch (error) {
@@ -294,935 +351,182 @@ export const reflectionController = {
     }
   },
 
-  // Get all reflections for a client (for their dashboard)
-  async getClientReflections(req: Request, res: Response) {
+  // Get reflections for a specific session
+  getSessionReflections: async (req: Request, res: Response): Promise<void> => {
     try {
       if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
-      }
-
-      // Only clients can access this endpoint (or admins with clientId param)
-      let clientId = req.user.id;
-
-      if (req.user.role === 'admin' && req.query.clientId) {
-        clientId = req.query.clientId as string;
-      } else if (req.user.role !== 'client') {
-        return res.status(403).json({ error: 'Only clients can access their reflections' });
-      }
-
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-      const skip = (page - 1) * limit;
-
-      // Get reflections with populated session data
-      const reflections = await Reflection.find({ clientId })
-        .populate({
-          path: 'sessionId',
-          select: 'date status notes',
-        })
-        .populate('coachId', 'firstName lastName email')
-        .sort({ submittedAt: -1, lastSavedAt: -1 })
-        .skip(skip)
-        .limit(limit);
-
-      const total = await Reflection.countDocuments({ clientId });
-
-      res.json({
-        reflections: reflections.map(r => maskReflectionForUser(r, req.user)),
-        pagination: {
-          total,
-          page,
-          limit,
-          pages: Math.ceil(total / limit),
-        },
-      });
-    } catch (error) {
-      console.error('Error getting client reflections:', error);
-      res.status(500).json({ error: 'Failed to get client reflections' });
-    }
-  },
-
-  // Get all reflections for a coach (to view their clients' reflections)
-  async getCoachReflections(req: Request, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
-      }
-
-      // Only coaches can access this endpoint (or admins)
-      if (req.user.role !== 'coach' && req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Only coaches can access client reflections' });
-      }
-
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-      const skip = (page - 1) * limit;
-      const clientId = req.query.clientId as string; // Optional filter by client
-
-      // Build query
-      const query: any = { coachId: req.user.id, status: 'submitted' }; // Only show submitted reflections
-      if (clientId && mongoose.Types.ObjectId.isValid(clientId)) {
-        query.clientId = clientId;
-      }
-
-      // Get reflections with populated data
-      const reflections = await Reflection.find(query)
-        .populate({
-          path: 'sessionId',
-          select: 'date status notes',
-        })
-        .populate('clientId', 'firstName lastName email')
-        .sort({ submittedAt: -1 })
-        .skip(skip)
-        .limit(limit);
-
-      const total = await Reflection.countDocuments(query);
-
-      res.json({
-        reflections: reflections.map(r => maskReflectionForUser(r, req.user)),
-        pagination: {
-          total,
-          page,
-          limit,
-          pages: Math.ceil(total / limit),
-        },
-      });
-    } catch (error) {
-      console.error('Error getting coach reflections:', error);
-      res.status(500).json({ error: 'Failed to get coach reflections' });
-    }
-  },
-
-  // Create a new reflection
-  async createReflection(req: Request, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
-      }
-
-      // Validate request body
-      const validatedData = saveReflectionSchema.parse(req.body);
-      const { sessionId } = req.body;
-
-      if (!sessionId || !mongoose.Types.ObjectId.isValid(sessionId)) {
-        return res.status(400).json({ error: 'Valid session ID is required' });
-      }
-
-      // Check if session exists and verify it's completed
-      const session = await CoachingSession.findById(sessionId);
-
-      if (!session) {
-        return res.status(404).json({ error: 'Session not found' });
-      }
-
-      // Only clients can create reflections for their own sessions
-      if (req.user.role !== 'admin' && session.clientId.toString() !== req.user.id.toString()) {
-        return res.status(403).json({ error: 'Only clients can create their own reflections' });
-      }
-
-      // Only allow reflections for completed sessions
-      if (session.status !== 'completed') {
-        return res.status(400).json({
-          error: 'Reflections can only be created for completed sessions',
-          sessionStatus: session.status,
-        });
-      }
-
-      // Check if reflection already exists
-      const existingReflection = await Reflection.findOne({ sessionId, clientId: req.user.id });
-      if (existingReflection) {
-        return res.status(409).json({ error: 'Reflection already exists for this session' });
-      }
-
-      // Create new reflection
-      const reflection = new Reflection({
-        sessionId,
-        clientId: req.user.id,
-        coachId: session.coachId,
-        answers: validatedData.answers,
-        status: validatedData.status || 'draft',
-        estimatedCompletionMinutes: validatedData.estimatedCompletionMinutes,
-        actualCompletionMinutes: validatedData.actualCompletionMinutes,
-        submittedAt: validatedData.status === 'submitted' ? new Date() : undefined,
-      });
-
-      await reflection.save();
-
-      // Populate related data for response
-      await reflection.populate('clientId', 'firstName lastName email');
-      await reflection.populate('coachId', 'firstName lastName email');
-
-      res.status(201).json({
-        message:
-          validatedData.status === 'submitted'
-            ? 'Reflection submitted successfully'
-            : 'Reflection created as draft',
-        reflection: maskReflectionForUser(reflection, req.user),
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation failed', details: error.errors });
-      } else {
-        console.error('Error creating reflection:', error);
-        res.status(500).json({ error: 'Failed to create reflection' });
-      }
-    }
-  },
-
-  // Get all reflections with optional filtering
-  async getReflections(req: Request, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
-      }
-
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-      const skip = (page - 1) * limit;
-      const sessionId = req.query.sessionId as string;
-
-      // Build query based on user role
-      const query: any = {};
-
-      if (req.user.role === 'client') {
-        query.clientId = req.user.id;
-      } else if (req.user.role === 'coach') {
-        query.coachId = req.user.id;
-        query.status = 'submitted'; // Coaches only see submitted reflections
-      }
-      // Admins can see all reflections (no additional filter)
-
-      // Add session filter if provided
-      if (sessionId && mongoose.Types.ObjectId.isValid(sessionId)) {
-        query.sessionId = sessionId;
-      }
-
-      const reflections = await Reflection.find(query)
-        .populate({
-          path: 'sessionId',
-          select: 'date status notes',
-        })
-        .populate('clientId', 'firstName lastName email')
-        .populate('coachId', 'firstName lastName email')
-        .sort({ submittedAt: -1, lastSavedAt: -1 })
-        .skip(skip)
-        .limit(limit);
-
-      const total = await Reflection.countDocuments(query);
-
-      res.json({
-        reflections: reflections.map(r => maskReflectionForUser(r, req.user)),
-        pagination: {
-          total,
-          page,
-          limit,
-          pages: Math.ceil(total / limit),
-        },
-      });
-    } catch (error) {
-      console.error('Error getting reflections:', error);
-      res.status(500).json({ error: 'Failed to get reflections' });
-    }
-  },
-
-  // Get all reflections for a specific session
-  async getSessionReflections(req: Request, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
+        res.status(401).json({ error: 'Not authenticated' });
+        return;
       }
 
       const sessionId = req.params.sessionId;
 
-      if (!mongoose.Types.ObjectId.isValid(sessionId)) {
-        return res.status(400).json({ error: 'Invalid session ID format' });
-      }
+      // First, verify the session exists and user has access
+      const { data: session, error: sessionError } = await serverTables.sessions()
+        .select('id, client_id, coach_id, status')
+        .eq('id', sessionId)
+        .single();
 
-      // Check if session exists and user has access
-      const session = await CoachingSession.findById(sessionId);
-
-      if (!session) {
-        return res.status(404).json({ error: 'Session not found' });
+      if (sessionError || !session) {
+        res.status(404).json({ error: 'Session not found' });
+        return;
       }
 
       // Check authorization
       if (
         req.user.role !== 'admin' &&
-        session.clientId.toString() !== req.user.id.toString() &&
-        session.coachId.toString() !== req.user.id.toString()
+        session.client_id !== req.user.id &&
+        session.coach_id !== req.user.id
       ) {
-        return res.status(403).json({ error: 'Not authorized to access this session' });
+        res.status(403).json({ error: 'Not authorized to view reflections for this session' });
+        return;
       }
 
-      // Build query based on user role
-      const query: any = { sessionId };
+      const { data: reflections, error } = await serverTables.reflections()
+        .select('*, users!reflections_user_id_fkey(name, email)')
+        .eq('session_id', sessionId)
+        .order('created_at', { ascending: false });
 
-      if (req.user.role === 'coach') {
-        query.status = 'submitted'; // Coaches only see submitted reflections
+      if (error) {
+        console.error('Error fetching session reflections:', error);
+        res.status(500).json({ error: 'Failed to fetch session reflections' });
+        return;
       }
 
-      const reflections = await Reflection.find(query)
-        .populate('clientId', 'firstName lastName email')
-        .populate('coachId', 'firstName lastName email')
-        .sort({ submittedAt: -1, lastSavedAt: -1 });
-
-      res.json({ reflections: reflections.map(r => maskReflectionForUser(r, req.user)) });
+      res.json({ 
+        session: {
+          id: session.id,
+          client_id: session.client_id,
+          coach_id: session.coach_id,
+          status: session.status,
+        },
+        reflections: reflections || [] 
+      });
     } catch (error) {
       console.error('Error getting session reflections:', error);
       res.status(500).json({ error: 'Failed to get session reflections' });
     }
   },
 
-  // Update an existing reflection
-  async updateReflection(req: Request, res: Response) {
+  // Get reflections by mood
+  getReflectionsByMood: async (req: Request, res: Response): Promise<void> => {
     try {
       if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
+        res.status(401).json({ error: 'Not authenticated' });
+        return;
       }
 
-      const reflectionId = req.params.id;
+      const mood = req.params.mood;
 
-      if (!mongoose.Types.ObjectId.isValid(reflectionId)) {
-        return res.status(400).json({ error: 'Invalid reflection ID format' });
+      // Validate mood
+      if (!['positive', 'neutral', 'negative', 'mixed'].includes(mood)) {
+        res.status(400).json({ error: 'Invalid mood. Must be one of: positive, neutral, negative, mixed' });
+        return;
       }
 
-      // Validate request body
-      const validatedData = saveReflectionSchema.parse(req.body);
+      let query = serverTables.reflections()
+        .select('*, users!reflections_user_id_fkey(name, email), sessions!reflections_session_id_fkey(date, status)')
+        .eq('mood', mood);
 
-      // Find the reflection
-      const reflection = await Reflection.findById(reflectionId);
-
-      if (!reflection) {
-        return res.status(404).json({ error: 'Reflection not found' });
-      }
-
-      // Only clients can update their own reflections (and admins)
-      if (req.user.role !== 'admin' && reflection.clientId.toString() !== req.user.id.toString()) {
-        return res.status(403).json({ error: 'Not authorized to update this reflection' });
-      }
-
-      // Don't allow updates to submitted reflections unless admin
-      if (reflection.status === 'submitted' && req.user.role !== 'admin') {
-        return res.status(400).json({ error: 'Cannot update submitted reflections' });
-      }
-
-      // Update reflection
-      reflection.answers = validatedData.answers as IReflectionAnswer[];
-      reflection.status = validatedData.status || reflection.status;
-      reflection.version += 1; // Increment version for concurrency control
-
-      if (validatedData.estimatedCompletionMinutes) {
-        reflection.estimatedCompletionMinutes = validatedData.estimatedCompletionMinutes;
-      }
-
-      if (validatedData.actualCompletionMinutes) {
-        reflection.actualCompletionMinutes = validatedData.actualCompletionMinutes;
-      }
-
-      if (validatedData.status === 'submitted' && !reflection.submittedAt) {
-        reflection.submittedAt = new Date();
-      }
-
-      await reflection.save();
-
-      // Populate related data for response
-      await reflection.populate('clientId', 'firstName lastName email');
-      await reflection.populate('coachId', 'firstName lastName email');
-
-      res.json({
-        message:
-          validatedData.status === 'submitted'
-            ? 'Reflection submitted successfully'
-            : 'Reflection updated successfully',
-        reflection: maskReflectionForUser(reflection, req.user),
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ error: 'Validation failed', details: error.errors });
-      } else {
-        console.error('Error updating reflection:', error);
-        res.status(500).json({ error: 'Failed to update reflection' });
-      }
-    }
-  },
-
-  // Share reflection with coach
-  async shareWithCoach(req: Request, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
-      }
-
-      const reflectionId = req.params.id;
-
-      if (!mongoose.Types.ObjectId.isValid(reflectionId)) {
-        return res.status(400).json({ error: 'Invalid reflection ID format' });
-      }
-
-      // Find the reflection
-      const reflection = await Reflection.findById(reflectionId);
-
-      if (!reflection) {
-        return res.status(404).json({ error: 'Reflection not found' });
-      }
-
-      // Only clients can share their own reflections
-      if (req.user.role !== 'admin' && reflection.clientId.toString() !== req.user.id.toString()) {
-        return res.status(403).json({ error: 'Not authorized to share this reflection' });
-      }
-
-      // Can only share submitted reflections
-      if (reflection.status !== 'submitted') {
-        return res.status(400).json({ error: 'Only submitted reflections can be shared' });
-      }
-
-      // Update reflection to mark as shared
-      reflection.sharedWithCoach = true;
-      reflection.sharedAt = new Date();
-      await reflection.save();
-
-      res.json({
-        message: 'Reflection shared with coach successfully',
-        reflection: maskReflectionForUser(reflection, req.user),
-      });
-    } catch (error) {
-      console.error('Error sharing reflection:', error);
-      res.status(500).json({ error: 'Failed to share reflection' });
-    }
-  },
-
-  // Enhanced reflection history with advanced filtering and search
-  async getReflectionHistory(req: Request, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
-      }
-
-      const {
-        page = 1,
-        limit = 20,
-        search,
-        status,
-        dateFrom,
-        dateTo,
-        category,
-        sortBy = 'submittedAt',
-        sortOrder = 'desc',
-        clientId,
-      } = req.query;
-
-      const pageNum = parseInt(page as string);
-      const limitNum = parseInt(limit as string);
-      const skip = (pageNum - 1) * limitNum;
-
-      // Build base query based on user role
-      const query: any = {};
-
+      // Filter by user role
       if (req.user.role === 'client') {
-        query.clientId = req.user.id;
+        query = query.eq('user_id', req.user.id);
       } else if (req.user.role === 'coach') {
-        query.coachId = req.user.id;
-        query.status = 'submitted'; // Coaches only see submitted reflections
-        if (clientId) {
-          query.clientId = clientId;
-        }
-      } else if (req.user.role === 'admin') {
-        // Admins can filter by clientId if provided
-        if (clientId) {
-          query.clientId = clientId;
-        }
+        // Coaches can see reflections from their sessions
+        query = query
+          .select('*, users!reflections_user_id_fkey(name, email), sessions!inner(date, status, coach_id)')
+          .eq('sessions.coach_id', req.user.id);
+      }
+      // Admin can see all reflections (no additional filtering)
+
+      const { data: reflections, error } = await query
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching reflections by mood:', error);
+        res.status(500).json({ error: 'Failed to fetch reflections by mood' });
+        return;
       }
 
-      // Add status filter
-      if (status && status !== 'all') {
-        query.status = status;
-      }
-
-      // Add date range filter
-      if (dateFrom || dateTo) {
-        query.submittedAt = {};
-        if (dateFrom) {
-          query.submittedAt.$gte = new Date(dateFrom as string);
-        }
-        if (dateTo) {
-          query.submittedAt.$lte = new Date(dateTo as string);
-        }
-      }
-
-      // Add text search across reflection answers
-      if (search) {
-        query.$or = [
-          { 'answers.value': { $regex: search, $options: 'i' } },
-          { 'answers.followUpAnswer': { $regex: search, $options: 'i' } },
-        ];
-      }
-
-      // Add category filter (search in answer questionIds)
-      if (category) {
-        query['answers.questionId'] = { $regex: `^${category}`, $options: 'i' };
-      }
-
-      // Build sort object
-      const sortObj: any = {};
-      if (sortBy === 'submittedAt' || sortBy === 'lastSavedAt' || sortBy === 'createdAt') {
-        sortObj[sortBy] = sortOrder === 'asc' ? 1 : -1;
-      } else {
-        sortObj.submittedAt = -1; // Default sort
-      }
-
-      // Execute query with aggregation for better performance
-      const pipeline = [
-        { $match: query },
-        {
-          $lookup: {
-            from: 'coachingsessions',
-            localField: 'sessionId',
-            foreignField: '_id',
-            as: 'session',
-            pipeline: [{ $project: { date: 1, status: 1, notes: 1 } }],
-          },
-        },
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'clientId',
-            foreignField: '_id',
-            as: 'client',
-            pipeline: [{ $project: { firstName: 1, lastName: 1, email: 1 } }],
-          },
-        },
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'coachId',
-            foreignField: '_id',
-            as: 'coach',
-            pipeline: [{ $project: { firstName: 1, lastName: 1, email: 1 } }],
-          },
-        },
-        { $sort: sortObj },
-        {
-          $facet: {
-            data: [{ $skip: skip }, { $limit: limitNum }],
-            count: [{ $count: 'total' }],
-          },
-        },
-      ];
-
-      const [result] = await Reflection.aggregate(pipeline);
-      const reflections = result.data;
-      const total = result.count[0]?.total || 0;
-
-      res.json({
-        reflections: reflections.map(r => maskReflectionForUser(r, req.user)),
-        pagination: {
-          total,
-          page: pageNum,
-          limit: limitNum,
-          pages: Math.ceil(total / limitNum),
-        },
-        filters: {
-          search,
-          status,
-          dateFrom,
-          dateTo,
-          category,
-          sortBy,
-          sortOrder,
-        },
+      res.json({ 
+        mood,
+        reflections: reflections || [] 
       });
     } catch (error) {
-      console.error('Error getting reflection history:', error);
-      res.status(500).json({ error: 'Failed to get reflection history' });
+      console.error('Error getting reflections by mood:', error);
+      res.status(500).json({ error: 'Failed to get reflections by mood' });
     }
   },
 
-  // Reflection analytics and insights
-  async getReflectionAnalytics(req: Request, res: Response) {
+  // Get reflection statistics
+  getReflectionStats: async (req: Request, res: Response): Promise<void> => {
     try {
       if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
+        res.status(401).json({ error: 'Not authenticated' });
+        return;
       }
 
-      const { clientId, dateFrom, dateTo } = req.query;
+      let baseQuery = serverTables.reflections().select('mood, created_at');
 
-      // Build base query based on user role
-      const matchQuery: any = {};
-
+      // Filter by user role
       if (req.user.role === 'client') {
-        matchQuery.clientId = new mongoose.Types.ObjectId(req.user.id);
+        baseQuery = baseQuery.eq('user_id', req.user.id);
       } else if (req.user.role === 'coach') {
-        matchQuery.coachId = new mongoose.Types.ObjectId(req.user.id);
-        matchQuery.status = 'submitted';
-        if (clientId) {
-          matchQuery.clientId = new mongoose.Types.ObjectId(clientId as string);
-        }
-      } else if (req.user.role === 'admin') {
-        if (clientId) {
-          matchQuery.clientId = new mongoose.Types.ObjectId(clientId as string);
-        }
+        // Coaches can see stats from their sessions
+        baseQuery = baseQuery
+          .select('mood, created_at, sessions!inner(coach_id)')
+          .eq('sessions.coach_id', req.user.id);
+      }
+      // Admin can see all stats (no additional filtering)
+
+      const { data: reflections, error } = await baseQuery;
+
+      if (error) {
+        console.error('Error fetching reflection stats:', error);
+        res.status(500).json({ error: 'Failed to fetch reflection statistics' });
+        return;
       }
 
-      // Add date range filter
-      if (dateFrom || dateTo) {
-        matchQuery.submittedAt = {};
-        if (dateFrom) {
-          matchQuery.submittedAt.$gte = new Date(dateFrom as string);
-        }
-        if (dateTo) {
-          matchQuery.submittedAt.$lte = new Date(dateTo as string);
-        }
-      }
-
-      const pipeline = [
-        { $match: matchQuery },
-        {
-          $facet: {
-            // Overall statistics
-            overview: [
-              {
-                $group: {
-                  _id: null,
-                  totalReflections: { $sum: 1 },
-                  submittedReflections: {
-                    $sum: { $cond: [{ $eq: ['$status', 'submitted'] }, 1, 0] },
-                  },
-                  draftReflections: {
-                    $sum: { $cond: [{ $eq: ['$status', 'draft'] }, 1, 0] },
-                  },
-                  avgCompletionTime: { $avg: '$actualCompletionMinutes' },
-                  earliestReflection: { $min: '$submittedAt' },
-                  latestReflection: { $max: '$submittedAt' },
-                },
-              },
-            ],
-
-            // Monthly trends
-            monthlyTrends: [
-              {
-                $group: {
-                  _id: {
-                    year: { $year: '$submittedAt' },
-                    month: { $month: '$submittedAt' },
-                  },
-                  count: { $sum: 1 },
-                  avgCompletionTime: { $avg: '$actualCompletionMinutes' },
-                },
-              },
-              { $sort: { '_id.year': 1, '_id.month': 1 } },
-              { $limit: 12 }, // Last 12 months
-            ],
-
-            // Category analysis
-            categoryInsights: [
-              { $unwind: '$answers' },
-              {
-                $group: {
-                  _id: {
-                    $substr: ['$answers.questionId', 0, { $indexOfBytes: ['$answers.questionId', '_'] }],
-                  },
-                  count: { $sum: 1 },
-                  averageScaleValue: {
-                    $avg: {
-                      $cond: [
-                        { $type: '$answers.value' },
-                        { $cond: [{ $eq: [{ $type: '$answers.value' }, 'number'] }, '$answers.value', null] },
-                        null,
-                      ],
-                    },
-                  },
-                },
-              },
-              { $sort: { count: -1 } },
-            ],
-
-            // Completion time analysis
-            completionTimeStats: [
-              {
-                $group: {
-                  _id: null,
-                  avgTime: { $avg: '$actualCompletionMinutes' },
-                  minTime: { $min: '$actualCompletionMinutes' },
-                  maxTime: { $max: '$actualCompletionMinutes' },
-                  medianTime: { $median: '$actualCompletionMinutes' },
-                },
-              },
-            ],
-
-            // Weekly pattern analysis
-            weeklyPatterns: [
-              {
-                $group: {
-                  _id: { $dayOfWeek: '$submittedAt' },
-                  count: { $sum: 1 },
-                  avgCompletionTime: { $avg: '$actualCompletionMinutes' },
-                },
-              },
-              { $sort: { _id: 1 } },
-            ],
-          },
+      // Calculate statistics
+      const stats = {
+        total: reflections?.length || 0,
+        byMood: {
+          positive: 0,
+          neutral: 0,
+          negative: 0,
+          mixed: 0,
+          unspecified: 0,
         },
-      ];
-
-      const [analytics] = await Reflection.aggregate(pipeline);
-
-      // Process and format the results
-      const overview = analytics.overview[0] || {
-        totalReflections: 0,
-        submittedReflections: 0,
-        draftReflections: 0,
-        avgCompletionTime: 0,
-        earliestReflection: null,
-        latestReflection: null,
+        thisMonth: 0,
+        thisWeek: 0,
       };
 
-      const monthlyTrends = analytics.monthlyTrends.map((trend: any) => ({
-        month: `${trend._id.year}-${trend._id.month.toString().padStart(2, '0')}`,
-        count: trend.count,
-        avgCompletionTime: Math.round(trend.avgCompletionTime || 0),
-      }));
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-      const categoryInsights = analytics.categoryInsights.map((category: any) => ({
-        category: category._id,
-        responses: category.count,
-        averageScore: category.averageScaleValue ? Math.round(category.averageScaleValue * 10) / 10 : null,
-      }));
+      reflections?.forEach((reflection) => {
+        // Count by mood
+        if (reflection.mood) {
+          stats.byMood[reflection.mood as keyof typeof stats.byMood]++;
+        } else {
+          stats.byMood.unspecified++;
+        }
 
-      const weeklyPatterns = analytics.weeklyPatterns.map((pattern: any) => ({
-        dayOfWeek: pattern._id,
-        count: pattern.count,
-        avgCompletionTime: Math.round(pattern.avgCompletionTime || 0),
-      }));
-
-      const completionStats = analytics.completionTimeStats[0] || {
-        avgTime: 0,
-        minTime: 0,
-        maxTime: 0,
-        medianTime: 0,
-      };
-
-      res.json({
-        overview: {
-          ...overview,
-          completionRate: overview.totalReflections > 0 
-            ? Math.round((overview.submittedReflections / overview.totalReflections) * 100)
-            : 0,
-          avgCompletionTime: Math.round(overview.avgCompletionTime || 0),
-        },
-        trends: {
-          monthly: monthlyTrends,
-          weekly: weeklyPatterns,
-        },
-        insights: {
-          categories: categoryInsights,
-          completionTime: {
-            average: Math.round(completionStats.avgTime || 0),
-            minimum: Math.round(completionStats.minTime || 0),
-            maximum: Math.round(completionStats.maxTime || 0),
-            median: Math.round(completionStats.medianTime || 0),
-          },
-        },
+        // Count by time period
+        const createdAt = new Date(reflection.created_at);
+        if (createdAt >= startOfMonth) {
+          stats.thisMonth++;
+        }
+        if (createdAt >= startOfWeek) {
+          stats.thisWeek++;
+        }
       });
+
+      res.json({ stats });
     } catch (error) {
-      console.error('Error generating reflection analytics:', error);
-      res.status(500).json({ error: 'Failed to generate reflection analytics' });
-    }
-  },
-
-  // Search reflections with full-text search capabilities
-  async searchReflections(req: Request, res: Response) {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
-      }
-
-      const { q: searchQuery, limit = 10, categories, dateFrom, dateTo } = req.query;
-
-      if (!searchQuery) {
-        return res.status(400).json({ error: 'Search query is required' });
-      }
-
-      // Build base query based on user role
-      const baseQuery: any = {};
-
-      if (req.user.role === 'client') {
-        baseQuery.clientId = new mongoose.Types.ObjectId(req.user.id);
-      } else if (req.user.role === 'coach') {
-        baseQuery.coachId = new mongoose.Types.ObjectId(req.user.id);
-        baseQuery.status = 'submitted';
-      }
-
-      // Build search pipeline
-      const pipeline = [
-        { $match: baseQuery },
-        
-        // Add text search across answers
-        {
-          $match: {
-            $or: [
-              { 'answers.value': { $regex: searchQuery, $options: 'i' } },
-              { 'answers.followUpAnswer': { $regex: searchQuery, $options: 'i' } },
-            ],
-          },
-        },
-
-        // Add category filter if provided
-        ...(categories
-          ? [
-              {
-                $match: {
-                  'answers.questionId': {
-                    $in: (categories as string).split(',').map(cat => new RegExp(`^${cat}`, 'i')),
-                  },
-                },
-              },
-            ]
-          : []),
-
-        // Add date range filter
-        ...(dateFrom || dateTo
-          ? [
-              {
-                $match: {
-                  submittedAt: {
-                    ...(dateFrom && { $gte: new Date(dateFrom as string) }),
-                    ...(dateTo && { $lte: new Date(dateTo as string) }),
-                  },
-                },
-              },
-            ]
-          : []),
-
-        // Add relevance scoring based on match quality
-        {
-          $addFields: {
-            relevanceScore: {
-              $sum: [
-                // Score for exact matches in answers
-                {
-                  $size: {
-                    $filter: {
-                      input: '$answers',
-                      cond: {
-                        $regexMatch: {
-                          input: { $toString: '$$this.value' },
-                          regex: searchQuery,
-                          options: 'i',
-                        },
-                      },
-                    },
-                  },
-                },
-                // Score for partial matches
-                {
-                  $multiply: [
-                    0.5,
-                    {
-                      $size: {
-                        $filter: {
-                          input: '$answers',
-                          cond: {
-                            $regexMatch: {
-                              input: { $toString: '$$this.value' },
-                              regex: `.*${searchQuery}.*`,
-                              options: 'i',
-                            },
-                          },
-                        },
-                      },
-                    },
-                  ],
-                },
-              ],
-            },
-          },
-        },
-
-        // Sort by relevance and date
-        { $sort: { relevanceScore: -1, submittedAt: -1 } },
-
-        // Limit results
-        { $limit: parseInt(limit as string) },
-
-        // Populate related data
-        {
-          $lookup: {
-            from: 'coachingsessions',
-            localField: 'sessionId',
-            foreignField: '_id',
-            as: 'session',
-          },
-        },
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'clientId',
-            foreignField: '_id',
-            as: 'client',
-          },
-        },
-
-        // Project only needed fields
-        {
-          $project: {
-            _id: 1,
-            submittedAt: 1,
-            status: 1,
-            relevanceScore: 1,
-            matchingAnswers: {
-              $filter: {
-                input: '$answers',
-                cond: {
-                  $or: [
-                    {
-                      $regexMatch: {
-                        input: { $toString: '$$this.value' },
-                        regex: searchQuery,
-                        options: 'i',
-                      },
-                    },
-                    {
-                      $regexMatch: {
-                        input: { $ifNull: ['$$this.followUpAnswer', ''] },
-                        regex: searchQuery,
-                        options: 'i',
-                      },
-                    },
-                  ],
-                },
-              },
-            },
-            session: { $arrayElemAt: ['$session', 0] },
-            client: { $arrayElemAt: ['$client', 0] },
-          },
-        },
-      ];
-
-      const results = await Reflection.aggregate(pipeline);
-
-      res.json({
-        query: searchQuery,
-        results: results.map((result: any) => ({
-          reflectionId: result._id,
-          sessionDate: result.session?.date,
-          submittedAt: result.submittedAt,
-          relevanceScore: result.relevanceScore,
-          matches: result.matchingAnswers.length,
-          preview: result.matchingAnswers.slice(0, 2).map((answer: any) => ({
-            questionId: answer.questionId,
-            value: typeof answer.value === 'string' ? answer.value.substring(0, 200) : answer.value,
-            followUpAnswer: answer.followUpAnswer ? answer.followUpAnswer.substring(0, 200) : null,
-          })),
-          client: req.user.role !== 'client' ? {
-            name: `${result.client?.firstName} ${result.client?.lastName}`,
-            email: result.client?.email,
-          } : null,
-        })),
-        total: results.length,
-      });
-    } catch (error) {
-      console.error('Error searching reflections:', error);
-      res.status(500).json({ error: 'Failed to search reflections' });
+      console.error('Error getting reflection stats:', error);
+      res.status(500).json({ error: 'Failed to get reflection statistics' });
     }
   },
 };

@@ -34,10 +34,19 @@ We have successfully achieved major progress in Epic 8.9 TypeScript Integration 
 - ✅ **Core Functionality**: All Supabase-related type integration complete
 - 📝 **Remaining**: 4 non-critical UI dependency and chart component errors (outside migration scope)
 
-**8.21 Update Backend API with Generated Types** ⏳ **PENDING**
-- Update controllers and middleware with proper typing
-- Ensure frontend-backend type compatibility
-- Test all API endpoints with new typing
+**🔧 Subtask 8.21: Update Backend API with Generated Types** ✅ **MAJOR PROGRESS - 40% COMPLETE**
+- ✅ **sessionController.ts**: Completely migrated from MongoDB to Supabase with generated types
+  - Updated all CRUD operations to use Supabase client with proper Database types
+  - Fixed status enums ('pending'→'Upcoming', 'completed'→'Completed', 'cancelled'→'Cancelled')
+  - Updated field names (coachId→coach_id, clientId→client_id)
+  - Implemented proper validation schemas with UUID support
+- ✅ **reflectionController.ts**: Completely migrated from MongoDB to Supabase with generated types  
+  - Simplified reflection model to match Supabase schema (content, mood, session_id, user_id)
+  - Implemented full CRUD operations with proper authorization
+  - Added mood-based analytics and session-based reflection queries
+  - Removed complex template system in favor of cleaner Supabase structure
+- ✅ **Validation & Error Handling**: Both controllers use proper TypeScript types and Zod validation
+- 📝 **Next**: Migrate remaining critical controllers (userController, paymentController, etc.)
 
 **8.22 Update Shared Types and Clean Up Legacy Types** ⏳ **PENDING**
 - Update `shared/types/` directory with generated types
