@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { format, addDays, isBefore, isAfter, startOfDay, endOfDay } from 'date-fns';
 import { availabilityService, AvailableSlot } from '@/services/availabilityService';
-import { createPublicBookingSession, CreateSessionData } from '@/services/sessionService';
+import { createPublicBookingSession, APICreateSessionData } from '@/services/sessionService';
 
 interface BookingFormData {
   firstName: string;
@@ -250,7 +250,7 @@ const BookingPage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const sessionData: CreateSessionData = {
+      const sessionData: APICreateSessionData = {
         coachId: coachId!,
         clientEmail: formData.email,
         clientFirstName: formData.firstName,

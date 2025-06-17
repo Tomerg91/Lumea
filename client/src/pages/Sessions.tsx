@@ -156,7 +156,7 @@ const Sessions = () => {
     return (
       <MainLayout>
         <div className="max-w-6xl mx-auto flex flex-col justify-center items-center h-[calc(100vh-200px)]">
-          <p className="text-xl text-red-500">Error: {error}</p>
+          <p className="text-xl text-red-500">Error: {error?.message || 'Failed to load sessions'}</p>
           <p>Please try refreshing the page. If the issue persists, the backend might be unavailable.</p>
         </div>
       </MainLayout>
@@ -400,9 +400,9 @@ const Sessions = () => {
                       </Card>
                     )}
                     {selectedSessions
-                      .filter((session) => session.status === 'pending')
+                      .filter((session) => session.status === 'Upcoming')
                       .map((session) => (
-                        <Card key={session._id} className="lumea-card mb-4">
+                        <Card key={session.id} className="lumea-card mb-4">
                           <CardHeader className="pb-2">
                             <CardTitle>
                               {format(new Date(session.date), 'HH:mm')} - {session.client ? `${session.client.firstName} ${session.client.lastName}` : 'Session'}
@@ -472,10 +472,10 @@ const Sessions = () => {
                 ) : (
                   <>
                     {sessions
-                      .filter((session) => session.status === 'pending')
+                      .filter((session) => session.status === 'Upcoming')
                       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
                       .map((session) => (
-                        <Card key={session._id} className="lumea-card mb-4">
+                        <Card key={session.id} className="lumea-card mb-4">
                           <CardHeader className="pb-2">
                             <div className="flex justify-between">
                               <div>
@@ -550,7 +550,7 @@ const Sessions = () => {
                           </CardContent>
                         </Card>
                       ))}
-                    {sessions.filter((session) => session.status === 'pending').length === 0 && (
+                    {sessions.filter((session) => session.status === 'Upcoming').length === 0 && (
                       <Card className="lumea-card">
                         <CardContent className="flex flex-col items-center justify-center p-8 text-center">
                           <svg
@@ -590,10 +590,10 @@ const Sessions = () => {
           <TabsContent value="past">
             <div className="grid grid-cols-1 gap-4">
               {sessions
-                .filter((session) => session.status === 'completed')
+                .filter((session) => session.status === 'Completed')
                 .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                 .map((session) => (
-                  <Card key={session._id} className="lumea-card">
+                  <Card key={session.id} className="lumea-card">
                     <CardHeader className="pb-2">
                       <div className="flex justify-between">
                         <div>
@@ -622,7 +622,7 @@ const Sessions = () => {
                     </CardContent>
                   </Card>
                 ))}
-              {sessions.filter((session) => session.status === 'completed').length === 0 && (
+              {sessions.filter((session) => session.status === 'Completed').length === 0 && (
                 <Card className="lumea-card">
                   <CardContent className="flex flex-col items-center justify-center p-8 text-center">
                     <svg
@@ -649,9 +649,9 @@ const Sessions = () => {
           <TabsContent value="cancelled">
             <div className="grid grid-cols-1 gap-4">
               {sessions
-                .filter((session) => session.status === 'cancelled')
+                .filter((session) => session.status === 'Cancelled')
                 .map((session) => (
-                  <Card key={session._id} className="lumea-card">
+                  <Card key={session.id} className="lumea-card">
                     <CardHeader className="pb-2">
                       <div className="flex justify-between">
                         <div>
@@ -675,7 +675,7 @@ const Sessions = () => {
                     </CardContent>
                   </Card>
                 ))}
-              {sessions.filter((session) => session.status === 'cancelled').length === 0 && (
+              {sessions.filter((session) => session.status === 'Cancelled').length === 0 && (
                 <Card className="lumea-card">
                   <CardContent className="flex flex-col items-center justify-center p-8 text-center">
                     <svg

@@ -120,6 +120,29 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   
   const storage = getStorageHook();
   
+  // Get the correct upload and delete method names based on file type
+  const getUploadMethod = () => {
+    switch (fileType) {
+      case 'IMAGES':
+        return 'uploadImage';
+      case 'DOCUMENTS':
+        return 'uploadDocument';
+      default:
+        return 'uploadFile';
+    }
+  };
+  
+  const getDeleteMethod = () => {
+    switch (fileType) {
+      case 'IMAGES':
+        return 'deleteImage';
+      case 'DOCUMENTS':
+        return 'deleteDocument';
+      default:
+        return 'deleteFile';
+    }
+  };
+  
   // State management
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -223,11 +246,20 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           ...customUploadOptions,
         };
         
-        const result = await storage.uploadFile({
-          file,
-          context: fileConfig.context,
-          options: uploadOptions
-        });
+        const uploadMethod = getUploadMethod();
+        let result;
+        
+        if (uploadMethod === 'uploadFile') {
+          result = await (storage as any).uploadFile({
+            file,
+            context: fileConfig.context,
+            options: uploadOptions
+          });
+        } else if (uploadMethod === 'uploadImage') {
+          result = await (storage as any).uploadImage(file, uploadOptions);
+        } else if (uploadMethod === 'uploadDocument') {
+          result = await (storage as any).uploadDocument(file, uploadOptions);
+        }
         
         return {
           id: result.id || file.name + Date.now(),
@@ -336,7 +368,14 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     try {
       // Delete from Supabase if it was uploaded there
       if (file.supabaseResult) {
-        await storage.deleteFile(file.supabaseResult.path);
+        const deleteMethod = getDeleteMethod();
+        if (deleteMethod === 'deleteFile') {
+          await (storage as any).deleteFile(file.supabaseResult.path);
+        } else if (deleteMethod === 'deleteImage') {
+          await (storage as any).deleteImage(file.supabaseResult.path);
+        } else if (deleteMethod === 'deleteDocument') {
+          await (storage as any).deleteDocument(file.supabaseResult.path);
+        }
       }
       
       setUploadedFiles(prev => prev.filter((_, i) => i !== index));

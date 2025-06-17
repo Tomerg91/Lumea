@@ -4,8 +4,8 @@ import { Session, SessionStatus } from '../components/SessionList';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
-// Type for session creation data
-export interface CreateSessionData {
+// Type for session creation data (API-specific with public booking fields)
+export interface APICreateSessionData {
   clientId?: string; // Optional for existing clients
   coachId?: string; // For public booking
   clientEmail?: string; // For public booking
@@ -136,7 +136,7 @@ export const fetchSessions = async (): Promise<Session[]> => {
   return data.sessions || data || [];
 };
 
-export const createSession = async (sessionData: CreateSessionData): Promise<Session> => {
+export const createSession = async (sessionData: APICreateSessionData): Promise<Session> => {
   console.log('Attempting to create session with data:', sessionData);
   
   const response = await fetch(
@@ -159,7 +159,7 @@ export const createSession = async (sessionData: CreateSessionData): Promise<Ses
   return result.session;
 };
 
-export const createPublicBookingSession = async (sessionData: CreateSessionData): Promise<Session> => {
+export const createPublicBookingSession = async (sessionData: APICreateSessionData): Promise<Session> => {
   console.log('Attempting to create public booking session with data:', sessionData);
   
   const response = await fetch(
@@ -599,4 +599,4 @@ export const getDurationAnalytics = async (
 };
 
 // Export types for use in other files
-export type { CreateSessionData, UpdateSessionStatusData, UpdateSessionData, CancelSessionData, RescheduleSessionData }; 
+export type { UpdateSessionStatusData, UpdateSessionData, CancelSessionData, RescheduleSessionData }; 

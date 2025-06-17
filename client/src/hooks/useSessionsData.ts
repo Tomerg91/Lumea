@@ -4,7 +4,7 @@ import {
   fetchSessions as fetchSessionsService,
   createSession as createSessionService,
   updateSessionStatus as updateSessionStatusService,
-  CreateSessionData,
+  APICreateSessionData,
   UpdateSessionStatusData
 } from '../services/sessionService';
 
@@ -53,7 +53,7 @@ const fetchSessions = async (
 
 // Function to create a session
 const createSession = async (
-  data: CreateSessionData
+  data: APICreateSessionData
 ): Promise<{ message: string; session: Session }> => {
   const session = await createSessionService(data);
   return { message: 'Session created successfully', session };
