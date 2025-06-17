@@ -6,6 +6,7 @@
     "edit": "Edit",
     "actions": "Actions",
     "goBack": "Go Back",
+    "back": "Back",
     "yes": "Yes",
     "no": "No"
   },
@@ -127,6 +128,36 @@
       "career": "Career & Professional",
       "wellness": "Wellness & Self-Care"
     }
+  },
+  "reflections": {
+    "pageTitle": "Create Reflection",
+    "pageDescription": "Take a moment to reflect on your thoughts, experiences, and insights. Your reflections help track your personal growth journey.",
+    "createReflection": "New Reflection",
+    "content": "Reflection Content",
+    "contentPlaceholder": "Share your thoughts, experiences, insights, or any reflections you'd like to capture...",
+    "contentRequired": "Reflection content is required",
+    "characters": "characters",
+    "mood": {
+      "label": "How are you feeling?",
+      "placeholder": "Select your mood (optional)",
+      "positive": "Positive",
+      "neutral": "Neutral", 
+      "negative": "Negative",
+      "mixed": "Mixed"
+    },
+    "session": {
+      "label": "Related Session",
+      "placeholder": "Link to a coaching session (optional)",
+      "loading": "Loading sessions...",
+      "none": "No specific session"
+    },
+    "saveDraft": "Save Draft",
+    "submit": "Submit Reflection",
+    "submitSuccess": "Reflection submitted successfully!",
+    "submitError": "Failed to submit reflection. Please try again.",
+    "draftSaved": "Draft saved successfully!",
+    "saveDraftError": "Failed to save draft. Please try again.",
+    "loadSessionsError": "Failed to load sessions"
   },
   "audioRecorder": {
     "startRecording": "Start Recording",

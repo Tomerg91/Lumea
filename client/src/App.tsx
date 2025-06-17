@@ -299,6 +299,14 @@ const App: React.FC = () => {
                 } 
               />
               <Route 
+                path="/reflections" 
+                element={
+                  <ProtectedRoute>
+                    <ReflectionsPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
                 path="/settings" 
                 element={
                   <ProtectedRoute>
