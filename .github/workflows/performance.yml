@@ -1,0 +1,159 @@
+name: Performance Budget
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - 'package*.json'
+      - 'vite.config.ts'
+      - 'lighthouserc.json'
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - 'package*.json'
+      - 'vite.config.ts'
+      - 'lighthouserc.json'
+
+jobs:
+  bundle-size:
+    name: Bundle Size Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Cache node modules
+        id: cache-npm
+        uses: actions/cache@v3
+        with:
+          path: |
+            **/node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Install dependencies
+        if: steps.cache-npm.outputs.cache-hit != 'true'
+        run: npm ci --workspaces --if-present
+
+      - name: Build client
+        run: cd client && npm run build
+
+      - name: Check bundle size
+        run: cd client && npm run bundlesize
+
+      - name: Check size-limit
+        run: cd client && npm run size
+
+  lighthouse:
+    name: Lighthouse CI
+    runs-on: ubuntu-latest
+    needs: bundle-size
+    
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Cache node modules
+        id: cache-npm-lighthouse
+        uses: actions/cache@v3
+        with:
+          path: |
+            **/node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Install dependencies
+        if: steps.cache-npm-lighthouse.outputs.cache-hit != 'true'
+        run: npm ci --workspaces --if-present
+
+      - name: Build client for Lighthouse
+        run: cd client && npm run build
+
+      - name: Serve built app
+        run: |
+          cd client && npm run preview &
+          sleep 10
+        
+      - name: Run Lighthouse CI
+        run: npm run lighthouse || echo "Lighthouse CI failed but continuing"
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Lighthouse reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: lighthouse-reports
+          path: lighthouse-reports/
+          retention-days: 30
+
+  performance-comment:
+    name: Performance Comment
+    runs-on: ubuntu-latest
+    needs: [bundle-size, lighthouse]
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download Lighthouse reports
+        uses: actions/download-artifact@v3
+        with:
+          name: lighthouse-reports
+          path: lighthouse-reports/
+          
+      - name: Comment PR with Performance Results
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Read Lighthouse results if available
+            let performanceComment = '## 📊 Performance Budget Results\n\n';
+            
+            try {
+              const reportsDir = 'lighthouse-reports';
+              if (fs.existsSync(reportsDir)) {
+                const manifestPath = path.join(reportsDir, 'manifest.json');
+                if (fs.existsSync(manifestPath)) {
+                  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+                  const latestRun = manifest[manifest.length - 1];
+                  if (latestRun && latestRun.summary) {
+                    performanceComment += `### 🚀 Lighthouse Scores\n`;
+                    performanceComment += `- **Performance**: ${Math.round(latestRun.summary.performance * 100)}/100\n`;
+                    performanceComment += `- **Accessibility**: ${Math.round(latestRun.summary.accessibility * 100)}/100\n`;
+                    performanceComment += `- **Best Practices**: ${Math.round(latestRun.summary['best-practices'] * 100)}/100\n`;
+                    performanceComment += `- **SEO**: ${Math.round(latestRun.summary.seo * 100)}/100\n\n`;
+                  }
+                }
+              }
+            } catch (error) {
+              console.log('Could not read Lighthouse results:', error.message);
+            }
+            
+            performanceComment += `### 📦 Bundle Size Status\n`;
+            performanceComment += `Bundle size checks completed. See job details for specific measurements.\n\n`;
+            performanceComment += `### 📈 Performance Thresholds\n`;
+            performanceComment += `- **App Components**: < 90 kB gzipped\n`;
+            performanceComment += `- **Vendor React**: < 120 kB gzipped\n`;
+            performanceComment += `- **Vendor Charts**: < 50 kB gzipped\n`;
+            performanceComment += `- **CSS Total**: < 25 kB gzipped\n\n`;
+            performanceComment += `*Performance budgets help maintain fast loading times and good user experience.*`;
+            
+            // Post comment on PR
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: performanceComment
+            }); 

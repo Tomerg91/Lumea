@@ -11,24 +11,9 @@ try {
   console.warn('Warning: lovable-tagger not available. Component tagging will be skipped.');
 }
 
-// Safely import compression
-let compressionPlugin = null;
-try {
-  const { compression } = require('vite-plugin-compression2');
-  compressionPlugin = compression;
-} catch (error) {
-  console.warn('Warning: vite-plugin-compression2 not available. Compression will be skipped.');
-}
-
-// Safely import visualizer
-let visualizerPlugin = null;
-try {
-  // Dynamic import to avoid build failures if the package is missing
-  const visualizerImport = require('rollup-plugin-visualizer');
-  visualizerPlugin = visualizerImport.visualizer;
-} catch (error) {
-  console.warn('Warning: rollup-plugin-visualizer not available. Bundle analysis will be skipped.');
-}
+// Import compression and visualizer plugins
+import { compression } from 'vite-plugin-compression2';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 // Add this import for vitest types
 /// <reference types="vitest" />
@@ -42,10 +27,10 @@ export default defineConfig(({ mode }) => {
     mode === 'development' && componentTaggerPlugin && componentTaggerPlugin(),
   ];
 
-  // Add visualizer only if available
-  if (mode === 'production' && visualizerPlugin) {
+  // Add visualizer for production bundle analysis
+  if (mode === 'production') {
     plugins.push(
-      visualizerPlugin({
+      visualizer({
         open: false,
         gzipSize: true,
         brotliSize: true,
@@ -54,11 +39,11 @@ export default defineConfig(({ mode }) => {
     );
   }
 
-  // Add compression plugins for production if available
-  if (mode === 'production' && compressionPlugin) {
+  // Add compression plugins for production
+  if (mode === 'production') {
     // Add brotli compression
     plugins.push(
-      compressionPlugin({
+      compression({
         algorithm: 'brotliCompress',
         exclude: [/\.(br)$/, /\.(gz)$/, /\.(png|jpe?g|gif|webp)$/i],
         threshold: 1024, // Only compress files larger than 1KB
@@ -67,7 +52,7 @@ export default defineConfig(({ mode }) => {
     
     // Add gzip compression
     plugins.push(
-      compressionPlugin({
+      compression({
         algorithm: 'gzip',
         exclude: [/\.(br)$/, /\.(gz)$/, /\.(png|jpe?g|gif|webp)$/i],
         threshold: 1024,

@@ -2,6 +2,7 @@ import React, { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi } from 'vitest';
+import { AuthProvider } from '../contexts/AuthContext';
 
 // Test utilities for Supabase integration testing
 
@@ -38,6 +39,81 @@ export function renderWithQueryClient(
 
   return {
     ...render(ui, { wrapper: Wrapper, ...options }),
+    queryClient,
+  };
+}
+
+/**
+ * Mock authentication context for testing
+ */
+export function createMockAuthContext(overrides = {}) {
+  return {
+    session: null,
+    user: null,
+    profile: null,
+    loading: false,
+    authError: null,
+    signIn: vi.fn().mockResolvedValue({ data: null, error: null }),
+    signUp: vi.fn().mockResolvedValue({ data: null, error: null }),
+    signOut: vi.fn().mockResolvedValue(undefined),
+    updateProfile: vi.fn().mockResolvedValue({ data: null, error: null }),
+    ...overrides,
+  };
+}
+
+/**
+ * Mock AuthProvider component for testing
+ * Uses createMockAuthContext to provide a mock auth context without Supabase
+ */
+interface MockAuthProviderProps {
+  children: React.ReactNode;
+  mockAuthValue?: ReturnType<typeof createMockAuthContext>;
+}
+
+const MockAuthProvider: React.FC<MockAuthProviderProps> = ({ 
+  children, 
+  mockAuthValue = createMockAuthContext() 
+}) => {
+  // Create the same context that AuthContext uses
+  const AuthContext = React.createContext<any>(null);
+  
+  return (
+    <AuthContext.Provider value={mockAuthValue}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+/**
+ * Comprehensive test wrapper with all necessary providers
+ */
+interface RenderWithProvidersOptions extends Omit<RenderOptions, 'wrapper'> {
+  queryClient?: QueryClient;
+  mockAuthValue?: ReturnType<typeof createMockAuthContext>;
+}
+
+export function renderWithProviders(
+  ui: ReactElement,
+  options: RenderWithProvidersOptions = {}
+) {
+  const { 
+    queryClient = createTestQueryClient(),
+    mockAuthValue = createMockAuthContext(),
+    ...renderOptions 
+  } = options;
+
+  const AllProviders = ({ children }: { children: React.ReactNode }) => {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <MockAuthProvider mockAuthValue={mockAuthValue}>
+          {children}
+        </MockAuthProvider>
+      </QueryClientProvider>
+    );
+  };
+
+  return {
+    ...render(ui, { wrapper: AllProviders, ...renderOptions }),
     queryClient,
   };
 }
@@ -155,24 +231,6 @@ export function createMockSupabaseClient() {
     functions: {
       invoke: vi.fn(),
     },
-  };
-}
-
-/**
- * Mock authentication context for testing
- */
-export function createMockAuthContext(overrides = {}) {
-  return {
-    session: null,
-    user: null,
-    profile: null,
-    loading: false,
-    signIn: vi.fn(),
-    signUp: vi.fn(),
-    signOut: vi.fn(),
-    resetPassword: vi.fn(),
-    updateProfile: vi.fn(),
-    ...overrides,
   };
 }
 

@@ -261,4 +261,6 @@ export interface BulkCategoryAssignRequest {
 
 export interface BulkArchiveRequest {
   reason?: string;
-} 
+}
+
+export type NoteViewMode = 'list' | 'editor' | 'viewer' | 'organization' | 'analytics'; 

@@ -68,4 +68,8 @@ node_modules/
 # OS specific
 # Task files
 tasks.json
-tasks/ 
+tasks/
+
+# Performance monitoring
+lighthouse-reports/
+stats.html 

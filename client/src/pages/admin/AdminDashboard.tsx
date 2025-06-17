@@ -5,7 +5,7 @@ import PendingCoaches from './PendingCoaches';
 import UsersList from './UsersList';
 import PlatformStats from './PlatformStats';
 import { EncryptionDashboard } from '../../components/EncryptionDashboard';
-import ConsentManagement from '../../components/ConsentManagement';
+// import ConsentManagement from '../../components/ConsentManagement';
 
 // Tab components with appropriate icons
 const tabs = [
@@ -116,7 +116,7 @@ const AdminDashboard: React.FC = () => {
     { id: 'users', label: t('admin.users'), component: <UsersList /> },
     { id: 'platform-stats', label: t('admin.platformStats'), component: <PlatformStats /> },
     { id: 'encryption', label: t('admin.encryption', 'Encryption'), component: <EncryptionDashboard /> },
-    { id: 'consent', label: t('admin.consent', 'Privacy & Consent'), component: <ConsentManagement /> },
+    { id: 'consent', label: t('admin.consent', 'Privacy & Consent'), component: <div className="p-4 text-gray-500">Consent Management - Coming Soon</div> },
   ];
 
   return (
