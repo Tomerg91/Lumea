@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Database, TypedSupabaseClient } from '../types/database.types';
+import type { Database, TypedSupabaseClient } from '../../../shared/types/database';
 
 // Get Supabase configuration - prioritize working URL over broken environment variable
 const supabaseUrl = 'https://humlrpbtrbjnpnsusils.supabase.co'; // Using working URL directly

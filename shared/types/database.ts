@@ -995,6 +995,15 @@ export type NotificationWithRelations = Notification & {
 };
 
 // =============================================================================
+// SUPABASE CLIENT TYPE
+// =============================================================================
+
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+// Type for the typed Supabase client
+export type TypedSupabaseClient = SupabaseClient<Database>;
+
+// =============================================================================
 // EXPORT DEFAULT
 // =============================================================================
 
