@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { InviteToken, IInviteToken } from '../models/InviteToken';
+import { PasswordResetToken, IPasswordResetToken } from '../models/PasswordResetToken';
 import { Types } from 'mongoose';
 import {
   createPasswordResetToken as createPasswordResetTokenPrisma,

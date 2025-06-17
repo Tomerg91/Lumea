@@ -46,7 +46,7 @@ import {
   CheckCircle, 
   XCircle, 
   Clock, 
-  User, 
+  User as UserIcon, 
   Mail, 
   Calendar,
   Filter,
@@ -55,7 +55,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { createFetchConfig } from '../../services/api';
-import type { User, UserStatus } from '../../../shared/types/database';
+import type { User, UserStatus } from '../../../../shared/types/database';
 
 // Extended user type with coach-specific fields
 interface CoachApplication extends User {
@@ -287,7 +287,7 @@ const PendingCoaches: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
+            <UserIcon className="h-5 w-5" />
             Coach Applications Management
           </CardTitle>
           <CardDescription>

@@ -55,6 +55,7 @@ class MonitoringService {
         try {
           // Use dynamic require to avoid TypeScript module resolution
           const newRelicModule = 'newrelic';
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
           require(newRelicModule);
           this.newRelicAvailable = true;
           console.log('✅ New Relic APM initialized');
@@ -100,6 +101,7 @@ class MonitoringService {
       try {
         // Use dynamic require to avoid TypeScript module resolution
         const sentryModule = '@sentry/node';
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const Sentry = require(sentryModule);
         Sentry.captureException(error, { extra: context });
       } catch (e) {

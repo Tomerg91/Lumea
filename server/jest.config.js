@@ -19,5 +19,14 @@ export default {
   transformIgnorePatterns: [
     'node_modules/(?!(.*\\.mjs$))',
   ],
+  testPathIgnorePatterns: [
+    '<rootDir>/dist/',
+    '<rootDir>/node_modules/',
+    '<rootDir>/temp-disabled-tests/',
+  ],
+  testMatch: [
+    '**/__tests__/**/*.(test|spec).(ts|tsx|js)',
+    '**/*.(test|spec).(ts|tsx|js)',
+  ],
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
 };

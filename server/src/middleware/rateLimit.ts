@@ -2,7 +2,6 @@ import rateLimit from 'express-rate-limit';
 import { Request, Response, NextFunction } from 'express';
 import { APIError, ErrorCode } from './error.js';
 // @ts-ignore – package may not have TypeScript types installed
-// eslint-disable-next-line import/default
 import RedisStore from 'rate-limit-redis';
 import redisClient from '../utils/cache.js';
 

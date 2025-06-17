@@ -506,6 +506,7 @@ class ConsentService {
       };
 
       for (const consent of consents) {
+        // eslint-disable-next-line prefer-const
         let consentData: any = {
           id: consent._id,
           consentType: consent.consentType,

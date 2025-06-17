@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, jest } from '@jest/globals';
 import request from 'supertest';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
@@ -9,10 +9,10 @@ import { jwtConfig } from '../auth/config';
 import { generateTokens } from '../auth/tokenUtils';
 
 // Mock the models
-vi.mock('../models/User');
-vi.mock('../models/Role');
-vi.mock('../models/Session');
-vi.mock('../auth/tokenUtils');
+jest.mock('../models/User');
+jest.mock('../models/Role');
+jest.mock('../models/Session');
+jest.mock('../auth/tokenUtils');
 
 // Mock the Express app
 let app: any;
@@ -28,8 +28,8 @@ const mockUser = {
     name: 'client',
   },
   isActive: true,
-  comparePassword: vi.fn(),
-  toJSON: vi.fn(() => ({
+  comparePassword: jest.fn() as jest.MockedFunction<any>,
+  toJSON: jest.fn(() => ({
     _id: mockUser._id,
     email: mockUser.email,
     firstName: mockUser.firstName,
@@ -53,7 +53,7 @@ describe('Authentication Routes', () => {
 
   beforeEach(() => {
     // Reset all mocks before each test
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('POST /api/auth/login', () => {
@@ -127,7 +127,7 @@ describe('Authentication Routes', () => {
   describe('POST /api/auth/refresh', () => {
     it('should issue new tokens with a valid refresh token', async () => {
       // Setup JWT verification mock
-      const jwtVerifySpy = vi.spyOn(jwt, 'verify');
+      const jwtVerifySpy = jest.spyOn(jwt, 'verify');
       jwtVerifySpy.mockImplementation(() => ({
         sub: mockUser._id.toString(),
         type: 'refresh',
@@ -164,7 +164,7 @@ describe('Authentication Routes', () => {
 
     it('should return 401 with an invalid refresh token', async () => {
       // Setup JWT verification to throw an error
-      const jwtVerifySpy = vi.spyOn(jwt, 'verify');
+      const jwtVerifySpy = jest.spyOn(jwt, 'verify');
       jwtVerifySpy.mockImplementation(() => {
         throw new jwt.JsonWebTokenError('invalid token');
       });
@@ -187,7 +187,7 @@ describe('Authentication Routes', () => {
   describe('POST /api/auth/logout', () => {
     it('should invalidate the refresh token and return success', async () => {
       // Setup JWT verification mock
-      const jwtVerifySpy = vi.spyOn(jwt, 'verify');
+      const jwtVerifySpy = jest.spyOn(jwt, 'verify');
       jwtVerifySpy.mockImplementation(() => ({
         sub: mockUser._id.toString(),
         type: 'refresh',

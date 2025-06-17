@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import puppeteer from 'puppeteer';
-import * as XLSX from 'xlsx';
+import { Workbook } from 'excel-builder-vanilla';
 import { CoachingSession } from '../models/CoachingSession.js';
 import { Reflection } from '../models/Reflection.js';
 import { CoachNote } from '../models/CoachNote.js';
@@ -537,7 +537,7 @@ class AnalyticsService {
    * Generate Excel report
    */
   private async generateExcelReport(dashboard: AnalyticsDashboard): Promise<Buffer> {
-    const workbook = XLSX.utils.book_new();
+    const workbook = new Workbook();
 
     // Overview sheet
     const overviewData = [
@@ -567,8 +567,9 @@ class AnalyticsService {
       ['Average Completion Time (min)', dashboard.reflectionAnalytics.averageCompletionTime, '']
     ];
 
-    const overviewSheet = XLSX.utils.aoa_to_sheet(overviewData);
-    XLSX.utils.book_append_sheet(workbook, overviewSheet, 'Overview');
+    const overviewSheet = workbook.createWorksheet({ name: 'Overview' });
+    overviewSheet.setData(overviewData);
+    workbook.addWorksheet(overviewSheet);
 
     // Session trends sheet
     if (dashboard.sessionMetrics.sessionTrends.length > 0) {
@@ -580,8 +581,9 @@ class AnalyticsService {
           trend.completed
         ])
       ];
-      const trendsSheet = XLSX.utils.aoa_to_sheet(trendsData);
-      XLSX.utils.book_append_sheet(workbook, trendsSheet, 'Session Trends');
+      const trendsSheet = workbook.createWorksheet({ name: 'Session Trends' });
+      trendsSheet.setData(trendsData);
+      workbook.addWorksheet(trendsSheet);
     }
 
     // Coach performance sheet
@@ -598,8 +600,9 @@ class AnalyticsService {
           coach.notesTaken
         ])
       ];
-      const coachSheet = XLSX.utils.aoa_to_sheet(coachData);
-      XLSX.utils.book_append_sheet(workbook, coachSheet, 'Coach Performance');
+      const coachSheet = workbook.createWorksheet({ name: 'Coach Performance' });
+      coachSheet.setData(coachData);
+      workbook.addWorksheet(coachSheet);
     }
 
     // Reflection categories sheet
@@ -611,12 +614,13 @@ class AnalyticsService {
         category.averageScore
       ])
     ];
-    const categorySheet = XLSX.utils.aoa_to_sheet(categoryData);
-    XLSX.utils.book_append_sheet(workbook, categorySheet, 'Reflection Categories');
+    const categorySheet = workbook.createWorksheet({ name: 'Reflection Categories' });
+    categorySheet.setData(categoryData);
+    workbook.addWorksheet(categorySheet);
 
     // Convert to buffer
-    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-    return Buffer.from(buffer);
+    const buffer = await workbook.writeToBuffer();
+    return buffer;
   }
 
   /**

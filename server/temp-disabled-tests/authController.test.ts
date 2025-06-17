@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, jest, afterEach } from '@jest/globals';
 import { Request, Response } from 'express';
 import { authController } from '../controllers/authController';
 import { validateInviteToken, invalidateInviteToken } from '../utils/tokenHelpers';
@@ -7,28 +7,28 @@ import { Role } from '../models/Role';
 import bcrypt from 'bcryptjs';
 
 // Mock dependencies
-vi.mock('../utils/tokenHelpers', () => ({
-  validateInviteToken: vi.fn(),
-  invalidateInviteToken: vi.fn(),
+jest.mock('../utils/tokenHelpers', () => ({
+  validateInviteToken: jest.fn(),
+  invalidateInviteToken: jest.fn(),
 }));
 
-vi.mock('bcryptjs', () => ({
-  genSalt: vi.fn(),
-  hash: vi.fn(),
+jest.mock('bcryptjs', () => ({
+  genSalt: jest.fn(),
+  hash: jest.fn(),
 }));
 
 // Mock models
-vi.mock('../models/User', () => ({
+jest.mock('../models/User', () => ({
   User: {
-    findOne: vi.fn(),
-    create: vi.fn(),
+    findOne: jest.fn(),
+    create: jest.fn(),
   },
 }));
 
 // Mock Role model
-vi.mock('../models/Role', () => ({
+jest.mock('../models/Role', () => ({
   Role: {
-    findOne: vi.fn(),
+    findOne: jest.fn(),
   },
 }));
 
@@ -40,7 +40,7 @@ describe('AuthController - registerWithInvite', () => {
 
   beforeEach(() => {
     // Reset all mocks
-    vi.resetAllMocks();
+    jest.resetAllMocks();
 
     // Setup mock request and response
     req = {
@@ -54,8 +54,8 @@ describe('AuthController - registerWithInvite', () => {
     };
 
     res = {
-      status: vi.fn().mockReturnThis(),
-      json: vi.fn(),
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
     };
 
     // Setup mock user
@@ -90,7 +90,7 @@ describe('AuthController - registerWithInvite', () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   it('should successfully register a client with a valid invitation token', async () => {

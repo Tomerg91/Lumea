@@ -246,6 +246,53 @@ VITE_FACEBOOK_CLIENT_ID=your_facebook_client_id
 - `npm run lint` - Run linter
 - `npm run test` - Run tests
 
+## Security
+
+This project implements comprehensive security scanning and CI processes to ensure code quality and vulnerability management.
+
+### Security Features
+
+- **Automated vulnerability scanning** in CI/CD pipelines
+- **Code quality analysis** with CodeQL 
+- **Dependency security monitoring** with npm audit
+- **License compliance checking**
+- **Optional advanced scanning** with Snyk
+
+### Documentation
+
+For comprehensive development and operational documentation:
+
+#### **🚀 Development**
+- **[Development Workflow Guide](docs/development-workflow.md)** - Complete development process, testing, and contribution guidelines
+- **[CI/CD Guide](docs/ci-cd-guide.md)** - Comprehensive CI/CD pipeline documentation and architecture
+
+#### **🔒 Security**  
+- **[CI Security Documentation](docs/ci-security.md)** - Detailed security scanning processes and implementation
+
+#### **⚡ Performance**
+- **[Performance Budgets](docs/performance-budgets.md)** - Performance monitoring and optimization guidelines
+
+### Quick Security Commands
+
+```bash
+# Run security audit
+npm audit --audit-level=moderate --production
+
+# Check for outdated packages
+npm outdated
+
+# Check licenses
+npx license-checker --production --summary
+```
+
+### Security Workflows
+
+Our CI pipeline includes:
+- **Security Audit**: npm audit on all workspaces
+- **CodeQL Analysis**: Static analysis for JavaScript/TypeScript
+- **Dependency Review**: Automated dependency vulnerability checks (PR only)
+- **License Compliance**: Blocks GPL-3.0 and AGPL-3.0 licenses
+
 ## Contributing
 
 1. Fork the repository
@@ -253,6 +300,14 @@ VITE_FACEBOOK_CLIENT_ID=your_facebook_client_id
 3. Commit your changes (`git commit -m 'Add some amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+### Security Considerations for Contributors
+
+- [ ] No hardcoded secrets or credentials
+- [ ] Dependencies reviewed for known vulnerabilities  
+- [ ] New dependencies have compatible licenses
+- [ ] Security tests pass
+- [ ] Code scanning shows no new issues
 
 ## License
 

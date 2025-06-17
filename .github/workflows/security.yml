@@ -1,0 +1,181 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  codeql-analysis:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['javascript', 'typescript']
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: +security-extended,security-and-quality
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --workspaces --if-present
+
+      - name: Build TypeScript/JavaScript
+        run: |
+          npm run build --if-present
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          comment-summary-in-pr: always
+
+  advanced-security-scan:
+    name: Advanced Security Scanning
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --workspaces --if-present
+
+      # Comprehensive npm audit with detailed reporting
+      - name: NPM Security Audit (Detailed)
+        run: |
+          echo "=== Root Package Security Audit ==="
+          npm audit --audit-level=low --json > root-audit.json || true
+          npm audit --audit-level=low
+          
+          echo "=== Server Package Security Audit ==="
+          cd server
+          npm audit --audit-level=low --json > ../server-audit.json || true
+          npm audit --audit-level=low
+          cd ..
+          
+          echo "=== Client Package Security Audit ==="
+          cd client
+          npm audit --audit-level=low --json > ../client-audit.json || true
+          npm audit --audit-level=low
+          cd ..
+
+      # Check for hardcoded secrets (basic patterns)
+      - name: Secret Scanning (Basic)
+        run: |
+          echo "=== Scanning for potential secrets ==="
+          
+          # Look for common secret patterns
+          echo "Checking for API keys..."
+          if grep -r -i "api[_-]key\s*[:=]\s*['\"][^'\"]*['\"]" --include="*.ts" --include="*.js" --include="*.json" --exclude-dir=node_modules --exclude-dir=.git . || true; then
+            echo "⚠️  Potential API keys found"
+          fi
+          
+          echo "Checking for JWT secrets..."
+          if grep -r -i "jwt[_-]secret\s*[:=]\s*['\"][^'\"]*['\"]" --include="*.ts" --include="*.js" --include="*.json" --exclude-dir=node_modules --exclude-dir=.git . || true; then
+            echo "⚠️  Potential JWT secrets found"
+          fi
+          
+          echo "Checking for database URLs..."
+          if grep -r -i "database[_-]url\s*[:=]\s*['\"][^'\"]*['\"]" --include="*.ts" --include="*.js" --include="*.json" --exclude-dir=node_modules --exclude-dir=.git . || true; then
+            echo "⚠️  Potential database URLs found"
+          fi
+          
+          echo "Secret scanning completed"
+
+      # Upload audit results as artifacts
+      - name: Upload Security Audit Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-audit-results
+          path: |
+            *-audit.json
+          retention-days: 30
+
+  license-scan:
+    name: License Compliance Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install license checker
+        run: npm install -g license-checker
+
+      - name: Install dependencies
+        run: npm ci --workspaces --if-present
+
+      - name: Check licenses
+        run: |
+          echo "=== License Compliance Check ==="
+          
+          echo "Root packages:"
+          license-checker --summary --production
+          
+          echo "Server packages:"
+          cd server && license-checker --summary --production && cd ..
+          
+          echo "Client packages:"
+          cd client && license-checker --summary --production && cd ..
+          
+          # Fail on GPL licenses (adjust as needed)
+          echo "Checking for restrictive licenses..."
+          if license-checker --production --excludePrivatePackages --failOn 'GPL-3.0;AGPL-3.0' --summary; then
+            echo "✅ No restrictive licenses found"
+          else
+            echo "❌ Restrictive licenses detected"
+            exit 1
+          fi 

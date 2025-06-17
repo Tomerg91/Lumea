@@ -220,7 +220,17 @@ export default defineConfig(({ mode }) => {
     test: {
       globals: true,
       environment: 'jsdom',
-      setupFiles: './src/setupTests.ts',
+      setupFiles: './src/test/setup.ts',
+      // Exclude Playwright E2E tests from Vitest
+      exclude: [
+        '**/node_modules/**',
+        '**/tests/**', // Exclude E2E test directory
+        '**/e2e/**'
+      ],
+      include: [
+        'src/**/__tests__/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+        'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+      ],
       // Optional: Enable CSS processing if needed for tests
       // css: true,
     },

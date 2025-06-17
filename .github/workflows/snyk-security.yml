@@ -1,0 +1,130 @@
+name: Snyk Security Scanning (Optional)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run weekly on Sundays at 3 AM UTC
+    - cron: '0 3 * * 0'
+
+jobs:
+  snyk-security:
+    name: Snyk Security Analysis
+    runs-on: ubuntu-latest
+    # Only run if SNYK_TOKEN is available
+    if: ${{ secrets.SNYK_TOKEN != '' }}
+    
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --workspaces --if-present
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --all-projects
+          command: test
+
+      - name: Run Snyk to check for open source vulnerabilities
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=medium --all-projects --json
+          command: test
+        continue-on-error: true
+
+      - name: Upload Snyk results to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: snyk.sarif
+
+  snyk-container:
+    name: Snyk Container Security
+    runs-on: ubuntu-latest
+    # Only run if SNYK_TOKEN is available and there are Dockerfiles
+    if: ${{ secrets.SNYK_TOKEN != '' }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for Dockerfiles
+        id: check-docker
+        run: |
+          if find . -name "Dockerfile*" -type f | grep -q .; then
+            echo "dockerfiles=true" >> $GITHUB_OUTPUT
+          else
+            echo "dockerfiles=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Snyk to check Docker images for vulnerabilities
+        if: steps.check-docker.outputs.dockerfiles == 'true'
+        uses: snyk/actions/docker@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          image: .
+          args: --severity-threshold=high
+
+  snyk-iac:
+    name: Snyk Infrastructure as Code
+    runs-on: ubuntu-latest
+    # Only run if SNYK_TOKEN is available
+    if: ${{ secrets.SNYK_TOKEN != '' }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Snyk to check for IaC vulnerabilities
+        uses: snyk/actions/iac@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=medium
+
+  snyk-monitor:
+    name: Snyk Monitor (Track Dependencies)
+    runs-on: ubuntu-latest
+    # Only run on main branch and if SNYK_TOKEN is available
+    if: ${{ github.ref == 'refs/heads/main' && secrets.SNYK_TOKEN != '' }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --workspaces --if-present
+
+      - name: Monitor dependencies with Snyk
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: monitor
+          args: --all-projects 

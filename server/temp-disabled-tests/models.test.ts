@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, jest } from '@jest/globals';
 import { Types } from 'mongoose';
 import { User } from '../models/User';
 import { Role } from '../models/Role';
@@ -8,19 +8,19 @@ import { CoachNote } from '../models/CoachNote';
 import { Resource } from '../models/Resource';
 
 // Mocks for Mongoose to avoid actual DB calls
-vi.mock('mongoose', async () => {
+jest.mock('mongoose', async () => {
   const actual = await import('mongoose');
   return {
     __esModule: true,
     default: {
       ...actual.default,
-      model: vi.fn().mockImplementation((name, schema) => {
+      model: jest.fn().mockImplementation((name, schema) => {
         // Create a mock model function that mimics the behavior of a Mongoose model
         function MockModel(data: any) {
           return {
             ...data,
-            save: vi.fn().mockResolvedValue(data),
-            validate: vi.fn().mockImplementation(function () {
+            save: jest.fn().mockResolvedValue(data),
+            validate: jest.fn().mockImplementation(function () {
               return schema.methods.validate
                 ? schema.methods.validate.call(this)
                 : Promise.resolve();
@@ -32,7 +32,7 @@ vi.mock('mongoose', async () => {
         Object.assign(MockModel, schema.statics);
 
         // Mock additional commonly used Mongoose model methods
-        MockModel.create = vi.fn().mockImplementation(async (data) => {
+        MockModel.create = jest.fn().mockImplementation(async (data) => {
           // Run validation before creating
           const doc = MockModel(data);
           await doc.validate();
@@ -110,7 +110,7 @@ describe('Mongoose Models', () => {
       const user = new User(userData);
 
       // Create a spy for the validate method
-      const validateSpy = vi.spyOn(user, 'validate');
+      const validateSpy = jest.spyOn(user, 'validate');
 
       // Validation should fail
       await expect(user.validate()).rejects.toThrow();
@@ -338,7 +338,7 @@ describe('Mongoose Models', () => {
       const resource = new Resource(resourceData);
 
       // Create a spy for the validate method
-      const validateSpy = vi.spyOn(resource, 'validate');
+      const validateSpy = jest.spyOn(resource, 'validate');
 
       // Validation should fail due to missing both url and filePath
       await expect(resource.validate()).rejects.toThrow();

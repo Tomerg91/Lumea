@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { Types } from 'mongoose';
 import {
   generateSecureToken,
@@ -8,42 +8,42 @@ import {
   validatePasswordResetToken,
   invalidatePasswordResetToken,
   invalidateInviteToken,
-} from '../utils/tokenHelpers';
-import { InviteToken } from '../models/InviteToken';
-import { PasswordResetToken } from '../models/PasswordResetToken';
+} from '../utils/tokenHelpers.js';
 import crypto from 'crypto';
+import { InviteToken } from '../models/InviteToken.js';
+import { PasswordResetToken } from '../models/PasswordResetToken.js';
 
 // Mock the models and crypto
-vi.mock('../models/InviteToken', () => ({
+jest.mock('../models/InviteToken', () => ({
   InviteToken: {
-    create: vi.fn(),
-    findOne: vi.fn(),
-    deleteMany: vi.fn(),
-    deleteOne: vi.fn(),
-    countDocuments: vi.fn(),
+    create: jest.fn(),
+    findOne: jest.fn(),
+    deleteMany: jest.fn(),
+    deleteOne: jest.fn(),
+    countDocuments: jest.fn(),
   },
 }));
 
-vi.mock('../models/PasswordResetToken', () => ({
+jest.mock('../models/PasswordResetToken', () => ({
   PasswordResetToken: {
-    create: vi.fn(),
-    findOne: vi.fn(),
-    deleteMany: vi.fn(),
-    deleteOne: vi.fn(),
+    create: jest.fn(),
+    findOne: jest.fn(),
+    deleteMany: jest.fn(),
+    deleteOne: jest.fn(),
   },
 }));
 
-vi.mock('crypto', () => ({
-  randomBytes: vi.fn(),
+jest.mock('crypto', () => ({
+  randomBytes: jest.fn(),
 }));
 
 describe('Token Helpers', () => {
   const mockToken = 'mockedtoken123456789abcdef';
-  const mockObjectId = new Types.ObjectId();
+  const mockObjectId = new Types.ObjectId('507f1f77bcf86cd799439011'); // Fixed ObjectId
 
   // Reset all mocks before each test
   beforeEach(() => {
-    vi.resetAllMocks();
+    jest.resetAllMocks();
 
     // Setup default mock implementations
     (crypto.randomBytes as any).mockReturnValue({
@@ -78,7 +78,7 @@ describe('Token Helpers', () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('generateSecureToken', () => {
@@ -211,6 +211,21 @@ describe('Token Helpers', () => {
       await invalidateInviteToken(mockToken);
 
       expect(InviteToken.deleteOne).toHaveBeenCalledWith({ token: mockToken });
+    });
+  });
+
+  describe('Token validation edge cases', () => {
+    it('should handle expired tokens correctly', async () => {
+      // Mock expired token
+      (InviteToken.findOne as any).mockResolvedValue(null);
+      
+      const result = await validateInviteToken('expired-token');
+      
+      expect(result).toBeNull();
+      expect(InviteToken.findOne).toHaveBeenCalledWith({
+        token: 'expired-token',
+        expires: { $gt: expect.any(Date) },
+      });
     });
   });
 });

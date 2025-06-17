@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { CoachNote, NoteViewMode } from '../../types/coachNote';
 import { coachNoteService } from '../../services/coachNoteService';
 import { NoteCard } from './NoteCard';
-import { VirtualScrollList, useVirtualScrollList } from '../ui/VirtualScrollList';
+import { useVirtualScrollList } from '../ui/VirtualScrollList';
 import { Button } from '../ui/button';
 
 const ITEMS_PER_PAGE = 20;
@@ -27,7 +27,7 @@ export const NotesListCore: React.FC<NotesListCoreProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage] = useState(1);
 
   // Load notes
   const loadNotes = useCallback(async () => {

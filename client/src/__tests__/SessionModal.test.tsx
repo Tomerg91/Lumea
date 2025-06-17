@@ -67,15 +67,15 @@ vi.mock('react-i18next', () => ({
 
 // Mock date-fns
 vi.mock('date-fns', () => ({
-  format: (date: Date, formatStr: string) => {
+  format: () => {
     // Simple mock for yyyy-MM-dd format
     return '2023-07-15';
   },
 }));
 
-// Mock @headlessui/react Dialog component
+  // Mock @headlessui/react Dialog component
 vi.mock('@headlessui/react', () => {
-  const MockDialog = ({ open, onClose, children, className }: any) => (
+  const MockDialog = ({ open, children, className }: any) => (
     open ? <div data-testid="dialog-root" className={className}>{children}</div> : null
   );
   
