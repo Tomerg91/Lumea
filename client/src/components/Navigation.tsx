@@ -15,7 +15,8 @@ import {
   Home,
   Users,
   Heart,
-  FileText
+  FileText,
+  Phone
 } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -47,6 +48,7 @@ const Navigation = () => {
         { to: '/coach/clients', icon: <Users className="w-4 h-4" />, label: t('nav.clients') },
         { to: '/coach/sessions', icon: <Calendar className="w-4 h-4" />, label: t('nav.sessions') },
         { to: '/coach/notes', icon: <FileText className="w-4 h-4" />, label: t('nav.notes', 'Notes') },
+        { to: '/coach/communication', icon: <Phone className="w-4 h-4" />, label: t('nav.communication', 'Communication') },
         { to: '/coach/reflections', icon: <MessageSquare className="w-4 h-4" />, label: t('nav.reflections') },
         { to: '/coach/analytics', icon: <BarChart3 className="w-4 h-4" />, label: 'Analytics' },
         { to: '/coach/resources', icon: <Settings className="w-4 h-4" />, label: t('nav.resources') },

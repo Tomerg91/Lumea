@@ -23,6 +23,7 @@ const ResourcesPage = lazy(() => import('./pages/ResourcesPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const CoachNotesPage = lazy(() => import('./pages/CoachNotesPage'));
+const CommunicationPage = lazy(() => import('./pages/CommunicationPage'));
 
 // Admin components - only load for admin users
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
@@ -257,6 +258,14 @@ const App: React.FC = () => {
                 element={
                   <RoleProtectedRoute allowedRoles={['coach']}>
                     <CoachNotesPage />
+                  </RoleProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/coach/communication" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['coach']}>
+                    <CommunicationPage />
                   </RoleProtectedRoute>
                 } 
               />
