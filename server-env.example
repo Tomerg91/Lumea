@@ -1,56 +1,125 @@
 # Server Environment Variables
-# Rename this file to .env and place it in the server/ directory
+# Copy this to server/.env (development) and configure for staging/production
 
-# CRITICAL: Generate secure values for production
-# Use: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-
-# Environment Configuration
-NODE_ENV=production
-PORT=3001
-CLIENT_URL=https://your-domain.vercel.app
+# ==========================================
+# CORE DATABASE & AUTHENTICATION (REQUIRED)
+# ==========================================
 
 # Database Configuration (REQUIRED)
-DATABASE_URL=postgresql://user:password@host:port/database
+# Development: PostgreSQL local or Supabase dev
+# Production: Supabase production or dedicated PostgreSQL
+DATABASE_URL="postgresql://user:password@localhost:5432/coaching_db"
+SUPABASE_URL="https://your-project.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
 
-# JWT Configuration (REQUIRED - Generate secure random secrets)
-JWT_ACCESS_SECRET=your_secure_random_access_secret_here
-JWT_REFRESH_SECRET=your_secure_random_refresh_secret_here
+# JWT & Session Configuration (REQUIRED)
+# Use a secure 32+ character random string for production
+JWT_SECRET="your-very-secure-jwt-secret-key-minimum-32-characters"
+SESSION_SECRET="your-very-secure-session-secret-key-minimum-32-characters"
 
-# Session Configuration (REQUIRED - Generate secure random secret)
-SESSION_SECRET=your_secure_random_session_secret_here
+# ==========================================
+# EXTERNAL SERVICES (REQUIRED FOR FEATURES)
+# ==========================================
 
-# Encryption Configuration (REQUIRED - Generate 32-byte hex key)
-ENCRYPTION_KEY=your_32_byte_hex_encryption_key_here
+# OAuth Providers
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
 
-# Email Service Configuration (REQUIRED for notifications)
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=your-email@example.com
-SMTP_PASS=your-email-password
-SMTP_FROM=your-email@example.com
+# Payment Processing (Stripe)
+STRIPE_SECRET_KEY="sk_test_or_live_key"
+STRIPE_WEBHOOK_SECRET="whsec_webhook_secret"
+STRIPE_PUBLISHABLE_KEY="pk_test_or_live_key"
 
-# OAuth Configuration (Optional)
-GOOGLE_CLIENT_ID=your-google-client-id
-FACEBOOK_CLIENT_ID=your-facebook-client-id
-FACEBOOK_CLIENT_SECRET=your-facebook-client-secret
+# Email Service (Choose one)
+# SendGrid
+SENDGRID_API_KEY="your-sendgrid-api-key"
+# Or Nodemailer SMTP
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_USER="your-email@gmail.com"
+SMTP_PASS="your-app-password"
 
-# AWS S3 Configuration (Optional - for file storage)
-AWS_ACCESS_KEY_ID=your-aws-access-key
-AWS_SECRET_ACCESS_KEY=your-aws-secret-key
-AWS_REGION=us-east-1
-AWS_S3_BUCKET=your-bucket-name
+# ==========================================
+# MONITORING & ANALYTICS (PRODUCTION)
+# ==========================================
 
-# Supabase Configuration (if using Supabase)
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_KEY=your-service-key
+# Error Tracking (Sentry)
+SENTRY_DSN="https://your-sentry-dsn@sentry.io/project-id"
+SENTRY_ENVIRONMENT="development|staging|production"
 
-# Production Monitoring (Optional)
-SENTRY_DSN=your-sentry-dsn
-NEW_RELIC_LICENSE_KEY=your-newrelic-key
-NEW_RELIC_APP_NAME=lumea-coaching-api
+# Performance Monitoring
+ENABLE_PERFORMANCE_MONITORING="true"
+LOG_LEVEL="info|debug|warn|error"
 
-# Security Configuration
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100 
+# ==========================================
+# STORAGE & CDN (PRODUCTION)
+# ==========================================
+
+# File Storage (Supabase Storage or AWS S3)
+SUPABASE_STORAGE_BUCKET="coaching-files"
+# Or AWS S3
+AWS_ACCESS_KEY_ID="your-aws-access-key"
+AWS_SECRET_ACCESS_KEY="your-aws-secret-key"
+AWS_REGION="us-east-1"
+AWS_S3_BUCKET="coaching-platform-files"
+
+# CDN Configuration (Optional)
+CDN_URL="https://your-cdn-domain.com"
+
+# ==========================================
+# SECURITY & COMPLIANCE
+# ==========================================
+
+# CORS Configuration
+ALLOWED_ORIGINS="http://localhost:5173,https://your-domain.vercel.app"
+FRONTEND_URL="https://your-domain.vercel.app"
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS="900000"  # 15 minutes
+RATE_LIMIT_MAX="100"  # requests per window
+
+# ==========================================
+# ENVIRONMENT SPECIFIC
+# ==========================================
+
+# Environment
+NODE_ENV="development|staging|production"
+PORT="3001"
+
+# Feature Flags
+ENABLE_AUDIT_LOGS="true"
+ENABLE_BACKGROUND_JOBS="true"
+ENABLE_WEBHOOK_PROCESSING="true"
+
+# ==========================================
+# OPTIONAL INTEGRATIONS
+# ==========================================
+
+# Calendar Integration
+GOOGLE_CALENDAR_CLIENT_ID="your-calendar-client-id"
+GOOGLE_CALENDAR_CLIENT_SECRET="your-calendar-client-secret"
+
+# Communication Services
+TWILIO_ACCOUNT_SID="your-twilio-sid"
+TWILIO_AUTH_TOKEN="your-twilio-token"
+
+# Analytics
+GOOGLE_ANALYTICS_SERVICE_ACCOUNT="path/to/service-account.json"
+
+# ==========================================
+# BACKUP & DISASTER RECOVERY
+# ==========================================
+
+# Database Backup
+BACKUP_ENCRYPTION_KEY="your-backup-encryption-key"
+BACKUP_SCHEDULE="0 2 * * *"  # Daily at 2 AM
+BACKUP_RETENTION_DAYS="30"
+
+# ==========================================
+# DEVELOPMENT ONLY
+# ==========================================
+
+# Debug and Development
+DEBUG="coaching:*"
+ENABLE_DEBUG_LOGS="false"
+MOCK_EXTERNAL_SERVICES="false" 
