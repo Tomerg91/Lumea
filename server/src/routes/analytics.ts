@@ -15,6 +15,7 @@ router.get('/sessions', hasRole('coach', 'admin'), analyticsController.getSessio
 router.get('/client-engagement', hasRole('coach', 'admin'), analyticsController.getClientEngagement);
 router.get('/coach-performance', hasRole('coach', 'admin'), analyticsController.getCoachPerformance);
 router.get('/reflections', hasRole('coach', 'admin'), analyticsController.getReflectionAnalytics);
+router.get('/coach-notes', hasRole('coach', 'admin'), analyticsController.getCoachNotesAnalytics);
 
 // Legacy compatibility routes (keeping existing API contracts)
 router.get('/session-metrics', hasRole('coach', 'admin'), analyticsController.getSessionMetrics);

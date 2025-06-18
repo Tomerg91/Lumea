@@ -130,4 +130,26 @@ router.get(
   coachNoteController.getPopularTags
 );
 
+// Bulk operations for coach notes
+router.put(
+  '/bulk/update',
+  isAuthenticated,
+  isCoach,
+  coachNoteController.bulkUpdateCoachNotes
+);
+
+router.delete(
+  '/bulk/delete',
+  isAuthenticated,
+  isCoach,
+  coachNoteController.bulkDeleteCoachNotes
+);
+
+router.put(
+  '/bulk/categorize',
+  isAuthenticated,
+  isCoach,
+  coachNoteController.bulkCategorizeCoachNotes
+);
+
 export default router; 

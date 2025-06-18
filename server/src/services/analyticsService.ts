@@ -67,6 +67,35 @@ export interface ReflectionAnalytics {
   }>;
 }
 
+export interface CoachNotesAnalytics {
+  totalNotes: number;
+  notesThisPeriod: number;
+  averageNotesPerSession: number;
+  averageWordsPerNote: number;
+  mostActiveCoach: {
+    coachId: string;
+    coachName: string;
+    noteCount: number;
+  } | null;
+  notesByAccessLevel: Record<string, number>;
+  topTags: Array<{
+    tag: string;
+    count: number;
+    percentage: number;
+  }>;
+  noteCreationTrends: Array<{
+    date: string;
+    noteCount: number;
+    wordCount: number;
+  }>;
+  productivityMetrics: {
+    dailyAverage: number;
+    weeklyAverage: number;
+    peakDay: string;
+    peakCount: number;
+  };
+}
+
 export interface AnalyticsDashboard {
   overview: {
     totalSessions: number;
@@ -462,6 +491,160 @@ class AnalyticsService {
       averageCompletionTime: Math.round(averageCompletionTime * 10) / 10,
       reflectionsByCategory,
       categoryEngagement
+    };
+  }
+
+  /**
+   * Get coach notes analytics
+   */
+  async getCoachNotesAnalytics(dateRange: AnalyticsDateRange, coachId?: string): Promise<CoachNotesAnalytics> {
+    const { startDate, endDate } = this.prepareDateRange(dateRange);
+    const matchStage = this.buildDateMatchStage('createdAt', startDate, endDate);
+    
+    // Add coach filter if specified
+    if (coachId) {
+      matchStage.coachId = new mongoose.Types.ObjectId(coachId);
+    }
+
+    // Get comprehensive note analytics
+    const notesData = await CoachNote.aggregate([
+      { $match: matchStage },
+      {
+        $facet: {
+          totalCount: [{ $count: 'count' }],
+          accessLevelBreakdown: [
+            {
+              $group: {
+                _id: '$privacySettings.accessLevel',
+                count: { $sum: 1 }
+              }
+            }
+          ],
+          tagAnalysis: [
+            { $unwind: '$tags' },
+            {
+              $group: {
+                _id: '$tags',
+                count: { $sum: 1 }
+              }
+            },
+            { $sort: { count: -1 } },
+            { $limit: 10 }
+          ],
+          coachActivity: [
+            {
+              $lookup: {
+                from: 'users',
+                localField: 'coachId',
+                foreignField: '_id',
+                as: 'coach'
+              }
+            },
+            {
+              $group: {
+                _id: '$coachId',
+                coachName: { $first: { $arrayElemAt: ['$coach.name', 0] } },
+                noteCount: { $sum: 1 },
+                totalWords: { $sum: { $size: { $split: ['$textContent', ' '] } } }
+              }
+            },
+            { $sort: { noteCount: -1 } },
+            { $limit: 1 }
+          ],
+          dailyTrends: [
+            {
+              $group: {
+                _id: {
+                  $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
+                },
+                noteCount: { $sum: 1 },
+                wordCount: { $sum: { $size: { $split: ['$textContent', ' '] } } }
+              }
+            },
+            { $sort: { '_id': 1 } }
+          ],
+          wordStats: [
+            {
+              $project: {
+                wordCount: { $size: { $split: ['$textContent', ' '] } }
+              }
+            },
+            {
+              $group: {
+                _id: null,
+                averageWords: { $avg: '$wordCount' },
+                totalWords: { $sum: '$wordCount' }
+              }
+            }
+          ]
+        }
+      }
+    ]);
+
+    const result = notesData[0];
+    const totalNotes = result.totalCount[0]?.count || 0;
+    const averageWordsPerNote = result.wordStats[0]?.averageWords || 0;
+    
+    // Get session count for notes per session calculation
+    const totalSessions = await CoachingSession.countDocuments(
+      this.buildDateMatchStage('date', startDate, endDate)
+    );
+    
+    // Process access level breakdown
+    const notesByAccessLevel = result.accessLevelBreakdown.reduce((acc, item) => {
+      acc[item._id] = item.count;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Process top tags
+    const totalTagUses = result.tagAnalysis.reduce((sum, item) => sum + item.count, 0);
+    const topTags = result.tagAnalysis.map(item => ({
+      tag: item._id,
+      count: item.count,
+      percentage: totalTagUses > 0 ? Math.round((item.count / totalTagUses) * 100 * 10) / 10 : 0
+    }));
+
+    // Process most active coach
+    const mostActiveCoach = result.coachActivity[0] ? {
+      coachId: result.coachActivity[0]._id.toString(),
+      coachName: result.coachActivity[0].coachName || 'Unknown Coach',
+      noteCount: result.coachActivity[0].noteCount
+    } : null;
+
+    // Process daily trends
+    const noteCreationTrends = result.dailyTrends.map(item => ({
+      date: item._id,
+      noteCount: item.noteCount,
+      wordCount: item.wordCount
+    }));
+
+    // Calculate productivity metrics
+    const dailyCounts = noteCreationTrends.map(trend => trend.noteCount);
+    const dailyAverage = dailyCounts.length > 0 ? 
+      dailyCounts.reduce((sum, count) => sum + count, 0) / dailyCounts.length : 0;
+    
+    const weeklyAverage = dailyAverage * 7;
+    
+    const peakDay = noteCreationTrends.reduce((peak, current) => 
+      current.noteCount > peak.noteCount ? current : peak, 
+      { date: '', noteCount: 0 }
+    );
+
+    return {
+      totalNotes,
+      notesThisPeriod: totalNotes,
+      averageNotesPerSession: totalSessions > 0 ? totalNotes / totalSessions : 0,
+      averageWordsPerNote: Math.round(averageWordsPerNote * 10) / 10,
+      mostActiveCoach,
+      notesByAccessLevel,
+      topTags,
+      noteCreationTrends,
+      productivityMetrics: {
+        dailyAverage: Math.round(dailyAverage * 10) / 10,
+        weeklyAverage: Math.round(weeklyAverage * 10) / 10,
+        peakDay: peakDay.date,
+        peakCount: peakDay.noteCount
+      }
     };
   }
 

@@ -9,7 +9,7 @@ import {
   deleteCoachNote,
 } from '../storage.js';
 import { Session } from '../models/Session.js';
-import { ICoachNote, AuditAction, NoteAccessLevel } from '../models/CoachNote.js';
+import { CoachNote, ICoachNote, AuditAction, NoteAccessLevel } from '../models/CoachNote.js';
 import { validationSchemas } from '../schemas/validation.js';
 import { APIError, ErrorCode } from '../middleware/error.js';
 import CoachNoteSearchService from '../services/searchService.js';
@@ -675,6 +675,176 @@ export const coachNoteController = {
       }
       console.error('Error getting popular tags:', error);
       throw new APIError(ErrorCode.INTERNAL_ERROR, 'Failed to get popular tags', 500);
+    }
+  },
+
+  // Bulk operations for coach notes
+  async bulkUpdateCoachNotes(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        throw APIError.unauthorized('Authentication required');
+      }
+
+      const { noteIds, updates } = req.body;
+
+      if (!Array.isArray(noteIds) || noteIds.length === 0) {
+        throw new APIError(ErrorCode.INVALID_INPUT, 'Note IDs array is required', 400);
+      }
+
+      if (!updates || typeof updates !== 'object') {
+        throw new APIError(ErrorCode.INVALID_INPUT, 'Updates object is required', 400);
+      }
+
+      // Validate that user owns all notes
+      const notes = await CoachNote.find({
+        _id: { $in: noteIds },
+        coachId: req.user.id
+      });
+
+      if (notes.length !== noteIds.length) {
+        throw APIError.forbidden('Not authorized to update some of the specified notes');
+      }
+
+      // Perform bulk update
+      const result = await CoachNote.updateMany(
+        { 
+          _id: { $in: noteIds },
+          coachId: req.user.id 
+        },
+        { 
+          $set: {
+            ...updates,
+            updatedAt: new Date()
+          },
+          $push: {
+            auditTrail: {
+              action: 'BULK_UPDATED',
+              userId: req.user.id,
+              userRole: req.user.role,
+              timestamp: new Date(),
+              ipAddress: getClientIp(req),
+              userAgent: req.headers['user-agent'] || 'unknown',
+              details: { updates, noteCount: noteIds.length }
+            }
+          }
+        }
+      );
+
+      res.json({
+        message: `Successfully updated ${result.modifiedCount} notes`,
+        modifiedCount: result.modifiedCount,
+        matchedCount: result.matchedCount
+      });
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error;
+      }
+      console.error('Error bulk updating coach notes:', error);
+      throw new APIError(ErrorCode.INTERNAL_ERROR, 'Failed to bulk update coach notes', 500);
+    }
+  },
+
+  async bulkDeleteCoachNotes(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        throw APIError.unauthorized('Authentication required');
+      }
+
+      const { noteIds } = req.body;
+
+      if (!Array.isArray(noteIds) || noteIds.length === 0) {
+        throw new APIError(ErrorCode.INVALID_INPUT, 'Note IDs array is required', 400);
+      }
+
+      // Validate that user owns all notes
+      const notes = await CoachNote.find({
+        _id: { $in: noteIds },
+        coachId: req.user.id
+      });
+
+      if (notes.length !== noteIds.length) {
+        throw APIError.forbidden('Not authorized to delete some of the specified notes');
+      }
+
+      // Perform bulk delete
+      const result = await CoachNote.deleteMany({
+        _id: { $in: noteIds },
+        coachId: req.user.id
+      });
+
+      res.json({
+        message: `Successfully deleted ${result.deletedCount} notes`,
+        deletedCount: result.deletedCount
+      });
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error;
+      }
+      console.error('Error bulk deleting coach notes:', error);
+      throw new APIError(ErrorCode.INTERNAL_ERROR, 'Failed to bulk delete coach notes', 500);
+    }
+  },
+
+  async bulkCategorizeCoachNotes(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        throw APIError.unauthorized('Authentication required');
+      }
+
+      const { noteIds, categoryId, tags } = req.body;
+
+      if (!Array.isArray(noteIds) || noteIds.length === 0) {
+        throw new APIError(ErrorCode.INVALID_INPUT, 'Note IDs array is required', 400);
+      }
+
+      // Validate that user owns all notes
+      const notes = await CoachNote.find({
+        _id: { $in: noteIds },
+        coachId: req.user.id
+      });
+
+      if (notes.length !== noteIds.length) {
+        throw APIError.forbidden('Not authorized to categorize some of the specified notes');
+      }
+
+      const updateFields: any = { updatedAt: new Date() };
+      if (categoryId) updateFields.categoryId = categoryId;
+      if (tags && Array.isArray(tags)) updateFields.tags = tags;
+
+      // Perform bulk categorization
+      const result = await CoachNote.updateMany(
+        { 
+          _id: { $in: noteIds },
+          coachId: req.user.id 
+        },
+        { 
+          $set: updateFields,
+          $push: {
+            auditTrail: {
+              action: 'BULK_CATEGORIZED',
+              userId: req.user.id,
+              userRole: req.user.role,
+              timestamp: new Date(),
+              ipAddress: getClientIp(req),
+              userAgent: req.headers['user-agent'] || 'unknown',
+              details: { categoryId, tags, noteCount: noteIds.length }
+            }
+          }
+        }
+      );
+
+      res.json({
+        message: `Successfully categorized ${result.modifiedCount} notes`,
+        modifiedCount: result.modifiedCount,
+        categoryId,
+        tags
+      });
+    } catch (error) {
+      if (error instanceof APIError) {
+        throw error;
+      }
+      console.error('Error bulk categorizing coach notes:', error);
+      throw new APIError(ErrorCode.INTERNAL_ERROR, 'Failed to bulk categorize coach notes', 500);
     }
   }
 };

@@ -108,6 +108,28 @@ export const analyticsController = {
   },
 
   /**
+   * Get coach notes analytics
+   */
+  async getCoachNotesAnalytics(req: Request, res: Response) {
+    try {
+      const dateRange: AnalyticsDateRange = {
+        startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+        endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+      };
+
+      const userId = req.user?.role === 'coach' ? req.user.id : undefined;
+      const coachNotesAnalytics = await analyticsService.getCoachNotesAnalytics(dateRange, userId);
+      res.json(coachNotesAnalytics);
+    } catch (error) {
+      console.error('Error fetching coach notes analytics:', error);
+      res.status(500).json({ 
+        message: 'Error fetching coach notes analytics',
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      });
+    }
+  },
+
+  /**
    * Export analytics data in various formats
    */
   async exportData(req: Request, res: Response) {
