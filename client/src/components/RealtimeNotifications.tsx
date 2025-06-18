@@ -62,6 +62,7 @@ export const RealtimeNotifications: React.FC = () => {
       case 'session_rescheduled': return '📅';
       case 'session_confirmation': return '✅';
       case 'feedback_request': return '💬';
+      case 'reflection_submitted': return '💭';
       default: return '📢';
     }
   };

@@ -9,7 +9,8 @@ export type NotificationType =
   | 'session_reminder' 
   | 'session_confirmation' 
   | 'cancellation_request' 
-  | 'reschedule_request';
+  | 'reschedule_request'
+  | 'reflection_submitted';
 
 export type NotificationChannel = 'email' | 'in_app' | 'sms' | 'push';
 
@@ -389,6 +390,7 @@ class NotificationService {
       'session_confirmation': 'Session Confirmation',
       'cancellation_request': 'Cancellation Request',
       'reschedule_request': 'Reschedule Request',
+      'reflection_submitted': 'New Reflection',
     };
     return typeMap[type] || type;
   }

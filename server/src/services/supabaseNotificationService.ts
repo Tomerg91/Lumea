@@ -2,7 +2,7 @@ import { serverTables, supabase } from '../lib/supabase';
 import * as cron from 'node-cron';
 
 // Types for notifications
-type NotificationType = 'session_reminder' | 'session_confirmation' | 'session_cancelled';
+type NotificationType = 'session_reminder' | 'session_confirmation' | 'session_cancelled' | 'reflection_submitted';
 type NotificationChannel = 'email' | 'in_app' | 'sms' | 'push';
 type NotificationStatus = 'pending' | 'sent' | 'delivered' | 'failed' | 'read';
 type NotificationPriority = 'low' | 'medium' | 'high' | 'urgent';

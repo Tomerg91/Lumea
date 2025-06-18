@@ -9,7 +9,8 @@ export type NotificationType =
   | 'session_confirmation'
   | 'cancellation_request'
   | 'reschedule_request'
-  | 'feedback_request';
+  | 'feedback_request'
+  | 'reflection_submitted';
 
 export type NotificationChannel = 'email' | 'in_app' | 'sms' | 'push';
 
@@ -87,7 +88,7 @@ const NotificationSchema = new Schema<INotification>(
     },
     type: {
       type: String,
-      enum: ['session_cancelled', 'session_rescheduled', 'session_reminder', 'session_confirmation', 'cancellation_request', 'reschedule_request', 'feedback_request'],
+      enum: ['session_cancelled', 'session_rescheduled', 'session_reminder', 'session_confirmation', 'cancellation_request', 'reschedule_request', 'feedback_request', 'reflection_submitted'],
       required: true,
       index: true,
     },
@@ -501,5 +502,63 @@ Best regards,
 The Satya Coaching Team
     `,
     variables: ['recipientName', 'sessionDate', 'coachName', 'subject', 'message', 'feedbackUrl', 'optOutUrl', 'isReminder', 'reminderNumber']
+  },
+  
+  reflection_submitted: {
+    subject: 'New Reflection Submitted - {{clientName}}',
+    htmlBody: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #9b59b6;">New Reflection Submitted</h2>
+        <p>Dear {{coachName}},</p>
+        <p>{{clientName}} has submitted a new reflection for their recent session.</p>
+        
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <h3>Reflection Details:</h3>
+          <p><strong>Client:</strong> {{clientName}}</p>
+          <p><strong>Session Date:</strong> {{sessionDate}}</p>
+          <p><strong>Submitted At:</strong> {{submittedAt}}</p>
+          {{#if mood}}<p><strong>Mood:</strong> {{mood}}</p>{{/if}}
+        </div>
+        
+        <div style="background-color: #f4f0ff; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #9b59b6;">
+          <h4 style="margin-top: 0; color: #7d3c98;">Reflection Preview:</h4>
+          <p style="font-style: italic; color: #5d4e75;">{{reflectionPreview}}</p>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="{{reflectionUrl}}" style="background-color: #9b59b6; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+            View Full Reflection
+          </a>
+        </div>
+        
+        <p>This reflection provides valuable insights into {{clientName}}'s progress and thoughts about your coaching session.</p>
+        
+        <p>Best regards,<br>The Satya Coaching Team</p>
+      </div>
+    `,
+    textBody: `
+New Reflection Submitted
+
+Dear {{coachName}},
+
+{{clientName}} has submitted a new reflection for their recent session.
+
+Reflection Details:
+- Client: {{clientName}}
+- Session Date: {{sessionDate}}
+- Submitted At: {{submittedAt}}
+{{#if mood}}- Mood: {{mood}}{{/if}}
+
+Reflection Preview:
+{{reflectionPreview}}
+
+View the full reflection at: {{reflectionUrl}}
+
+This reflection provides valuable insights into {{clientName}}'s progress and thoughts about your coaching session.
+
+Best regards,
+The Satya Coaching Team
+    `,
+    variables: ['coachName', 'clientName', 'sessionDate', 'submittedAt', 'mood', 'reflectionPreview', 'reflectionUrl']
   }
 }; 

@@ -254,7 +254,7 @@ router.post(
   isAuthenticated,
   [
     body('recipientId').isMongoId().withMessage('Invalid recipient ID'),
-    body('type').isIn(['session_cancelled', 'session_rescheduled', 'session_reminder', 'session_confirmation', 'cancellation_request', 'reschedule_request']).withMessage('Invalid notification type'),
+    body('type').isIn(['session_cancelled', 'session_rescheduled', 'session_reminder', 'session_confirmation', 'cancellation_request', 'reschedule_request', 'reflection_submitted']).withMessage('Invalid notification type'),
     body('channels').isArray().withMessage('Channels must be an array'),
     body('channels.*').isIn(['email', 'in_app', 'sms', 'push']).withMessage('Invalid notification channel'),
   ],

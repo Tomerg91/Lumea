@@ -31,7 +31,8 @@ export type NotificationType =
   | 'session_confirmation' 
   | 'cancellation_request' 
   | 'reschedule_request' 
-  | 'feedback_request';
+  | 'feedback_request'
+  | 'reflection_submitted';
 
 export type NotificationChannel = 'email' | 'in_app' | 'sms' | 'push';
 

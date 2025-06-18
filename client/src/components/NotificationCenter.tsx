@@ -162,6 +162,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         return '🔄';
       case 'reschedule_request':
         return '📝';
+      case 'reflection_submitted':
+        return '💭';
       default:
         return '📢';
     }
@@ -351,6 +353,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                 <option value="session_confirmation">{t('notifications.sessionConfirmation')}</option>
                 <option value="session_cancelled">{t('notifications.sessionCancelled')}</option>
                 <option value="session_rescheduled">{t('notifications.sessionRescheduled')}</option>
+                <option value="reflection_submitted">New Reflection</option>
               </select>
             </div>
           </div>
