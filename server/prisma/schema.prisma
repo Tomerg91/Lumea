@@ -26,6 +26,13 @@ model User {
   resources            ResourceUser[]
   calendarIntegrations CalendarIntegration[] @relation("UserCalendarIntegrations")
   passwordResetTokens  PasswordResetToken[] // Relation to password reset tokens
+  
+  // Milestone relationships
+  milestoneCategories  MilestoneCategory[]   @relation("CoachMilestoneCategories")
+  clientMilestones     Milestone[]           @relation("ClientMilestones")
+  coachMilestones      Milestone[]           @relation("CoachMilestones")
+  milestoneProgress    MilestoneProgress[]   @relation("MilestoneProgressRecorder")
+  
   createdAt            DateTime              @default(now()) @map("created_at")
   updatedAt            DateTime              @updatedAt @map("updated_at")
 
@@ -35,21 +42,22 @@ model User {
 }
 
 model Session {
-  id             String          @id @default(cuid())
-  date           DateTime        @map("date")
-  status         String          @default("Upcoming")
-  notes          String?
-  clientId       String // Changed from ObjectId, type String matches User.id
-  client         User            @relation("ClientSessions", fields: [clientId], references: [id])
-  coachId        String // Changed from ObjectId, type String matches User.id
-  coach          User            @relation("CoachSessions", fields: [coachId], references: [id])
-  paymentId      String? // Changed from ObjectId, type String matches Payment.id
-  payment        Payment?        @relation(fields: [paymentId], references: [id])
-  reminderSent   Boolean         @default(false) @map("reminder_sent")
-  audioFile      String?
-  calendarEvents CalendarEvent[] // Calendar events linked to this session
-  createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @updatedAt @map("updated_at")
+  id                String              @id @default(cuid())
+  date              DateTime            @map("date")
+  status            String              @default("Upcoming")
+  notes             String?
+  clientId          String // Changed from ObjectId, type String matches User.id
+  client            User                @relation("ClientSessions", fields: [clientId], references: [id])
+  coachId           String // Changed from ObjectId, type String matches User.id
+  coach             User                @relation("CoachSessions", fields: [coachId], references: [id])
+  paymentId         String? // Changed from ObjectId, type String matches Payment.id
+  payment           Payment?            @relation(fields: [paymentId], references: [id])
+  reminderSent      Boolean             @default(false) @map("reminder_sent")
+  audioFile         String?
+  calendarEvents    CalendarEvent[] // Calendar events linked to this session
+  milestoneProgress MilestoneProgress[] // Milestone progress recorded in this session
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
 
   @@index([clientId])
   @@index([coachId])
@@ -253,5 +261,91 @@ model PasswordResetToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("password_reset_tokens")
+  @@schema("public")
+}
+
+// Milestone System Models
+model MilestoneCategory {
+  id          String      @id @default(cuid())
+  name        String // e.g., "Personal Growth", "Career Development", "Health & Wellness"
+  description String?
+  color       String      @default("#3B82F6") // Hex color for UI display
+  icon        String? // Icon name for UI display
+  coachId     String // Coach who created this category
+  coach       User        @relation("CoachMilestoneCategories", fields: [coachId], references: [id], onDelete: Cascade)
+  milestones  Milestone[]
+  isDefault   Boolean     @default(false) // System-wide default categories
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@unique([coachId, name]) // Prevent duplicate category names per coach
+  @@index([coachId])
+  @@index([isDefault])
+  @@map("milestone_categories")
+  @@schema("public")
+}
+
+model Milestone {
+  id          String              @id @default(cuid())
+  title       String
+  description String?
+  targetDate  DateTime? // Optional target completion date
+  priority    String              @default("medium") // high, medium, low
+  status      String              @default("active") // active, completed, paused, cancelled
+  
+  // Relationships
+  clientId    String
+  client      User                @relation("ClientMilestones", fields: [clientId], references: [id], onDelete: Cascade)
+  coachId     String
+  coach       User                @relation("CoachMilestones", fields: [coachId], references: [id], onDelete: Cascade)
+  categoryId  String?
+  category    MilestoneCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  
+  // Progress tracking
+  progress    MilestoneProgress[]
+  
+  // Metadata
+  completedAt DateTime?
+  notes       String? // Coach notes about this milestone
+  tags        String[] // Array of tags for filtering/organization
+  
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  @@index([clientId])
+  @@index([coachId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([priority])
+  @@index([targetDate])
+  @@map("milestones")
+  @@schema("public")
+}
+
+model MilestoneProgress {
+  id          String    @id @default(cuid())
+  milestoneId String
+  milestone   Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  
+  // Progress details
+  progressPercent Int       @default(0) // 0-100
+  notes           String?   // Progress notes from coach or client
+  evidence        String?   // Evidence or proof of progress (file paths, descriptions)
+  sessionId       String?   // Optional link to session where progress was recorded
+  session         Session?  @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  
+  // Metadata
+  recordedBy      String    // User ID of who recorded this progress (coach or client)
+  recordedByUser  User      @relation("MilestoneProgressRecorder", fields: [recordedBy], references: [id])
+  recordedAt      DateTime  @default(now()) @map("recorded_at")
+  
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([milestoneId])
+  @@index([sessionId])
+  @@index([recordedBy])
+  @@index([recordedAt])
+  @@map("milestone_progress")
   @@schema("public")
 }
