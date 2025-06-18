@@ -1,439 +1,506 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { toast } from 'sonner';
+import { useToast } from './use-toast';
+import { 
+  Resource, 
+  ResourceCategory, 
+  ResourceCollection,
+  CreateResourceRequest, 
+  UpdateResourceRequest,
+  ResourceSearchParams,
+  ResourceStats,
+  DEFAULT_RESOURCE_CATEGORIES
+} from '../types/resource';
 
-// Resource types
-export interface Resource {
-  id: string;
-  title: string;
-  description: string;
-  content?: string;
-  type: 'article' | 'video' | 'document' | 'link' | 'other';
-  file_url?: string;
-  file_name?: string;
-  file_size?: number;
-  coach_id: string;
-  client_id?: string; // If assigned to specific client
-  tags?: string[];
-  is_public: boolean;
-  created_at: string;
-  updated_at: string;
-  coach?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-  };
-  client?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-  };
-}
+// Mock data for development
+const MOCK_RESOURCES: Resource[] = [
+  {
+    id: '1',
+    title: 'Goal Setting Fundamentals',
+    type: 'article',
+    description: 'Learn the basics of setting and achieving meaningful goals in your personal and professional life.',
+    content: 'A comprehensive guide to SMART goals and implementation strategies...',
+    duration: '5 min read',
+    difficulty: 'beginner',
+    tags: ['goals', 'productivity', 'planning'],
+    categories: ['Goal Setting'],
+    rating: 4.8,
+    downloadCount: 156,
+    viewCount: 423,
+    isPublic: true,
+    isPremium: false,
+    authorId: 'coach1',
+    authorName: 'Dr. Sarah Johnson',
+    authorRole: 'coach',
+    createdAt: '2024-01-15T10:00:00Z',
+    updatedAt: '2024-01-15T10:00:00Z'
+  },
+  {
+    id: '2',
+    title: 'Mindfulness Meditation for Beginners',
+    type: 'video',
+    description: 'A guided meditation session to help you start your mindfulness journey.',
+    fileUrl: 'https://example.com/meditation-video.mp4',
+    thumbnailUrl: 'https://example.com/meditation-thumb.jpg',
+    duration: '15 min',
+    difficulty: 'beginner',
+    tags: ['mindfulness', 'meditation', 'wellbeing'],
+    categories: ['Mindfulness', 'Wellness'],
+    rating: 4.9,
+    downloadCount: 89,
+    viewCount: 267,
+    isPublic: true,
+    isPremium: true,
+    authorId: 'coach2',
+    authorName: 'Mark Chen',
+    authorRole: 'coach',
+    fileSize: 45000000,
+    mimeType: 'video/mp4',
+    createdAt: '2024-01-10T14:30:00Z',
+    updatedAt: '2024-01-10T14:30:00Z'
+  },
+  {
+    id: '3',
+    title: 'Personal Values Assessment',
+    type: 'worksheet',
+    description: 'Discover your core values with this comprehensive self-assessment tool.',
+    content: 'Interactive worksheet to identify and prioritize your personal values...',
+    fileUrl: 'https://example.com/values-worksheet.pdf',
+    duration: '20 min',
+    difficulty: 'intermediate',
+    tags: ['values', 'self-discovery', 'assessment'],
+    categories: ['Personal Development'],
+    rating: 4.7,
+    downloadCount: 234,
+    viewCount: 445,
+    isPublic: true,
+    isPremium: false,
+    authorId: 'admin1',
+    authorName: 'System Admin',
+    authorRole: 'admin',
+    fileSize: 2500000,
+    mimeType: 'application/pdf',
+    createdAt: '2024-01-05T09:15:00Z',
+    updatedAt: '2024-01-05T09:15:00Z'
+  },
+  {
+    id: '4',
+    title: 'Building Resilience in Challenging Times',
+    type: 'guide',
+    description: 'Advanced strategies for developing mental resilience and emotional strength.',
+    content: 'Step-by-step guide to building psychological resilience...',
+    duration: '30 min read',
+    difficulty: 'advanced',
+    tags: ['resilience', 'mental-health', 'coping'],
+    categories: ['Wellness', 'Personal Development'],
+    rating: 4.6,
+    downloadCount: 178,
+    viewCount: 356,
+    isPublic: true,
+    isPremium: true,
+    authorId: 'coach3',
+    authorName: 'Dr. Emily Rodriguez',
+    authorRole: 'coach',
+    createdAt: '2024-01-01T16:45:00Z',
+    updatedAt: '2024-01-01T16:45:00Z'
+  },
+  {
+    id: '5',
+    title: 'Leadership Communication Template',
+    type: 'template',
+    description: 'A comprehensive template for effective leadership communication.',
+    fileUrl: 'https://example.com/leadership-template.docx',
+    duration: '10 min setup',
+    difficulty: 'intermediate',
+    tags: ['leadership', 'communication', 'template'],
+    categories: ['Leadership', 'Communication'],
+    rating: 4.5,
+    downloadCount: 92,
+    viewCount: 187,
+    isPublic: false,
+    isPremium: true,
+    authorId: 'coach1',
+    authorName: 'Dr. Sarah Johnson',
+    authorRole: 'coach',
+    fileSize: 850000,
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    createdAt: '2023-12-28T11:20:00Z',
+    updatedAt: '2023-12-28T11:20:00Z'
+  }
+];
 
-export interface CreateResourceData {
-  title: string;
-  description: string;
-  content?: string;
-  type: 'article' | 'video' | 'document' | 'link' | 'other';
-  file_url?: string;
-  file_name?: string;
-  file_size?: number;
-  client_id?: string;
-  tags?: string[];
-  is_public?: boolean;
-}
+const MOCK_CATEGORIES: ResourceCategory[] = DEFAULT_RESOURCE_CATEGORIES.map((cat, index) => ({
+  ...cat,
+  id: `cat-${index + 1}`,
+  resourceCount: Math.floor(Math.random() * 15) + 1,
+  createdAt: '2024-01-01T00:00:00Z',
+  updatedAt: '2024-01-01T00:00:00Z'
+}));
 
-export interface UpdateResourceData {
-  title?: string;
-  description?: string;
-  content?: string;
-  type?: 'article' | 'video' | 'document' | 'link' | 'other';
-  file_url?: string;
-  file_name?: string;
-  file_size?: number;
-  client_id?: string;
-  tags?: string[];
-  is_public?: boolean;
-}
-
-export interface ResourceFilters {
-  type?: string;
-  client_id?: string;
-  is_public?: boolean;
-  tags?: string[];
-  search?: string;
-}
-
-// Query keys
-const QUERY_KEYS = {
-  resources: ['resources'] as const,
-  resource: (id: string) => ['resources', id] as const,
-  resourcesByClient: (clientId: string) => ['resources', 'client', clientId] as const,
-  resourcesByType: (type: string) => ['resources', 'type', type] as const,
-  publicResources: ['resources', 'public'] as const,
-};
-
-export const useResources = (filters?: ResourceFilters) => {
+export const useResources = () => {
   const { profile } = useAuth();
-  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [categories, setCategories] = useState<ResourceCategory[]>([]);
+  const [collections, setCollections] = useState<ResourceCollection[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  // Fetch resources with filters
-  const {
-    data: resources,
-    isLoading,
-    error,
-    refetch
-  } = useQuery({
-    queryKey: [...QUERY_KEYS.resources, filters],
-    queryFn: async () => {
-      if (!profile) throw new Error('Not authenticated');
-
-      let query = supabase
-        .from('resources')
-        .select(`
-          *,
-          coach:profiles!resources_coach_id_fkey(id, first_name, last_name),
-          client:profiles!resources_client_id_fkey(id, first_name, last_name)
-        `);
-
-      // Apply filters based on user role
-      if (profile.role === 'client') {
-        // Clients can only see public resources or resources assigned to them
-        query = query.or(`is_public.eq.true,client_id.eq.${profile.id}`);
-      } else if (profile.role === 'coach') {
-        // Coaches can see their own resources and public resources
-        query = query.or(`coach_id.eq.${profile.id},is_public.eq.true`);
-      } else if (profile.role === 'admin') {
-        // Admins can see all resources (no additional filter)
+  // Load initial data
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setResources(MOCK_RESOURCES);
+        setCategories(MOCK_CATEGORIES);
+        setCollections([]);
+      } catch (error) {
+        console.error('Failed to load resources:', error);
+                 toast({
+           variant: 'destructive',
+           title: 'Error Loading Resources',
+           description: 'Failed to load resource library. Please try again.'
+         });
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // Apply additional filters
-      if (filters?.type) {
-        query = query.eq('type', filters.type);
-      }
+         loadData();
+   }, [toast]);
 
-      if (filters?.client_id) {
-        query = query.eq('client_id', filters.client_id);
-      }
+   // Search and filter resources
+   const searchResources = useCallback((params: ResourceSearchParams) => {
+    let filtered = [...resources];
 
-      if (filters?.is_public !== undefined) {
-        query = query.eq('is_public', filters.is_public);
-      }
-
-      if (filters?.tags && filters.tags.length > 0) {
-        query = query.contains('tags', filters.tags);
-      }
-
-      if (filters?.search) {
-        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,content.ilike.%${filters.search}%`);
-      }
-
-      // Order by creation date (newest first)
-      query = query.order('created_at', { ascending: false });
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching resources:', error);
-        throw error;
-      }
-
-      return data as Resource[];
-    },
-    enabled: !!profile,
-  });
-
-  // Create resource mutation
-  const createResourceMutation = useMutation({
-    mutationFn: async (resourceData: CreateResourceData) => {
-      if (!profile) throw new Error('Not authenticated');
-
-      const { data, error } = await supabase
-        .from('resources')
-        .insert({
-          ...resourceData,
-          coach_id: profile.id,
-          is_public: resourceData.is_public ?? false,
-        })
-        .select(`
-          *,
-          coach:profiles!resources_coach_id_fkey(id, first_name, last_name),
-          client:profiles!resources_client_id_fkey(id, first_name, last_name)
-        `)
-        .single();
-
-      if (error) {
-        console.error('Error creating resource:', error);
-        throw error;
-      }
-
-      return data as Resource;
-    },
-    onSuccess: (newResource) => {
-      // Invalidate and refetch resources
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.resources });
-      
-      // Add to cache optimistically
-      queryClient.setQueryData<Resource[]>(
-        [...QUERY_KEYS.resources, filters],
-        (old) => old ? [newResource, ...old] : [newResource]
+    // Text search
+    if (params.query) {
+      const query = params.query.toLowerCase();
+      filtered = filtered.filter(resource =>
+        resource.title.toLowerCase().includes(query) ||
+        resource.description.toLowerCase().includes(query) ||
+        resource.tags.some(tag => tag.toLowerCase().includes(query)) ||
+        resource.categories.some(cat => cat.toLowerCase().includes(query))
       );
+    }
 
-      toast.success('Resource created successfully');
-    },
-    onError: (error: any) => {
-      console.error('Failed to create resource:', error);
-      toast.error(error.message || 'Failed to create resource');
-    },
-  });
+    // Type filter
+    if (params.type && params.type !== 'all') {
+      filtered = filtered.filter(resource => resource.type === params.type);
+    }
 
-  // Update resource mutation
-  const updateResourceMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: UpdateResourceData }) => {
-      if (!profile) throw new Error('Not authenticated');
+    // Difficulty filter
+    if (params.difficulty && params.difficulty !== 'all') {
+      filtered = filtered.filter(resource => resource.difficulty === params.difficulty);
+    }
 
-      const { data: updatedResource, error } = await supabase
-        .from('resources')
-        .update(data)
-        .eq('id', id)
-        .select(`
-          *,
-          coach:profiles!resources_coach_id_fkey(id, first_name, last_name),
-          client:profiles!resources_client_id_fkey(id, first_name, last_name)
-        `)
-        .single();
-
-      if (error) {
-        console.error('Error updating resource:', error);
-        throw error;
-      }
-
-      return updatedResource as Resource;
-    },
-    onSuccess: (updatedResource) => {
-      // Invalidate and refetch resources
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.resources });
-      
-      // Update specific resource in cache
-      queryClient.setQueryData(QUERY_KEYS.resource(updatedResource.id), updatedResource);
-
-      toast.success('Resource updated successfully');
-    },
-    onError: (error: any) => {
-      console.error('Failed to update resource:', error);
-      toast.error(error.message || 'Failed to update resource');
-    },
-  });
-
-  // Delete resource mutation
-  const deleteResourceMutation = useMutation({
-    mutationFn: async (id: string) => {
-      if (!profile) throw new Error('Not authenticated');
-
-      const { error } = await supabase
-        .from('resources')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error('Error deleting resource:', error);
-        throw error;
-      }
-
-      return id;
-    },
-    onSuccess: (deletedId) => {
-      // Invalidate and refetch resources
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.resources });
-      
-      // Remove from cache
-      queryClient.setQueryData<Resource[]>(
-        [...QUERY_KEYS.resources, filters],
-        (old) => old ? old.filter(resource => resource.id !== deletedId) : []
+    // Category filter
+    if (params.category && params.category !== 'all') {
+      filtered = filtered.filter(resource => 
+        resource.categories.includes(params.category!)
       );
+    }
 
-      toast.success('Resource deleted successfully');
-    },
-    onError: (error: any) => {
-      console.error('Failed to delete resource:', error);
-      toast.error(error.message || 'Failed to delete resource');
-    },
-  });
+    // Author filter
+    if (params.author && params.author !== 'all') {
+      filtered = filtered.filter(resource => resource.authorId === params.author);
+    }
 
-  // Assign resource to client mutation
-  const assignToClientMutation = useMutation({
-    mutationFn: async ({ resourceId, clientId }: { resourceId: string; clientId: string | null }) => {
-      if (!profile) throw new Error('Not authenticated');
+    // Public/Private filter
+    if (params.isPublic !== undefined) {
+      filtered = filtered.filter(resource => resource.isPublic === params.isPublic);
+    }
 
-      const { data, error } = await supabase
-        .from('resources')
-        .update({ client_id: clientId })
-        .eq('id', resourceId)
-        .select(`
-          *,
-          coach:profiles!resources_coach_id_fkey(id, first_name, last_name),
-          client:profiles!resources_client_id_fkey(id, first_name, last_name)
-        `)
-        .single();
+    // Premium filter
+    if (params.isPremium !== undefined) {
+      filtered = filtered.filter(resource => resource.isPremium === params.isPremium);
+    }
 
-      if (error) {
-        console.error('Error assigning resource:', error);
-        throw error;
+    // Tag filter
+    if (params.tags && params.tags.length > 0) {
+      filtered = filtered.filter(resource =>
+        params.tags!.some(tag => resource.tags.includes(tag))
+      );
+    }
+
+    // Sorting
+    if (params.sortBy) {
+      filtered.sort((a, b) => {
+        let aValue: any, bValue: any;
+        
+        switch (params.sortBy) {
+          case 'title':
+            aValue = a.title.toLowerCase();
+            bValue = b.title.toLowerCase();
+            break;
+          case 'createdAt':
+            aValue = new Date(a.createdAt);
+            bValue = new Date(b.createdAt);
+            break;
+          case 'rating':
+            aValue = a.rating;
+            bValue = b.rating;
+            break;
+          case 'downloadCount':
+            aValue = a.downloadCount;
+            bValue = b.downloadCount;
+            break;
+          case 'viewCount':
+            aValue = a.viewCount;
+            bValue = b.viewCount;
+            break;
+          default:
+            return 0;
+        }
+
+        if (aValue < bValue) return params.sortOrder === 'asc' ? -1 : 1;
+        if (aValue > bValue) return params.sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    // Pagination
+    if (params.page && params.limit) {
+      const start = (params.page - 1) * params.limit;
+      const end = start + params.limit;
+      filtered = filtered.slice(start, end);
+    }
+
+    return filtered;
+  }, [resources]);
+
+  // Create resource
+  const createResource = useCallback(async (data: CreateResourceRequest): Promise<Resource> => {
+    try {
+      setCreating(true);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const newResource: Resource = {
+        ...data,
+        id: `resource-${Date.now()}`,
+        rating: 0,
+        downloadCount: 0,
+        viewCount: 0,
+                 authorId: (profile?.id || 'unknown') as string,
+         authorName: (profile?.full_name || profile?.name || 'Unknown') as string,
+         authorRole: (profile?.role || 'coach') as 'coach' | 'admin' | 'system',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+             setResources(prev => [newResource, ...prev]);
+       
+       toast({
+         title: 'Resource Created',
+         description: `"${data.title}" has been created successfully.`
+       });
+
+       return newResource;
+     } catch (error) {
+       console.error('Failed to create resource:', error);
+       toast({
+         variant: 'destructive',
+         title: 'Creation Failed',
+         description: 'Failed to create resource. Please try again.'
+       });
+       throw error;
+     } finally {
+       setCreating(false);
+     }
+   }, [profile, toast]);
+
+  // Update resource
+  const updateResource = useCallback(async (data: UpdateResourceRequest): Promise<Resource> => {
+    try {
+      setUpdating(true);
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const updatedResource = resources.find(r => r.id === data.id);
+      if (!updatedResource) {
+        throw new Error('Resource not found');
       }
 
-      return data as Resource;
-    },
-    onSuccess: (updatedResource) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.resources });
-      queryClient.setQueryData(QUERY_KEYS.resource(updatedResource.id), updatedResource);
+      const updated: Resource = {
+        ...updatedResource,
+        ...data,
+        updatedAt: new Date().toISOString()
+      };
 
-      const action = updatedResource.client_id ? 'assigned' : 'unassigned';
-      toast.success(`Resource ${action} successfully`);
-    },
-    onError: (error: any) => {
-      console.error('Failed to assign resource:', error);
-      toast.error(error.message || 'Failed to assign resource');
-    },
-  });
+             setResources(prev => prev.map(r => r.id === data.id ? updated : r));
+       
+       toast({
+         title: 'Resource Updated',
+         description: `"${updated.title}" has been updated successfully.`
+       });
+
+       return updated;
+     } catch (error) {
+       console.error('Failed to update resource:', error);
+       toast({
+         variant: 'destructive',
+         title: 'Update Failed',
+         description: 'Failed to update resource. Please try again.'
+       });
+       throw error;
+     } finally {
+       setUpdating(false);
+     }
+   }, [resources, toast]);
+
+  // Delete resource
+  const deleteResource = useCallback(async (id: string): Promise<void> => {
+    try {
+      setDeleting(true);
+      
+      const resource = resources.find(r => r.id === id);
+      if (!resource) {
+        throw new Error('Resource not found');
+      }
+
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+             setResources(prev => prev.filter(r => r.id !== id));
+       
+       toast({
+         title: 'Resource Deleted',
+         description: `"${resource.title}" has been deleted successfully.`
+       });
+     } catch (error) {
+       console.error('Failed to delete resource:', error);
+       toast({
+         variant: 'destructive',
+         title: 'Deletion Failed',
+         description: 'Failed to delete resource. Please try again.'
+       });
+       throw error;
+     } finally {
+       setDeleting(false);
+     }
+   }, [resources, toast]);
+
+  // Get resource by ID
+  const getResource = useCallback((id: string): Resource | undefined => {
+    return resources.find(r => r.id === id);
+  }, [resources]);
+
+  // Track resource access
+  const trackResourceAccess = useCallback(async (
+    resourceId: string, 
+    accessType: 'view' | 'download'
+  ): Promise<void> => {
+    try {
+      // Update local state immediately
+      setResources(prev => prev.map(resource => {
+        if (resource.id === resourceId) {
+          return {
+            ...resource,
+            [accessType === 'view' ? 'viewCount' : 'downloadCount']: 
+              resource[accessType === 'view' ? 'viewCount' : 'downloadCount'] + 1
+          };
+        }
+        return resource;
+      }));
+
+      // Simulate API call to track access
+      await new Promise(resolve => setTimeout(resolve, 200));
+    } catch (error) {
+      console.error('Failed to track resource access:', error);
+    }
+  }, []);
+
+  // Get resource statistics
+  const getResourceStats = useCallback((): ResourceStats => {
+    const totalResources = resources.length;
+    const totalDownloads = resources.reduce((sum, r) => sum + r.downloadCount, 0);
+    const totalViews = resources.reduce((sum, r) => sum + r.viewCount, 0);
+    const averageRating = resources.reduce((sum, r) => sum + r.rating, 0) / totalResources || 0;
+
+    const resourcesByType = resources.reduce((acc, resource) => {
+      acc[resource.type] = (acc[resource.type] || 0) + 1;
+      return acc;
+    }, {} as Record<Resource['type'], number>);
+
+    const resourcesByDifficulty = resources.reduce((acc, resource) => {
+      acc[resource.difficulty] = (acc[resource.difficulty] || 0) + 1;
+      return acc;
+    }, {} as Record<Resource['difficulty'], number>);
+
+    const categoryCount = resources.reduce((acc, resource) => {
+      resource.categories.forEach(cat => {
+        acc[cat] = (acc[cat] || 0) + 1;
+      });
+      return acc;
+    }, {} as Record<string, number>);
+
+    const tagCount = resources.reduce((acc, resource) => {
+      resource.tags.forEach(tag => {
+        acc[tag] = (acc[tag] || 0) + 1;
+      });
+      return acc;
+    }, {} as Record<string, number>);
+
+    const topCategories = Object.entries(categoryCount)
+      .map(([category, count]) => ({ category, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    const topTags = Object.entries(tagCount)
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    // Mock recent activity
+    const recentActivity = resources.slice(0, 5).map(resource => ({
+      type: 'created' as const,
+      resourceId: resource.id,
+      resourceTitle: resource.title,
+      userId: resource.authorId,
+      userName: resource.authorName,
+      timestamp: resource.createdAt
+    }));
+
+    return {
+      totalResources,
+      totalDownloads,
+      totalViews,
+      averageRating,
+      resourcesByType,
+      resourcesByDifficulty,
+      topCategories,
+      topTags,
+      recentActivity
+    };
+  }, [resources]);
 
   return {
     // Data
-    resources: resources || [],
-    isLoading,
-    error,
-
-    // Actions
-    refetch,
-    createResource: createResourceMutation.mutateAsync,
-    updateResource: updateResourceMutation.mutateAsync,
-    deleteResource: deleteResourceMutation.mutateAsync,
-    assignToClient: assignToClientMutation.mutateAsync,
-
+    resources,
+    categories,
+    collections,
+    
     // Loading states
-    isCreating: createResourceMutation.isPending,
-    isUpdating: updateResourceMutation.isPending,
-    isDeleting: deleteResourceMutation.isPending,
-    isAssigning: assignToClientMutation.isPending,
-
-    // Error states
-    createError: createResourceMutation.error,
-    updateError: updateResourceMutation.error,
-    deleteError: deleteResourceMutation.error,
-    assignError: assignToClientMutation.error,
+    loading,
+    creating,
+    updating,
+    deleting,
+    
+    // Operations
+    searchResources,
+    createResource,
+    updateResource,
+    deleteResource,
+    getResource,
+    trackResourceAccess,
+    getResourceStats
   };
-};
-
-// Hook for fetching a single resource
-export const useResource = (id: string) => {
-  const { profile } = useAuth();
-
-  return useQuery({
-    queryKey: QUERY_KEYS.resource(id),
-    queryFn: async () => {
-      if (!profile) throw new Error('Not authenticated');
-
-      const { data, error } = await supabase
-        .from('resources')
-        .select(`
-          *,
-          coach:profiles!resources_coach_id_fkey(id, first_name, last_name),
-          client:profiles!resources_client_id_fkey(id, first_name, last_name)
-        `)
-        .eq('id', id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching resource:', error);
-        throw error;
-      }
-
-      return data as Resource;
-    },
-    enabled: !!profile && !!id,
-  });
-};
-
-// Hook for fetching public resources (for unauthenticated users)
-export const usePublicResources = (filters?: Pick<ResourceFilters, 'type' | 'search' | 'tags'>) => {
-  return useQuery({
-    queryKey: [...QUERY_KEYS.publicResources, filters],
-    queryFn: async () => {
-      let query = supabase
-        .from('resources')
-        .select(`
-          *,
-          coach:profiles!resources_coach_id_fkey(id, first_name, last_name)
-        `)
-        .eq('is_public', true);
-
-      // Apply filters
-      if (filters?.type) {
-        query = query.eq('type', filters.type);
-      }
-
-      if (filters?.tags && filters.tags.length > 0) {
-        query = query.contains('tags', filters.tags);
-      }
-
-      if (filters?.search) {
-        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,content.ilike.%${filters.search}%`);
-      }
-
-      query = query.order('created_at', { ascending: false });
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching public resources:', error);
-        throw error;
-      }
-
-      return data as Resource[];
-    },
-  });
-};
-
-// Hook for resource statistics
-export const useResourceStats = () => {
-  const { profile } = useAuth();
-
-  return useQuery({
-    queryKey: ['resource-stats'],
-    queryFn: async () => {
-      if (!profile) throw new Error('Not authenticated');
-
-      let query = supabase.from('resources').select('*');
-
-      // Apply role-based filtering
-      if (profile.role === 'coach') {
-        query = query.eq('coach_id', profile.id);
-      } else if (profile.role === 'client') {
-        query = query.or(`is_public.eq.true,client_id.eq.${profile.id}`);
-      }
-
-      const { data: resources, error } = await query;
-
-      if (error) {
-        console.error('Error fetching resource stats:', error);
-        throw error;
-      }
-
-      // Calculate statistics
-      const stats = {
-        total: resources?.length || 0,
-        byType: resources?.reduce((acc: Record<string, number>, resource) => {
-          acc[resource.type] = (acc[resource.type] || 0) + 1;
-          return acc;
-        }, {}) || {},
-        public: resources?.filter(r => r.is_public).length || 0,
-        private: resources?.filter(r => !r.is_public).length || 0,
-        assigned: resources?.filter(r => r.client_id).length || 0,
-        unassigned: resources?.filter(r => !r.client_id).length || 0,
-      };
-
-      return stats;
-    },
-    enabled: !!profile,
-  });
 }; 
