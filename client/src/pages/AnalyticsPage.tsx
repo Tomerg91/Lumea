@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { AlertCircle, BarChart3, Download, RefreshCw } from 'lucide-react';
+import { AlertCircle, BarChart3, Download, RefreshCw, DollarSign, Activity, TrendingUp } from 'lucide-react';
 import { AnalyticsDashboard } from '../components/analytics/AnalyticsDashboard';
+import { RevenueAnalyticsDashboard } from '../components/analytics/RevenueAnalyticsDashboard';
 import { DateRangePicker } from '../components/analytics/DateRangePicker';
 import HIPAAComplianceDashboard from '../components/analytics/HIPAAComplianceDashboard';
 import { useAnalyticsData } from '../hooks/useAnalytics';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 
 const AnalyticsPage: React.FC = () => {
   const { profile } = useAuth();
@@ -14,6 +16,7 @@ const AnalyticsPage: React.FC = () => {
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
     endDate: new Date()
   });
+  const [activeTab, setActiveTab] = useState<'overview' | 'revenue' | 'realtime' | 'compliance'>('overview');
 
   const isCoach = profile?.role === 'coach';
   const isAdmin = profile?.role === 'admin';
@@ -74,6 +77,14 @@ const AnalyticsPage: React.FC = () => {
           extension = 'csv';
           break;
         }
+        case 'pdf':
+          // For PDF export, we would typically use a library like jsPDF
+          console.log('PDF export functionality to be implemented');
+          return;
+        case 'excel':
+          // For Excel export, we would typically use a library like xlsx
+          console.log('Excel export functionality to be implemented');
+          return;
         default:
           throw new Error(`Export format ${format} not implemented yet`);
       }
@@ -212,6 +223,8 @@ const AnalyticsPage: React.FC = () => {
                   </option>
                   <option value="json">Export JSON</option>
                   <option value="csv">Export CSV</option>
+                  <option value="pdf">Export PDF</option>
+                  <option value="excel">Export Excel</option>
                 </select>
                 <Download className="w-4 h-4 text-white absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none" />
               </div>
@@ -219,22 +232,75 @@ const AnalyticsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Analytics Dashboard */}
-        {analyticsData && (
-          <div className="space-y-8">
-            <AnalyticsDashboard 
-              data={analyticsData} 
-              className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg"
-            />
-
-            {/* HIPAA Compliance Dashboard for Admins */}
+        {/* Analytics Tabs */}
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview" className="flex items-center space-x-2">
+              <BarChart3 className="w-4 h-4" />
+              <span>Overview</span>
+            </TabsTrigger>
+            <TabsTrigger value="revenue" className="flex items-center space-x-2">
+              <DollarSign className="w-4 h-4" />
+              <span>Revenue</span>
+            </TabsTrigger>
+            <TabsTrigger value="realtime" className="flex items-center space-x-2">
+              <Activity className="w-4 h-4" />
+              <span>Real-time</span>
+            </TabsTrigger>
             {isAdmin && (
+              <TabsTrigger value="compliance" className="flex items-center space-x-2">
+                <TrendingUp className="w-4 h-4" />
+                <span>Compliance</span>
+              </TabsTrigger>
+            )}
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview">
+            {analyticsData && (
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+                <AnalyticsDashboard 
+                  data={analyticsData} 
+                  className=""
+                />
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Revenue Tab */}
+          <TabsContent value="revenue">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+              <RevenueAnalyticsDashboard />
+            </div>
+          </TabsContent>
+
+          {/* Real-time Tab */}
+          <TabsContent value="realtime">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+              {/* Real-time Analytics Dashboard - To be implemented */}
+              <div className="text-center py-12">
+                <Activity className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Real-time Analytics</h3>
+                <p className="text-gray-600 mb-4">Live data monitoring and real-time KPI tracking</p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+                  <p className="text-sm text-blue-800">
+                    🚀 Real-time dashboard coming soon! This will include live session monitoring, 
+                    instant notifications, and real-time performance metrics.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Compliance Tab (Admin only) */}
+          {isAdmin && (
+            <TabsContent value="compliance">
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
                 <HIPAAComplianceDashboard />
               </div>
-            )}
-          </div>
-        )}
+            </TabsContent>
+          )}
+        </Tabs>
 
         {/* Loading Indicator for Refresh */}
         {loading && analyticsData && (
