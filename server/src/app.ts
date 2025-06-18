@@ -20,12 +20,17 @@ import sessionTemplateRoutes from './routes/sessionTemplateRoutes';
 import clientRoutes from './routes/clientRoutes';
 import feedbackRoutes from './routes/feedbackRoutes';
 import analyticsRoutes from './routes/analytics';
+import healthRoutes from './routes/health';
 
 // Import services
 import { feedbackTriggerService } from './services/feedbackTriggerService';
 
 // Load environment variables
 dotenv.config();
+
+// Validate environment variables
+import { validateEnvironmentOrExit } from './utils/validateEnv';
+validateEnvironmentOrExit();
 
 // Create Express app
 const app = express();
@@ -36,7 +41,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/satyac
 mongoose
   .connect(MONGODB_URI)
   .then(async () => {
-    console.log('Connected to MongoDB');
+    logger.info('Connected to MongoDB');
 
     // Create database indexes for better performance
     await createDatabaseIndexes();
@@ -44,14 +49,14 @@ mongoose
     // Initialize feedback trigger service
     try {
       await feedbackTriggerService.initialize();
-      console.log('Feedback trigger service initialized successfully');
+      logger.info('Feedback trigger service initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize feedback trigger service:', error);
+      logger.error('Failed to initialize feedback trigger service', { error: error instanceof Error ? error.message : error });
       // Don't exit the app if feedback service fails to initialize
     }
   })
   .catch((error) => {
-    console.error('MongoDB connection error:', error);
+    logger.error('MongoDB connection error', { error: error instanceof Error ? error.message : error });
     process.exit(1);
   });
 
@@ -81,7 +86,11 @@ app.use(
   })
 );
 
-app.use(morgan('dev')); // Request logging
+// Import logger
+import logger, { morganStream } from './utils/logger';
+
+// Request logging with Winston
+app.use(morgan('combined', { stream: morganStream }));
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
@@ -96,6 +105,7 @@ app.use('/api/session-templates', sessionTemplateRoutes);
 app.use('/api', clientRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/', healthRoutes); // Health checks at root level (no /api prefix)
 
 // 404 handler
 app.use((req, res) => {
@@ -104,21 +114,38 @@ app.use((req, res) => {
 
 // Error handler
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
+  logger.error('Unhandled error', { 
+    error: err.message, 
+    stack: err.stack, 
+    url: req.url, 
+    method: req.method,
+    userId: (req as any).user?.id
+  });
   res.status(500).json({ message: 'Internal server error' });
 });
 
 // Graceful shutdown handler
 process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully...');
+  logger.info('SIGTERM received, shutting down gracefully...');
   feedbackTriggerService.shutdown();
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully...');
+  logger.info('SIGINT received, shutting down gracefully...');
   feedbackTriggerService.shutdown();
   process.exit(0);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught exception', { error: error.message, stack: error.stack });
+  process.exit(1);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled promise rejection', { reason, promise });
 });
 
 export default app;

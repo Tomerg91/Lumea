@@ -4,7 +4,7 @@ import DataRetentionPolicy, { IDataRetentionPolicy } from '../models/DataRetenti
 import DeletionCertificate from '../models/DeletionCertificate';
 import { AuditService } from './auditService';
 import { EncryptionService } from './encryptionService';
-import { logger } from '../utils/logger';
+import logger from '../utils/logger';
 
 // Import all models that can have retention policies
 import { User } from '../models/User';
