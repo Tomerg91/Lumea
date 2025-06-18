@@ -94,7 +94,7 @@
   "devDependencies": {
     "@eslint/js": "^9.9.0",
     "@lhci/cli": "0.15.0",
-    "@size-limit/preset-app": "11.2.0",
+    "@size-limit/preset-app": "11.0.0",
     "@tailwindcss/typography": "^0.5.15",
     "@testing-library/dom": "10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
