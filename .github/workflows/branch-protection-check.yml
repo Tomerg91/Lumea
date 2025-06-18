@@ -1,0 +1,222 @@
+name: Branch Protection Check
+
+on:
+  schedule:
+    # Check branch protection settings weekly on Mondays at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    # Allow manual trigger
+
+jobs:
+  verify-branch-protection:
+    name: Verify Branch Protection Rules
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check branch protection settings
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            
+            // Required status checks that should be enforced
+            const requiredChecks = [
+              'lint',
+              'build',
+              'security-audit', 
+              'test',
+              'typecheck',
+              'codeql-analysis (javascript)',
+              'codeql-analysis (typescript)',
+              'dependency-review',
+              'advanced-security-scan',
+              'license-scan',
+              'bundle-size',
+              'lighthouse',
+              'snyk-security'
+            ];
+            
+            try {
+              // Get current branch protection settings
+              const protection = await github.rest.repos.getBranchProtection({
+                owner,
+                repo,
+                branch: 'main'
+              });
+              
+              const issues = [];
+              
+              // Check required status checks
+              if (!protection.data.required_status_checks) {
+                issues.push('❌ Required status checks are not enabled');
+              } else {
+                const currentChecks = protection.data.required_status_checks.contexts || [];
+                const missingChecks = requiredChecks.filter(check => !currentChecks.includes(check));
+                const extraChecks = currentChecks.filter(check => !requiredChecks.includes(check));
+                
+                if (missingChecks.length > 0) {
+                  issues.push('❌ Missing required status checks: ' + missingChecks.join(', '));
+                }
+                
+                if (extraChecks.length > 0) {
+                  console.log('ℹ️ Extra status checks (may be intentional): ' + extraChecks.join(', '));
+                }
+                
+                if (!protection.data.required_status_checks.strict) {
+                  issues.push('⚠️ Branch should be up to date before merging (strict mode)');
+                }
+              }
+              
+              // Check pull request reviews
+              if (!protection.data.required_pull_request_reviews) {
+                issues.push('❌ Required pull request reviews are not enabled');
+              } else {
+                const reviews = protection.data.required_pull_request_reviews;
+                if (reviews.required_approving_review_count < 1) {
+                  issues.push('❌ At least 1 approving review should be required');
+                }
+                if (!reviews.dismiss_stale_reviews) {
+                  issues.push('⚠️ Stale reviews should be dismissed when new commits are pushed');
+                }
+                if (!reviews.require_code_owner_reviews) {
+                  issues.push('⚠️ Code owner reviews should be required');
+                }
+              }
+              
+              // Check admin enforcement
+              if (!protection.data.enforce_admins?.enabled) {
+                issues.push('⚠️ Branch protection should include administrators');
+              }
+              
+              // Check conversation resolution
+              if (!protection.data.required_conversation_resolution?.enabled) {
+                issues.push('⚠️ Conversation resolution should be required before merging');
+              }
+              
+              // Report results
+              if (issues.length === 0) {
+                console.log('✅ All branch protection settings are correctly configured!');
+                
+                // Create success summary
+                const summary = [
+                  '## ✅ Branch Protection Check - PASSED',
+                  '',
+                  '**Date:** ' + new Date().toISOString().split('T')[0],
+                  '',
+                  'All required branch protection settings are properly configured for the `main` branch:',
+                  '',
+                  '### ✅ Verified Settings',
+                  '- Required status checks: ' + requiredChecks.length + ' checks enforced',
+                  '- Pull request reviews: ' + (protection.data.required_pull_request_reviews?.required_approving_review_count || 0) + ' approval(s) required',
+                  '- Admin enforcement: ' + (protection.data.enforce_admins?.enabled ? 'Enabled' : 'Disabled'),
+                  '- Conversation resolution: ' + (protection.data.required_conversation_resolution?.enabled ? 'Required' : 'Not required'),
+                  '- Branch up to date: ' + (protection.data.required_status_checks?.strict ? 'Required' : 'Not required'),
+                  '',
+                  '### 📊 Status Checks Enforced'
+                ].concat(requiredChecks.map(check => '- ' + check)).concat([
+                  '',
+                  '*Automated check performed by GitHub Actions*'
+                ]);
+                
+                console.log(summary.join('\n'));
+              } else {
+                console.log('❌ Branch protection issues found:');
+                issues.forEach(issue => console.log(issue));
+                
+                // Create issue for tracking
+                const issueBody = [
+                  '## ❌ Branch Protection Configuration Issues',
+                  '',
+                  '**Date:** ' + new Date().toISOString().split('T')[0],
+                  '**Repository:** ' + owner + '/' + repo,
+                  '**Branch:** main',
+                  '',
+                  '### Issues Found'
+                ].concat(issues.map(issue => '- ' + issue)).concat([
+                  '',
+                  '### Required Status Checks',
+                  'The following status checks should be enforced:'
+                ]).concat(requiredChecks.map(check => '- ' + check)).concat([
+                  '',
+                  '### How to Fix',
+                  'Please refer to the [Branch Protection Configuration Guide](./docs/branch-protection-configuration.md) for detailed setup instructions.',
+                  '',
+                  '### Quick Actions',
+                  '1. Go to **Settings** → **Branches** → **main branch protection rule**',
+                  '2. Enable required status checks and add missing checks',
+                  '3. Configure pull request reviews (minimum 1 approval)',
+                  '4. Enable admin enforcement and conversation resolution',
+                  '5. Run this workflow again to verify fixes',
+                  '',
+                  '*This issue was automatically created by the branch protection check workflow.*'
+                ]);
+
+                await github.rest.issues.create({
+                  owner,
+                  repo,
+                  title: '🔒 Branch Protection Configuration Issues - ' + new Date().toISOString().split('T')[0],
+                  body: issueBody.join('\n'),
+                  labels: ['security', 'configuration', 'automated']
+                });
+                
+                // Fail the workflow
+                core.setFailed('Branch protection configuration has ' + issues.length + ' issue(s). Created GitHub issue for tracking.');
+              }
+              
+            } catch (error) {
+              if (error.status === 404) {
+                const errorMessage = '❌ No branch protection rules found for main branch';
+                console.log(errorMessage);
+                
+                // Create issue for missing protection
+                const missingProtectionBody = [
+                  '## ❌ No Branch Protection Rules Configured',
+                  '',
+                  '**Repository:** ' + owner + '/' + repo,
+                  '**Branch:** main',
+                  '',
+                  'The main branch currently has no protection rules configured. This allows direct pushes and merges without any quality gates.',
+                  '',
+                  '### Required Actions',
+                  '1. Configure branch protection rules according to the [Branch Protection Configuration Guide](./docs/branch-protection-configuration.md)',
+                  '2. Enable all required status checks',
+                  '3. Require pull request reviews',
+                  '4. Enable admin enforcement',
+                  '',
+                  '### Security Impact',
+                  'Without branch protection:',
+                  '- Code can be pushed directly to main without review',
+                  '- No CI/CD checks are enforced',
+                  '- Security vulnerabilities may be introduced',
+                  '- Performance regressions may occur',
+                  '',
+                  '*This issue was automatically created by the branch protection check workflow.*'
+                ];
+
+                await github.rest.issues.create({
+                  owner,
+                  repo,
+                  title: '🔒 Missing Branch Protection Rules - ' + new Date().toISOString().split('T')[0],
+                  body: missingProtectionBody.join('\n'),
+                  labels: ['security', 'critical', 'configuration', 'automated']
+                });
+                
+                core.setFailed('No branch protection rules configured for main branch. Created GitHub issue for tracking.');
+              } else {
+                console.log('Error checking branch protection:', error.message);
+                core.setFailed('Failed to check branch protection: ' + error.message);
+              }
+            }
+
+      - name: Update documentation
+        if: success()
+        run: |
+          echo "✅ Branch protection verification completed successfully"
+          echo "📋 Documentation is available in docs/branch-protection-configuration.md"
+          echo "🔄 This check runs weekly to ensure settings remain configured" 
