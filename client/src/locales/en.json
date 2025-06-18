@@ -57,6 +57,7 @@
     "dashboard": "Dashboard",
     "clients": "Clients",
     "sessions": "Sessions",
+    "notes": "Notes",
     "reflections": "Reflections",
     "resources": "Resources",
     "profile": "Profile",
@@ -185,6 +186,12 @@
     "language": "Language",
     "darkMode": "Dark Mode",
     "darkModeDesc": "Use dark theme for the interface"
+  },
+  "pages": {
+    "coachNotes": {
+      "title": "Coach Notes",
+      "subtitle": "Manage your private coaching notes with advanced organization and analytics"
+    }
   },
   "common": {
     "loading": "Loading...",

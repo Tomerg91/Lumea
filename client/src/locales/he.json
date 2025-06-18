@@ -55,9 +55,21 @@
   },
   "nav": {
     "dashboard": "לוח בקרה",
+    "clients": "לקוחות",
     "sessions": "מפגשים",
+    "notes": "הערות",
+    "reflections": "הרהורים",
+    "resources": "משאבים",
     "profile": "פרופיל",
-    "logout": "התנתק"
+    "settings": "הגדרות",
+    "signOut": "התנתק",
+    "signIn": "התחבר"
+  },
+  "pages": {
+    "coachNotes": {
+      "title": "הערות מאמן",
+      "subtitle": "נהל את הערות האימון הפרטיות שלך עם ארגון וניתוח מתקדמים"
+    }
   },
   "common": {
     "loading": "טוען...",

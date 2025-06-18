@@ -14,7 +14,8 @@ import {
   ChevronDown,
   Home,
   Users,
-  Heart
+  Heart,
+  FileText
 } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -45,6 +46,7 @@ const Navigation = () => {
         { to: '/coach/dashboard', icon: <Home className="w-4 h-4" />, label: t('nav.dashboard') },
         { to: '/coach/clients', icon: <Users className="w-4 h-4" />, label: t('nav.clients') },
         { to: '/coach/sessions', icon: <Calendar className="w-4 h-4" />, label: t('nav.sessions') },
+        { to: '/coach/notes', icon: <FileText className="w-4 h-4" />, label: t('nav.notes', 'Notes') },
         { to: '/coach/reflections', icon: <MessageSquare className="w-4 h-4" />, label: t('nav.reflections') },
         { to: '/coach/analytics', icon: <BarChart3 className="w-4 h-4" />, label: 'Analytics' },
         { to: '/coach/resources', icon: <Settings className="w-4 h-4" />, label: t('nav.resources') },
