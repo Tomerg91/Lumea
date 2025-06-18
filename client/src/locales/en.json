@@ -297,5 +297,30 @@
     "pauses": "Pauses",
     "adjustments": "Adjustments",
     "viewAll": "View All Sessions"
+  },
+  "timeline": {
+    "title": "Progress Timeline",
+    "loading": "Loading timeline...",
+    "error": "Error loading timeline",
+    "retry": "Retry",
+    "events": "events",
+    "noEvents": "No events found",
+    "noEventsMessage": "No events found for the selected time range and filters.",
+    "timeRange": "Time Range",
+    "3months": "3 Months",
+    "6months": "6 Months", 
+    "1year": "1 Year",
+    "all": "All Time",
+    "showEvents": "Show",
+    "sessions": "Sessions",
+    "reflections": "Reflections",
+    "notes": "Notes",
+    "milestones": "Milestones",
+    "sessionWith": "Session with {{name}}",
+    "noSessionNotes": "No session notes",
+    "reflectionSubmitted": "Reflection Submitted",
+    "audioReflection": "Audio reflection",
+    "coachNote": "Coach Note",
+    "invalidDate": "Invalid Date"
   }
 }

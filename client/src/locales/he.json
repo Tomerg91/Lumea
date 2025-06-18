@@ -253,5 +253,30 @@
     "draftSaved": "טיוטה נשמרה בהצלחה",
     "saveDraftError": "נכשל בשמירת טיוטה",
     "loadSessionsError": "נכשל בטעינת המפגשים"
+  },
+  "timeline": {
+    "title": "ציר זמן התקדמות",
+    "loading": "טוען ציר זמן...",
+    "error": "שגיאה בטעינת ציר הזמן",
+    "retry": "נסה שוב",
+    "events": "אירועים",
+    "noEvents": "לא נמצאו אירועים",
+    "noEventsMessage": "לא נמצאו אירועים עבור טווח הזמן והמסננים שנבחרו.",
+    "timeRange": "טווח זמן",
+    "3months": "3 חודשים",
+    "6months": "6 חודשים",
+    "1year": "שנה",
+    "all": "כל הזמן",
+    "showEvents": "הצג",
+    "sessions": "מפגשים",
+    "reflections": "הרהורים",
+    "notes": "הערות",
+    "milestones": "אבני דרך",
+    "sessionWith": "מפגש עם {{name}}",
+    "noSessionNotes": "אין הערות מפגש",
+    "reflectionSubmitted": "הרהור הוגש",
+    "audioReflection": "הרהור קולי",
+    "coachNote": "הערת מאמן",
+    "invalidDate": "תאריך לא תקין"
   }
 }

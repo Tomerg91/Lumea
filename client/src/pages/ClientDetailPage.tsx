@@ -12,12 +12,14 @@ import {
   FileText, 
   Plus,
   MessageSquare,
-  Phone
+  Phone,
+  TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useMobileDetection } from '../hooks/useMobileDetection';
 import { ClientNotesView } from '../components/notes/ClientNotesView';
 import { Button } from '../components/ui/button';
+import { ClientProgressTimeline } from '../components/progress/ClientProgressTimeline';
 
 interface ClientSession {
   _id: string;
@@ -50,7 +52,7 @@ const ClientDetailPage: React.FC = () => {
   const [client, setClient] = useState<ClientDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'sessions'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'sessions' | 'progress'>('overview');
 
   useEffect(() => {
     if (clientId) {
@@ -282,6 +284,17 @@ const ClientDetailPage: React.FC = () => {
               <FileText className="w-4 h-4 inline mr-2" />
               {t('clients.notes')}
             </button>
+            <button
+              onClick={() => setActiveTab('progress')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'progress'
+                  ? 'border-lumea-primary text-lumea-primary'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <TrendingUp className="w-4 h-4 inline mr-2" />
+              {t('clients.progress', 'Progress')}
+            </button>
           </nav>
         </div>
 
@@ -423,6 +436,15 @@ const ClientDetailPage: React.FC = () => {
             <ClientNotesView
               clientId={clientId!}
               clientName={`${client.firstName} ${client.lastName}`}
+            />
+          )}
+
+          {activeTab === 'progress' && (
+            <ClientProgressTimeline
+              clientId={clientId!}
+              clientName={`${client.firstName} ${client.lastName}`}
+              timeRange="all"
+              showFilters={true}
             />
           )}
         </div>
