@@ -10,7 +10,7 @@ import {
   Calendar, 
   BarChart3, 
   Zap, 
-  CloudSync, 
+  RefreshCw,
   RotateCcw,
   Settings,
   Plus,
@@ -156,7 +156,7 @@ const SchedulingPage: React.FC = () => {
               <span className="hidden sm:inline">Automation</span>
             </TabsTrigger>
             <TabsTrigger value="calendar" className="flex items-center gap-2">
-              <CloudSync className="h-4 w-4" />
+              <RefreshCw className="h-4 w-4" />
               <span className="hidden sm:inline">Calendar Sync</span>
             </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center gap-2">
@@ -241,7 +241,7 @@ const SchedulingPage: React.FC = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <CloudSync className="h-5 w-5" />
+                    <RefreshCw className="h-5 w-5" />
                     Calendar Integration
                   </CardTitle>
                   <CardDescription>
@@ -348,7 +348,7 @@ const SchedulingPage: React.FC = () => {
                   </p>
                 </div>
                 <div className="p-4 border rounded-lg">
-                  <CloudSync className="h-8 w-8 text-green-600 mb-3" />
+                  <RefreshCw className="h-8 w-8 text-green-600 mb-3" />
                   <h4 className="font-medium mb-2">Calendar Sync</h4>
                   <p className="text-sm text-muted-foreground">
                     Bidirectional sync with Google, Outlook, and Apple calendars

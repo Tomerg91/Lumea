@@ -23,7 +23,6 @@ import {
   Eye,
   EyeOff,
   Zap,
-  CloudSync,
   Wifi,
   WifiOff,
   Activity,
@@ -465,7 +464,7 @@ export const EnhancedCalendarSync: React.FC = () => {
                 <p className="text-2xl font-bold">{activeConnections}</p>
                 <p className="text-xs text-muted-foreground">of {calendarConnections.length} total</p>
               </div>
-              <CloudSync className="h-8 w-8 text-blue-600" />
+              <RefreshCw className="h-8 w-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>

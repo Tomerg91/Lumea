@@ -10,7 +10,7 @@ import {
   Users,
   MessageSquare,
   Share,
-  Record,
+  Circle,
   MoreVertical,
   Maximize2,
   Minimize2,
@@ -420,7 +420,7 @@ const VideoCallInterface: React.FC<{
                   : 'bg-gray-700 hover:bg-gray-600 text-white'
               }`}
             >
-              <Record className="w-5 h-5" />
+              <Circle className="w-5 h-5" />
             </button>
           )}
 
