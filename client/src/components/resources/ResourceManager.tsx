@@ -32,7 +32,7 @@ import { Switch } from '../ui/switch';
 import { Badge } from '../ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { SimpleFileUploader } from '../upload/SimpleFileUploader';
+import SimpleFileUploader from '../upload/SimpleFileUploader';
 import {
   Plus,
   Edit3,

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Activity, 
   Smartphone, 
@@ -15,7 +16,8 @@ import {
   Download,
   Upload,
   Timer,
-  BarChart3
+  BarChart3,
+  ArrowLeft
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -47,6 +49,7 @@ const MobilePerformancePage: React.FC = () => {
   const { toast } = useToast();
   const { deviceInfo, isNative, platform } = useNativeFeatures();
   const networkStatus = useNetworkStatus();
+  const navigate = useNavigate();
   
   const [metrics, setMetrics] = useState<PerformanceMetrics>({
     score: 85,
@@ -121,6 +124,15 @@ const MobilePerformancePage: React.FC = () => {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/coach/mobile-app')}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Mobile App
+              </Button>
               <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
                 <Activity className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>

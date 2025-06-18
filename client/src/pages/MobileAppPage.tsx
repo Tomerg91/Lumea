@@ -28,7 +28,8 @@ import {
   BarChart3,
   Camera,
   Mic,
-  Video
+  Video,
+  Activity
 } from 'lucide-react';
 import { useMobileDetection } from '@/hooks/useMobileDetection';
 import { usePWA } from '@/hooks/usePWA';
@@ -532,10 +533,28 @@ const MobileAppPage: React.FC = () => {
                 <Button 
                   variant="outline" 
                   onClick={() => navigate('/coach/mobile-settings')}
-                  className="w-full flex items-center gap-2"
+                  className="w-full flex items-center gap-2 mb-3"
                 >
                   <Settings className="w-4 h-4" />
                   Advanced Mobile Settings
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/coach/mobile-performance')}
+                  className="w-full flex items-center gap-2"
+                >
+                  <Activity className="w-4 h-4" />
+                  Performance Monitoring
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/coach/mobile-dashboard')}
+                  className="w-full flex items-center gap-2 mt-3"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  Mobile Dashboard
                 </Button>
               </div>
             </CardContent>
