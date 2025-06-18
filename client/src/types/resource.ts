@@ -1,6 +1,47 @@
 export interface Resource {
   id: string;
   title: string;
+  description?: string;
+  type: 'file' | 'link' | 'video' | 'document' | 'pdf';
+  file_url?: string; // Supabase Storage URL for uploaded files
+  link_url?: string; // External URL for links
+  file_name?: string; // Original filename for uploaded files
+  file_size?: number; // File size in bytes
+  mime_type?: string; // MIME type for uploaded files
+  coach_id: string;
+  is_public: boolean;
+  tags: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ResourceAssignment {
+  id: string;
+  resource_id: string;
+  client_id: string;
+  coach_id: string;
+  assigned_at: string;
+  viewed_at?: string;
+  view_count: number;
+  notes?: string; // Coach notes about this assignment
+  is_required: boolean; // Whether this resource is required for the client
+  due_date?: string; // Optional due date for reviewing the resource
+  completed_at?: string; // When client marked as completed
+  created_at: string;
+  updated_at: string;
+  
+  // Populated fields from joins
+  resource?: Resource;
+  client?: {
+    id: string;
+    full_name: string;
+    email: string;
+  };
+}
+
+export interface LegacyResource {
+  id: string;
+  title: string;
   type: 'article' | 'video' | 'worksheet' | 'guide' | 'template' | 'document';
   description: string;
   content?: string;
@@ -63,13 +104,13 @@ export interface ResourceAccess {
 
 export interface CreateResourceRequest {
   title: string;
-  type: Resource['type'];
+  type: LegacyResource['type'];
   description: string;
   content?: string;
   fileUrl?: string;
   thumbnailUrl?: string;
   duration?: string;
-  difficulty: Resource['difficulty'];
+  difficulty: LegacyResource['difficulty'];
   tags: string[];
   categories: string[];
   isPublic: boolean;
@@ -81,8 +122,8 @@ export interface UpdateResourceRequest extends Partial<CreateResourceRequest> {
 }
 
 export interface ResourceFilters {
-  type?: Resource['type'] | 'all';
-  difficulty?: Resource['difficulty'] | 'all';
+  type?: LegacyResource['type'] | 'all';
+  difficulty?: LegacyResource['difficulty'] | 'all';
   category?: string | 'all';
   author?: string | 'all';
   isPublic?: boolean;
@@ -103,8 +144,8 @@ export interface ResourceStats {
   totalDownloads: number;
   totalViews: number;
   averageRating: number;
-  resourcesByType: Record<Resource['type'], number>;
-  resourcesByDifficulty: Record<Resource['difficulty'], number>;
+  resourcesByType: Record<LegacyResource['type'], number>;
+  resourcesByDifficulty: Record<LegacyResource['difficulty'], number>;
   topCategories: Array<{ category: string; count: number }>;
   topTags: Array<{ tag: string; count: number }>;
   recentActivity: Array<{
@@ -232,4 +273,66 @@ export const DEFAULT_RESOURCE_CATEGORIES: Omit<ResourceCategory, 'id' | 'resourc
     icon: 'Users',
     isDefault: true
   }
-]; 
+];
+
+// New interfaces for the actual resource system
+export interface CreateResourceData {
+  title: string;
+  description?: string;
+  type: Resource['type'];
+  file_url?: string;
+  link_url?: string;
+  file_name?: string;
+  file_size?: number;
+  mime_type?: string;
+  is_public?: boolean;
+  tags?: string[];
+}
+
+export interface UpdateResourceData extends Partial<CreateResourceData> {
+  id: string;
+}
+
+export interface CreateResourceAssignmentData {
+  resource_id: string;
+  client_id: string;
+  notes?: string;
+  is_required?: boolean;
+  due_date?: string;
+}
+
+export interface UpdateResourceAssignmentData extends Partial<CreateResourceAssignmentData> {
+  id: string;
+}
+
+export interface ResourceFiltersNew {
+  type?: Resource['type'] | 'all';
+  is_public?: boolean;
+  tags?: string[];
+  assigned_to_client?: string;
+}
+
+export interface ResourceSearchParamsNew extends ResourceFiltersNew {
+  query?: string;
+  sortBy?: 'title' | 'created_at' | 'updated_at';
+  sortOrder?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+// File upload types for resources
+export interface ResourceUploadOptions {
+  title: string;
+  description?: string;
+  type: Exclude<Resource['type'], 'link'>; // All types except link since this is for file uploads
+  is_public?: boolean;
+  tags?: string[];
+}
+
+export interface ResourceLinkData {
+  title: string;
+  description?: string;
+  link_url: string;
+  is_public?: boolean;
+  tags?: string[];
+} 

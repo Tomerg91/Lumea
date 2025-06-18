@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import ResourceManager from '../components/resources/ResourceManager';
+import { ResourceLibrary } from '../components/resources/ResourceLibrary';
 import ResourceAnalyticsDashboard from '../components/resources/ResourceAnalyticsDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -17,70 +18,67 @@ const ResourcesPage = () => {
   const { t, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState('library');
 
+  // Different tabs for coaches vs clients
+  const getTabsForRole = () => {
+    if (profile?.role === 'coach') {
+      return [
+        { value: 'library', label: 'Library', icon: <BookOpen className="w-4 h-4" /> },
+        { value: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-4 h-4" /> },
+        { value: 'manage', label: 'Manage', icon: <Settings className="w-4 h-4" /> }
+      ];
+    } else {
+      return [
+        { value: 'library', label: 'My Resources', icon: <BookOpen className="w-4 h-4" /> }
+      ];
+    }
+  };
+
+  const tabs = getTabsForRole();
+
   return (
     <div className={`min-h-screen bg-gradient-background py-8 ${isRTL ? 'rtl-layout' : ''}`}>
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gradient-purple mb-2">
-            Resource Library
+            {profile?.role === 'coach' ? 'Resource Management' : 'My Resources'}
           </h1>
           <p className="text-gray-600">
             {profile?.role === 'coach' 
-              ? 'Curated resources to enhance your coaching practice'
-              : 'Tools and materials to support your personal growth journey'
+              ? 'Manage and share resources with your clients'
+              : 'Access materials assigned by your coach to support your growth journey'
             }
           </p>
         </div>
 
         {/* Main Content */}
         <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-6">
-              <TabsTrigger value="library" className="flex items-center space-x-2">
-                <BookOpen className="w-4 h-4" />
-                <span>Library</span>
-              </TabsTrigger>
-              <TabsTrigger value="analytics" className="flex items-center space-x-2">
-                <BarChart3 className="w-4 h-4" />
-                <span>Analytics</span>
-              </TabsTrigger>
-              <TabsTrigger value="manage" className="flex items-center space-x-2">
-                <Settings className="w-4 h-4" />
-                <span>Manage</span>
-              </TabsTrigger>
-            </TabsList>
+          {profile?.role === 'coach' ? (
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className={`grid w-full grid-cols-${tabs.length} mb-6`}>
+                {tabs.map((tab) => (
+                  <TabsTrigger key={tab.value} value={tab.value} className="flex items-center space-x-2">
+                    {tab.icon}
+                    <span>{tab.label}</span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
 
-            <TabsContent value="library" className="space-y-6">
-              <ResourceManager 
-                showCreateButton={profile?.role === 'coach'} 
-                onResourceSelect={(resource) => {
-                  console.log('Selected resource:', resource);
-                  // Handle resource selection (e.g., open modal, navigate, etc.)
-                }}
-              />
-            </TabsContent>
+              <TabsContent value="library" className="space-y-6">
+                <ResourceManager 
+                  showCreateButton={true} 
+                  onResourceSelect={(resource) => {
+                    console.log('Selected resource:', resource);
+                    // Handle resource selection (e.g., open modal, navigate, etc.)
+                  }}
+                />
+              </TabsContent>
 
-            <TabsContent value="analytics" className="space-y-6">
-              {profile?.role === 'coach' ? (
+              <TabsContent value="analytics" className="space-y-6">
                 <ResourceAnalyticsDashboard />
-              ) : (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <div className="w-16 h-16 bg-gradient-lavender rounded-2xl flex items-center justify-center mx-auto mb-4">
-                      <BarChart3 className="w-8 h-8 text-white" />
-                    </div>
-                    <h3 className="text-xl font-semibold mb-2">Analytics Available for Coaches</h3>
-                    <p className="text-gray-600">
-                      Resource analytics and insights are available for coaching accounts.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
+              </TabsContent>
 
-            <TabsContent value="manage" className="space-y-6">
-              {profile?.role === 'coach' ? (
+              <TabsContent value="manage" className="space-y-6">
                 <div className="space-y-6">
                   <Card>
                     <CardHeader>
@@ -113,32 +111,16 @@ const ResourcesPage = () => {
                             Configure default categories, tags, and resource templates.
                           </p>
                         </div>
-                        
-                        <div className="p-4 border rounded-lg">
-                          <h4 className="font-medium mb-2">Sharing Options</h4>
-                          <p className="text-sm text-gray-600">
-                            Set default visibility and sharing preferences for new resources.
-                          </p>
-                        </div>
                       </div>
                     </CardContent>
                   </Card>
                 </div>
-              ) : (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <div className="w-16 h-16 bg-gradient-lavender rounded-2xl flex items-center justify-center mx-auto mb-4">
-                      <Settings className="w-8 h-8 text-white" />
-                    </div>
-                    <h3 className="text-xl font-semibold mb-2">Management Available for Coaches</h3>
-                    <p className="text-gray-600">
-                      Resource management features are available for coaching accounts.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-          </Tabs>
+              </TabsContent>
+            </Tabs>
+          ) : (
+            // Client interface - just show the ResourceLibrary directly
+            <ResourceLibrary />
+          )}
         </div>
       </div>
     </div>

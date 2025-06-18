@@ -131,4 +131,5 @@ const SimpleFileUploader: React.FC<SimpleFileUploaderProps> = ({
   );
 };
 
+export { SimpleFileUploader };
 export default SimpleFileUploader; 

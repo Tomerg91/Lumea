@@ -4,11 +4,11 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useResources } from '../../hooks/useResources';
 import { 
   Resource, 
-  CreateResourceRequest, 
-  UpdateResourceRequest,
-  RESOURCE_TYPE_CONFIG,
-  RESOURCE_DIFFICULTY_CONFIG,
-  DEFAULT_RESOURCE_CATEGORIES
+  CreateResourceData, 
+  UpdateResourceData,
+  ResourceUploadOptions,
+  ResourceLinkData,
+  ResourceSearchParamsNew
 } from '../../types/resource';
 import {
   Dialog,
@@ -32,7 +32,7 @@ import { Switch } from '../ui/switch';
 import { Badge } from '../ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import SimpleFileUploader from '../upload/SimpleFileUploader';
+import { SimpleFileUploader } from '../upload/SimpleFileUploader';
 import {
   Plus,
   Edit3,
@@ -53,7 +53,9 @@ import {
   Tag,
   Folder,
   Settings,
-  Search
+  Search,
+  Link,
+  Paperclip
 } from 'lucide-react';
 
 interface ResourceManagerProps {
@@ -71,16 +73,16 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
   const { t, isRTL } = useLanguage();
   const { 
     resources, 
-    categories, 
-    loading, 
-    creating, 
-    updating, 
-    deleting,
+    loading: resourcesLoading, 
+    creating: creating, 
+    updating: updating, 
+    deleting: deleting,
     createResource,
     updateResource,
     deleteResource,
     searchResources,
-    trackResourceAccess
+    uploadResource,
+    createLinkResource
   } = useResources();
 
   // State management
@@ -89,114 +91,139 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
-  const [filterDifficulty, setFilterDifficulty] = useState<string>('all');
-  const [filterCategory, setFilterCategory] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [createMode, setCreateMode] = useState<'upload' | 'link'>('upload');
 
-  // Form state
-  const [formData, setFormData] = useState<Partial<CreateResourceRequest>>({
+  // Form state for uploads
+  const [uploadFormData, setUploadFormData] = useState<ResourceUploadOptions>({
     title: '',
-    type: 'article',
+    type: 'file',
     description: '',
-    content: '',
-    fileUrl: '',
-    thumbnailUrl: '',
-    duration: '',
-    difficulty: 'beginner',
-    tags: [],
-    categories: [],
-    isPublic: true,
-    isPremium: false
+    is_public: false,
+    tags: []
   });
 
+  // Form state for links
+  const [linkFormData, setLinkFormData] = useState<ResourceLinkData>({
+    title: '',
+    link_url: '',
+    description: '',
+    is_public: false,
+    tags: []
+  });
+
+  // Form state for updates
+  const [updateFormData, setUpdateFormData] = useState<Partial<UpdateResourceData>>({});
+
   const [tagInput, setTagInput] = useState('');
-  const [uploadedFile, setUploadedFile] = useState<{url: string; name: string} | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   // Get filtered resources
   const filteredResources = searchResources({
     query: searchTerm,
     type: filterType !== 'all' ? filterType as Resource['type'] : undefined,
-    difficulty: filterDifficulty !== 'all' ? filterDifficulty as Resource['difficulty'] : undefined,
-    category: filterCategory !== 'all' ? filterCategory : undefined,
-    sortBy: 'createdAt',
+    sortBy: 'created_at',
     sortOrder: 'desc'
   });
 
-  // Handle form submission
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+  // Handle file upload form submission
+  const handleUploadSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title || !formData.description) {
+    if (!uploadFormData.title || !uploadedFile) {
       return;
     }
 
     try {
-      const resourceData: CreateResourceRequest = {
-        title: formData.title,
-        type: formData.type || 'article',
-        description: formData.description,
-        content: formData.content,
-        fileUrl: uploadedFile?.url || formData.fileUrl,
-        thumbnailUrl: formData.thumbnailUrl,
-        duration: formData.duration,
-        difficulty: formData.difficulty || 'beginner',
-        tags: formData.tags || [],
-        categories: formData.categories || [],
-        isPublic: formData.isPublic ?? true,
-        isPremium: formData.isPremium ?? false
-      };
+      await uploadResource({
+        file: uploadedFile,
+        options: uploadFormData
+      });
 
-      if (selectedResource) {
-        await updateResource({ id: selectedResource.id, ...resourceData });
-        setShowEditModal(false);
-      } else {
-        await createResource(resourceData);
-        setShowCreateModal(false);
-      }
-
-      resetForm();
+      setShowCreateModal(false);
+      resetUploadForm();
     } catch (error) {
-      console.error('Failed to save resource:', error);
+      console.error('Failed to upload resource:', error);
     }
-  }, [formData, uploadedFile, selectedResource, createResource, updateResource]);
+  }, [uploadFormData, uploadedFile, uploadResource]);
 
-  // Reset form
-  const resetForm = useCallback(() => {
-    setFormData({
+  // Handle link form submission
+  const handleLinkSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!linkFormData.title || !linkFormData.link_url) {
+      return;
+    }
+
+    try {
+      await createLinkResource(linkFormData);
+      setShowCreateModal(false);
+      resetLinkForm();
+    } catch (error) {
+      console.error('Failed to create link resource:', error);
+    }
+  }, [linkFormData, createLinkResource]);
+
+  // Handle edit form submission
+  const handleEditSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedResource || !updateFormData.title) {
+      return;
+    }
+
+    try {
+      await updateResource({
+        id: selectedResource.id,
+        ...updateFormData
+      });
+
+      setShowEditModal(false);
+      resetEditForm();
+    } catch (error) {
+      console.error('Failed to update resource:', error);
+    }
+  }, [selectedResource, updateFormData, updateResource]);
+
+  // Reset forms
+  const resetUploadForm = useCallback(() => {
+    setUploadFormData({
       title: '',
-      type: 'article',
+      type: 'file',
       description: '',
-      content: '',
-      fileUrl: '',
-      thumbnailUrl: '',
-      duration: '',
-      difficulty: 'beginner',
-      tags: [],
-      categories: [],
-      isPublic: true,
-      isPremium: false
+      is_public: false,
+      tags: []
     });
     setTagInput('');
     setUploadedFile(null);
+  }, []);
+
+  const resetLinkForm = useCallback(() => {
+    setLinkFormData({
+      title: '',
+      link_url: '',
+      description: '',
+      is_public: false,
+      tags: []
+    });
+    setTagInput('');
+  }, []);
+
+  const resetEditForm = useCallback(() => {
+    setUpdateFormData({});
     setSelectedResource(null);
+    setTagInput('');
   }, []);
 
   // Handle edit
   const handleEdit = useCallback((resource: Resource) => {
     setSelectedResource(resource);
-    setFormData({
+    setUpdateFormData({
       title: resource.title,
-      type: resource.type,
       description: resource.description,
-      content: resource.content,
-      fileUrl: resource.fileUrl,
-      thumbnailUrl: resource.thumbnailUrl,
-      duration: resource.duration,
-      difficulty: resource.difficulty,
-      tags: resource.tags,
-      categories: resource.categories,
-      isPublic: resource.isPublic,
-      isPremium: resource.isPremium
+      type: resource.type,
+      is_public: resource.is_public,
+      tags: resource.tags
     });
     setShowEditModal(true);
   }, []);
@@ -212,166 +239,156 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
     }
   }, [deleteResource]);
 
-  // Handle tag input
-  const handleAddTag = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && tagInput.trim()) {
-      e.preventDefault();
-      const newTag = tagInput.trim().toLowerCase();
-      if (!formData.tags?.includes(newTag)) {
-        setFormData(prev => ({
-          ...prev,
-          tags: [...(prev.tags || []), newTag]
-        }));
-      }
-      setTagInput('');
-    }
-  }, [tagInput, formData.tags]);
-
-  // Remove tag
-  const handleRemoveTag = useCallback((tagToRemove: string) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags?.filter(tag => tag !== tagToRemove) || []
-    }));
-  }, []);
-
   // Handle file upload
-  const handleFileUpload = useCallback((result: {url: string; name: string}) => {
-    setUploadedFile(result);
-    setFormData(prev => ({
-      ...prev,
-      fileUrl: result.url
-    }));
+  const handleFileUpload = useCallback((file: File) => {
+    setUploadedFile(file);
+    if (!uploadFormData.title) {
+      setUploadFormData(prev => ({
+        ...prev,
+        title: file.name.replace(/\.[^/.]+$/, '')
+      }));
+    }
+  }, [uploadFormData.title]);
+
+  // Add tag helpers
+  const addTag = useCallback((formType: 'upload' | 'link' | 'edit') => {
+    if (!tagInput.trim()) return;
+    
+    if (formType === 'upload') {
+      setUploadFormData(prev => ({
+        ...prev,
+        tags: [...(prev.tags || []), tagInput.trim()]
+      }));
+    } else if (formType === 'link') {
+      setLinkFormData(prev => ({
+        ...prev,
+        tags: [...(prev.tags || []), tagInput.trim()]
+      }));
+    } else if (formType === 'edit') {
+      setUpdateFormData(prev => ({
+        ...prev,
+        tags: [...(prev.tags || []), tagInput.trim()]
+      }));
+    }
+    
+    setTagInput('');
+  }, [tagInput]);
+
+  const removeTag = useCallback((tagToRemove: string, formType: 'upload' | 'link' | 'edit') => {
+    if (formType === 'upload') {
+      setUploadFormData(prev => ({
+        ...prev,
+        tags: (prev.tags || []).filter(tag => tag !== tagToRemove)
+      }));
+    } else if (formType === 'link') {
+      setLinkFormData(prev => ({
+        ...prev,
+        tags: (prev.tags || []).filter(tag => tag !== tagToRemove)
+      }));
+    } else if (formType === 'edit') {
+      setUpdateFormData(prev => ({
+        ...prev,
+        tags: (prev.tags || []).filter(tag => tag !== tagToRemove)
+      }));
+    }
   }, []);
 
-  // Get type icon
+  // Icon helpers
   const getTypeIcon = (type: Resource['type']) => {
-    const config = RESOURCE_TYPE_CONFIG[type];
-    switch (config.icon) {
-      case 'FileText': return <FileText className="w-4 h-4" />;
-      case 'Video': return <Video className="w-4 h-4" />;
-      case 'BookOpen': return <BookOpen className="w-4 h-4" />;
-      case 'Layout': return <Layout className="w-4 h-4" />;
-      case 'File': return <File className="w-4 h-4" />;
-      default: return <FileText className="w-4 h-4" />;
+    switch (type) {
+      case 'video': return <Video className="h-4 w-4" />;
+      case 'document': return <FileText className="h-4 w-4" />;
+      case 'pdf': return <BookOpen className="h-4 w-4" />;
+      case 'link': return <Link className="h-4 w-4" />;
+      case 'file':
+      default: return <File className="h-4 w-4" />;
     }
   };
 
-  // Get type color classes
   const getTypeColorClasses = (type: Resource['type']) => {
-    const config = RESOURCE_TYPE_CONFIG[type];
-    switch (config.color) {
-      case 'blue': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'red': return 'bg-red-100 text-red-800 border-red-200';
-      case 'green': return 'bg-green-100 text-green-800 border-green-200';
-      case 'purple': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'orange': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'gray': return 'bg-gray-100 text-gray-800 border-gray-200';
+    switch (type) {
+      case 'video': return 'bg-red-100 text-red-800 border-red-200';
+      case 'document': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'pdf': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'link': return 'bg-green-100 text-green-800 border-green-200';
+      case 'file':
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
-  // Get difficulty color classes
-  const getDifficultyColorClasses = (difficulty: Resource['difficulty']) => {
-    const config = RESOURCE_DIFFICULTY_CONFIG[difficulty];
-    switch (config.color) {
-      case 'green': return 'bg-green-100 text-green-800 border-green-200';
-      case 'yellow': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'red': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+  const getTypeLabel = (type: Resource['type']) => {
+    switch (type) {
+      case 'video': return 'Video';
+      case 'document': return 'Document';
+      case 'pdf': return 'PDF';
+      case 'link': return 'Link';
+      case 'file':
+      default: return 'File';
     }
   };
 
-  if (loading) {
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes) return '';
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  if (resourcesLoading) {
     return (
       <div className="space-y-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="h-48 bg-gray-200 rounded-lg"></div>
-            ))}
-          </div>
+        <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-48 bg-gray-200 rounded animate-pulse"></div>
+          ))}
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`space-y-6 ${isRTL ? 'rtl-layout' : ''}`}>
+    <div className="space-y-6">
       {/* Header */}
-      <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-        <div>
-          <h2 className="text-2xl font-bold text-gradient-purple">Resource Library</h2>
-          <p className="text-gray-600 mt-1">
-            Manage and organize your coaching resources
-          </p>
-        </div>
-        {showCreateButton && (
-          <Button 
-            onClick={() => setShowCreateModal(true)}
-            className="btn-primary"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Resource
-          </Button>
-        )}
-      </div>
-
-      {/* Filters and Search */}
       <Card>
-        <CardContent className="pt-6">
-          <div className={`grid gap-4 md:grid-cols-5 ${isRTL ? 'rtl-grid' : ''}`}>
-            <div className="relative">
-              <Search className={`absolute top-3 w-4 h-4 text-gray-400 ${isRTL ? 'right-3' : 'left-3'}`} />
+        <CardHeader>
+          <CardTitle className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <span>Resource Library</span>
+            {showCreateButton && (
+              <Button onClick={() => setShowCreateModal(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Resource
+              </Button>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className={`flex flex-col md:flex-row gap-4 items-center ${isRTL ? 'md:flex-row-reverse' : ''}`}>
+            <div className={`flex-1 relative ${isRTL ? 'ml-4' : 'mr-4'}`}>
+              <Search className={`absolute top-3 h-4 w-4 text-gray-400 ${isRTL ? 'right-3' : 'left-3'}`} />
               <Input
-                type="text"
                 placeholder="Search resources..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className={`${isRTL ? 'pr-10' : 'pl-10'}`}
+                className={isRTL ? 'pr-10' : 'pl-10'}
               />
             </div>
             
             <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger>
+              <SelectTrigger className="w-48">
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                {Object.entries(RESOURCE_TYPE_CONFIG).map(([key, config]) => (
-                  <SelectItem key={key} value={key}>
-                    {config.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Levels" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Levels</SelectItem>
-                {Object.entries(RESOURCE_DIFFICULTY_CONFIG).map(([key, config]) => (
-                  <SelectItem key={key} value={key}>
-                    {config.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {DEFAULT_RESOURCE_CATEGORIES.map((category) => (
-                  <SelectItem key={category.name} value={category.name}>
-                    {category.name}
-                  </SelectItem>
-                ))}
+                <SelectItem value="file">Files</SelectItem>
+                <SelectItem value="link">Links</SelectItem>
+                <SelectItem value="video">Videos</SelectItem>
+                <SelectItem value="document">Documents</SelectItem>
+                <SelectItem value="pdf">PDFs</SelectItem>
               </SelectContent>
             </Select>
 
@@ -399,7 +416,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
       {filteredResources.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <div className="w-16 h-16 bg-gradient-lavender rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <BookOpen className="w-8 h-8 text-white" />
             </div>
             <h3 className="text-xl font-semibold mb-2">
@@ -431,10 +448,7 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
               className={`hover:shadow-lg transition-all duration-300 cursor-pointer ${
                 viewMode === 'list' ? 'flex flex-row' : ''
               }`}
-              onClick={() => {
-                trackResourceAccess(resource.id, 'view');
-                onResourceSelect?.(resource);
-              }}
+              onClick={() => onResourceSelect?.(resource)}
             >
               <CardContent className={`p-6 ${viewMode === 'list' ? 'flex-1' : ''}`}>
                 {/* Header */}
@@ -444,15 +458,17 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
                       {getTypeIcon(resource.type)}
                     </div>
                     <Badge variant="secondary" className={getTypeColorClasses(resource.type)}>
-                      {RESOURCE_TYPE_CONFIG[resource.type].label}
+                      {getTypeLabel(resource.type)}
                     </Badge>
                   </div>
                   
                   <div className={`flex items-center space-x-2 ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                    <Badge variant="outline" className={getDifficultyColorClasses(resource.difficulty)}>
-                      {RESOURCE_DIFFICULTY_CONFIG[resource.difficulty].label}
-                    </Badge>
-                    {profile?.role === 'coach' && resource.authorId === profile.id && (
+                    {resource.is_public && (
+                      <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+                        Public
+                      </Badge>
+                    )}
+                    {profile?.role === 'coach' && resource.coach_id === profile.id && (
                       <div className={`flex space-x-1 ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
                         <Button
                           variant="ghost"
@@ -482,34 +498,23 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
                 {/* Content */}
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold line-clamp-2">{resource.title}</h3>
-                  <p className="text-gray-600 text-sm line-clamp-3">{resource.description}</p>
+                  {resource.description && (
+                    <p className="text-gray-600 text-sm line-clamp-3">{resource.description}</p>
+                  )}
                   
                   {/* Meta info */}
                   <div className={`flex items-center justify-between text-xs text-gray-500 ${isRTL ? 'flex-row-reverse' : ''}`}>
                     <div className={`flex items-center space-x-4 ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                      {resource.duration && (
+                      {resource.file_size && (
                         <div className={`flex items-center space-x-1 ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                          <Clock className="w-3 h-3" />
-                          <span>{resource.duration}</span>
+                          <File className="w-3 h-3" />
+                          <span>{formatFileSize(resource.file_size)}</span>
                         </div>
                       )}
                       <div className={`flex items-center space-x-1 ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                        <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                        <span>{resource.rating.toFixed(1)}</span>
+                        <Clock className="w-3 h-3" />
+                        <span>{formatDate(resource.created_at)}</span>
                       </div>
-                      <div className={`flex items-center space-x-1 ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                        <Eye className="w-3 h-3" />
-                        <span>{resource.viewCount}</span>
-                      </div>
-                      <div className={`flex items-center space-x-1 ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                        <Download className="w-3 h-3" />
-                        <span>{resource.downloadCount}</span>
-                      </div>
-                    </div>
-                    
-                    <div className={`flex items-center space-x-1 ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                      <User className="w-3 h-3" />
-                      <span>{resource.authorName}</span>
                     </div>
                   </div>
 
@@ -528,18 +533,6 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
                       )}
                     </div>
                   )}
-
-                  {/* Categories */}
-                  {resource.categories.length > 0 && (
-                    <div className={`flex flex-wrap gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      {resource.categories.slice(0, 2).map((category, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
-                          <Folder className="w-3 h-3 mr-1" />
-                          {category}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>
@@ -547,129 +540,110 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
         </div>
       )}
 
-      {/* Create/Edit Modal */}
-      <Dialog open={showCreateModal || showEditModal} onOpenChange={(open) => {
+      {/* Create Modal */}
+      <Dialog open={showCreateModal} onOpenChange={(open) => {
         if (!open) {
           setShowCreateModal(false);
-          setShowEditModal(false);
-          resetForm();
+          resetUploadForm();
+          resetLinkForm();
         }
       }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {selectedResource ? 'Edit Resource' : 'Create New Resource'}
-            </DialogTitle>
+            <DialogTitle>Create New Resource</DialogTitle>
             <DialogDescription>
-              {selectedResource 
-                ? 'Update the resource information below.'
-                : 'Fill in the details to create a new resource.'
-              }
+              Add a new resource by uploading a file or providing a link.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <Tabs defaultValue="basic" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                <TabsTrigger value="content">Content</TabsTrigger>
-                <TabsTrigger value="settings">Settings</TabsTrigger>
-              </TabsList>
+          <Tabs value={createMode} onValueChange={(value) => setCreateMode(value as 'upload' | 'link')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="upload">Upload File</TabsTrigger>
+              <TabsTrigger value="link">Add Link</TabsTrigger>
+            </TabsList>
 
-              <TabsContent value="basic" className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Title *</Label>
-                    <Input
-                      id="title"
-                      value={formData.title}
-                      onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Enter resource title"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="type">Type *</Label>
-                    <Select 
-                      value={formData.type} 
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as Resource['type'] }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(RESOURCE_TYPE_CONFIG).map(([key, config]) => (
-                          <SelectItem key={key} value={key}>
-                            {config.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
+            <TabsContent value="upload">
+              <form onSubmit={handleUploadSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description *</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Describe what this resource is about"
-                    rows={3}
+                  <Label htmlFor="upload-title">Title *</Label>
+                  <Input
+                    id="upload-title"
+                    value={uploadFormData.title}
+                    onChange={(e) => setUploadFormData(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Enter resource title"
                     required
                   />
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="difficulty">Difficulty Level</Label>
-                    <Select 
-                      value={formData.difficulty} 
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, difficulty: value as Resource['difficulty'] }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select difficulty" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(RESOURCE_DIFFICULTY_CONFIG).map(([key, config]) => (
-                          <SelectItem key={key} value={key}>
-                            {config.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="duration">Duration</Label>
-                    <Input
-                      id="duration"
-                      value={formData.duration}
-                      onChange={(e) => setFormData(prev => ({ ...prev, duration: e.target.value }))}
-                      placeholder="e.g., 15 min read, 30 min"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="upload-description">Description</Label>
+                  <Textarea
+                    id="upload-description"
+                    value={uploadFormData.description}
+                    onChange={(e) => setUploadFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Describe what this resource is about"
+                    rows={3}
+                  />
                 </div>
 
-                {/* Tags */}
                 <div className="space-y-2">
-                  <Label htmlFor="tags">Tags</Label>
-                  <Input
-                    id="tags"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={handleAddTag}
-                    placeholder="Type a tag and press Enter"
+                  <Label htmlFor="upload-type">Type</Label>
+                  <Select 
+                    value={uploadFormData.type} 
+                    onValueChange={(value) => setUploadFormData(prev => ({ ...prev, type: value as Exclude<Resource['type'], 'link'> }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="file">File</SelectItem>
+                      <SelectItem value="video">Video</SelectItem>
+                      <SelectItem value="document">Document</SelectItem>
+                      <SelectItem value="pdf">PDF</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>File Upload *</Label>
+                  <SimpleFileUploader
+                    onUploadComplete={handleFileUpload}
+                    maxSize={50 * 1024 * 1024} // 50MB
                   />
-                  {formData.tags && formData.tags.length > 0 && (
+                  {uploadedFile && (
+                    <div className="text-sm text-green-600">
+                      ✓ File ready: {uploadedFile.name} ({formatFileSize(uploadedFile.size)})
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="upload-tags">Tags</Label>
+                  <div className="flex space-x-2">
+                    <Input
+                      id="upload-tags"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      placeholder="Add a tag"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addTag('upload');
+                        }
+                      }}
+                    />
+                    <Button type="button" onClick={() => addTag('upload')}>
+                      Add
+                    </Button>
+                  </div>
+                  {uploadFormData.tags && uploadFormData.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {formData.tags.map((tag, index) => (
+                      {uploadFormData.tags.map((tag, index) => (
                         <Badge key={index} variant="secondary" className="flex items-center gap-1">
                           {tag}
                           <X 
                             className="w-3 h-3 cursor-pointer" 
-                            onClick={() => handleRemoveTag(tag)}
+                            onClick={() => removeTag(tag, 'upload')}
                           />
                         </Badge>
                       ))}
@@ -677,145 +651,273 @@ export const ResourceManager: React.FC<ResourceManagerProps> = ({
                   )}
                 </div>
 
-                {/* Categories */}
-                <div className="space-y-2">
-                  <Label>Categories</Label>
-                  <div className="grid gap-2 md:grid-cols-2">
-                    {DEFAULT_RESOURCE_CATEGORIES.map((category) => (
-                      <div key={category.name} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id={`category-${category.name}`}
-                          checked={formData.categories?.includes(category.name) || false}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setFormData(prev => ({
-                                ...prev,
-                                categories: [...(prev.categories || []), category.name]
-                              }));
-                            } else {
-                              setFormData(prev => ({
-                                ...prev,
-                                categories: prev.categories?.filter(c => c !== category.name) || []
-                              }));
-                            }
-                          }}
-                          className="rounded border-gray-300"
-                        />
-                        <Label htmlFor={`category-${category.name}`} className="text-sm">
-                          {category.name}
-                        </Label>
-                      </div>
-                    ))}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="upload-public">Public Resource</Label>
+                    <p className="text-sm text-gray-500">
+                      Make this resource visible to all users
+                    </p>
                   </div>
+                  <Switch
+                    id="upload-public"
+                    checked={uploadFormData.is_public}
+                    onCheckedChange={(checked) => setUploadFormData(prev => ({ ...prev, is_public: checked }))}
+                  />
                 </div>
-              </TabsContent>
 
-              <TabsContent value="content" className="space-y-4">
+                <div className={`flex space-x-4 pt-4 border-t ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowCreateModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={creating || !uploadedFile}
+                    className="flex-1"
+                  >
+                    {creating ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Resource
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="link">
+              <form onSubmit={handleLinkSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="content">Content</Label>
+                  <Label htmlFor="link-title">Title *</Label>
+                  <Input
+                    id="link-title"
+                    value={linkFormData.title}
+                    onChange={(e) => setLinkFormData(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Enter resource title"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="link-url">Link URL *</Label>
+                  <Input
+                    id="link-url"
+                    type="url"
+                    value={linkFormData.link_url}
+                    onChange={(e) => setLinkFormData(prev => ({ ...prev, link_url: e.target.value }))}
+                    placeholder="https://example.com/resource"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="link-description">Description</Label>
                   <Textarea
-                    id="content"
-                    value={formData.content}
-                    onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                    placeholder="Enter the main content of the resource"
-                    rows={8}
+                    id="link-description"
+                    value={linkFormData.description}
+                    onChange={(e) => setLinkFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Describe what this resource is about"
+                    rows={3}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>File Upload</Label>
-                  <SimpleFileUploader
-                    onUploadComplete={handleFileUpload}
-                    maxSize={50 * 1024 * 1024} // 50MB
-                  />
-                  {uploadedFile && (
-                    <div className="text-sm text-green-600">
-                      ✓ File uploaded: {uploadedFile.name}
+                  <Label htmlFor="link-tags">Tags</Label>
+                  <div className="flex space-x-2">
+                    <Input
+                      id="link-tags"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      placeholder="Add a tag"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addTag('link');
+                        }
+                      }}
+                    />
+                    <Button type="button" onClick={() => addTag('link')}>
+                      Add
+                    </Button>
+                  </div>
+                  {linkFormData.tags && linkFormData.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {linkFormData.tags.map((tag, index) => (
+                        <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                          {tag}
+                          <X 
+                            className="w-3 h-3 cursor-pointer" 
+                            onClick={() => removeTag(tag, 'link')}
+                          />
+                        </Badge>
+                      ))}
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="fileUrl">File URL (if external)</Label>
-                  <Input
-                    id="fileUrl"
-                    value={formData.fileUrl}
-                    onChange={(e) => setFormData(prev => ({ ...prev, fileUrl: e.target.value }))}
-                    placeholder="https://example.com/resource.pdf"
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="link-public">Public Resource</Label>
+                    <p className="text-sm text-gray-500">
+                      Make this resource visible to all users
+                    </p>
+                  </div>
+                  <Switch
+                    id="link-public"
+                    checked={linkFormData.is_public}
+                    onCheckedChange={(checked) => setLinkFormData(prev => ({ ...prev, is_public: checked }))}
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="thumbnailUrl">Thumbnail URL</Label>
-                  <Input
-                    id="thumbnailUrl"
-                    value={formData.thumbnailUrl}
-                    onChange={(e) => setFormData(prev => ({ ...prev, thumbnailUrl: e.target.value }))}
-                    placeholder="https://example.com/thumbnail.jpg"
-                  />
+                <div className={`flex space-x-4 pt-4 border-t ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowCreateModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={creating}
+                    className="flex-1"
+                  >
+                    {creating ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Link className="w-4 h-4 mr-2" />
+                        Add Link
+                      </>
+                    )}
+                  </Button>
                 </div>
-              </TabsContent>
+              </form>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
 
-              <TabsContent value="settings" className="space-y-4">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="isPublic">Public Resource</Label>
-                      <p className="text-sm text-gray-500">
-                        Make this resource visible to all users
-                      </p>
-                    </div>
-                    <Switch
-                      id="isPublic"
-                      checked={formData.isPublic}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isPublic: checked }))}
-                    />
-                  </div>
+      {/* Edit Modal */}
+      <Dialog open={showEditModal} onOpenChange={(open) => {
+        if (!open) {
+          setShowEditModal(false);
+          resetEditForm();
+        }
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Resource</DialogTitle>
+            <DialogDescription>
+              Update the resource information below.
+            </DialogDescription>
+          </DialogHeader>
 
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="isPremium">Premium Resource</Label>
-                      <p className="text-sm text-gray-500">
-                        Require premium access to view this resource
-                      </p>
-                    </div>
-                    <Switch
-                      id="isPremium"
-                      checked={formData.isPremium}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isPremium: checked }))}
-                    />
-                  </div>
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Title *</Label>
+              <Input
+                id="edit-title"
+                value={updateFormData.title || ''}
+                onChange={(e) => setUpdateFormData(prev => ({ ...prev, title: e.target.value }))}
+                placeholder="Enter resource title"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={updateFormData.description || ''}
+                onChange={(e) => setUpdateFormData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Describe what this resource is about"
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-tags">Tags</Label>
+              <div className="flex space-x-2">
+                <Input
+                  id="edit-tags"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  placeholder="Add a tag"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addTag('edit');
+                    }
+                  }}
+                />
+                <Button type="button" onClick={() => addTag('edit')}>
+                  Add
+                </Button>
+              </div>
+              {updateFormData.tags && updateFormData.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {updateFormData.tags.map((tag, index) => (
+                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                      {tag}
+                      <X 
+                        className="w-3 h-3 cursor-pointer" 
+                        onClick={() => removeTag(tag, 'edit')}
+                      />
+                    </Badge>
+                  ))}
                 </div>
-              </TabsContent>
-            </Tabs>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="edit-public">Public Resource</Label>
+                <p className="text-sm text-gray-500">
+                  Make this resource visible to all users
+                </p>
+              </div>
+              <Switch
+                id="edit-public"
+                checked={updateFormData.is_public || false}
+                onCheckedChange={(checked) => setUpdateFormData(prev => ({ ...prev, is_public: checked }))}
+              />
+            </div>
 
             <div className={`flex space-x-4 pt-4 border-t ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setShowEditModal(false);
-                  resetForm();
-                }}
+                onClick={() => setShowEditModal(false)}
               >
                 Cancel
               </Button>
               <Button 
                 type="submit" 
-                disabled={creating || updating}
+                disabled={updating}
                 className="flex-1"
               >
-                {creating || updating ? (
+                {updating ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    {selectedResource ? 'Updating...' : 'Creating...'}
+                    Updating...
                   </>
                 ) : (
                   <>
                     <Save className="w-4 h-4 mr-2" />
-                    {selectedResource ? 'Update Resource' : 'Create Resource'}
+                    Update Resource
                   </>
                 )}
               </Button>

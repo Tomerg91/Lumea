@@ -34,6 +34,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
+import { useMilestones } from '../../hooks/useMilestones';
 import {
   Milestone,
   MilestoneCategory,
@@ -61,10 +62,20 @@ const MilestoneManager: React.FC<MilestoneManagerProps> = ({
   onMilestoneDelete
 }) => {
   const { t } = useTranslation();
-  const [milestones, setMilestones] = useState<Milestone[]>([]);
-  const [categories, setCategories] = useState<MilestoneCategory[]>([]);
-  const [stats, setStats] = useState<MilestoneStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const {
+    milestones,
+    categories,
+    stats,
+    loading,
+    creating,
+    updating,
+    deleting,
+    createMilestone,
+    updateMilestone,
+    deleteMilestone,
+    searchMilestones
+  } = useMilestones(clientId);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedPriority, setSelectedPriority] = useState<string>('all');
@@ -84,178 +95,43 @@ const MilestoneManager: React.FC<MilestoneManagerProps> = ({
     tags: []
   });
 
-  // Mock data for development
-  useEffect(() => {
-    const mockCategories: MilestoneCategory[] = DEFAULT_MILESTONE_CATEGORIES.map((cat, index) => ({
-      ...cat,
-      id: `cat-${index + 1}`,
-      coachId,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }));
-
-    const mockMilestones: Milestone[] = [
-      {
-        id: '1',
-        title: 'Improve Public Speaking Skills',
-        description: 'Develop confidence and skills for presentations and public speaking',
-        targetDate: '2025-03-15',
-        priority: 'high',
-        status: 'active',
-        clientId: clientId || 'client-1',
-        coachId,
-        categoryId: 'cat-2',
-        category: mockCategories[1], // Career Development
-        notes: 'Client has upcoming presentation at work',
-        tags: ['presentation', 'confidence', 'career'],
-        progress: [
-          {
-            id: 'prog-1',
-            milestoneId: '1',
-            progressPercent: 60,
-            notes: 'Completed Toastmasters introduction session',
-            recordedBy: coachId,
-            recordedAt: '2025-01-15T10:00:00Z',
-            createdAt: '2025-01-15T10:00:00Z',
-            updatedAt: '2025-01-15T10:00:00Z'
-          }
-        ],
-        createdAt: '2025-01-01T10:00:00Z',
-        updatedAt: '2025-01-15T10:00:00Z'
-      },
-      {
-        id: '2',
-        title: 'Establish Morning Routine',
-        description: 'Create and maintain a healthy morning routine for better productivity',
-        targetDate: '2025-02-28',
-        priority: 'medium',
-        status: 'active',
-        clientId: clientId || 'client-1',
-        coachId,
-        categoryId: 'cat-3',
-        category: mockCategories[2], // Health & Wellness
-        notes: 'Focus on sleep schedule and morning habits',
-        tags: ['routine', 'productivity', 'health'],
-        progress: [
-          {
-            id: 'prog-2',
-            milestoneId: '2',
-            progressPercent: 30,
-            notes: 'Week 1: Successfully waking up at 6:30 AM',
-            recordedBy: coachId,
-            recordedAt: '2025-01-10T09:00:00Z',
-            createdAt: '2025-01-10T09:00:00Z',
-            updatedAt: '2025-01-10T09:00:00Z'
-          }
-        ],
-        createdAt: '2025-01-01T10:00:00Z',
-        updatedAt: '2025-01-10T09:00:00Z'
-      },
-      {
-        id: '3',
-        title: 'Build Emergency Fund',
-        description: 'Save $10,000 for financial security and peace of mind',
-        targetDate: '2025-12-31',
-        priority: 'medium',
-        status: 'active',
-        clientId: clientId || 'client-1',
-        coachId,
-        categoryId: 'cat-6',
-        category: mockCategories[5], // Financial
-        notes: 'Target: $1,000 per month savings',
-        tags: ['savings', 'financial-security', 'emergency-fund'],
-        progress: [
-          {
-            id: 'prog-3',
-            milestoneId: '3',
-            progressPercent: 25,
-            notes: 'Saved $2,500 so far',
-            recordedBy: coachId,
-            recordedAt: '2025-01-18T14:00:00Z',
-            createdAt: '2025-01-18T14:00:00Z',
-            updatedAt: '2025-01-18T14:00:00Z'
-          }
-        ],
-        createdAt: '2025-01-01T10:00:00Z',
-        updatedAt: '2025-01-18T14:00:00Z'
-      }
-    ];
-
-    const mockStats: MilestoneStats = {
-      total: mockMilestones.length,
-      active: mockMilestones.filter(m => m.status === 'active').length,
-      completed: mockMilestones.filter(m => m.status === 'completed').length,
-      paused: mockMilestones.filter(m => m.status === 'paused').length,
-      cancelled: mockMilestones.filter(m => m.status === 'cancelled').length,
-      overdue: mockMilestones.filter(m => 
-        m.targetDate && new Date(m.targetDate) < new Date() && m.status !== 'completed'
-      ).length,
-      completionRate: 75,
-      averageProgress: mockMilestones.reduce((acc, m) => {
-        const latestProgress = m.progress[m.progress.length - 1];
-        return acc + (latestProgress?.progressPercent || 0);
-      }, 0) / mockMilestones.length
-    };
-
-    setCategories(mockCategories);
-    setMilestones(mockMilestones);
-    setStats(mockStats);
-    setLoading(false);
-  }, [clientId, coachId]);
-
   // Filter milestones based on search and filters
-  const filteredMilestones = milestones.filter(milestone => {
-    const matchesSearch = milestone.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         milestone.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         milestone.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesStatus = selectedStatus === 'all' || milestone.status === selectedStatus;
-    const matchesPriority = selectedPriority === 'all' || milestone.priority === selectedPriority;
-    const matchesCategory = selectedCategory === 'all' || milestone.categoryId === selectedCategory;
-
-    return matchesSearch && matchesStatus && matchesPriority && matchesCategory;
+  const filteredMilestones = searchMilestones({
+    search: searchTerm,
+    status: selectedStatus !== 'all' ? [selectedStatus] : undefined,
+    priority: selectedPriority !== 'all' ? [selectedPriority] : undefined,
+    categoryId: selectedCategory !== 'all' ? selectedCategory : undefined,
+    clientId: clientId
   });
 
   const handleCreateMilestone = async () => {
-    // TODO: API call to create milestone
-    console.log('Creating milestone:', formData);
-    
-    const newMilestone: Milestone = {
-      id: `milestone-${Date.now()}`,
-      ...formData,
-      status: 'active',
-      progress: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    setMilestones(prev => [...prev, newMilestone]);
-    onMilestoneCreate?.(newMilestone);
-    setIsCreateDialogOpen(false);
-    resetForm();
+    try {
+      const newMilestone = await createMilestone(formData);
+      onMilestoneCreate?.(newMilestone);
+      setIsCreateDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      console.error('Error creating milestone:', error);
+    }
   };
 
   const handleUpdateMilestone = async (milestone: Milestone, updates: UpdateMilestoneRequest) => {
-    // TODO: API call to update milestone
-    console.log('Updating milestone:', milestone.id, updates);
-    
-    const updatedMilestone = {
-      ...milestone,
-      ...updates,
-      updatedAt: new Date().toISOString()
-    };
-
-    setMilestones(prev => prev.map(m => m.id === milestone.id ? updatedMilestone : m));
-    onMilestoneUpdate?.(updatedMilestone);
-    setEditingMilestone(null);
+    try {
+      const updatedMilestone = await updateMilestone(milestone.id, updates);
+      onMilestoneUpdate?.(updatedMilestone);
+      setEditingMilestone(null);
+    } catch (error) {
+      console.error('Error updating milestone:', error);
+    }
   };
 
   const handleDeleteMilestone = async (milestoneId: string) => {
-    // TODO: API call to delete milestone
-    console.log('Deleting milestone:', milestoneId);
-    
-    setMilestones(prev => prev.filter(m => m.id !== milestoneId));
-    onMilestoneDelete?.(milestoneId);
+    try {
+      await deleteMilestone(milestoneId);
+      onMilestoneDelete?.(milestoneId);
+    } catch (error) {
+      console.error('Error deleting milestone:', error);
+    }
   };
 
   const resetForm = () => {

@@ -28,6 +28,7 @@ const MobileAppPage = lazy(() => import('./pages/MobileAppPage'));
 const MobileSettingsPage = lazy(() => import('./pages/MobileSettingsPage'));
 const MobilePerformancePage = lazy(() => import('./pages/MobilePerformancePage'));
 const MobileDashboardPage = lazy(() => import('./pages/MobileDashboardPage'));
+const AISettingsPage = lazy(() => import('./pages/AISettingsPage'));
 
 // Admin components - only load for admin users
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
@@ -302,6 +303,14 @@ const App: React.FC = () => {
                 element={
                   <RoleProtectedRoute allowedRoles={['coach']}>
                     <MobileDashboardPage />
+                  </RoleProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/coach/ai-settings" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['coach']}>
+                    <AISettingsPage />
                   </RoleProtectedRoute>
                 } 
               />

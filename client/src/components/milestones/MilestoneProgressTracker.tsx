@@ -22,6 +22,7 @@ import { Badge } from '../ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Input } from '../ui/input';
+import { useMilestones } from '../../hooks/useMilestones';
 import {
   Milestone,
   MilestoneProgress,
@@ -46,6 +47,7 @@ const MilestoneProgressTracker: React.FC<MilestoneProgressTrackerProps> = ({
   currentUserId
 }) => {
   const { t } = useTranslation();
+  const { recordProgress, updateMilestone } = useMilestones();
   const [isProgressDialogOpen, setIsProgressDialogOpen] = useState(false);
   const [progressForm, setProgressForm] = useState<RecordMilestoneProgressRequest>({
     milestoneId: milestone.id,
@@ -59,53 +61,40 @@ const MilestoneProgressTracker: React.FC<MilestoneProgressTrackerProps> = ({
   const currentProgress = latestProgress?.progressPercent || 0;
   
   const handleProgressSubmit = async () => {
-    // TODO: API call to record milestone progress
-    console.log('Recording progress:', progressForm);
-    
-    const newProgress: MilestoneProgress = {
-      id: `progress-${Date.now()}`,
-      milestoneId: milestone.id,
-      progressPercent: progressForm.progressPercent,
-      notes: progressForm.notes,
-      evidence: progressForm.evidence,
-      sessionId: progressForm.sessionId || undefined,
-      recordedBy: currentUserId,
-      recordedAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    // Auto-complete milestone if progress reaches 100%
-    if (progressForm.progressPercent >= 100 && milestone.status !== 'completed') {
-      const updatedMilestone = {
-        ...milestone,
-        status: 'completed' as const,
-        completedAt: new Date().toISOString(),
-        progress: [...milestone.progress, newProgress]
-      };
-      onMilestoneUpdate(updatedMilestone);
-    } else {
+    try {
+      const newProgress = await recordProgress(progressForm);
       onProgressUpdate(newProgress);
-    }
 
-    setIsProgressDialogOpen(false);
-    setProgressForm({
-      milestoneId: milestone.id,
-      progressPercent: 0,
-      notes: '',
-      evidence: '',
-      sessionId: ''
-    });
+      // Auto-complete milestone if progress reaches 100%
+      if (progressForm.progressPercent >= 100 && milestone.status !== 'completed') {
+        const updatedMilestone = await updateMilestone(milestone.id, {
+          status: 'completed'
+        });
+        onMilestoneUpdate(updatedMilestone);
+      }
+
+      setIsProgressDialogOpen(false);
+      setProgressForm({
+        milestoneId: milestone.id,
+        progressPercent: 0,
+        notes: '',
+        evidence: '',
+        sessionId: ''
+      });
+    } catch (error) {
+      console.error('Error recording progress:', error);
+    }
   };
 
-  const handleStatusChange = (newStatus: string) => {
-    const updatedMilestone = {
-      ...milestone,
-      status: newStatus as 'active' | 'completed' | 'paused' | 'cancelled',
-      completedAt: newStatus === 'completed' ? new Date().toISOString() : milestone.completedAt,
-      updatedAt: new Date().toISOString()
-    };
-    onMilestoneUpdate(updatedMilestone);
+  const handleStatusChange = async (newStatus: string) => {
+    try {
+      const updatedMilestone = await updateMilestone(milestone.id, {
+        status: newStatus as 'active' | 'completed' | 'paused' | 'cancelled'
+      });
+      onMilestoneUpdate(updatedMilestone);
+    } catch (error) {
+      console.error('Error updating milestone status:', error);
+    }
   };
 
   const getProgressTrend = () => {
