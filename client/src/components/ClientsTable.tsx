@@ -2,6 +2,7 @@ import React from 'react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 export type Client = {
   _id: string;
@@ -20,6 +21,7 @@ interface ClientsTableProps {
 
 const ClientsTable: React.FC<ClientsTableProps> = ({ clients, onInviteClick, isLoading }) => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const isRTL = i18n.language === 'he';
   const locale = isRTL ? he : undefined;
 
@@ -33,6 +35,10 @@ const ClientsTable: React.FC<ClientsTableProps> = ({ clients, onInviteClick, isL
       console.error('Error formatting date:', error);
       return t('clients.invalidDate');
     }
+  };
+
+  const handleViewDetails = (clientId: string) => {
+    navigate(`/coach/clients/${clientId}`);
   };
 
   if (isLoading) {
@@ -127,7 +133,10 @@ const ClientsTable: React.FC<ClientsTableProps> = ({ clients, onInviteClick, isL
                 <div className="text-gray-500">{formatDate(client.lastSessionDate)}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button className="text-lumea-primary hover:text-lumea-primary-dark">
+                <button 
+                  onClick={() => handleViewDetails(client._id)}
+                  className="text-lumea-primary hover:text-lumea-primary-dark transition-colors"
+                >
                   {t('clients.viewDetails')}
                 </button>
               </td>

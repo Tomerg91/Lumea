@@ -15,6 +15,7 @@ const AuthPage = lazy(() => import('./pages/Auth'));
 // Dashboard components - load on demand
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ClientsPage = lazy(() => import('./pages/Dashboard/ClientsPage'));
+const ClientDetailPage = lazy(() => import('./pages/ClientDetailPage'));
 const SessionsPage = lazy(() => import('./pages/SessionsPage'));
 const SessionDetail = lazy(() => import('./pages/SessionDetail'));
 const ReflectionsPage = lazy(() => import('./pages/ReflectionsPage'));
@@ -216,6 +217,14 @@ const App: React.FC = () => {
                 element={
                   <RoleProtectedRoute allowedRoles={['coach']}>
                     <ClientsPage />
+                  </RoleProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/coach/clients/:clientId" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['coach']}>
+                    <ClientDetailPage />
                   </RoleProtectedRoute>
                 } 
               />

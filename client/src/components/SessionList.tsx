@@ -3,6 +3,7 @@ import { format, isToday, isYesterday, isSameWeek, isSameMonth, differenceInHour
 import { he } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { FileText } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Client } from './ClientsTable';
 
@@ -245,6 +246,16 @@ const SessionList: React.FC<SessionListProps> = ({ sessions, isLoading, onCreate
     navigate(`${basePath}/${sessionId}`);
   };
 
+  const handleAddNote = (sessionId: string, clientId: string, clientName: string) => {
+    // Navigate to coach notes with pre-filled session and client context
+    const params = new URLSearchParams({
+      sessionId,
+      clientId,
+      clientName
+    });
+    navigate(`/coach/notes?${params.toString()}`);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -331,6 +342,20 @@ const SessionList: React.FC<SessionListProps> = ({ sessions, isLoading, onCreate
                       >
                         {t('sessions.viewDetails')}
                       </button>
+                      {/* Show Add Note button for coaches */}
+                      {userRole === 'coach' && (
+                        <button
+                          onClick={() => handleAddNote(
+                            session._id, 
+                            session.client._id, 
+                            `${session.client.firstName} ${session.client.lastName}`
+                          )}
+                          className="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-sm font-medium flex items-center gap-1"
+                        >
+                          <FileText className="h-3 w-3" />
+                          Add Note
+                        </button>
+                      )}
                       {/* Show status change controls only for coaches */}
                       {userRole === 'coach' && onStatusChange && (
                         <StatusChangeDropdown

@@ -16,7 +16,8 @@ import {
   MoreVertical,
   ChevronRight,
   RefreshCw,
-  Plus
+  Plus,
+  FileText
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -185,6 +186,19 @@ const MobileSessionCard: React.FC<{
   
   // Quick actions for coaches
   const quickActions = userRole === 'coach' ? [
+    {
+      label: 'Add Note',
+      icon: <FileText className="w-4 h-4" />,
+      action: () => {
+        const params = new URLSearchParams({
+          sessionId: session._id,
+          clientId: session.client._id,
+          clientName: `${session.client.firstName} ${session.client.lastName}`
+        });
+        navigate(`/coach/notes?${params.toString()}`);
+      },
+      color: 'bg-blue-500',
+    },
     {
       label: 'Call',
       icon: <Phone className="w-4 h-4" />,
