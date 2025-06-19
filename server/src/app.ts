@@ -21,9 +21,13 @@ import clientRoutes from './routes/clientRoutes';
 import feedbackRoutes from './routes/feedbackRoutes';
 import analyticsRoutes from './routes/analytics';
 import healthRoutes from './routes/health';
+import operationsRoutes from './routes/operations';
+import supportRoutes from './routes/support';
 
 // Import services
 import { feedbackTriggerService } from './services/feedbackTriggerService';
+import { QueueService } from './services/queueService';
+import { BackupService } from './services/backupService';
 
 // Load environment variables
 dotenv.config();
@@ -35,6 +39,10 @@ validateEnvironmentOrExit();
 // Create Express app
 const app = express();
 
+// Initialize services
+let queueService: QueueService;
+let backupService: BackupService;
+
 // Connect to MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/satyacoaching';
 
@@ -45,6 +53,29 @@ mongoose
 
     // Create database indexes for better performance
     await createDatabaseIndexes();
+
+    // Initialize queue service for background processing
+    try {
+      queueService = QueueService.getInstance();
+      await queueService.initialize();
+      logger.info('Queue service initialized successfully');
+
+      // Schedule recurring jobs
+      await queueService.scheduleRecurringJobs();
+      logger.info('Recurring background jobs scheduled');
+    } catch (error) {
+      logger.error('Failed to initialize queue service', { error: error instanceof Error ? error.message : error });
+      // Continue without queue service for now
+    }
+
+    // Initialize backup service
+    try {
+      backupService = BackupService.getInstance();
+      logger.info('Backup service initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize backup service', { error: error instanceof Error ? error.message : error });
+      // Continue without backup service for now
+    }
 
     // Initialize feedback trigger service
     try {
@@ -105,6 +136,8 @@ app.use('/api/session-templates', sessionTemplateRoutes);
 app.use('/api', clientRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/operations', operationsRoutes);
+app.use('/api/support', supportRoutes);
 app.use('/', healthRoutes); // Health checks at root level (no /api prefix)
 
 // 404 handler
@@ -125,14 +158,36 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 });
 
 // Graceful shutdown handler
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, shutting down gracefully...');
+  
+  // Shutdown services in order
+  try {
+    if (queueService) {
+      await queueService.shutdown();
+      logger.info('Queue service shut down successfully');
+    }
+  } catch (error) {
+    logger.error('Error shutting down queue service', { error });
+  }
+
   feedbackTriggerService.shutdown();
   process.exit(0);
 });
 
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   logger.info('SIGINT received, shutting down gracefully...');
+  
+  // Shutdown services in order
+  try {
+    if (queueService) {
+      await queueService.shutdown();
+      logger.info('Queue service shut down successfully');
+    }
+  } catch (error) {
+    logger.error('Error shutting down queue service', { error });
+  }
+
   feedbackTriggerService.shutdown();
   process.exit(0);
 });
