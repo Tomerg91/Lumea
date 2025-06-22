@@ -302,11 +302,49 @@
         "id": 10,
         "title": "Translation Coverage Audit",
         "description": "Complete audit of all components for translation coverage",
-        "status": "pending",
+        "status": "done",
         "priority": "medium",
         "dependencies": [],
         "details": "Systematically review all components to ensure complete Hebrew and English translation coverage, identify missing translations.",
-        "testStrategy": "All text elements have translations, no missing translation keys, both languages display correctly"
+        "testStrategy": "All text elements have translations, no missing translation keys, both languages display correctly",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Analyze Current Translation Infrastructure",
+            "description": "Review existing translation setup, i18n configuration, and translation files",
+            "details": "Examine the current translation infrastructure including:\n- i18n configuration files\n- Translation key structure\n- Available language files (Hebrew/English)\n- Translation hook implementation\n- Language switching mechanism",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 10
+          },
+          {
+            "id": 2,
+            "title": "Audit Component Translation Coverage",
+            "description": "Systematically review all React components for missing translations",
+            "details": "Go through each component directory and identify:\n- Hard-coded English text that should be translated\n- Missing translation keys\n- Components not using the translation hook\n- Inconsistent translation key naming",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 10
+          },
+          {
+            "id": 3,
+            "title": "Hebrew Translation File Completeness",
+            "description": "Verify Hebrew translations exist for all English keys",
+            "details": "Compare English and Hebrew translation files to ensure:\n- All English keys have corresponding Hebrew translations\n- Hebrew translations are accurate and culturally appropriate\n- No missing or incomplete Hebrew translations\n- Proper RTL text formatting where needed",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 10
+          },
+          {
+            "id": 4,
+            "title": "Create Translation Coverage Report",
+            "description": "Generate comprehensive report of translation gaps and recommendations",
+            "details": "Create a detailed report documenting:\n- List of components with missing translations\n- Missing translation keys by component\n- Hebrew translation gaps\n- Prioritized action items for translation completion\n- Recommendations for translation workflow improvements",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 10
+          }
+        ]
       },
       {
         "id": 11,
@@ -386,7 +424,7 @@
       },
       "currentTag": "master",
       "created": "2025-06-22T10:38:44.462Z",
-      "updated": "2025-06-22T11:41:48.124Z"
+      "updated": "2025-06-22T11:54:08.421Z"
     }
   }
 }
