@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { DataRetentionService } from '../services/dataRetentionService';
 import DataRetentionPolicy from '../models/DataRetentionPolicy';
 import DeletionCertificate from '../models/DeletionCertificate';
-import { logger } from '../utils/logger';
+import logger from '../utils/logger';
 import { validationResult } from 'express-validator';
 
 export class DataRetentionController {

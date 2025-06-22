@@ -7,6 +7,9 @@ const router = express.Router();
 // Create a new reflection
 router.post('/', isAuthenticated, reflectionController.createReflection);
 
+// Get recent reflections for dashboard
+router.get('/recent', isAuthenticated, reflectionController.getRecentReflections);
+
 // Get all reflections (with optional session filter via query param)
 router.get('/', isAuthenticated, reflectionController.getReflections);
 
@@ -22,7 +25,8 @@ router.put('/:id', isAuthenticated, reflectionController.updateReflection);
 // Delete a reflection
 router.delete('/:id', isAuthenticated, reflectionController.deleteReflection);
 
+// TODO: Implement shareWithCoach method in reflectionController
 // Share reflection with coach
-router.post('/:id/share', isAuthenticated, reflectionController.shareWithCoach);
+// router.post('/:id/share', isAuthenticated, reflectionController.shareWithCoach);
 
 export default router;

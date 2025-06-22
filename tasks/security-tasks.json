@@ -1,0 +1,188 @@
+{
+  "metadata": {
+    "projectName": "Satya Coaching Security Remediation",
+    "version": "1.0.0",
+    "createdAt": "2025-01-27T14:08:00.000Z",
+    "lastUpdated": "2025-01-27T14:08:00.000Z"
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Fix Static IV Encryption Vulnerability",
+      "description": "Replace static IV usage in AES encryption with random IV generation for each encryption operation",
+      "status": "pending",
+      "priority": "critical",
+      "dependencies": [],
+      "details": "The current implementation uses a static IV which makes encryption deterministic and vulnerable to pattern analysis. This is a critical security flaw that could compromise all encrypted coach notes.",
+      "testStrategy": "Verify that each encryption operation generates a unique IV and that decryption works correctly with the stored IV",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create EncryptionService with random IV generation",
+          "description": "Implement a new encryption service that generates random IVs",
+          "status": "pending",
+          "details": "Create server/src/services/encryptionService.ts with proper random IV generation for each encryption operation"
+        },
+        {
+          "id": 2,
+          "title": "Update CoachNote model to store IV",
+          "description": "Modify the CoachNote schema to include encryptionIV field",
+          "status": "pending",
+          "details": "Add encryptionIV field to schema and update encryption/decryption methods"
+        },
+        {
+          "id": 3,
+          "title": "Create data migration script",
+          "description": "Migrate existing encrypted notes to use new encryption method",
+          "status": "pending",
+          "details": "Create migration script to re-encrypt existing notes with proper random IVs"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Remove Hardcoded Default Secrets",
+      "description": "Eliminate all hardcoded default secrets and credentials from the codebase",
+      "status": "pending",
+      "priority": "critical",
+      "dependencies": [],
+      "details": "Default JWT secrets and test passwords pose immediate security risks and must be removed",
+      "testStrategy": "Verify application fails to start without proper environment variables set",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Remove default JWT secrets",
+          "description": "Update auth config to require JWT secrets from environment",
+          "status": "pending",
+          "details": "Remove fallback default secrets in server/src/auth/config.ts"
+        },
+        {
+          "id": 2,
+          "title": "Remove hardcoded test passwords",
+          "description": "Update test files to require passwords from environment",
+          "status": "pending",
+          "details": "Remove default passwords in supabase/tests/rls.spec.ts"
+        },
+        {
+          "id": 3,
+          "title": "Add environment variable validation",
+          "description": "Implement startup validation for required secrets",
+          "status": "pending",
+          "details": "Add validation that fails fast if required environment variables are missing"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Fix CORS Configuration",
+      "description": "Secure CORS configuration to prevent cross-origin attacks",
+      "status": "pending",
+      "priority": "critical",
+      "dependencies": [],
+      "details": "Current CORS allows requests with no origin, enabling CSRF attacks",
+      "testStrategy": "Test that only allowed origins can make requests to the API",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Remove permissive origin allowance",
+          "description": "Remove the line that allows requests with no origin",
+          "status": "pending",
+          "details": "Update CORS configuration in server/src/index.ts"
+        },
+        {
+          "id": 2,
+          "title": "Implement strict origin validation",
+          "description": "Only allow specific origins based on environment",
+          "status": "pending",
+          "details": "Configure production and development origin allowlists"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Strengthen Password Requirements",
+      "description": "Implement strong password policy with complexity requirements",
+      "status": "pending",
+      "priority": "critical",
+      "dependencies": [],
+      "details": "Current 8-character minimum is insufficient for security",
+      "testStrategy": "Verify weak passwords are rejected and strong passwords are accepted",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Update password validation schema",
+          "description": "Implement 12+ character requirement with complexity rules",
+          "status": "pending",
+          "details": "Update Zod schema in auth routes to require strong passwords"
+        },
+        {
+          "id": 2,
+          "title": "Add password strength meter to frontend",
+          "description": "Provide visual feedback for password strength",
+          "status": "pending",
+          "details": "Implement password strength indicator in registration form"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Implement Comprehensive Input Validation",
+      "description": "Add proper input validation and sanitization across all endpoints",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [],
+      "details": "Prevent XSS, injection attacks, and data corruption through comprehensive input validation",
+      "testStrategy": "Test with malicious inputs to ensure they are properly sanitized or rejected"
+    },
+    {
+      "id": 6,
+      "title": "Secure Error Handling",
+      "description": "Implement secure error handling that doesn't leak system information",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [],
+      "details": "Current error messages may expose sensitive system information to attackers",
+      "testStrategy": "Verify error responses don't contain stack traces or system details in production"
+    },
+    {
+      "id": 7,
+      "title": "Enhanced Security Headers",
+      "description": "Implement comprehensive security headers including CSP",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [],
+      "details": "Add Content Security Policy and other security headers to prevent various attacks",
+      "testStrategy": "Use security header analyzers to verify proper implementation"
+    },
+    {
+      "id": 8,
+      "title": "Session Security Hardening",
+      "description": "Implement secure session configuration with proper settings",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [],
+      "details": "Current session configuration needs hardening against session attacks",
+      "testStrategy": "Test session security with various attack scenarios"
+    },
+    {
+      "id": 9,
+      "title": "File Upload Security",
+      "description": "Implement comprehensive file upload security measures",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [],
+      "details": "Add file type validation, size limits, and malware scanning",
+      "testStrategy": "Test with various malicious file types and oversized files"
+    },
+    {
+      "id": 10,
+      "title": "Database Security Hardening",
+      "description": "Secure database connections and implement proper access controls",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [],
+      "details": "Ensure database connections use SSL and implement proper access controls",
+      "testStrategy": "Verify database connections are encrypted and access is properly restricted"
+    }
+  ]
+} 

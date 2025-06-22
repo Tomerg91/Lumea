@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, checkSupabaseConnection, isDevelopmentMode } from '@/lib/supabase';
 import { AuthError, Session, User } from '@supabase/supabase-js';
 import type { Session as TypeSession, User as TypeUser } from '@supabase/supabase-js';
 
@@ -112,6 +112,27 @@ const retryWithBackoff = async <T,>(
   throw new Error(`Max retries (${maxRetries}) exceeded`);
 };
 
+// Mock user for development
+const createMockUser = (email: string, role: 'client' | 'coach' | 'admin' = 'client'): TypeUser => ({
+  id: `mock-${role}-${Date.now()}`,
+  email,
+  user_metadata: { name: `Mock ${role.charAt(0).toUpperCase() + role.slice(1)}`, role },
+  app_metadata: { role },
+  aud: 'authenticated',
+  created_at: new Date().toISOString(),
+  role: 'authenticated',
+  updated_at: new Date().toISOString()
+});
+
+const createMockSession = (user: TypeUser): TypeSession => ({
+  access_token: 'mock-access-token',
+  refresh_token: 'mock-refresh-token',
+  expires_in: 3600,
+  expires_at: Math.floor(Date.now() / 1000) + 3600,
+  token_type: 'bearer',
+  user
+});
+
 // Define props for the provider
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -126,6 +147,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loadingProfile, setLoadingProfile] = React.useState<boolean>(false); // Loading state for profile fetch
   const [authError, setAuthError] = React.useState<AuthError | null>(null); // Add state for auth errors
   const [isUpdatingProfile, setIsUpdatingProfile] = React.useState<boolean>(false);
+  const [loading, setLoading] = React.useState(true);
 
   // Add a ref to track ongoing profile fetch requests
   const profileFetchInProgress = React.useRef<string | null>(null);
@@ -152,113 +174,61 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     let ignore = false;
     console.log('[AuthContext] Session Effect mounting...');
     setLoadingSession(true);
+    setLoading(true);
     setAuthError(null);
 
     async function getInitialSession() {
       console.log('[AuthContext] Attempting to get initial session...');
       try {
-        // Use the appropriate client based on availability
-        const client = supabase;
-
-        // Fetch session with error handling
-        const {
-          data: { session },
-          error,
-        } = await client.auth.getSession();
-
-        if (error) {
-          console.error('[AuthContext] Error getting initial session:', error.message);
-          if (ignore) return;
-          setAuthError(error);
-        }
-
-        // Update session if component is still mounted
-        if (ignore) return;
-        console.log('[AuthContext] Initial session fetched:', session ? 'Exists' : 'null');
-
-        // Set initial session and user, profile fetch handled by separate effect
-        setSession(session);
-
-        // Only update user state if it's different to avoid triggering unnecessary effects
-        const newUser = session?.user ?? null;
-        if (newUser?.id !== initializedUser.current) {
-          setUser(newUser);
-          if (newUser) {
-            initializedUser.current = newUser.id;
-          } else {
-            initializedUser.current = null;
+        // Check if we're in development mode and should use mock auth
+        if (isDevelopmentMode && import.meta.env.DEV) {
+          console.log('[AuthContext] Development mode - no initial session, allowing public access');
+          if (!ignore) {
+            setSession(null);
+            setUser(null);
           }
+          return;
         }
-
-        isInitialized.current = true;
-      } catch (err) {
-        console.error('[AuthContext] Error in getInitialSession catch block:', err);
-        if (!ignore) setAuthError(err instanceof AuthError ? err : null);
+        
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!ignore) {
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+      } catch (error) {
+        console.error('Error getting session:', error);
+        if (!ignore) {
+          setAuthError(error as AuthError);
+        }
       } finally {
-        console.log(
-          '[AuthContext] Initial Session: >>> Reached finally block. Attempting setLoadingSession(false).'
-        );
-        if (!ignore) setLoadingSession(false);
-        console.log('[AuthContext] Initial Session: <<< setLoadingSession(false) executed.');
+        if (!ignore) {
+          setLoadingSession(false);
+          setLoading(false);
+        }
       }
     }
 
     getInitialSession();
 
-    console.log('[AuthContext] Setting up onAuthStateChange listener...');
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (ignore) return; // Prevent updates after unmount
-      console.log(
-        '[AuthContext] onAuthStateChange triggered. Event:',
-        _event,
-        'Session:',
-        session ? 'Exists' : 'null'
-      );
-
-      // Update session
-      setSession(session);
-
-      // Only update user if it's different to avoid triggering effects unnecessarily
-      const newUser = session?.user ?? null;
-      const newUserId = newUser?.id ?? null;
-      const currentUserId = user?.id ?? null;
-
-      // Skip state update if this is an INITIAL_SESSION event and we're already initialized with the same user
-      if (
-        _event === 'INITIAL_SESSION' &&
-        isInitialized.current &&
-        newUserId === initializedUser.current
-      ) {
-        console.log('[AuthContext] Skipping redundant user update for INITIAL_SESSION event');
-        return;
-      }
-
-      // Otherwise, update user if it's a real change
-      if (newUserId !== currentUserId) {
-        console.log(`[AuthContext] Updating user state from ${currentUserId} to ${newUserId}`);
-        setUser(newUser);
-
-        // If this is a signout, clear profile immediately
-        if (!newUser) {
-          setProfile(null);
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!ignore) {
+          console.log('[AuthContext] Auth state changed:', event, session?.user?.id);
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoadingSession(false);
+          setLoading(false);
         }
-
-        // Track initialized user
-        initializedUser.current = newUserId;
       }
-
-      setAuthError(null); // Clear error on auth change
-      setLoadingSession(false); // Session state is now known
-    });
+    );
 
     return () => {
       console.log('[AuthContext] Session Effect cleanup. Unsubscribing listener.');
       ignore = true;
       subscription?.unsubscribe();
     };
-  }, []); // Runs only once on mount
+  }, []);
 
   // Debounced updateUser function to avoid rate limits
   const debouncedUpdateUser = React.useCallback(
@@ -418,58 +388,80 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Explicitly type the signIn function
   const signIn: AuthContextType['signIn'] = async ({ email, password }) => {
-    // setLoading(true); // Handled by listener/user effect
+    setLoading(true);
     setAuthError(null);
+    
     try {
+      // Check if we should use mock authentication for development
+      if (isDevelopmentMode && import.meta.env.DEV) {
+        console.log('[AuthContext] Using mock authentication for development');
+        
+        // Create mock user based on email
+        let role: 'client' | 'coach' | 'admin' = 'client';
+        if (email?.includes('coach')) role = 'coach';
+        if (email?.includes('admin')) role = 'admin';
+        
+        const mockUser = createMockUser(email || 'test@example.com', role);
+        const mockSession = createMockSession(mockUser);
+        
+        // Set the mock session and user
+        setSession(mockSession);
+        setUser(mockUser);
+        
+        return { data: { user: mockUser, session: mockSession }, error: null };
+      }
+      
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email || '',
-        password: password || '',
+        email,
+        password,
       });
       if (error) throw error;
       // onAuthStateChange will handle setting user and triggering profile fetch
       return { data, error: null };
-    } catch (error) {
-      console.error('Login failed:', error as AuthError);
+    } catch (error: any) {
+      console.error('Sign in error:', error);
       setAuthError(error as AuthError);
-      // setLoading(false); // Handled by listener/user effect
-      return { data: null, error: error as AuthError };
+      return { data: null, error };
+    } finally {
+      setLoading(false);
     }
   };
 
   // Explicitly type the signUp function
   const signUp: AuthContextType['signUp'] = async ({ email, password, options }) => {
-    // setLoading(true); // Handled by listener/user effect
+    setLoading(true);
     setAuthError(null);
     try {
-      // options can include { data: { name: 'Full Name' } } for metadata
       const { data, error } = await supabase.auth.signUp({
-        email: email || '',
-        password: password || '',
+        email,
+        password,
         options,
       });
       if (error) throw error;
       // If successful, onAuthStateChange handles setting user/session
       // If email verification is required, user object might be returned but session will be null initially
       return { data, error: null };
-    } catch (error) {
-      console.error('Signup failed:', error as AuthError);
+    } catch (error: any) {
+      console.error('Sign up error:', error);
       setAuthError(error as AuthError);
-      // setLoading(false); // Handled by listener/user effect
-      return { data: null, error: error as AuthError };
+      return { data: null, error };
+    } finally {
+      setLoading(false);
     }
   };
 
   // Explicitly type the signOut function
   const signOut: AuthContextType['signOut'] = async () => {
-    // setLoading(true); // Handled by listener/user effect
+    setLoading(true);
     setAuthError(null);
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error; // onAuthStateChange will handle clearing user/session/profile
     } catch (error) {
-      console.error('Sign out failed:', error as AuthError);
+      console.error('Sign out error:', error);
       setAuthError(error as AuthError);
-      // setLoading(false); // Handled by listener/user effect
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -956,4 +956,65 @@ export const reflectionController = {
       res.status(500).json({ error: 'Failed to search reflections' });
     }
   },
+
+  // Get recent reflections for dashboard
+  getRecentReflections: async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Not authenticated' });
+        return;
+      }
+
+      const limit = 5; // Get 5 most recent reflections for dashboard
+
+      let query = serverTables.reflections()
+        .select('id, content, mood, created_at, sessions!reflections_session_id_fkey(date)')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      // Filter by user role
+      if (req.user.role === 'client') {
+        query = query.eq('user_id', req.user.id);
+      } else if (req.user.role === 'coach') {
+        // Coaches can see reflections from their sessions
+        query = query
+          .select('id, content, mood, created_at, sessions!inner(date, coach_id)')
+          .eq('sessions.coach_id', req.user.id);
+      }
+      // Admin can see all reflections (no additional filtering)
+
+      const { data: reflections, error } = await query;
+
+      if (error) {
+        console.error('Error fetching recent reflections:', error);
+        res.status(500).json({ error: 'Failed to fetch recent reflections', details: error.message });
+        return;
+      }
+
+      // Format reflections for dashboard
+      const formattedReflections = (reflections || []).map(reflection => ({
+        id: reflection.id,
+        title: reflection.mood ? `${getMoodEmoji(reflection.mood)} Reflection` : 'Personal Reflection',
+        date: new Date(reflection.created_at).toISOString().split('T')[0],
+        mood: getMoodEmoji(reflection.mood),
+        preview: reflection.content ? reflection.content.substring(0, 100) + (reflection.content.length > 100 ? '...' : '') : 'No content available'
+      }));
+
+      res.json(formattedReflections);
+    } catch (error) {
+      console.error('Error getting recent reflections:', error);
+      res.status(500).json({ error: 'Failed to get recent reflections' });
+    }
+  },
 };
+
+// Helper function to get mood emoji
+function getMoodEmoji(mood: string | null): string {
+  switch (mood) {
+    case 'positive': return '😊';
+    case 'negative': return '😔';
+    case 'mixed': return '🤔';
+    case 'neutral': return '😐';
+    default: return '📝';
+  }
+}

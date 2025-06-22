@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import SessionList, { SessionStatus } from '../components/SessionList';
+import SessionList, { SessionStatus, Session as ComponentSession } from '../components/SessionList';
 import MobileSessionList from '../components/mobile/MobileSessionList';
 import MobileFloatingActionButton from '../components/mobile/MobileFloatingActionButton';
 import SessionModal from '../components/SessionModal';
-import useSessionsData from '../hooks/useSessionsData';
+import { useRealtimeSessions, useCreateSession, useUpdateSession, Session as SupabaseSession } from '../hooks/useSessions';
 import useClientsData from '../hooks/useClientsData';
 import { useAuth } from '../contexts/AuthContext';
 import { useMobileDetection } from '../hooks/useMobileDetection';
@@ -14,19 +14,56 @@ const SessionsPage: React.FC = () => {
   const { profile } = useAuth();
   const { isMobile } = useMobileDetection();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { 
-    sessions, 
-    isLoading, 
-    createSession, 
-    isCreating,
-    updateSessionStatus,
-    isUpdatingStatus,
-    refetch 
-  } = useSessionsData();
+  
+  // Use Supabase real-time hooks instead of mock data
+  const { data: supabaseSessions = [], isLoading, error, refetch } = useRealtimeSessions();
+  const createSessionMutation = useCreateSession();
+  const updateSessionMutation = useUpdateSession();
   const { clients } = useClientsData(1, 100); // Fetch all clients for dropdown
 
+  // Transform Supabase session data to component format
+  const sessions = useMemo(() => {
+    return supabaseSessions.map((session: SupabaseSession): ComponentSession => {
+      // Map status from Supabase format to component format
+      const statusMap: { [key: string]: SessionStatus } = {
+        'Upcoming': 'pending',
+        'Completed': 'completed',
+        'Cancelled': 'cancelled',
+        'Rescheduled': 'pending' // Treat rescheduled as pending
+      };
+
+      return {
+        _id: session.id,
+        coachId: session.coach_id,
+        clientId: session.client_id,
+        client: session.client ? {
+          _id: session.client.id,
+          firstName: session.client.firstName,
+          lastName: session.client.lastName,
+          email: session.client.email,
+          createdAt: session.created_at
+        } : {
+          _id: session.client_id,
+          firstName: 'Unknown',
+          lastName: 'Client',
+          email: '',
+          createdAt: session.created_at
+        },
+        date: session.date,
+        status: statusMap[session.status] || 'pending',
+        notes: session.notes || '',
+        createdAt: session.created_at,
+        updatedAt: session.updated_at
+      };
+    });
+  }, [supabaseSessions]);
+
   const handleCreateSession = (data: { clientId: string; date: string; notes: string }) => {
-    createSession(data, {
+    createSessionMutation.mutate({
+      client_id: data.clientId,
+      date: data.date,
+      notes: data.notes,
+    }, {
       onSuccess: () => {
         setIsModalOpen(false);
       },
@@ -34,7 +71,18 @@ const SessionsPage: React.FC = () => {
   };
 
   const handleStatusChange = (sessionId: string, newStatus: SessionStatus) => {
-    updateSessionStatus({ sessionId, status: newStatus });
+    // Map SessionStatus to the expected format
+    const statusMap: { [key in SessionStatus]: 'Upcoming' | 'Completed' | 'Cancelled' | 'Rescheduled' } = {
+      'pending': 'Upcoming',
+      'in-progress': 'Upcoming',
+      'completed': 'Completed',
+      'cancelled': 'Cancelled'
+    };
+    
+    updateSessionMutation.mutate({
+      sessionId,
+      data: { status: statusMap[newStatus] || 'Upcoming' }
+    });
   };
 
   const handleRefresh = () => {
@@ -61,7 +109,7 @@ const SessionsPage: React.FC = () => {
           isLoading={isLoading}
           onCreateClick={() => setIsModalOpen(true)}
           onStatusChange={handleStatusChange}
-          isUpdatingStatus={isUpdatingStatus}
+          isUpdatingStatus={updateSessionMutation.isPending}
           userRole={profile?.role}
           onRefresh={handleRefresh}
         />
@@ -71,7 +119,7 @@ const SessionsPage: React.FC = () => {
           isLoading={isLoading}
           onCreateClick={() => setIsModalOpen(true)}
           onStatusChange={handleStatusChange}
-          isUpdatingStatus={isUpdatingStatus}
+          isUpdatingStatus={updateSessionMutation.isPending}
           userRole={profile?.role}
         />
       )}
@@ -80,7 +128,7 @@ const SessionsPage: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onCreateSession={handleCreateSession}
-        isLoading={isCreating}
+        isLoading={createSessionMutation.isPending}
         clients={clients}
       />
 

@@ -1,0 +1,66 @@
+# Task ID: 2
+# Title: Implement Session Detail View and Editing
+# Status: done
+# Dependencies: 1
+# Priority: high
+# Description: Create detailed session view with editing capabilities for coaches
+# Details:
+Develop a comprehensive session detail page that allows coaches to view and edit session information. Include session metadata, client information, notes, and the ability to modify session details. Implement proper navigation from the session list to detail view and ensure mobile responsiveness.
+
+# Test Strategy:
+Test session detail navigation, edit functionality, data persistence, and mobile responsiveness. Verify proper access control for coaches vs clients.
+
+# Subtasks:
+## 1. Create Session Detail Page Component [done]
+### Dependencies: None
+### Description: Build the main SessionDetail component that displays comprehensive session information
+### Details:
+Create a new SessionDetail component (client/src/pages/SessionDetail.tsx) that displays:
+- Session metadata (date, time, status, creation/update timestamps)
+- Client information (name, email, avatar)
+- Session notes with proper formatting
+- Status badge with current status
+- Navigation breadcrumbs back to sessions list
+- Responsive design for mobile and desktop
+- Loading and error states
+
+## 2. Add Session Editing Functionality [done]
+### Dependencies: None
+### Description: Implement edit mode for coaches to modify session details
+### Details:
+Add editing capabilities to the SessionDetail component:
+- Toggle between view and edit modes
+- Editable fields: session date, notes, and client assignment
+- Form validation using Zod or similar
+- Save and cancel functionality
+- Optimistic updates with error handling
+- Only allow coaches to edit their own sessions
+- Disable editing for completed or cancelled sessions with clear messaging
+- Auto-save drafts or warn about unsaved changes
+
+## 3. Add Navigation and Routing [done]
+### Dependencies: None
+### Description: Implement routing to session detail page and update SessionList navigation
+### Details:
+Set up navigation infrastructure:
+- Add route /coach/sessions/:sessionId and /client/sessions/:sessionId to App.tsx
+- Update SessionList component's 'View Details' button to navigate to session detail
+- Add proper route parameters handling in SessionDetail component
+- Implement session fetching by ID using existing sessionService
+- Add 404 handling for non-existent sessions
+- Ensure proper access control (coaches see own sessions, clients see their sessions)
+- Add loading state while navigating between pages
+
+## 4. Enhance Backend Session API [done]
+### Dependencies: None
+### Description: Add session update endpoint and improve session fetching for detail view
+### Details:
+Enhance backend session management:
+- Ensure GET /api/sessions/:id endpoint returns populated client information
+- Update PUT /api/sessions/:id endpoint to handle session detail updates (notes, date, client)
+- Add validation for session update requests
+- Implement proper authorization checks for session access and editing
+- Add optimistic concurrency control to prevent lost updates
+- Improve error messages for better user experience
+- Ensure session updates trigger proper cache invalidation
+

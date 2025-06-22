@@ -1,0 +1,11 @@
+# Task ID: 6
+# Title: Epic 6: Client Progress Tracking
+# Status: pending
+# Dependencies: 2, 3
+# Priority: medium
+# Description: Visualizes the client's coaching journey and milestones over time.
+# Details:
+Implement user stories 6.1 and 6.2. This includes a chronological timeline view of sessions and reflections, and the ability for a coach to define and track custom milestones.
+
+# Test Strategy:
+E2E test to check that sessions and reflections appear on the timeline. Integration tests for milestone creation.

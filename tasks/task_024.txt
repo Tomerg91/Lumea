@@ -1,0 +1,11 @@
+# Task ID: 24
+# Title: Multi-Coach Platform Features
+# Status: pending
+# Dependencies: 26
+# Priority: low
+# Description: Transform platform to support multiple coaches with marketplace, profiles, ratings, and collaboration tools
+# Details:
+Build coach marketplace, coach profiles and ratings, specialization matching, revenue sharing, coach onboarding, quality assurance, coach collaboration tools, and referral system. Use multi-tenant architecture, revenue distribution algorithms, coach verification workflows, and rating and review systems.
+
+# Test Strategy:
+Test coach registration, profile creation, rating system, revenue calculations, collaboration features, and multi-tenant data isolation

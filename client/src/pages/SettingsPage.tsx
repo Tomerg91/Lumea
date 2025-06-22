@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import LanguageSwitcher from '../components/LanguageSwitcher';
-import { CalendarIntegration } from '../components/calendar/CalendarIntegration';
-import NotificationPreferences from '../components/notifications/NotificationPreferences';
+import { useLanguage } from '../contexts/LanguageContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { 
   User, 
   Settings, 
@@ -17,8 +25,16 @@ import {
   Mail,
   Phone,
   MapPin,
-  Calendar
+  Calendar,
+  Shield,
+  Palette,
+  Languages,
+  Loader2,
+  Check
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { CalendarIntegration } from '../components/calendar/CalendarIntegration';
+import NotificationPreferences from '../components/notifications/NotificationPreferences';
 
 interface UserProfile {
   fullName: string;
@@ -47,10 +63,10 @@ interface PrivacySettings {
 
 const SettingsPage = () => {
   const { profile, session } = useAuth();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const { language, isRTL, setLanguage, isChangingLanguage } = useLanguage();
+  const { toast } = useToast();
   
-  const currentLanguage = i18n.language || 'he';
-  const isRTL = currentLanguage === 'he';
   const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'privacy' | 'appearance' | 'calendar'>('profile');
   const [loading, setLoading] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
@@ -109,6 +125,22 @@ const SettingsPage = () => {
       setLoading(false);
       setTimeout(() => setSaveMessage(''), 3000);
     }, 1000);
+  };
+
+  const handleLanguageChange = async (newLanguage: 'he' | 'en') => {
+    try {
+      await setLanguage(newLanguage);
+      toast({
+        title: t('settings.success'),
+        description: t('settings.languageChanged'),
+      });
+    } catch (error) {
+      toast({
+        title: t('settings.error'),
+        description: t('settings.languageChangeFailed'),
+        variant: 'destructive',
+      });
+    }
   };
 
   const tabs = [
@@ -174,9 +206,111 @@ const SettingsPage = () => {
           {/* Content Area */}
           <div className="lg:col-span-3">
             <div className="card-lumea p-6">
-              {/* Profile Tab */}
-              {activeTab === 'profile' && (
-                <div className="space-y-6">
+              <Tabs defaultValue="profile" className="space-y-6">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="profile" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    {t('settings.profile')}
+                  </TabsTrigger>
+                  <TabsTrigger value="notifications" className="flex items-center gap-2">
+                    <Bell className="h-4 w-4" />
+                    {t('settings.notifications')}
+                  </TabsTrigger>
+                  <TabsTrigger value="privacy" className="flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    {t('settings.privacy')}
+                  </TabsTrigger>
+                  <TabsTrigger value="appearance" className="flex items-center gap-2">
+                    <Palette className="h-4 w-4" />
+                    {t('settings.appearance')}
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Language Settings Section */}
+                <TabsContent value="appearance" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Languages className="h-5 w-5" />
+                        {t('settings.language')}
+                      </CardTitle>
+                      <CardDescription>
+                        {t('settings.languageDesc')}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="language-select" className="text-base font-medium">
+                          {t('settings.selectLanguage')}
+                        </Label>
+                        {isChangingLanguage && (
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            {t('settings.changingLanguage')}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <Select 
+                        value={language} 
+                        onValueChange={handleLanguageChange}
+                        disabled={isChangingLanguage}
+                      >
+                        <SelectTrigger id="language-select" className="w-full">
+                          <SelectValue placeholder={t('settings.selectLanguage')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="he">
+                            <div className="flex items-center gap-2">
+                              <span>עברית</span>
+                              <Badge variant="secondary" className="text-xs">עברית</Badge>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="en">
+                            <div className="flex items-center gap-2">
+                              <span>English</span>
+                              <Badge variant="secondary" className="text-xs">EN</Badge>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <Alert>
+                        <Globe className="h-4 w-4" />
+                        <AlertDescription>
+                          {t('settings.languageNote')}
+                        </AlertDescription>
+                      </Alert>
+                    </CardContent>
+                  </Card>
+
+                  {/* Dark Mode Toggle */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Palette className="h-5 w-5" />
+                        {t('settings.darkMode')}
+                      </CardTitle>
+                      <CardDescription>
+                        {t('settings.darkModeDesc')}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="dark-mode" className="text-base font-medium">
+                          {t('settings.enableDarkMode')}
+                        </Label>
+                        <Switch 
+                          id="dark-mode"
+                          // Add dark mode logic here
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Profile Tab */}
+                <TabsContent value="profile" className="space-y-6">
                   <h2 className="text-xl font-semibold mb-6">{t('settings.profile')}</h2>
                   
                   {/* Avatar */}
@@ -258,19 +392,71 @@ const SettingsPage = () => {
                     <Save className="w-4 h-4" />
                     <span>{loading ? t('settings.saving') : t('settings.saveProfile')}</span>
                   </button>
-                </div>
-              )}
+                </TabsContent>
 
-              {/* Notifications Tab */}
-              {activeTab === 'notifications' && (
-                <div className="space-y-6">
-                  <NotificationPreferences />
-                </div>
-              )}
+                                 {/* Notifications Tab */}
+                 <TabsContent value="notifications" className="space-y-6">
+                   <h2 className="text-xl font-semibold mb-6">{t('settings.notifications')}</h2>
+                   
+                   <div className="space-y-4">
+                     <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                       <div>
+                         <h3 className="font-medium">{t('settings.emailNotifications')}</h3>
+                         <p className="text-sm text-gray-600">{t('settings.emailNotificationsDesc')}</p>
+                       </div>
+                       <label className="switch">
+                         <input
+                           type="checkbox"
+                           checked={notifications.emailNotifications}
+                           onChange={(e) => setNotifications({...notifications, emailNotifications: e.target.checked})}
+                         />
+                         <span className="slider"></span>
+                       </label>
+                     </div>
+                     
+                     <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                       <div>
+                         <h3 className="font-medium">{t('settings.pushNotifications')}</h3>
+                         <p className="text-sm text-gray-600">{t('settings.pushNotificationsDesc')}</p>
+                       </div>
+                       <label className="switch">
+                         <input
+                           type="checkbox"
+                           checked={notifications.pushNotifications}
+                           onChange={(e) => setNotifications({...notifications, pushNotifications: e.target.checked})}
+                         />
+                         <span className="slider"></span>
+                       </label>
+                     </div>
+                     
+                     <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+                       <div>
+                         <h3 className="font-medium">{t('settings.sessionReminders')}</h3>
+                         <p className="text-sm text-gray-600">{t('settings.sessionRemindersDesc')}</p>
+                       </div>
+                       <label className="switch">
+                         <input
+                           type="checkbox"
+                           checked={notifications.sessionReminders}
+                           onChange={(e) => setNotifications({...notifications, sessionReminders: e.target.checked})}
+                         />
+                         <span className="slider"></span>
+                       </label>
+                     </div>
+                   </div>
+                   
+                   <button
+                     onClick={handleSaveNotifications}
+                     disabled={loading}
+                     className="btn-primary px-6 py-3 font-medium"
+                   >
+                     <Save className="w-4 h-4 mr-2" />
+                     <span>{loading ? t('settings.saving') : t('settings.saveNotifications')}</span>
+                   </button>
+                 </TabsContent>
 
-              {/* Privacy Tab */}
-              {activeTab === 'privacy' && (
-                <div className="space-y-6">
+                {/* Privacy Tab */}
+                <TabsContent value="privacy" className="space-y-6">
                   <h2 className="text-xl font-semibold mb-6">{t('settings.privacy')}</h2>
                   
                   <div className="space-y-4">
@@ -341,46 +527,15 @@ const SettingsPage = () => {
                     <Save className="w-4 h-4" />
                     <span>{loading ? t('settings.saving') : t('settings.savePrivacy')}</span>
                   </button>
-                </div>
-              )}
+                </TabsContent>
 
-              {/* Calendar Tab */}
-              {activeTab === 'calendar' && (
-                <div className="space-y-6">
+                {/* Calendar Tab */}
+                <TabsContent value="calendar" className="space-y-6">
                   <h2 className="text-xl font-semibold mb-6">{t('settings.calendar')}</h2>
                   
                   <CalendarIntegration />
-                </div>
-              )}
-
-              {/* Appearance Tab */}
-              {activeTab === 'appearance' && (
-                <div className="space-y-6">
-                  <h2 className="text-xl font-semibold mb-6">{t('settings.appearance')}</h2>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">{t('settings.language')}</label>
-                      <LanguageSwitcher variant="select" />
-                    </div>
-                    
-                    <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <div>
-                        <h3 className="font-medium">{t('settings.darkMode')}</h3>
-                        <p className="text-sm text-gray-600">{t('settings.darkModeDesc')}</p>
-                      </div>
-                      <label className="switch">
-                        <input
-                          type="checkbox"
-                          checked={darkMode}
-                          onChange={(e) => setDarkMode(e.target.checked)}
-                        />
-                        <span className="slider"></span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              )}
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
         </div>

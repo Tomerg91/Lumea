@@ -1,0 +1,11 @@
+# Task ID: 5
+# Title: Epic 5: Resource Center
+# Status: pending
+# Dependencies: 1
+# Priority: low
+# Description: Allows coaches to share resources and clients to access them.
+# Details:
+Implement user stories 5.1 through 5.3. This includes uploading/linking resources, assigning them to a client, and a view for the client to access their assigned resources.
+
+# Test Strategy:
+E2E test for a coach uploading and assigning a resource, and a client viewing it. Integration tests for file uploads.

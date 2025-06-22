@@ -6,6 +6,7 @@ import './index.css';
 import App from './App';
 import './i18n';
 import { AuthProvider } from './contexts/AuthContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 // Create a client with optimized settings for Supabase
 const queryClient = new QueryClient({
@@ -93,9 +94,11 @@ const initApp = async () => {
     <React.StrictMode>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <AuthProvider>
-            <App />
-          </AuthProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <App />
+            </AuthProvider>
+          </LanguageProvider>
         </BrowserRouter>
       </QueryClientProvider>
     </React.StrictMode>

@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/select';
 import MainLayout from '@/components/MainLayout';
 import { useToast } from '@/hooks/use-toast';
-import { useSessions, useCreateSession, Session, CreateSessionData } from '@/hooks/useSessions';
+import { useRealtimeSessions, useCreateSession, Session, CreateSessionData } from '@/hooks/useSessions';
 import { useAvailableCoaches } from '@/hooks/useCoaches';
 import { useAuth } from '@/contexts/AuthContext';
 import { CancelSessionModal } from '@/components/ui/CancelSessionModal';
@@ -46,12 +46,12 @@ const Sessions = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
 
-  // Use the Supabase sessions hooks
+  // Use the Supabase real-time sessions hooks
   const { 
     data: sessions = [], 
     isLoading, 
     error
-  } = useSessions();
+  } = useRealtimeSessions();
 
   const createSessionMutation = useCreateSession();
   

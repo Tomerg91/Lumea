@@ -231,8 +231,8 @@ export default defineConfig(({ mode }) => {
         'src/**/__tests__/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
         'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
       ],
-      // Optional: Enable CSS processing if needed for tests
-      // css: true,
+      // Enable CSS processing for tests
+      css: true,
     },
     // Optimize dependencies prebuilding
     optimizeDeps: {

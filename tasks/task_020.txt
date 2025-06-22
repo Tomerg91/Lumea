@@ -1,0 +1,11 @@
+# Task ID: 20
+# Title: Client Onboarding & Assessment System
+# Status: pending
+# Dependencies: 19
+# Priority: medium
+# Description: Create structured onboarding process with assessment questionnaires and automated welcome sequences
+# Details:
+Build multi-step onboarding wizard, initial assessment questionnaires, personality/coaching style matching, goal setting during onboarding, document collection, welcome sequence automation, progress baseline establishment, and coach assignment logic. Use multi-step form wizard, automated email sequences, scoring algorithms for assessments, and document upload and processing.
+
+# Test Strategy:
+Test onboarding flow completion, assessment scoring accuracy, email sequence delivery, document upload functionality, and coach matching algorithms

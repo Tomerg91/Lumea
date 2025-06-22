@@ -1,0 +1,79 @@
+# Task ID: 1
+# Title: Epic 1: User Onboarding & Management
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Covers foundational features for user registration, login, profile management, and coach-client association.
+# Details:
+Implement user stories 1.1 through 1.5 from the PRD. This includes registration flows for Clients and Coaches (with admin approval for coaches), secure login, password reset, profile editing, and the ability for coaches to manage their client list.
+
+# Test Strategy:
+E2E tests for registration, login, and password reset. Integration tests for API endpoints. Unit tests for validation logic.
+
+# Subtasks:
+## 1. Configure Passport.js for Drizzle [done]
+### Dependencies: None
+### Description: Create `serializeUser` and `deserializeUser` functions that work with the Drizzle user object and its numeric `id`. This is the first step in replacing Mongoose in the authentication flow.
+### Details:
+
+
+## 2. Rewrite Passport's LocalStrategy [done]
+### Dependencies: None
+### Description: Rewrite the current `LocalStrategy` to use Drizzle for database lookups (`db.query.users.findFirst`) and password verification (`bcrypt.compare`). This will replace the Mongoose-based user finding and password checking.
+### Details:
+
+
+## 3. Update Express req.user Type Definition [done]
+### Dependencies: None
+### Description: Change the global type definition for `Express.Request['user']` from the Mongoose `IUser` to a new interface representing the Drizzle user payload. This ensures type safety throughout the application when accessing the logged-in user.
+### Details:
+
+
+## 4. Refactor /login and /signup Routes [done]
+### Dependencies: None
+### Description: Update the `/login` and `/signup` routes to use the new Drizzle-based Passport configuration. The `signup` controller will now be much simpler as it no longer needs to mock a Mongoose user.
+### Details:
+
+
+## 5. Refactor /current-user Route [done]
+### Dependencies: None
+### Description: Update this route to work with the new Drizzle user object that will be present in the session after the refactor.
+### Details:
+
+
+## 7. Remove Mongoose from Authentication [done]
+### Dependencies: None
+### Description: Remove the Mongoose `User` model (`server/src/models/User.ts`), and refactor any remaining Mongoose calls in `server/src/storage.js`. Finally, remove the `mongoose` package from `package.json`. This is the final cleanup step.
+### Details:
+
+
+## 8. Design Prisma schema for password reset tokens [in-progress]
+### Dependencies: None
+### Description: Create a new `password_reset_tokens` table in the database.
+### Details:
+Define columns: id (uuid PK), userId (FK), token (varchar 64), expiresAt (timestamp). Generate Prisma migration.
+
+## 9. Implement token generation & email service [pending]
+### Dependencies: None
+### Description: Generate secure token, store in DB, and send password reset email.
+### Details:
+Create service using crypto.randomBytes(32). Implement email via Resend with reset link containing token.
+
+## 10. Implement /request-password-reset route [pending]
+### Dependencies: None
+### Description: Endpoint to request password reset which triggers token creation and email.
+### Details:
+Create POST /api/auth/request-password-reset. Validate email exists. Call token service. Return 204.
+
+## 11. Implement /reset-password route [pending]
+### Dependencies: None
+### Description: Endpoint to verify token and set new password.
+### Details:
+POST /api/auth/reset-password with token and new password. Validate token, check expiry, hash new password, delete token.
+
+## 12. Integration & E2E tests for password reset flow [pending]
+### Dependencies: None
+### Description: Write tests ensuring end-to-end password reset works.
+### Details:
+Integration tests for token creation and password change. E2E test simulating user requesting reset and logging in with new password.
+

@@ -1,0 +1,11 @@
+# Task ID: 3
+# Title: Epic 3: Reflections Journal
+# Status: pending
+# Dependencies: 2
+# Priority: medium
+# Description: Provides a private space for clients to post reflections and for coaches to review them.
+# Details:
+Implement user stories 3.1 through 3.4. This includes submitting text and audio reflections, a view for both client and coach to see past reflections, and notifications for the coach upon new submissions.
+
+# Test Strategy:
+E2E test for submitting a text and an audio reflection. Integration tests for file uploads and notifications.

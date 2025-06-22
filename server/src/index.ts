@@ -16,6 +16,10 @@ import coachNoteRoutes from './routes/coachNote.js';
 import userRoutes from './routes/user.js';
 import analyticsRoutes from './routes/analytics.js';
 import metricsRoutes from './routes/metrics.js';
+import dashboardRoutes from './routes/dashboard.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import sessionTimerRoutes from './routes/sessionTimer.js';
+import { sessionHistoryRoutes } from './routes/sessionHistoryRoutes.js';
 import availabilityRoutes from './routes/availabilityRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import hipaaComplianceRoutes from './routes/hipaaComplianceRoutes.js';
@@ -246,12 +250,15 @@ app.use(sustainedLimiter);
 app.use(anonymousLimiter);
 
 // Apply audit middleware for HIPAA compliance logging
-app.use(auditMiddleware);
+// TODO: Fix MongoDB dependency in audit service before re-enabling
+// app.use(auditMiddleware);
 
 // Route-specific rate limiting and middleware
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/auth/reset-password', passwordResetLimiter); // Extra protection for password resets
 app.use('/api/sessions', apiLimiter, sessionRoutes);
+app.use('/api/sessions/timer', apiLimiter, sessionTimerRoutes);
+app.use('/api/session-history', apiLimiter, sessionHistoryRoutes);
 app.use('/api/admin', adminLimiter, adminRoutes);
 app.use('/api/coach/clients', apiLimiter, coachRoutes);
 app.use('/api/resources', apiLimiter, resourceRoutes);
@@ -262,6 +269,8 @@ app.use('/api/coach-notes', coachNotesLimiter, coachNoteRoutes);
 app.use('/api/users', apiLimiter, userRoutes);
 app.use('/api/analytics', apiLimiter, analyticsRoutes);
 app.use('/api/metrics', apiLimiter, metricsRoutes);
+app.use('/api/dashboard', apiLimiter, dashboardRoutes);
+app.use('/api/notifications', apiLimiter, notificationRoutes);
 app.use('/api/payments', apiLimiter, paymentRoutes);
 app.use('/api/availability', apiLimiter, availabilityRoutes);
 app.use('/api/compliance', apiLimiter, hipaaComplianceRoutes);

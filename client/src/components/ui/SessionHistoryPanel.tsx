@@ -15,6 +15,7 @@ import {
   RotateCcw,
   Settings
 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 // Types
 interface SessionHistoryEntry {
@@ -114,6 +115,21 @@ const SessionHistoryPanel: React.FC<SessionHistoryPanelProps> = ({
   const [activeTab, setActiveTab] = useState<'history' | 'analytics'>('history');
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
 
+  // Helper function to get authenticated headers
+  const getAuthHeaders = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+
+    return headers;
+  };
+
   // Fetch session history
   const fetchHistory = async () => {
     setLoading(true);
@@ -135,7 +151,9 @@ const SessionHistoryPanel: React.FC<SessionHistoryPanelProps> = ({
       params.append('limit', pageSize.toString());
       params.append('offset', ((currentPage - 1) * pageSize).toString());
 
+      const headers = await getAuthHeaders();
       const response = await fetch(`/api/session-history?${params}`, {
+        headers,
         credentials: 'include',
       });
 
@@ -169,7 +187,9 @@ const SessionHistoryPanel: React.FC<SessionHistoryPanelProps> = ({
       if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
       if (filters.dateTo) params.append('dateTo', filters.dateTo);
 
+      const headers = await getAuthHeaders();
       const response = await fetch(`/api/session-history/analytics?${params}`, {
+        headers,
         credentials: 'include',
       });
 

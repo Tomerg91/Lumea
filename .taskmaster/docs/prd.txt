@@ -1,4 +1,84 @@
-# Supabase Migration with Row-Level Security (RLS)
+# SatyaCoaching Platform Upgrade & Recovery PRD
+
+## Project Overview
+The SatyaCoaching platform is a comprehensive 1-on-1 personal development coaching platform with 10/11 epics complete (100% core functionality). The platform currently faces critical backend connection issues preventing access to live data, requiring immediate recovery and systematic upgrade to replace mock data with live Supabase integration.
+
+## Current Critical Issues
+- **EMERGENCY**: Backend server completely disconnected, all API endpoints failing with ECONNREFUSED
+- **Mock Data Dependency**: Multiple components still using mock data instead of live Supabase queries
+- **Bilingual Experience**: Partially complete bilingual enhancement needs finalization
+
+## Project Goals
+1. **Emergency Backend Recovery**: Restore full backend connectivity and API functionality
+2. **Mock Data Elimination**: Replace all remaining mock data with live Supabase integration
+3. **Bilingual Experience Polish**: Complete the bilingual enhancement for production readiness
+4. **Real-Time Features Enhancement**: Optimize real-time capabilities for better user experience
+
+## Technical Requirements
+
+### Phase 1: Emergency Backend Recovery (CRITICAL)
+- Diagnose and fix backend server connection issues
+- Verify Vite proxy configuration and port settings
+- Validate environment variables and Supabase connectivity
+- Test all API endpoints for proper functionality
+- Ensure Redis and queue services are operational
+
+### Phase 2: Mock Data → Live Data Migration
+- **Dashboard Integration**: Replace mock statistics with live Supabase queries
+- **Session Management**: Connect session endpoints to real data with CRUD operations
+- **Reflection System**: Implement live reflection data with real-time updates
+- **Notification System**: Connect notification endpoints to live delivery system
+- **Analytics Dashboards**: Replace all mock analytics with live data visualization
+- **Payment System**: Ensure payment dashboard connects to live transaction data
+
+### Phase 3: Bilingual Experience Enhancement
+- **Translation Audit**: Complete coverage audit for all components
+- **RTL/LTR Polish**: Enhance right-to-left layout support and mobile optimization
+- **Language Switcher**: Finalize mobile language switching with proper persistence
+- **User Experience**: Test and validate seamless bilingual experience
+
+### Phase 4: Real-Time Features Enhancement
+- **Live Dashboard Updates**: Implement real-time dashboard metrics
+- **Session Status Indicators**: Add live session status and participant tracking
+- **Notification Delivery**: Enhance real-time notification system
+- **Performance Optimization**: Optimize real-time features for scalability
+
+## Technical Constraints
+- Must maintain existing Supabase-first architecture
+- Preserve enterprise-grade security with RLS policies
+- Maintain performance optimization and bundle analysis
+- Ensure Hebrew RTL and English LTR support
+- Mobile-first responsive design requirements
+- Accessibility compliance (WCAG 2.1 AA)
+
+## Technology Stack
+- **Frontend**: React 18 + TypeScript + Vite with performance optimization
+- **Backend**: Supabase PostgreSQL + Express.js API layer
+- **Real-time**: Supabase subscriptions with authentication filtering
+- **Internationalization**: react-i18next with mobile Capacitor support
+- **Mobile**: PWA + Capacitor for native capabilities
+- **Testing**: Comprehensive E2E testing framework (187 tests)
+
+## Success Criteria
+- Zero API connection errors (no ECONNREFUSED)
+- 100% mock data replaced with live Supabase queries
+- Seamless bilingual experience on all devices
+- Real-time features functioning across all components
+- All existing tests passing with live data integration
+- Performance metrics maintained or improved
+
+## Priority Levels
+1. **CRITICAL**: Backend recovery and API connectivity
+2. **HIGH**: Mock data replacement with live Supabase integration
+3. **MEDIUM**: Bilingual experience finalization
+4. **LOW**: Real-time feature enhancements and optimization
+
+## Risk Mitigation
+- Maintain backward compatibility during transitions
+- Implement proper error handling and loading states
+- Preserve existing authentication and security measures
+- Ensure graceful degradation for network issues
+- Maintain comprehensive test coverage throughout changes
 
 ## 1. Overview
 Our application currently relies on a traditional PostgreSQL database served through a Node.js/Prisma backend. We want to migrate fully to Supabase to leverage its hosted Postgres offering, built-in authentication, serverless functions, real-time capabilities, and especially Row-Level Security (RLS) to tighten data-access control. The migration must be seamless for end-users and maintain parity (or improvements) in performance, security, and developer experience.

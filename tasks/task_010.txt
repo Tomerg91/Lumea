@@ -1,0 +1,96 @@
+# Task ID: 10
+# Title: Build Session Feedback Collection System
+# Status: done
+# Dependencies: 1, 4
+# Priority: low
+# Description: Implement post-session feedback collection from both coaches and clients
+# Details:
+Create feedback forms for post-session evaluation by both coaches and clients. Include rating systems, structured feedback questions, and anonymous feedback options. Implement feedback analytics and reporting for continuous improvement.
+
+# Test Strategy:
+Test feedback form submission, analytics calculations, anonymity features, and feedback reporting.
+
+# Subtasks:
+## 1. Design Feedback Database Schema and Models [done]
+### Dependencies: None
+### Description: Create comprehensive database models for session feedback including coach feedback, client feedback, rating scales, structured questions, and analytics tracking
+### Details:
+- Design SessionFeedback model with client and coach perspectives
+- Include rating scales (1-5 or 1-10), structured questions, open text feedback
+- Add metadata for session reference, timestamps, anonymity flags
+- Design FeedbackTemplate model for reusable question sets
+- Create FeedbackAnalytics aggregation models
+- Implement proper indexes for performance
+- Add validation schemas and data integrity constraints
+
+## 2. Implement Feedback API Endpoints [done]
+### Dependencies: 10.1
+### Description: Build REST API endpoints for feedback collection, retrieval, and analytics with proper authentication and validation
+### Details:
+- POST /api/feedback/session/:sessionId - Submit session feedback
+- GET /api/feedback/session/:sessionId - Retrieve session feedback
+- GET /api/feedback/coach/:coachId/analytics - Coach feedback analytics
+- GET /api/feedback/client/:clientId/analytics - Client feedback analytics
+- POST /api/feedback/templates - Create feedback templates
+- GET /api/feedback/templates - List available templates
+- Include proper role-based access control
+- Add input validation and sanitization
+- Implement rate limiting for feedback submission
+
+## 3. Create Post-Session Feedback Forms [done]
+### Dependencies: 10.2
+### Description: Build comprehensive feedback collection forms for both coaches and clients with structured questions and rating systems
+### Details:
+- Create SessionFeedbackForm component with coach and client perspectives
+- Implement rating scales (star ratings, numeric scales)
+- Add structured question types (multiple choice, text, scale)
+- Include session-specific contextual questions
+- Add form validation and progress indicators
+- Implement auto-save functionality for long forms
+- Design intuitive UX with clear instructions
+- Add accessibility features for screen readers
+- Include anonymity options where appropriate
+
+## 4. Build Feedback Analytics Dashboard [done]
+### Dependencies: 10.3
+### Description: Create analytics dashboard showing feedback trends, insights, and coaching effectiveness metrics
+### Details:
+- Build FeedbackAnalyticsDashboard component with charts and visualizations
+- Display feedback trends over time (ratings, satisfaction scores)
+- Show coaching effectiveness metrics and progress indicators
+- Implement filtering by date range, client, session type
+- Add comparative analytics (coach vs industry benchmarks)
+- Create feedback summary reports and insights
+- Include interactive charts using Chart.js or D3
+- Design responsive dashboard for mobile and desktop
+- Add export functionality for reports
+
+## 5. Implement Automated Feedback Triggers [done]
+### Dependencies: 10.3
+### Description: Create automated system to prompt for feedback after sessions with smart timing and notification integration
+### Details:
+- Build FeedbackTriggerService for automated feedback requests
+- Implement smart timing (24-48 hours post-session)
+- Integrate with existing notification system for reminders
+- Add feedback request templates with personalization
+- Create follow-up sequences for incomplete feedback
+- Implement opt-out mechanisms for feedback requests
+- Add A/B testing for optimal timing and messaging
+- Track feedback completion rates and optimize triggers
+- Support multiple notification channels (email, push, in-app)
+
+## 6. Optimize Feedback Experience for Mobile [done]
+### Dependencies: 10.3
+### Description: Apply mobile-first design patterns to feedback forms and create touch-optimized interfaces using established mobile components
+### Details:
+- Create MobileFeedbackForm using established mobile patterns
+- Implement touch-friendly rating controls (star ratings, sliders)
+- Add mobile-optimized question navigation and progress
+- Use bottom sheet modals for feedback collection
+- Implement swipe gestures for form navigation
+- Add haptic feedback for rating interactions
+- Create mobile-specific feedback widgets
+- Optimize form auto-save for mobile interruptions
+- Apply PWA patterns for offline feedback collection
+- Ensure 44px touch targets and accessibility compliance
+

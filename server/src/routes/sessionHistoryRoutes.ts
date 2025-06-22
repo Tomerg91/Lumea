@@ -1,7 +1,7 @@
 // @ts-nocheck
 import express, { Request, Response } from 'express';
 import { AuditService, SessionHistoryFilter } from '../services/auditService';
-import { isAuthenticated } from '../middleware/auth';
+import { isAuthenticated as auth } from '../middleware/auth';
 import { Types } from 'mongoose';
 
 const router = express.Router();
@@ -10,7 +10,7 @@ const router = express.Router();
  * GET /api/session-history
  * Get session history with filtering and pagination
  */
-router.get('/', isAuthenticated, async (req: Request, res: Response) => {
+router.get('/', auth, async (req: Request, res: Response) => {
   try {
     const {
       sessionId,
@@ -86,7 +86,7 @@ router.get('/', isAuthenticated, async (req: Request, res: Response) => {
  * GET /api/session-history/session/:sessionId
  * Get history for a specific session
  */
-router.get('/session/:sessionId', isAuthenticated, async (req: Request, res: Response) => {
+router.get('/session/:sessionId', auth, async (req: Request, res: Response) => {
   try {
     const { sessionId } = req.params;
 

@@ -1,0 +1,105 @@
+# Task ID: 4
+# Title: Implement Text Reflection Forms for Clients
+# Status: done
+# Dependencies: 1
+# Priority: high
+# Description: Create comprehensive text-based reflection forms that clients can fill after sessions
+# Details:
+Build client-facing reflection forms with multiple question types, rich text editing capabilities, and proper validation. Include reflection templates, guided questions based on the Satya Method, and the ability to save drafts. Ensure proper Hebrew RTL support and mobile optimization.
+
+# Test Strategy:
+Test form submission, draft saving, RTL text input, mobile usability, and data persistence.
+
+# Subtasks:
+## 1. Create Reflection Data Models and Backend API [done]
+### Dependencies: None
+### Description: Implement backend data models and API endpoints for client reflection forms
+### Details:
+Create Mongoose models for:
+- Reflection forms (questions, templates, Satya Method categories)
+- Client reflection responses (linked to sessions)
+- Draft/saved states
+
+Implement API endpoints:
+- GET /api/reflections/form/:sessionId - Get reflection form for session
+- POST/PUT /api/reflections/:sessionId - Save/update reflection responses
+- GET /api/reflections/:sessionId - Get existing reflection responses
+- DELETE /api/reflections/:sessionId - Delete reflection responses
+
+Include proper validation, authorization (clients can only access their own), and error handling.
+
+## 2. Build Rich Text Editor Component [done]
+### Dependencies: None
+### Description: Create a reusable rich text editor component with RTL support for reflection forms
+### Details:
+Implement a rich text editor component that includes:
+- Basic formatting (bold, italic, underline)
+- Hebrew RTL text support and direction switching
+- Bullet points and numbered lists
+- Text alignment options
+- Character/word count display
+- Auto-save functionality for drafts
+- Mobile-optimized touch interface
+- Accessibility features (ARIA labels, keyboard navigation)
+- Integration with form validation
+
+Consider using libraries like TipTap, Quill, or building a custom solution based on contentEditable.
+
+## 3. Design Satya Method Reflection Templates [done]
+### Dependencies: None
+### Description: Create structured reflection form templates based on the Satya Method coaching approach
+### Details:
+Design reflection forms with questions that align with the Satya Method principles:
+
+Core Categories:
+1. Self-awareness: What did I discover about myself today?
+2. Patterns: What patterns of behavior/thinking did I notice?
+3. Growth opportunities: Where do I see potential for growth?
+4. Action commitments: What specific actions will I take?
+5. Gratitude: What am I grateful for from this session?
+
+Question Types:
+- Open-ended text responses
+- Scale ratings (1-10)
+- Multiple choice selections
+- Yes/No questions with follow-up
+
+Form Features:
+- Progressive disclosure (show questions based on previous answers)
+- Optional vs required questions
+- Estimated completion time
+- Section-by-section save functionality
+- Review and edit before final submission
+
+## 4. Build Reflection Form UI and State Management [done]
+### Dependencies: None
+### Description: Create the complete reflection form interface with proper state management and validation
+### Details:
+Implement the complete reflection form user interface:
+
+Components:
+- ReflectionForm: Main form container
+- ReflectionSection: Individual form sections
+- QuestionRenderer: Dynamic question type rendering
+- ProgressIndicator: Show completion progress
+- DraftManager: Handle auto-save and draft recovery
+
+State Management:
+- Form state (current answers, validation errors)
+- Draft state (auto-save every 30 seconds)
+- Submission state (loading, success, error)
+- Navigation state (current section, completion tracking)
+
+Features:
+- Real-time validation with helpful error messages
+- Progress saving and recovery
+- Mobile-responsive design
+- Smooth section transitions
+- Confirmation dialogs for navigation away
+- Integration with existing session data
+
+Navigation:
+- Access from completed sessions
+- Link from session detail page
+- Standalone reflection page route
+

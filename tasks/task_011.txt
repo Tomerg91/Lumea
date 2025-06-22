@@ -1,0 +1,92 @@
+# Task ID: 11
+# Title: Implement Session Duration Tracking
+# Status: done
+# Dependencies: 1, 2
+# Priority: low
+# Description: Add session timing features with automatic duration tracking
+# Details:
+Build session timer functionality with automatic start/stop, manual time adjustment, and duration tracking. Include session timing analytics and billing integration preparation. Implement time tracking controls within the session interface.
+
+# Test Strategy:
+Test timer accuracy, manual adjustments, analytics calculations, and integration with session workflow.
+
+# Subtasks:
+## 1. Implement Session Timer Backend API [done]
+### Dependencies: None
+### Description: Create backend API endpoints for session timing including start timer, stop timer, pause/resume timer, and manual duration adjustment capabilities
+### Details:
+Build comprehensive timer API with endpoints for:
+- POST /api/sessions/:id/timer/start - Start session timer
+- POST /api/sessions/:id/timer/stop - Stop session timer and record final duration
+- POST /api/sessions/:id/timer/pause - Pause active timer
+- POST /api/sessions/:id/timer/resume - Resume paused timer
+- PUT /api/sessions/:id/duration - Manual duration adjustment post-session
+- GET /api/sessions/:id/timing - Get current timer state and duration data
+
+Include proper validation, error handling, and integration with existing session status management.
+
+## 2. Build Session Timer Database Models [done]
+### Dependencies: None
+### Description: Create database schema and models for storing session timing data including start time, end time, pauses, and duration adjustments
+### Details:
+Design and implement database models for:
+- SessionTiming collection with fields: sessionId, startTime, endTime, pausedTime, actualDuration, adjustedDuration, timerStatus
+- Integration with existing CoachingSession model to include timing references
+- Proper indexing for analytics queries
+- Migration scripts to add timing fields to existing sessions
+- Validation schemas for timing data
+
+## 3. Create Session Timer UI Components [done]
+### Dependencies: None
+### Description: Build React components for session timer interface including start/stop/pause controls, duration display, and timer status indicators
+### Details:
+Create timer UI components:
+- SessionTimer.tsx - Main timer component with start/stop/pause controls
+- TimerDisplay.tsx - Digital timer display showing current session duration
+- TimerControls.tsx - Control buttons with proper state management
+- TimerStatus.tsx - Visual indicators for timer state (running, paused, stopped)
+- Integration with existing session detail interface
+- Real-time timer updates using useInterval hook
+- Proper accessibility with ARIA labels and keyboard navigation
+
+## 4. Implement Duration Adjustment Interface [done]
+### Dependencies: None
+### Description: Create post-session interface for coaches to manually adjust recorded session duration with validation and audit trail
+### Details:
+Build duration adjustment features:
+- DurationAdjustment.tsx - Modal/form for adjusting session duration post-session
+- Input validation for reasonable duration adjustments
+- Audit trail tracking who made adjustments and when
+- Integration with session detail view
+- Confirmation dialogs for significant adjustments
+- Support for adding notes explaining duration changes
+- Proper error handling and user feedback
+
+## 5. Build Session Duration Analytics [done]
+### Dependencies: None
+### Description: Create analytics dashboard for session duration trends, average session lengths, and coaching efficiency metrics
+### Details:
+Implement duration analytics features:
+- Duration analytics API endpoints for aggregated data
+- SessionDurationAnalytics.tsx - Dashboard showing duration trends over time
+- Average session length calculations by coach and client
+- Duration distribution charts and visualizations
+- Billing preparation data (total hours, billable time)
+- Comparison metrics (planned vs actual duration)
+- Integration with existing analytics infrastructure
+- Export functionality for billing and reporting
+
+## 6. Optimize Timer for Mobile Experience [done]
+### Dependencies: None
+### Description: Apply mobile-first design patterns to timer interface and ensure optimal performance on mobile devices
+### Details:
+Mobile optimization features:
+- MobileSessionTimer.tsx - Mobile-optimized timer interface
+- Touch-friendly timer controls meeting 44px minimum touch targets
+- Mobile-specific timer display with larger fonts and clear visibility
+- Integration with existing mobile design system and patterns
+- PWA optimization for background timer functionality
+- Mobile browser compatibility testing (iOS Safari, Android Chrome)
+- Performance optimization to prevent battery drain
+- Haptic feedback for timer state changes on mobile devices
+

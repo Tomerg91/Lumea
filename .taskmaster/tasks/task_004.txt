@@ -1,0 +1,11 @@
+# Task ID: 4
+# Title: Epic 4: Coach's Private Notes
+# Status: pending
+# Dependencies: 2
+# Priority: medium
+# Description: A secure, private space for coaches to keep notes on their clients.
+# Details:
+Implement user stories 4.1 and 4.2. This includes creating, viewing, and editing encrypted notes associated with a client/session. Must use the existing AES-256 encryption service.
+
+# Test Strategy:
+Integration tests to verify note creation and that data is encrypted at rest. E2E test for a coach creating and viewing a note.

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { supabase } from '../lib/supabase';
 import {
   Calendar,
   MessageSquare,
@@ -54,7 +55,7 @@ interface RecentReflection {
 
 const Dashboard = () => {
   const { profile } = useAuth();
-  const { isRTL, t } = useLanguage();
+  const { isRTL } = useLanguage();
   const navigate = useNavigate();
   const { isMobile } = useMobileDetection();
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -74,10 +75,23 @@ const Dashboard = () => {
 
         // Try to fetch from backend API first
         try {
+          // Get the current session to extract the access token
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          if (!session?.access_token) {
+            console.log('No authentication token, using mock data');
+            throw new Error('Not authenticated');
+          }
+
+          const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          };
+
           const [statsResponse, sessionsResponse, reflectionsResponse] = await Promise.all([
-            fetch('/api/dashboard/stats'),
-            fetch('/api/sessions/upcoming'),
-            fetch('/api/reflections/recent')
+            fetch('/api/dashboard/stats', { headers }),
+            fetch('/api/sessions/upcoming', { headers }),
+            fetch('/api/reflections/recent', { headers })
           ]);
 
           if (statsResponse.ok && sessionsResponse.ok && reflectionsResponse.ok) {
@@ -87,13 +101,20 @@ const Dashboard = () => {
               reflectionsResponse.json()
             ]);
 
+            console.log('Successfully fetched live data:', { statsData, sessionsData, reflectionsData });
             setStats(statsData);
             setUpcomingSessions(sessionsData);
             setRecentReflections(reflectionsData);
             return;
+          } else {
+            console.log('API responses not OK:', {
+              stats: statsResponse.status,
+              sessions: sessionsResponse.status,
+              reflections: reflectionsResponse.status
+            });
           }
         } catch (apiError) {
-          console.log('API unavailable, using mock data');
+          console.log('API error, using mock data:', apiError);
         }
 
         // Fallback to mock data with appropriate content for role

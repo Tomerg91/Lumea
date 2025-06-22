@@ -66,10 +66,10 @@ node_modules/
 *.sln
 *.sw?
 # OS specific
-# Task files
-tasks.json
-tasks/
-
 # Performance monitoring
 lighthouse-reports/
 stats.html 
+
+# Task files
+# tasks.json
+# tasks/ 

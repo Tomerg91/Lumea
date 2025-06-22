@@ -1,0 +1,49 @@
+# Task ID: 17
+# Title: Advanced Calendar & Scheduling System
+# Status: done
+# Dependencies: None
+# Priority: high
+# Description: Build comprehensive scheduling system with availability management, calendar integrations, and automated reminders
+# Details:
+Implement coach availability management, time zone handling, recurring session templates, calendar integrations (Google, Outlook, Apple), automated reminders (email, SMS, push), booking links for clients, waitlist management, buffer time between sessions, and holiday/vacation management. Use Calendar APIs, Timezone.js, cron jobs for reminders, iCal generation, and conflict detection algorithms.
+
+# Test Strategy:
+Test calendar synchronization, timezone handling, reminder delivery, booking conflicts, and mobile calendar integration
+
+# Subtasks:
+## 1. Coach Availability Management System [done]
+### Dependencies: None
+### Description: Build interface for coaches to set their availability, working hours, and time-off periods
+### Details:
+Create availability calendar interface, recurring schedule templates, time-off management, buffer time configuration, and availability conflict detection
+
+## 2. Timezone Handling & Multi-Region Support [done]
+### Dependencies: None
+### Description: Implement comprehensive timezone support for global coach-client scheduling
+### Details:
+Integrate timezone.js, automatic timezone detection, timezone conversion for scheduling, daylight saving time handling, and timezone display preferences
+
+## 3. Calendar Integration APIs [done]
+### Dependencies: None
+### Description: Integrate with Google Calendar, Outlook, and Apple Calendar for two-way synchronization
+### Details:
+Implement OAuth flows for calendar providers, two-way sync for session events, conflict detection with external calendars, iCal generation and import, and calendar event management
+
+## 4. Automated Reminder & Notification System [done]
+### Dependencies: None
+### Description: Build comprehensive reminder system with email, SMS, and push notifications
+### Details:
+Create cron job scheduler for reminders, email template system, SMS integration, push notification delivery, reminder preferences management, and escalation workflows
+
+## 5. Client Booking Interface & Workflow [done]
+### Dependencies: None
+### Description: Create user-friendly booking interface for clients to schedule sessions
+### Details:
+Build booking calendar widget, available time slot display, booking confirmation workflow, waitlist management, booking links generation, and mobile-optimized booking experience
+
+## 6. Recurring Sessions & Template Management [done]
+### Dependencies: None
+### Description: Implement recurring session scheduling with customizable templates
+### Details:
+Create recurring session patterns (weekly, bi-weekly, monthly), session template management, bulk scheduling operations, recurring session modifications, and template-based booking workflows
+

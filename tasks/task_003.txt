@@ -1,0 +1,78 @@
+# Task ID: 3
+# Title: Build Session Cancellation and Rescheduling System
+# Status: done
+# Dependencies: 1, 2
+# Priority: medium
+# Description: Implement session cancellation and rescheduling functionality with proper notifications
+# Details:
+Create the ability for coaches to cancel and reschedule sessions. Include proper notification system for clients, handling of cancelled session data, and rescheduling interface with calendar integration. Implement proper validation for cancellation policies and rescheduling constraints.
+
+# Test Strategy:
+Test cancellation flow, rescheduling interface, client notifications, and edge cases like multiple reschedules.
+
+# Subtasks:
+## 1. Implement Session Cancellation Backend Logic [done]
+### Dependencies: None
+### Description: Create backend API endpoints and validation logic for session cancellation with proper business rules
+### Details:
+- Add cancellation metadata fields to session model (cancellation reason, cancelled by, cancellation timestamp)
+- Implement cancellation validation rules (minimum notice period, status checks)
+- Create API endpoint for cancellation with proper error handling
+- Add audit trail for cancellation events
+- Implement cancellation policies (fees, notice periods, reschedule limits)
+
+## 2. Build Session Rescheduling Backend System [done]
+### Dependencies: None
+### Description: Implement backend logic for session rescheduling with conflict detection and validation
+### Details:
+- Add rescheduling metadata fields (original date, rescheduled date, reschedule reason, reschedule count)
+- Implement conflict detection for new time slots
+- Create rescheduling API endpoints with validation
+- Add business rules for rescheduling limits and timeframes
+- Implement rescheduling history tracking
+
+## 3. Create Notification System for Session Changes [done]
+### Dependencies: None
+### Description: Build notification system to alert clients and coaches about session cancellations and rescheduling
+### Details:
+- Create notification templates for cancellation and rescheduling
+- Implement email notification service
+- Add in-app notification system
+- Create notification preferences for users
+- Implement immediate and reminder notifications
+- Add notification tracking and delivery status
+
+## 4. Build Frontend Cancellation Interface [done]
+### Dependencies: None
+### Description: Create user-friendly frontend interface for coaches to cancel sessions with proper feedback
+### Details:
+- Create cancellation modal with reason selection
+- Implement confirmation dialogs with policy warnings
+- Add cancellation reason categories and text input
+- Show cancellation consequences (fees, penalties)
+- Implement cancellation validation on frontend
+- Add cancellation success/error feedback
+
+## 5. Build Frontend Rescheduling Interface [done]
+### Dependencies: None
+### Description: Create intuitive rescheduling interface with calendar integration and conflict detection
+### Details:
+- Create rescheduling modal with calendar picker
+- Integrate with existing calendar system
+- Implement real-time conflict detection
+- Show available time slots and busy periods
+- Add rescheduling reason collection
+- Implement drag-and-drop rescheduling
+- Add rescheduling confirmation and feedback
+
+## 6. Implement Session History and Audit Trail [done]
+### Dependencies: None
+### Description: Create comprehensive tracking system for all session changes and history
+### Details:
+- Create session history model for tracking changes
+- Implement audit trail for cancellations and rescheduling
+- Build history display interface for coaches
+- Add change tracking with timestamps and reasons
+- Implement reporting for session change patterns
+- Create analytics for cancellation and rescheduling trends
+

@@ -1,13 +1,31 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database, TypedSupabaseClient } from '../../../shared/types/database';
 
-// Get Supabase configuration - prioritize working URL over broken environment variable
-const supabaseUrl = 'https://humlrpbtrbjnpnsusils.supabase.co'; // Using working URL directly
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1bWxycGJ0cmJqbnBuc3VzaWxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU4MjQ3MzcsImV4cCI6MjA2MTQwMDczN30.ywX7Zpywze07KqPHwiwn_hECuiblnc4-_dEl0QNU7nU';
+// Get Supabase configuration from environment variables with fallbacks
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://cjxbfpsbrufxpqqlyueh.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqeGJmcHNicnVmeHBxcWx5dWVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1ODQ3MDQsImV4cCI6MjA2NjE2MDcwNH0.1jFZVD-o-_TxMWPmRF_81AbeCtphD8NyHO1hon2c-I4';
+
+// Detect if we're using local development
+const isLocalDev = supabaseUrl.includes('localhost') || supabaseUrl.includes('127.0.0.1');
+
+// Log configuration for debugging (only in development)
+if (import.meta.env.DEV) {
+  console.log('[Supabase] Configuration:', {
+    url: supabaseUrl,
+    hasAnonKey: !!supabaseAnonKey,
+    isLocalDev: isLocalDev,
+    envUrl: import.meta.env.VITE_SUPABASE_URL,
+    envKey: import.meta.env.VITE_SUPABASE_ANON_KEY ? '[PRESENT]' : '[MISSING]'
+  });
+}
 
 // Validate configuration
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase configuration. Please check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
+if (!supabaseUrl || supabaseUrl.includes('YOUR_PROJECT_REF')) {
+  throw new Error('Missing or invalid Supabase URL. Please check VITE_SUPABASE_URL environment variable.');
+}
+
+if (!supabaseAnonKey || supabaseAnonKey.includes('YOUR_SUPABASE_ANON_KEY')) {
+  throw new Error('Missing or invalid Supabase anon key. Please check VITE_SUPABASE_ANON_KEY environment variable.');
 }
 
 // Create and export the typed Supabase client
@@ -33,13 +51,46 @@ export function getSupabaseClient(): TypedSupabaseClient {
 // Test connection function with enhanced error handling
 export async function checkSupabaseConnection(): Promise<boolean> {
   try {
-    console.log('[Supabase] Testing connection...');
+    console.log('[Supabase] Testing connection to:', supabaseUrl);
+    
+    // For local development, check if the service is available
+    if (isLocalDev) {
+      try {
+        const response = await fetch(`${supabaseUrl}/rest/v1/`, {
+          headers: {
+            'apikey': supabaseAnonKey,
+            'Authorization': `Bearer ${supabaseAnonKey}`
+          }
+        });
+        
+        if (response.status === 404 || response.status === 503) {
+          console.warn('[Supabase] Local Supabase not running. Please start it with: supabase start');
+          return false;
+        }
+        
+        console.log('[Supabase] Local Supabase connection successful');
+        return true;
+      } catch (fetchError) {
+        console.error('[Supabase] Local Supabase not reachable:', fetchError);
+        return false;
+      }
+    }
     
     // Try to make a simple request to test connectivity
     const { data, error } = await supabase.auth.getSession();
     
     if (error && error.message.includes('network')) {
       console.error('[Supabase] Network connectivity issue:', error);
+      return false;
+    }
+    
+    if (error && error.message.includes('Invalid API key')) {
+      console.error('[Supabase] Invalid API key:', error);
+      return false;
+    }
+    
+    if (error) {
+      console.error('[Supabase] Connection error:', error);
       return false;
     }
     
@@ -50,6 +101,9 @@ export async function checkSupabaseConnection(): Promise<boolean> {
     return false;
   }
 }
+
+// Export development status
+export const isDevelopmentMode = isLocalDev && import.meta.env.DEV;
 
 // Utility function to check if the client is properly typed
 export function validateSupabaseTypes(): boolean {
@@ -107,3 +161,16 @@ export type { TypedSupabaseClient, Database };
 
 // Default export for convenience
 export default supabase;
+
+// Test connection function
+export const testConnection = async () => {
+  try {
+    const { data, error } = await supabase.from('profiles').select('count').limit(1);
+    if (error && error.code !== '42P01') { // Ignore "relation does not exist" error for empty DB
+      throw error;
+    }
+    return { connected: true, error: null };
+  } catch (error: any) {
+    return { connected: false, error: error.message };
+  }
+};

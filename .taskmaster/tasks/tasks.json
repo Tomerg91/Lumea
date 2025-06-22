@@ -1,0 +1,392 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Emergency Backend Server Recovery",
+        "description": "Diagnose and fix critical backend server connection issues causing ECONNREFUSED errors on all API endpoints",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [],
+        "details": "The backend server is completely disconnected from the client. All API endpoints (/api/dashboard/stats, /api/sessions/upcoming, /api/reflections/recent, /api/notifications, /api/sessions/timer/analytics) are failing with ECONNREFUSED errors. Need to check server process status, verify Vite proxy configuration, validate environment variables, and test Supabase connectivity.",
+        "testStrategy": "Verify all API endpoints respond without proxy errors, confirm dashboard shows live data, ensure no ECONNREFUSED errors in console",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Check Backend Server Process Status",
+            "description": "Verify if the backend server is running and check for any startup errors",
+            "details": "Check if the backend server process is running, examine server logs for errors, verify package.json scripts are working correctly",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 1
+          },
+          {
+            "id": 2,
+            "title": "Verify Vite Proxy Configuration",
+            "description": "Check Vite proxy settings and port configuration for API routing",
+            "details": "Examine vite.config.ts proxy settings, verify target URLs and port mappings, ensure proxy is correctly routing API calls",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 1
+          },
+          {
+            "id": 3,
+            "title": "Validate Environment Variables",
+            "description": "Check all required environment variables are properly configured",
+            "details": "Verify Supabase URL, API keys, database connections, and all environment variables needed for backend operation",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 1
+          },
+          {
+            "id": 4,
+            "title": "Test API Endpoints Connectivity",
+            "description": "Verify that all API endpoints are accessible and returning proper responses",
+            "details": "Test key API endpoints like /api/dashboard/stats, /api/sessions/upcoming, /api/reflections/recent to ensure they are no longer returning ECONNREFUSED errors and are properly connected to Supabase",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 1
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Backend Environment Configuration",
+        "description": "Validate and configure all backend environment variables and services",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "details": "Ensure proper configuration of Supabase connection, Redis services, environment variables, and all backend dependencies. Verify package.json scripts and server startup process.",
+        "testStrategy": "Backend server starts without errors, all environment variables are properly loaded, Supabase connection test passes",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Test Supabase Connection",
+            "description": "Verify that the backend can successfully connect to Supabase database",
+            "details": "Test the Supabase connection using the configured credentials, verify database access, and ensure proper authentication",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 2
+          },
+          {
+            "id": 2,
+            "title": "Verify Redis Connection",
+            "description": "Ensure Redis service is running and accessible for session management",
+            "details": "Check Redis connection status, verify it's running on expected port, and test basic Redis operations",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 2
+          },
+          {
+            "id": 3,
+            "title": "Test API Endpoints Response",
+            "description": "Verify that key API endpoints are returning proper responses instead of errors",
+            "details": "Test /api/dashboard/stats, /api/sessions/upcoming, /api/reflections/recent and other critical endpoints to ensure they return data or proper error messages instead of connection errors",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 2
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "API Endpoint Connectivity Testing",
+        "description": "Systematically test all API endpoints for proper functionality",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "details": "Test each failing endpoint individually: dashboard stats, sessions, reflections, notifications, analytics. Verify request/response flow and error handling.",
+        "testStrategy": "All API endpoints return proper responses, no 500 errors, proper error handling for edge cases",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Test Dashboard Stats Endpoint",
+            "description": "Test /api/dashboard/stats endpoint for proper connectivity and data response",
+            "details": "Verify the dashboard statistics endpoint returns proper data from Supabase instead of ECONNREFUSED errors. Test both direct API call and through client proxy.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 3
+          },
+          {
+            "id": 2,
+            "title": "Test Sessions Upcoming Endpoint",
+            "description": "Test /api/sessions/upcoming endpoint for proper connectivity and session data",
+            "details": "Verify the sessions endpoint returns proper session data from Supabase instead of ECONNREFUSED errors.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 3
+          },
+          {
+            "id": 3,
+            "title": "Test Reflections Recent Endpoint",
+            "description": "Test /api/reflections/recent endpoint for proper connectivity and reflection data",
+            "details": "Verify the reflections endpoint returns proper reflection data from Supabase instead of ECONNREFUSED errors.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 3
+          },
+          {
+            "id": 4,
+            "title": "Test Notifications Endpoints",
+            "description": "Test /api/notifications and /api/notifications/unread-count endpoints",
+            "details": "Verify both notification endpoints return proper data from Supabase instead of ECONNREFUSED errors.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 3
+          },
+          {
+            "id": 5,
+            "title": "Test Analytics Timer Endpoint",
+            "description": "Test /api/sessions/timer/analytics endpoint for proper connectivity and analytics data",
+            "details": "Verify the analytics endpoint returns proper timer analytics data from Supabase instead of ECONNREFUSED errors.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 3
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Dashboard Mock Data Replacement",
+        "description": "Replace dashboard statistics mock data with live Supabase queries",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [
+          3
+        ],
+        "details": "Convert dashboard components to use real-time Supabase data instead of mock statistics. Implement proper loading states and error handling.",
+        "testStrategy": "Dashboard shows real data from Supabase, loading states work properly, error states handle network issues gracefully",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Replace Dashboard Statistics Mock Data",
+            "description": "Convert Dashboard.tsx to use live API calls instead of mock statistics",
+            "details": "Replace mock data in Dashboard.tsx with actual API calls to /api/dashboard/stats, implement loading states, error handling, and proper data formatting.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 4
+          },
+          {
+            "id": 2,
+            "title": "Replace Recent Reflections Mock Data",
+            "description": "Convert recent reflections display to use live API calls",
+            "details": "Replace mock reflection data with actual API calls to /api/reflections/recent, implement proper mood display and formatting.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 4
+          },
+          {
+            "id": 3,
+            "title": "Replace Notification Mock Data",
+            "description": "Convert notification display to use live API calls",
+            "details": "Replace mock notification data with actual API calls to /api/notifications and /api/notifications/unread-count, implement real-time updates.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 4
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Session Management Live Data Integration",
+        "description": "Connect session management to live Supabase data with full CRUD operations",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [
+          3
+        ],
+        "details": "Replace mock session data with live queries, implement create/read/update/delete operations, add real-time session status updates.",
+        "testStrategy": "Session CRUD operations work with live data, real-time updates function properly, session status reflects actual state",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Update SessionsPage.tsx to use Supabase sessions hook",
+            "description": "Replace useSessionsData hook with useSessions hook from Supabase in SessionsPage.tsx",
+            "details": "The SessionsPage.tsx currently uses useSessionsData hook which fetches mock data. Need to replace it with the existing useSessions hook that connects to Supabase directly. This includes updating imports, hook usage, and ensuring data format compatibility.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 5
+          },
+          {
+            "id": 2,
+            "title": "Update Sessions.tsx to use authenticated API calls",
+            "description": "Implement JWT authentication for session API calls in Sessions.tsx component",
+            "details": "The Sessions.tsx component uses useSessions hook but needs to ensure all API calls include proper JWT authentication headers similar to the Dashboard implementation. Add Supabase session token authentication to all session-related API requests.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 5
+          },
+          {
+            "id": 3,
+            "title": "Replace mock session service with Supabase integration",
+            "description": "Update sessionService.ts to use Supabase client instead of mock API calls",
+            "details": "The sessionService.ts file contains mock API calls that need to be replaced with actual Supabase queries. This includes fetchSessions, createSession, updateSessionStatus functions. Need to implement proper error handling and ensure data format consistency with existing components.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 5
+          },
+          {
+            "id": 4,
+            "title": "Implement real-time session updates",
+            "description": "Enable real-time session status updates using Supabase subscriptions",
+            "details": "Enhance the session management system with real-time updates using Supabase real-time subscriptions. This includes updating the useRealtime hooks to handle session events and ensuring components automatically refresh when session data changes. The RealtimeSessions component already exists but needs to be properly integrated.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 5
+          },
+          {
+            "id": 5,
+            "title": "Update session history and analytics integration",
+            "description": "Connect SessionHistoryPanel to live session audit data from backend",
+            "details": "The SessionHistoryPanel component uses API calls to /api/session-history endpoints which exist on the backend but may need authentication updates. Ensure the session history, analytics, and audit trail features work with live data and proper JWT authentication. Test session history filtering and pagination.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 5
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Reflection System Live Data Implementation",
+        "description": "Implement live reflection data with real-time updates",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          3
+        ],
+        "details": "Connect reflection components to Supabase, implement real-time reflection updates, ensure proper data synchronization.",
+        "testStrategy": "Reflections load from database, real-time updates work across clients, data consistency maintained"
+      },
+      {
+        "id": 7,
+        "title": "Notification System Live Integration",
+        "description": "Connect notification system to live delivery and storage",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          3
+        ],
+        "details": "Replace mock notifications with live system, implement real-time notification delivery, ensure proper notification persistence.",
+        "testStrategy": "Notifications deliver in real-time, notification history persists correctly, unread counts update properly"
+      },
+      {
+        "id": 8,
+        "title": "Analytics Dashboard Live Data",
+        "description": "Replace all mock analytics with live data visualization",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          4,
+          5
+        ],
+        "details": "Convert analytics components to use live session and user data, implement real-time analytics updates, ensure performance optimization.",
+        "testStrategy": "Analytics reflect real platform usage, charts update with live data, performance remains optimal"
+      },
+      {
+        "id": 9,
+        "title": "Payment System Live Data Integration",
+        "description": "Ensure payment dashboard connects to live transaction data",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          3
+        ],
+        "details": "Connect payment components to live transaction data, implement proper payment status tracking, ensure security compliance.",
+        "testStrategy": "Payment data reflects actual transactions, payment status updates correctly, security measures maintained"
+      },
+      {
+        "id": 10,
+        "title": "Translation Coverage Audit",
+        "description": "Complete audit of all components for translation coverage",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [],
+        "details": "Systematically review all components to ensure complete Hebrew and English translation coverage, identify missing translations.",
+        "testStrategy": "All text elements have translations, no missing translation keys, both languages display correctly"
+      },
+      {
+        "id": 11,
+        "title": "RTL/LTR Layout Enhancement",
+        "description": "Enhance right-to-left layout support and mobile optimization",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          10
+        ],
+        "details": "Improve RTL layout handling, optimize mobile RTL experience, ensure proper text direction and layout flow.",
+        "testStrategy": "RTL layouts display correctly on all devices, mobile RTL experience is optimized, layout switches smoothly"
+      },
+      {
+        "id": 12,
+        "title": "Mobile Language Switching Finalization",
+        "description": "Finalize mobile language switching with proper persistence",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          11
+        ],
+        "details": "Complete mobile language switching implementation, ensure proper persistence across app restarts, optimize user experience.",
+        "testStrategy": "Language switches work on mobile, preferences persist across restarts, user experience is seamless"
+      },
+      {
+        "id": 13,
+        "title": "Real-Time Dashboard Metrics",
+        "description": "Implement real-time dashboard metrics and live updates",
+        "status": "pending",
+        "priority": "low",
+        "dependencies": [
+          4,
+          8
+        ],
+        "details": "Add real-time subscriptions for dashboard metrics, implement live data updates, optimize performance for real-time features.",
+        "testStrategy": "Dashboard updates in real-time, performance remains optimal, real-time features work across clients"
+      },
+      {
+        "id": 14,
+        "title": "Live Session Status Indicators",
+        "description": "Add live session status and participant tracking",
+        "status": "pending",
+        "priority": "low",
+        "dependencies": [
+          5
+        ],
+        "details": "Implement real-time session status indicators, add participant presence tracking, ensure status accuracy.",
+        "testStrategy": "Session status reflects real-time state, participant tracking works accurately, status updates are immediate"
+      },
+      {
+        "id": 15,
+        "title": "Performance Optimization & Testing",
+        "description": "Optimize real-time features for scalability and performance",
+        "status": "pending",
+        "priority": "low",
+        "dependencies": [
+          13,
+          14
+        ],
+        "details": "Optimize real-time feature performance, conduct load testing, ensure scalability for production use.",
+        "testStrategy": "Performance metrics meet targets, load testing passes, real-time features scale properly"
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "generated": "2025-01-11T13:30:00.000Z",
+      "projectName": "SatyaCoaching Platform Upgrade & Recovery",
+      "description": "Critical backend recovery and systematic platform upgrade",
+      "tags": {
+        "master": {
+          "name": "master",
+          "description": "Main development branch",
+          "created": "2025-01-11T13:30:00.000Z",
+          "metadata": {}
+        }
+      },
+      "currentTag": "master",
+      "created": "2025-06-22T10:38:44.462Z",
+      "updated": "2025-06-22T11:41:48.124Z"
+    }
+  }
+}
