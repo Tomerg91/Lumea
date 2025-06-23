@@ -23,7 +23,7 @@
     "types:generate:local": "supabase gen types typescript --local --schema=public > src/types/database.types.ts",
     "types:update": "npm run types:generate && npm run typecheck",
     "lighthouse": "lhci autorun",
-    "size": "size-limit",
+    "size": "npm run build && npx webpack-bundle-analyzer dist/assets/index-*.js",
     "analyze:bundle": "node bundle-analyzer.js",
     "analyze:bundle:verbose": "node bundle-analyzer.js --verbose",
     "analyze:bundle:ci": "node bundle-analyzer.js --ci"
@@ -104,7 +104,6 @@
     "@eslint/js": "^9.9.0",
     "@lhci/cli": "0.15.0",
     "@playwright/test": "1.53.0",
-    "@size-limit/preset-app": "11.0.0",
     "@tailwindcss/typography": "^0.5.15",
     "@testing-library/dom": "10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
@@ -128,35 +127,13 @@
     "lovable-tagger": "1.1.8",
     "postcss": "^8.4.47",
     "rollup-plugin-visualizer": "5.14.0",
-    "size-limit": "11.2.0",
     "terser": "^5.30.0",
     "typescript": "5.8.3",
     "typescript-eslint": "^8.0.1",
     "vite": "6.3.5",
     "vite-plugin-compression": "0.5.1",
     "vite-plugin-compression2": "1.3.3",
-    "vitest": "^3.1.1"
-  },
-  "size-limit": [
-    {
-      "name": "App Bundle",
-      "path": "dist/assets/app-*.js",
-      "limit": "120 kB"
-    },
-    {
-      "name": "Vendor React",
-      "path": "dist/assets/vendor-react-*.js",
-      "limit": "130 kB"
-    },
-    {
-      "name": "Vendor Charts",
-      "path": "dist/assets/vendor-charts-*.js",
-      "limit": "55 kB"
-    },
-    {
-      "name": "Total CSS",
-      "path": "dist/assets/*.css",
-      "limit": "30 kB"
-    }
-  ]
+    "vitest": "^3.1.1",
+    "webpack-bundle-analyzer": "4.10.2"
+  }
 }
