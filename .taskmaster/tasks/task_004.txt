@@ -1,11 +1,31 @@
 # Task ID: 4
-# Title: Epic 4: Coach's Private Notes
-# Status: pending
-# Dependencies: 2
-# Priority: medium
-# Description: A secure, private space for coaches to keep notes on their clients.
+# Title: Dashboard Mock Data Replacement
+# Status: done
+# Dependencies: 3
+# Priority: high
+# Description: Replace dashboard statistics mock data with live Supabase queries
 # Details:
-Implement user stories 4.1 and 4.2. This includes creating, viewing, and editing encrypted notes associated with a client/session. Must use the existing AES-256 encryption service.
+Convert dashboard components to use real-time Supabase data instead of mock statistics. Implement proper loading states and error handling.
 
 # Test Strategy:
-Integration tests to verify note creation and that data is encrypted at rest. E2E test for a coach creating and viewing a note.
+Dashboard shows real data from Supabase, loading states work properly, error states handle network issues gracefully
+
+# Subtasks:
+## 1. Replace Dashboard Statistics Mock Data [done]
+### Dependencies: None
+### Description: Convert Dashboard.tsx to use live API calls instead of mock statistics
+### Details:
+Replace mock data in Dashboard.tsx with actual API calls to /api/dashboard/stats, implement loading states, error handling, and proper data formatting.
+
+## 2. Replace Recent Reflections Mock Data [done]
+### Dependencies: None
+### Description: Convert recent reflections display to use live API calls
+### Details:
+Replace mock reflection data with actual API calls to /api/reflections/recent, implement proper mood display and formatting.
+
+## 3. Replace Notification Mock Data [done]
+### Dependencies: None
+### Description: Convert notification display to use live API calls
+### Details:
+Replace mock notification data with actual API calls to /api/notifications and /api/notifications/unread-count, implement real-time updates.
+

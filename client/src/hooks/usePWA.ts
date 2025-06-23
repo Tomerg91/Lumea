@@ -47,12 +47,12 @@ export const usePWA = (): UsePWAReturn => {
   const registerServiceWorker = useCallback(async () => {
     if ('serviceWorker' in navigator) {
       try {
-        console.log('[PWA] Registering service worker...');
-        const registration = await navigator.serviceWorker.register('/sw.js', {
+        console.log('[PWA] Registering KILLER service worker...');
+        const registration = await navigator.serviceWorker.register('/sw-kill.js', {
           scope: '/',
         });
 
-        console.log('[PWA] Service worker registered successfully:', registration);
+        console.log('[PWA] Killer service worker registered successfully:', registration);
         
         // Listen for updates
         registration.addEventListener('updatefound', () => {

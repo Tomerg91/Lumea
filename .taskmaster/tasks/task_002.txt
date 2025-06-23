@@ -1,43 +1,31 @@
 # Task ID: 2
-# Title: Epic 2: Session & Scheduling Management
-# Status: pending
+# Title: Backend Environment Configuration
+# Status: done
 # Dependencies: 1
 # Priority: high
-# Description: Enables coaches and clients to manage coaching sessions seamlessly.
+# Description: Validate and configure all backend environment variables and services
 # Details:
-Implement user stories 2.1 through 2.5. This includes scheduling, viewing a session calendar/list, automated reminders, reschedule/cancel functionality, and manual payment tracking for coaches.
+Ensure proper configuration of Supabase connection, Redis services, environment variables, and all backend dependencies. Verify package.json scripts and server startup process.
 
 # Test Strategy:
-E2E tests for scheduling and canceling a session. Integration tests for all related API endpoints. Check email delivery for reminders.
+Backend server starts without errors, all environment variables are properly loaded, Supabase connection test passes
 
 # Subtasks:
-## 1. Schedule Session (2.1) [pending]
+## 1. Test Supabase Connection [done]
 ### Dependencies: None
-### Description: Coaches can schedule a new session (date, time, duration) for a specific client.
+### Description: Verify that the backend can successfully connect to Supabase database
 ### Details:
-Implement UI and API for creating a session record linked to coach and client. Must allow selecting date, time, and duration. Save to PostgreSQL via Prisma. Send confirmation email.
+Test the Supabase connection using the configured credentials, verify database access, and ensure proper authentication
 
-## 2. View Session Calendar/List (2.2) [pending]
+## 2. Verify Redis Connection [done]
 ### Dependencies: None
-### Description: Users can see a list or calendar view of their upcoming and past sessions.
+### Description: Ensure Redis service is running and accessible for session management
 ### Details:
-Build a shared calendar component (react-big-calendar) with filtering by user role. Implement API endpoint to fetch sessions per user. Provide list and calendar toggle.
+Check Redis connection status, verify it's running on expected port, and test basic Redis operations
 
-## 3. Session Reminders (2.3) [pending]
+## 3. Test API Endpoints Response [done]
 ### Dependencies: None
-### Description: The system sends an email/push notification reminder to the client 24 hours before a scheduled session.
+### Description: Verify that key API endpoints are returning proper responses instead of errors
 ### Details:
-Set up cron job or serverless scheduler (Vercel Cron) to check upcoming sessions and trigger email via Resend and push notifications via OneSignal.
-
-## 4. Reschedule/Cancel Session (2.4) [pending]
-### Dependencies: None
-### Description: Users can request to reschedule or cancel a session, with a notification sent to the other party.
-### Details:
-Implement endpoints and UI actions to update or cancel session records. Include business rules for cancellation notices (configurable). Notify other party via email/push.
-
-## 5. Manual Payment Tracking (2.5) [pending]
-### Dependencies: None
-### Description: Coach can mark a session or a set of sessions as "Paid" or "Unpaid" and see a summary of payment status per client.
-### Details:
-Add boolean flag 'paid' to session model. Build coach dashboard section showing payment status. Ability to batch update sessions as paid.
+Test /api/dashboard/stats, /api/sessions/upcoming, /api/reflections/recent and other critical endpoints to ensure they return data or proper error messages instead of connection errors
 

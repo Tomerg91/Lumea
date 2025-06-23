@@ -7,6 +7,7 @@ interface LanguageContextType {
   isRTL: boolean;
   setLanguage: (lang: 'he' | 'en') => void;
   isChangingLanguage: boolean;
+  t: (key: string, options?: any) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -16,7 +17,7 @@ interface LanguageProviderProps {
 }
 
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [isChangingLanguage, setIsChangingLanguage] = useState(false);
   
   const currentLanguage = i18n.language as 'he' | 'en';
@@ -62,7 +63,8 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
       language: currentLanguage,
       isRTL,
       setLanguage,
-      isChangingLanguage
+      isChangingLanguage,
+      t
     }}>
       {children}
     </LanguageContext.Provider>

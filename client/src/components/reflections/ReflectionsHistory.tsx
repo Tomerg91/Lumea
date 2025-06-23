@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Search, 
@@ -21,6 +21,8 @@ import { enUS, he } from 'date-fns/locale';
 import { useAuth } from '../../contexts/AuthContext';
 import { SimpleReflectionService } from '../../services/reflectionService.simple';
 import { Reflection, MoodType } from '../../../../shared/types/database';
+import { useRealtimeTable } from '../../hooks/useRealtime';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../../hooks/use-toast';
 
 interface ReflectionsHistoryProps {
@@ -64,14 +66,10 @@ export const ReflectionsHistory: React.FC<ReflectionsHistoryProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const [reflections, setReflections] = useState<Reflection[]>([]);
-  const [sessions, setSessions] = useState<Array<{ id: string; date: string; status: string }>>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [expandedReflections, setExpandedReflections] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
+  const queryClient = useQueryClient();
 
   const [filters, setFilters] = useState<FilterOptions>({
     search: '',
@@ -87,16 +85,18 @@ export const ReflectionsHistory: React.FC<ReflectionsHistoryProps> = ({
   const isClientView = user?.role === 'client' && (!clientId || clientId === user.id);
   const canViewReflections = isClientView || isCoachView || user?.role === 'admin';
 
-  const loadReflections = async () => {
-    if (!canViewReflections) {
-      setError(t('reflections.accessDenied', 'Access denied'));
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
+  // Real-time reflections query
+  const { 
+    data: reflectionsData, 
+    isLoading: loading, 
+    error: queryError,
+    refetch: refetchReflections 
+  } = useQuery({
+    queryKey: ['reflections', currentPage, filters, clientId],
+    queryFn: async () => {
+      if (!canViewReflections) {
+        throw new Error(t('reflections.accessDenied', 'Access denied'));
+      }
 
       const offset = (currentPage - 1) * ITEMS_PER_PAGE;
       const options = {
@@ -137,36 +137,34 @@ export const ReflectionsHistory: React.FC<ReflectionsHistoryProps> = ({
           : aDate.getTime() - bDate.getTime();
       });
 
-      setReflections(filteredReflections);
-      setTotalCount(result.count);
-    } catch (err) {
-      console.error('Failed to load reflections:', err);
-      setError(err instanceof Error ? err.message : t('reflections.loadError', 'Failed to load reflections'));
-      toast({
-        title: t('reflections.loadError', 'Failed to load reflections'),
-        description: err instanceof Error ? err.message : t('common.genericError', 'An error occurred'),
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+      return {
+        reflections: filteredReflections,
+        count: result.count
+      };
+    },
+    enabled: !!user && canViewReflections,
+  });
 
-  const loadSessions = async () => {
-    try {
-      const userSessions = await SimpleReflectionService.getUserSessions();
-      setSessions(userSessions);
-    } catch (err) {
-      console.error('Failed to load sessions:', err);
-    }
-  };
+  // Real-time sessions query
+  const { data: sessions = [] } = useQuery({
+    queryKey: ['sessions', 'for-reflections'],
+    queryFn: () => SimpleReflectionService.getUserSessions(),
+    enabled: !!user && canViewReflections,
+  });
 
-  useEffect(() => {
-    if (canViewReflections) {
-      loadReflections();
-      loadSessions();
+  // Set up real-time subscription for reflections
+  useRealtimeTable(
+    'reflections',
+    user?.id ? `user_id=eq.${user.id}` : null,
+    () => {
+      // Invalidate reflections queries on real-time updates
+      queryClient.invalidateQueries({ queryKey: ['reflections'] });
     }
-  }, [currentPage, filters, canViewReflections, clientId]);
+  );
+
+  const reflections = reflectionsData?.reflections || [];
+  const totalCount = reflectionsData?.count || 0;
+  const error = queryError ? (queryError as Error).message : null;
 
   const handleFilterChange = (key: keyof FilterOptions, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -241,7 +239,7 @@ export const ReflectionsHistory: React.FC<ReflectionsHistoryProps> = ({
           <MessageSquare className="w-12 h-12 mx-auto mb-4 text-red-400" />
           <p>{error}</p>
           <button
-            onClick={loadReflections}
+            onClick={() => refetchReflections()}
             className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
           >
             {t('common.retry', 'Retry')}
@@ -280,7 +278,7 @@ export const ReflectionsHistory: React.FC<ReflectionsHistoryProps> = ({
           </button>
           
           <button
-            onClick={loadReflections}
+            onClick={() => refetchReflections()}
             disabled={loading}
             className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
           >

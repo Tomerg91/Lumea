@@ -17,14 +17,14 @@ import userRoutes from './routes/user.js';
 import analyticsRoutes from './routes/analytics.js';
 import metricsRoutes from './routes/metrics.js';
 import dashboardRoutes from './routes/dashboard.js';
-import notificationRoutes from './routes/notificationRoutes.js';
+import supabaseNotificationRoutes from './routes/supabaseNotificationRoutes.js';
 import sessionTimerRoutes from './routes/sessionTimer.js';
 import { sessionHistoryRoutes } from './routes/sessionHistoryRoutes.js';
 import availabilityRoutes from './routes/availabilityRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import subscriptionRoutes from './routes/subscriptionRoutes.js';
 import hipaaComplianceRoutes from './routes/hipaaComplianceRoutes.js';
 import auditRoutes from './routes/auditRoutes.js';
-import advancedAuditRoutes from './routes/advancedAuditRoutes.js';
 import encryptionRoutes from './routes/encryptionRoutes.js';
 import consentRoutes from './routes/consentRoutes.js';
 import dataRetentionRoutes from './routes/dataRetentionRoutes.js';
@@ -55,6 +55,7 @@ import pg from 'pg';
 import { logger } from './services/logger';
 import './services/monitoring'; // Initialize Monitoring Service early
 import { encryptionService } from './services/encryptionService';
+import redisClient from './utils/cache';
 
 config();
 
@@ -116,16 +117,15 @@ const validateEnvVariables = () => {
     if (process.env.DATABASE_URL) {
       const dbUrl = process.env.DATABASE_URL;
       const isPostgreSQL = dbUrl.startsWith('postgresql://') || dbUrl.startsWith('postgres://');
-      const isMongoDB = dbUrl.startsWith('mongodb://') || dbUrl.startsWith('mongodb+srv://');
       
-      if (!isPostgreSQL && !isMongoDB) {
-        console.error('FATAL ERROR: DATABASE_URL must be a valid PostgreSQL or MongoDB connection string');
+      if (!isPostgreSQL) {
+        console.error('FATAL ERROR: DATABASE_URL must be a valid PostgreSQL connection string');
         process.exit(1);
       }
       
       // Log database type for debugging
       if (process.env.NODE_ENV === 'development') {
-        console.log(`Database type detected: ${isPostgreSQL ? 'PostgreSQL' : 'MongoDB'}`);
+        console.log(`Database type detected: PostgreSQL`);
       }
     }
 
@@ -208,6 +208,9 @@ app.use(
   })
 );
 
+// We need the raw body to verify webhook signatures, so we add this before express.json()
+app.use('/api/subscriptions/webhook', express.raw({ type: 'application/json' }));
+
 // Basic Express middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -270,12 +273,12 @@ app.use('/api/users', apiLimiter, userRoutes);
 app.use('/api/analytics', apiLimiter, analyticsRoutes);
 app.use('/api/metrics', apiLimiter, metricsRoutes);
 app.use('/api/dashboard', apiLimiter, dashboardRoutes);
-app.use('/api/notifications', apiLimiter, notificationRoutes);
+app.use('/api/notifications', apiLimiter, supabaseNotificationRoutes);
 app.use('/api/payments', apiLimiter, paymentRoutes);
+app.use('/api/subscriptions', apiLimiter, subscriptionRoutes);
 app.use('/api/availability', apiLimiter, availabilityRoutes);
 app.use('/api/compliance', apiLimiter, hipaaComplianceRoutes);
 app.use('/api/audit', apiLimiter, auditRoutes);
-app.use('/api/audit/advanced', apiLimiter, advancedAuditRoutes);
 app.use('/api/encryption', apiLimiter, encryptionRoutes);
 app.use('/api/consent', apiLimiter, consentRoutes);
 app.use('/api/data-retention', apiLimiter, dataRetentionRoutes);
@@ -324,25 +327,45 @@ const server = http.createServer(app);
 // Graceful shutdown handler
 const gracefulShutdown = (signal: string) => {
   logger.info(`${signal} received. Starting graceful shutdown...`);
-  
-  server.close(() => {
-    logger.info('HTTP server closed.');
-    
-    // Clean up rate limiters
-    cleanupRateLimiters();
-    
-    // Close database connections
-    pool.end(() => {
-      logger.info('Database pool closed.');
-      process.exit(0);
-    });
-  });
-  
+
   // Force close after 30 seconds
-  setTimeout(() => {
+  const shutdownTimeout = setTimeout(() => {
     logger.error('Could not close connections in time, forcefully shutting down');
     process.exit(1);
   }, 30000);
+
+  server.close(() => {
+    logger.info('HTTP server closed.');
+
+    // Clean up rate limiters
+    cleanupRateLimiters();
+
+    const wasRedisReady = redisClient.isReady;
+    const redisPromise = wasRedisReady ? redisClient.quit() : Promise.resolve();
+
+    redisPromise
+      .catch(err => {
+        logger.warn('Error disconnecting Redis, continuing shutdown...', err);
+      })
+      .then(() => {
+        if (wasRedisReady) {
+          logger.info('Redis client disconnected.');
+        } else {
+          logger.info('Redis client was not connected, skipping disconnection.');
+        }
+        return pool.end();
+      })
+      .then(() => {
+        logger.info('Database pool closed.');
+        clearTimeout(shutdownTimeout);
+        logger.info('Graceful shutdown complete.');
+        process.exit(0);
+      })
+      .catch((err) => {
+        logger.error('Error during graceful shutdown:', err);
+        process.exit(1);
+      });
+  });
 };
 
 // Listen for termination signals

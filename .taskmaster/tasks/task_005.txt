@@ -1,11 +1,43 @@
 # Task ID: 5
-# Title: Epic 5: Resource Center
-# Status: pending
-# Dependencies: 1
-# Priority: low
-# Description: Allows coaches to share resources and clients to access them.
+# Title: Session Management Live Data Integration
+# Status: done
+# Dependencies: 3
+# Priority: high
+# Description: Connect session management to live Supabase data with full CRUD operations
 # Details:
-Implement user stories 5.1 through 5.3. This includes uploading/linking resources, assigning them to a client, and a view for the client to access their assigned resources.
+Replace mock session data with live queries, implement create/read/update/delete operations, add real-time session status updates.
 
 # Test Strategy:
-E2E test for a coach uploading and assigning a resource, and a client viewing it. Integration tests for file uploads.
+Session CRUD operations work with live data, real-time updates function properly, session status reflects actual state
+
+# Subtasks:
+## 1. Update SessionsPage.tsx to use Supabase sessions hook [done]
+### Dependencies: None
+### Description: Replace useSessionsData hook with useSessions hook from Supabase in SessionsPage.tsx
+### Details:
+The SessionsPage.tsx currently uses useSessionsData hook which fetches mock data. Need to replace it with the existing useSessions hook that connects to Supabase directly. This includes updating imports, hook usage, and ensuring data format compatibility.
+
+## 2. Update Sessions.tsx to use authenticated API calls [done]
+### Dependencies: None
+### Description: Implement JWT authentication for session API calls in Sessions.tsx component
+### Details:
+The Sessions.tsx component uses useSessions hook but needs to ensure all API calls include proper JWT authentication headers similar to the Dashboard implementation. Add Supabase session token authentication to all session-related API requests.
+
+## 3. Replace mock session service with Supabase integration [done]
+### Dependencies: None
+### Description: Update sessionService.ts to use Supabase client instead of mock API calls
+### Details:
+The sessionService.ts file contains mock API calls that need to be replaced with actual Supabase queries. This includes fetchSessions, createSession, updateSessionStatus functions. Need to implement proper error handling and ensure data format consistency with existing components.
+
+## 4. Implement real-time session updates [done]
+### Dependencies: None
+### Description: Enable real-time session status updates using Supabase subscriptions
+### Details:
+Enhance the session management system with real-time updates using Supabase real-time subscriptions. This includes updating the useRealtime hooks to handle session events and ensuring components automatically refresh when session data changes. The RealtimeSessions component already exists but needs to be properly integrated.
+
+## 5. Update session history and analytics integration [done]
+### Dependencies: None
+### Description: Connect SessionHistoryPanel to live session audit data from backend
+### Details:
+The SessionHistoryPanel component uses API calls to /api/session-history endpoints which exist on the backend but may need authentication updates. Ensure the session history, analytics, and audit trail features work with live data and proper JWT authentication. Test session history filtering and pagination.
+

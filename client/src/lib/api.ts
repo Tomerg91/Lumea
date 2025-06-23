@@ -1,4 +1,19 @@
 import { supabase } from './supabase';
+import { App } from '@capacitor/app';
+import axios from 'axios';
+
+export const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
+  withCredentials: true,
+});
+
+api.interceptors.request.use(async (config) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.access_token) {
+    config.headers.Authorization = `Bearer ${session.access_token}`;
+  }
+  return config;
+});
 
 // Define AuthenticatedUser interface directly here
 // Ideally, share this type with the backend (e.g., via a shared package)
@@ -259,3 +274,7 @@ export const getClientResources = (): Promise<any[]> => {
 
 // Export the apiFetch function for services that need custom backend endpoints
 export { apiFetch };
+
+export const handleLogin = async (
+  // ... existing code ...
+);

@@ -1,11 +1,11 @@
 # Task ID: 7
-# Title: Epic 7: Admin Dashboard & Coach Approval
-# Status: pending
-# Dependencies: 1
-# Priority: high
-# Description: Provides admins with tools to manage platform integrity and onboard coaches.
+# Title: Notification System Live Integration
+# Status: done
+# Dependencies: 3
+# Priority: medium
+# Description: Connect notification system to live delivery and storage
 # Details:
-Implement user stories 7.1 through 7.3. This includes a queue for pending coach approvals, the ability for an admin to approve/reject them, and a simple dashboard for platform metrics.
+Replace mock notifications with live system, implement real-time notification delivery, ensure proper notification persistence.
 
 # Test Strategy:
-E2E test for the full admin approval flow. Integration tests for the dashboard metrics endpoints.
+Notifications deliver in real-time, notification history persists correctly, unread counts update properly

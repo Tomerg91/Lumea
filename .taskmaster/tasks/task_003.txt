@@ -1,11 +1,43 @@
 # Task ID: 3
-# Title: Epic 3: Reflections Journal
-# Status: pending
+# Title: API Endpoint Connectivity Testing
+# Status: done
 # Dependencies: 2
-# Priority: medium
-# Description: Provides a private space for clients to post reflections and for coaches to review them.
+# Priority: high
+# Description: Systematically test all API endpoints for proper functionality
 # Details:
-Implement user stories 3.1 through 3.4. This includes submitting text and audio reflections, a view for both client and coach to see past reflections, and notifications for the coach upon new submissions.
+Test each failing endpoint individually: dashboard stats, sessions, reflections, notifications, analytics. Verify request/response flow and error handling.
 
 # Test Strategy:
-E2E test for submitting a text and an audio reflection. Integration tests for file uploads and notifications.
+All API endpoints return proper responses, no 500 errors, proper error handling for edge cases
+
+# Subtasks:
+## 1. Test Dashboard Stats Endpoint [done]
+### Dependencies: None
+### Description: Test /api/dashboard/stats endpoint for proper connectivity and data response
+### Details:
+Verify the dashboard statistics endpoint returns proper data from Supabase instead of ECONNREFUSED errors. Test both direct API call and through client proxy.
+
+## 2. Test Sessions Upcoming Endpoint [done]
+### Dependencies: None
+### Description: Test /api/sessions/upcoming endpoint for proper connectivity and session data
+### Details:
+Verify the sessions endpoint returns proper session data from Supabase instead of ECONNREFUSED errors.
+
+## 3. Test Reflections Recent Endpoint [done]
+### Dependencies: None
+### Description: Test /api/reflections/recent endpoint for proper connectivity and reflection data
+### Details:
+Verify the reflections endpoint returns proper reflection data from Supabase instead of ECONNREFUSED errors.
+
+## 4. Test Notifications Endpoints [done]
+### Dependencies: None
+### Description: Test /api/notifications and /api/notifications/unread-count endpoints
+### Details:
+Verify both notification endpoints return proper data from Supabase instead of ECONNREFUSED errors.
+
+## 5. Test Analytics Timer Endpoint [done]
+### Dependencies: None
+### Description: Test /api/sessions/timer/analytics endpoint for proper connectivity and analytics data
+### Details:
+Verify the analytics endpoint returns proper timer analytics data from Supabase instead of ECONNREFUSED errors.
+

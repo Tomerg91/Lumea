@@ -17,9 +17,18 @@ import {
   Shield,
   Clock,
   FileText,
-  Settings
+  Settings,
+  Loader2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+// TODO: Replace with shared API instance once the export issue in 'lib/api' is resolved.
+import axios from 'axios';
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
+  withCredentials: true,
+});
+import SubscriptionPlanSelector from './SubscriptionPlanSelector';
+import SubscriptionCheckoutForm, { PaymentFormData } from './SubscriptionCheckoutForm';
 
 interface PaymentMethod {
   id: string;
@@ -33,14 +42,13 @@ interface PaymentMethod {
 
 interface Subscription {
   id: string;
-  planName: string;
-  status: 'active' | 'past_due' | 'canceled' | 'paused';
+  planCode: 'seeker' | 'explorer' | 'navigator';
+  status: 'active' | 'inactive' | 'cancelled' | 'past_due';
   amount: number;
   currency: string;
-  billingCycle: 'monthly' | 'yearly';
-  currentPeriodStart: Date;
-  currentPeriodEnd: Date;
-  nextBillingDate: Date;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  clientLimit: number;
 }
 
 interface Invoice {
@@ -56,23 +64,28 @@ interface Invoice {
 
 interface BillingState {
   subscription: Subscription | null;
-  paymentMethods: PaymentMethod[];
-  invoices: Invoice[];
   loading: boolean;
+  error: string | null;
 }
+
+const planDetails = {
+  seeker: { name: 'Seeker Coach', price: 59 },
+  explorer: { name: 'Explorer Coach', price: 189 },
+  navigator: { name: 'Navigator Coach', price: 220 },
+};
 
 const BillingManagement: React.FC = () => {
   const { toast } = useToast();
   
   const [state, setState] = useState<BillingState>({
     subscription: null,
-    paymentMethods: [],
-    invoices: [],
     loading: true,
+    error: null,
   });
 
   const [showAddPaymentMethod, setShowAddPaymentMethod] = useState(false);
   const [showPlanSelection, setShowPlanSelection] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<'seeker' | 'explorer' | 'navigator' | null>(null);
 
   useEffect(() => {
     loadBillingData();
@@ -80,61 +93,26 @@ const BillingManagement: React.FC = () => {
 
   const loadBillingData = async () => {
     try {
-      // TODO: Replace with actual API calls to your Israeli payment processor
-      // This would typically call your backend which integrates with Tranzila/Cardcom/PayPlus
-      
-      // Mock data for demonstration
-      const mockSubscription: Subscription = {
-        id: 'sub_123',
-        planName: 'Professional Plan',
-        status: 'active',
-        amount: 299,
-        currency: 'ILS',
-        billingCycle: 'monthly',
-        currentPeriodStart: new Date(),
-        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      };
-
-      const mockPaymentMethods: PaymentMethod[] = [
-        {
-          id: 'pm_123',
-          type: 'credit_card',
-          last4: '4242',
-          brand: 'Visa',
-          expiryMonth: 12,
-          expiryYear: 2025,
-          isDefault: true,
-        },
-      ];
-
-      const mockInvoices: Invoice[] = [
-        {
-          id: 'inv_123',
-          amount: 299,
-          currency: 'ILS',
-          status: 'paid',
-          date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-          dueDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
-          description: 'Professional Plan - Monthly',
-          downloadUrl: '/api/invoices/inv_123/download',
-        },
-      ];
-
-      setState({
-        subscription: mockSubscription,
-        paymentMethods: mockPaymentMethods,
-        invoices: mockInvoices,
-        loading: false,
-      });
-    } catch (error) {
-      console.error('Failed to load billing data:', error);
-      setState(prev => ({ ...prev, loading: false }));
-      toast({
-        title: "Error",
-        description: "Failed to load billing information. Please try again.",
-        variant: "destructive",
-      });
+      setState(prev => ({ ...prev, loading: true, error: null }));
+      const response = await api.get('/subscriptions/current');
+      if (response.data) {
+        setState({ subscription: response.data, loading: false, error: null });
+      } else {
+        setState({ subscription: null, loading: false, error: null });
+      }
+    } catch (error: any) {
+      if (error.response && error.response.status === 404) {
+        // No subscription found, which is a valid state
+        setState({ subscription: null, loading: false, error: null });
+      } else {
+        console.error('Failed to load billing data:', error);
+        setState({ subscription: null, loading: false, error: 'Failed to load billing information.' });
+        toast({
+          title: "Error",
+          description: "Failed to load billing information. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -172,22 +150,58 @@ const BillingManagement: React.FC = () => {
     }
   };
 
-  const handleChangePlan = async (planId: string) => {
+  const handleSelectPlan = (planId: 'seeker' | 'explorer' | 'navigator') => {
+    setSelectedPlan(planId);
+  };
+  
+  const handleCreateSubscription = async (paymentData: PaymentFormData) => {
+    if (!selectedPlan) return;
+
     try {
-      // TODO: Implement plan change with Israeli payment processor
+      setState(prev => ({...prev, loading: true}));
+      const payload = {
+        planCode: selectedPlan,
+        paymentMethod: {
+          ...paymentData
+        },
+        provider: paymentData.provider,
+      };
+      await api.post('/subscriptions/create', payload);
       toast({
-        title: "Plan Updated",
-        description: "Your subscription plan has been updated successfully.",
+        title: "Subscription Successful!",
+        description: `You have successfully subscribed to the ${planDetails[selectedPlan].name}.`,
       });
-      
-      setShowPlanSelection(false);
-      loadBillingData(); // Refresh data
+      setSelectedPlan(null);
+      loadBillingData();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update plan. Please try again.",
+       console.error('Failed to create subscription:', error);
+       toast({
+        title: "Subscription Failed",
+        description: "We couldn't process your subscription. Please check your payment details and try again.",
         variant: "destructive",
       });
+      setState(prev => ({...prev, loading: false}));
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!state.subscription) return;
+    try {
+      setState(prev => ({ ...prev, loading: true }));
+      await api.post(`/subscriptions/cancel`);
+      toast({
+        title: "Subscription Cancelled",
+        description: "Your subscription has been cancelled and will not renew.",
+      });
+      loadBillingData();
+    } catch (error) {
+      console.error('Failed to cancel subscription:', error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel subscription. Please try again.",
+        variant: "destructive",
+      });
+      setState(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -213,334 +227,91 @@ const BillingManagement: React.FC = () => {
     }
   };
 
-  if (state.loading) {
+  if (state.loading && !state.subscription) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Billing & Payments</h1>
-          <p className="text-gray-600">Manage your subscription and payment methods</p>
-        </div>
-        <Badge variant={state.subscription?.status === 'active' ? 'default' : 'destructive'}>
-          {state.subscription?.status || 'No Subscription'}
-        </Badge>
+  if (state.error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>{state.error}</AlertDescription>
+      </Alert>
+    );
+  }
+  
+  if (!state.subscription) {
+     if (selectedPlan) {
+      return (
+        <SubscriptionCheckoutForm 
+          planName={planDetails[selectedPlan].name}
+          planPrice={planDetails[selectedPlan].price}
+          onSubmit={handleCreateSubscription}
+          loading={state.loading}
+        />
+      );
+    }
+    return (
+      <div>
+        <h2 className="text-2xl font-bold mb-4">Choose Your Plan</h2>
+        <p className="text-muted-foreground mb-8">You don't have an active subscription. Select a plan to get started.</p>
+        <SubscriptionPlanSelector onSelectPlan={handleSelectPlan} />
       </div>
+    );
+  }
 
-      {/* Current Subscription */}
-      {state.subscription && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Current Subscription
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold">{state.subscription.planName}</h3>
-                <p className="text-sm text-gray-600">
-                  ₪{state.subscription.amount} / {state.subscription.billingCycle}
-                </p>
-              </div>
-              <Button variant="outline" onClick={() => setShowPlanSelection(true)}>
-                Change Plan
-              </Button>
-            </div>
+  const { subscription } = state;
+  const currentPlan = planDetails[subscription.planCode];
 
-            <Separator />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm font-medium text-gray-700">Current Period</Label>
-                <p className="text-sm">
-                  {state.subscription.currentPeriodStart.toLocaleDateString('he-IL')} - {' '}
-                  {state.subscription.currentPeriodEnd.toLocaleDateString('he-IL')}
-                </p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700">Next Billing Date</Label>
-                <p className="text-sm">
-                  {state.subscription.nextBillingDate.toLocaleDateString('he-IL')}
-                </p>
-              </div>
-            </div>
-
-            {state.subscription.status === 'past_due' && (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Your payment is overdue. Please update your payment method to avoid service interruption.
-                </AlertDescription>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Payment Methods */}
+  return (
+    <div className="space-y-8">
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Payment Methods
-            </CardTitle>
-            <Button onClick={() => setShowAddPaymentMethod(true)}>
-              Add Payment Method
-            </Button>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Current Subscription</CardTitle>
+            <CardDescription>Manage your subscription details.</CardDescription>
           </div>
-          <CardDescription>
-            Secure payment processing through Israeli payment providers
-          </CardDescription>
+          <Badge variant={subscription.status === 'active' ? 'default' : 'destructive'} className="capitalize">
+            {subscription.status.replace('_', ' ')}
+          </Badge>
         </CardHeader>
         <CardContent>
-          {state.paymentMethods.length > 0 ? (
-            <div className="space-y-3">
-              {state.paymentMethods.map((method) => (
-                <div key={method.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <CreditCard className="h-5 w-5 text-gray-400" />
-                    <div>
-                      <p className="font-medium">
-                        {method.brand} ending in {method.last4}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Expires {method.expiryMonth.toString().padStart(2, '0')}/{method.expiryYear}
-                      </p>
-                    </div>
-                    {method.isDefault && (
-                      <Badge variant="outline">Default</Badge>
-                    )}
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Edit
-                  </Button>
-                </div>
-              ))}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label>Plan</Label>
+              <p className="font-semibold">{currentPlan.name}</p>
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <CreditCard className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600">No payment methods added yet</p>
+            <div>
+              <Label>Price</Label>
+              <p className="font-semibold">₪{subscription.amount} / month</p>
             </div>
-          )}
+            <div>
+              <Label>Billing Cycle</Label>
+              <p>{new Date(subscription.currentPeriodStart).toLocaleDateString()} - {new Date(subscription.currentPeriodEnd).toLocaleDateString()}</p>
+            </div>
+             <div>
+              <Label>Client Limit</Label>
+              <p>{subscription.clientLimit}</p>
+            </div>
+          </div>
+          <Separator className="my-6" />
+          <div className="flex justify-end gap-2">
+            {subscription.status === 'active' && (
+               <Button variant="destructive" onClick={handleCancelSubscription} disabled={state.loading}>
+                {state.loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Cancel Subscription
+              </Button>
+            )}
+            {/* Plan change functionality can be added here */}
+          </div>
         </CardContent>
       </Card>
-
-      {/* Recent Invoices */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5" />
-            Recent Invoices
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {state.invoices.length > 0 ? (
-            <div className="space-y-3">
-              {state.invoices.map((invoice) => (
-                <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-5 w-5 text-gray-400" />
-                    <div>
-                      <p className="font-medium">{invoice.description}</p>
-                      <p className="text-sm text-gray-600">
-                        {invoice.date.toLocaleDateString('he-IL')} • ₪{invoice.amount}
-                      </p>
-                    </div>
-                    <Badge 
-                      variant={
-                        invoice.status === 'paid' ? 'default' : 
-                        invoice.status === 'pending' ? 'secondary' : 'destructive'
-                      }
-                    >
-                      {invoice.status}
-                    </Badge>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleDownloadInvoice(invoice.id)}
-                    disabled={!invoice.downloadUrl}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </Button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <Receipt className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600">No invoices available</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Add Payment Method Modal */}
-      {showAddPaymentMethod && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Add Payment Method</CardTitle>
-              <CardDescription>
-                Add a credit card for automatic billing
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="cardNumber">Card Number</Label>
-                <Input 
-                  id="cardNumber" 
-                  placeholder="1234 5678 9012 3456"
-                  maxLength={19}
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="expiryDate">Expiry Date</Label>
-                  <Input 
-                    id="expiryDate" 
-                    placeholder="MM/YY"
-                    maxLength={5}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="cvv">CVV</Label>
-                  <Input 
-                    id="cvv" 
-                    placeholder="123"
-                    maxLength={4}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="holderName">Cardholder Name</Label>
-                <Input 
-                  id="holderName" 
-                  placeholder="Full name as on card"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="holderId">ID Number</Label>
-                <Input 
-                  id="holderId" 
-                  placeholder="Israeli ID number"
-                  maxLength={9}
-                />
-              </div>
-
-              <Alert>
-                <Shield className="h-4 w-4" />
-                <AlertDescription>
-                  Your payment information is encrypted and processed securely through Israeli banking standards.
-                </AlertDescription>
-              </Alert>
-
-              <div className="flex gap-3">
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => setShowAddPaymentMethod(false)}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  className="flex-1"
-                  onClick={() => handleAddPaymentMethod({})}
-                >
-                  Add Card
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Plan Selection Modal */}
-      {showPlanSelection && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-2xl">
-            <CardHeader>
-              <CardTitle>Choose Your Plan</CardTitle>
-              <CardDescription>
-                Select the plan that best fits your coaching needs
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[
-                  {
-                    id: 'basic',
-                    name: 'Basic Plan',
-                    price: 199,
-                    features: ['Up to 10 clients', 'Basic scheduling', 'Email support'],
-                  },
-                  {
-                    id: 'professional',
-                    name: 'Professional Plan',
-                    price: 299,
-                    features: ['Up to 50 clients', 'Advanced scheduling', 'Video calls', 'Priority support'],
-                    popular: true,
-                  },
-                  {
-                    id: 'enterprise',
-                    name: 'Enterprise Plan',
-                    price: 499,
-                    features: ['Unlimited clients', 'White-label options', 'API access', '24/7 support'],
-                  },
-                ].map((plan) => (
-                  <div 
-                    key={plan.id}
-                    className={`border rounded-lg p-6 cursor-pointer hover:shadow-md transition-shadow ${
-                      plan.popular ? 'border-blue-500 bg-blue-50' : ''
-                    }`}
-                    onClick={() => handleChangePlan(plan.id)}
-                  >
-                    {plan.popular && (
-                      <Badge className="mb-3">Most Popular</Badge>
-                    )}
-                    <h3 className="font-semibold text-lg">{plan.name}</h3>
-                    <p className="text-2xl font-bold text-blue-600 mb-4">
-                      ₪{plan.price}<span className="text-sm text-gray-600">/month</span>
-                    </p>
-                    <ul className="space-y-2 text-sm">
-                      {plan.features.map((feature, index) => (
-                        <li key={index} className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-green-600" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="flex gap-3 mt-6">
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => setShowPlanSelection(false)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      
+      {/* Payment Methods and Invoice History sections would be built out here, fetching from their respective endpoints */}
     </div>
   );
 };

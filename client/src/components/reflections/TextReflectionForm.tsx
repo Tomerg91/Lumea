@@ -9,6 +9,7 @@ import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Label } from '../ui/label';
 import { Loader2, Save, Send } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface Session {
   id: string;
@@ -27,33 +28,29 @@ export const TextReflectionForm: React.FC<TextReflectionFormProps> = ({
 }) => {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [content, setContent] = useState('');
   const [mood, setMood] = useState<MoodType | ''>('');
   const [sessionId, setSessionId] = useState<string>('');
-  const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoadingSessions, setIsLoadingSessions] = useState(true);
 
-  // Load user sessions on component mount
+  // Load user sessions with React Query
+  const { data: sessions = [], isLoading: isLoadingSessions, error: sessionsError } = useQuery({
+    queryKey: ['sessions', 'for-reflections'],
+    queryFn: () => SimpleReflectionService.getUserSessions(),
+  });
+
+  // Handle sessions loading error
   useEffect(() => {
-    const loadSessions = async () => {
-      try {
-        const userSessions = await SimpleReflectionService.getUserSessions();
-        setSessions(userSessions);
-      } catch (error) {
-        console.error('Failed to load sessions:', error);
-        toast({
-          title: t('reflections.loadSessionsError'),
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoadingSessions(false);
-      }
-    };
-
-    loadSessions();
-  }, [t]);
+    if (sessionsError) {
+      console.error('Failed to load sessions:', sessionsError);
+      toast({
+        title: t('reflections.loadSessionsError'),
+        variant: 'destructive',
+      });
+    }
+  }, [sessionsError, t, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +70,9 @@ export const TextReflectionForm: React.FC<TextReflectionFormProps> = ({
         mood: mood || undefined,
         session_id: sessionId || undefined,
       });
+
+      // Invalidate reflections cache to trigger real-time updates
+      queryClient.invalidateQueries({ queryKey: ['reflections'] });
 
       toast({
         title: t('reflections.submitSuccess'),
@@ -108,6 +108,9 @@ export const TextReflectionForm: React.FC<TextReflectionFormProps> = ({
         mood: mood || undefined,
         session_id: sessionId || undefined,
       });
+
+      // Invalidate reflections cache to trigger real-time updates
+      queryClient.invalidateQueries({ queryKey: ['reflections'] });
 
       toast({
         title: t('reflections.draftSaved'),

@@ -1,0 +1,11 @@
+# Task ID: 14
+# Title: Live Session Status Indicators
+# Status: pending
+# Dependencies: 5
+# Priority: low
+# Description: Add live session status and participant tracking
+# Details:
+Implement real-time session status indicators, add participant presence tracking, ensure status accuracy.
+
+# Test Strategy:
+Session status reflects real-time state, participant tracking works accurately, status updates are immediate

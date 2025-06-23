@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -41,6 +42,7 @@ interface NewSessionFormData {
 }
 
 const Sessions = () => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
@@ -97,8 +99,8 @@ const Sessions = () => {
   const handleCreateSession = async () => {
     if (!user?.id) {
       toast({
-        title: 'Error',
-        description: 'You must be logged in to create a session.',
+        title: t('common.error'),
+        description: t('sessions.toast.loginRequired'),
         variant: 'destructive',
       });
       return;
@@ -106,8 +108,8 @@ const Sessions = () => {
 
     if (!newSessionData.time || !newSessionData.coach || !newSessionData.type) {
       toast({
-        title: 'Error',
-        description: 'Please fill in all required fields.',
+        title: t('common.error'),
+        description: t('sessions.toast.fillRequiredFields'),
         variant: 'destructive',
       });
       return;
@@ -137,13 +139,13 @@ const Sessions = () => {
         notes: '',
       });
       toast({
-        title: 'Success',
-        description: 'Your session has been scheduled.',
+        title: t('common.success'),
+        description: t('sessions.toast.sessionScheduled'),
       });
     } catch (err) {
       toast({
-        title: 'Error',
-        description: err instanceof Error ? err.message : 'Could not create session.',
+        title: t('common.error'),
+        description: err instanceof Error ? err.message : t('sessions.toast.createError'),
         variant: 'destructive',
       });
     }
@@ -165,7 +167,7 @@ const Sessions = () => {
     return (
       <MainLayout>
         <div className="max-w-6xl mx-auto flex justify-center items-center h-[calc(100vh-200px)]">
-          <p className="text-xl">Loading sessions...</p>
+          <p className="text-xl">{t('sessions.loading')}</p>
         </div>
       </MainLayout>
     );
@@ -175,8 +177,8 @@ const Sessions = () => {
     return (
       <MainLayout>
         <div className="max-w-6xl mx-auto flex flex-col justify-center items-center h-[calc(100vh-200px)]">
-          <p className="text-xl text-red-500">Error: {error?.message || 'Failed to load sessions'}</p>
-          <p>Please try refreshing the page. If the issue persists, the backend might be unavailable.</p>
+          <p className="text-xl text-red-500">{t('common.error')}: {error?.message || t('sessions.error')}</p>
+          <p>{t('sessions.errorDescription')}</p>
         </div>
       </MainLayout>
     );
@@ -187,8 +189,8 @@ const Sessions = () => {
       <div className="max-w-6xl mx-auto animate-fade-in">
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl md:text-4xl font-playfair mb-2">Sessions</h1>
-            <p className="text-muted-foreground">Manage your coaching appointments</p>
+            <h1 className="text-3xl md:text-4xl font-playfair mb-2">{t('sessions.title')}</h1>
+            <p className="text-muted-foreground">{t('sessions.subtitle')}</p>
           </div>
 
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -209,19 +211,19 @@ const Sessions = () => {
                   <line x1="12" x2="12" y1="5" y2="19"></line>
                   <line x1="5" x2="19" y1="12" y2="12"></line>
                 </svg>
-                New Session
+{t('sessions.newSession')}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>Schedule a Session</DialogTitle>
+                <DialogTitle>{t('sessions.scheduleSession')}</DialogTitle>
                 <DialogDescription>
-                  Create a new coaching session. Click save when you&apos;re done.
+                  {t('sessions.scheduleDescription')}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="date">Date</Label>
+                  <Label htmlFor="date">{t('sessions.form.date')}</Label>
                   <Calendar
                     mode="single"
                     selected={newSessionData.date}
@@ -231,7 +233,7 @@ const Sessions = () => {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="time">Time</Label>
+                  <Label htmlFor="time">{t('sessions.form.time')}</Label>
                   <Input
                     id="time"
                     type="time"
@@ -240,14 +242,14 @@ const Sessions = () => {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="coach">Coach</Label>
+                  <Label htmlFor="coach">{t('sessions.form.coach')}</Label>
                   <Select
                     value={newSessionData.coach}
                     onValueChange={(value) => setNewSessionData({ ...newSessionData, coach: value })}
                     disabled={coachesLoading}
                   >
                     <SelectTrigger id="coach">
-                      <SelectValue placeholder={coachesLoading ? "Loading coaches..." : "Select a coach"} />
+                      <SelectValue placeholder={coachesLoading ? t('sessions.form.loadingCoaches') : t('sessions.form.selectCoach')} />
                     </SelectTrigger>
                     <SelectContent>
                       {availableCoaches.map((coach) => (
@@ -257,48 +259,48 @@ const Sessions = () => {
                       ))}
                       {availableCoaches.length === 0 && !coachesLoading && (
                         <SelectItem value="" disabled>
-                          No coaches available
+                          {t('sessions.form.noCoachesAvailable')}
                         </SelectItem>
                       )}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="type">Session Type</Label>
+                  <Label htmlFor="type">{t('sessions.form.sessionType')}</Label>
                   <Select
                     value={newSessionData.type}
                     onValueChange={(value) => setNewSessionData({ ...newSessionData, type: value })}
                   >
                     <SelectTrigger id="type">
-                      <SelectValue placeholder="Select session type" />
+                      <SelectValue placeholder={t('sessions.form.selectSessionType')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="One-on-one Session">One-on-one Session</SelectItem>
-                      <SelectItem value="Group Session">Group Session</SelectItem>
-                      <SelectItem value="Assessment">Assessment</SelectItem>
+                      <SelectItem value="One-on-one Session">{t('sessions.form.sessionTypes.oneOnOne')}</SelectItem>
+                      <SelectItem value="Group Session">{t('sessions.form.sessionTypes.group')}</SelectItem>
+                      <SelectItem value="Assessment">{t('sessions.form.sessionTypes.assessment')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="notes">Notes</Label>
+                  <Label htmlFor="notes">{t('sessions.form.notes')}</Label>
                   <Textarea
                     id="notes"
                     value={newSessionData.notes}
                     onChange={(e) => setNewSessionData({ ...newSessionData, notes: e.target.value })}
-                    placeholder="Add any details or topics you'd like to cover..."
+                    placeholder={t('sessions.form.notesPlaceholder')}
                   />
                 </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
+                  {t('sessions.actions.cancel')}
                 </Button>
                 <Button
                   className="bg-lumea-stone text-lumea-beige hover:bg-lumea-stone/90"
                   onClick={handleCreateSession}
                   disabled={!newSessionData.time || !newSessionData.coach || !newSessionData.type || isLoading}
                 >
-                  Schedule Session
+                  {t('sessions.actions.schedule')}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -307,9 +309,9 @@ const Sessions = () => {
 
         <Tabs defaultValue="upcoming" className="mb-8">
           <TabsList>
-            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-            <TabsTrigger value="past">Past</TabsTrigger>
-            <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+            <TabsTrigger value="upcoming">{t('sessions.tabs.upcoming')}</TabsTrigger>
+            <TabsTrigger value="past">{t('sessions.tabs.past')}</TabsTrigger>
+            <TabsTrigger value="cancelled">{t('sessions.tabs.cancelled')}</TabsTrigger>
           </TabsList>
 
           <div className="flex justify-end my-4">
@@ -336,7 +338,7 @@ const Sessions = () => {
                   <line x1="8" x2="8" y1="2" y2="6"></line>
                   <line x1="3" x2="21" y1="10" y2="10"></line>
                 </svg>
-                Calendar
+                {t('sessions.views.calendar')}
               </Button>
               <Button
                 variant="ghost"
@@ -362,7 +364,7 @@ const Sessions = () => {
                   <line x1="3" x2="3.01" y1="12" y2="12"></line>
                   <line x1="3" x2="3.01" y1="18" y2="18"></line>
                 </svg>
-                List
+                {t('sessions.views.list')}
               </Button>
             </div>
           </div>
@@ -374,8 +376,8 @@ const Sessions = () => {
               {view === 'calendar' && (
                 <Card className="lumea-card">
                   <CardHeader>
-                    <CardTitle>Calendar View</CardTitle>
-                    <CardDescription>Select a date to view sessions</CardDescription>
+                    <CardTitle>{t('sessions.calendar.title')}</CardTitle>
+                    <CardDescription>{t('sessions.calendar.description')}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Calendar

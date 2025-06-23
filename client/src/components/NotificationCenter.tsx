@@ -1,12 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, X, Check, CheckCheck, Filter, Settings } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import notificationService, { 
-  Notification, 
-  NotificationType, 
-  NotificationStatus 
-} from '../services/notificationService';
+import { 
+  useNotifications, 
+  useUnreadCount, 
+  useMarkAsRead, 
+  useMarkAllAsRead 
+} from '../hooks/useNotifications';
+import { 
+  supabaseNotificationService,
+  type Notification, 
+  type NotificationType, 
+  type NotificationStatus 
+} from '../services/supabaseNotificationService';
 import { cn } from '../lib/utils';
 
 interface NotificationCenterProps {
@@ -16,22 +24,52 @@ interface NotificationCenterProps {
 export const NotificationCenter: React.FC<NotificationCenterProps> = ({ 
   className 
 }) => {
-  const { isRTL, t } = useLanguage();
+  const { t } = useTranslation();
+  const { isRTL } = useLanguage();
   const { session } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<{
     status?: NotificationStatus;
     type?: NotificationType;
   }>({});
   const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
+  const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
   
   const dropdownRef = useRef<HTMLDivElement>(null);
   const limit = 20;
+
+  // Use the new notification hooks
+  const { 
+    notifications, 
+    total, 
+    isLoading, 
+    error 
+  } = useNotifications({
+    ...filter,
+    limit,
+    offset: page * limit
+  });
+
+  const { unreadCount } = useUnreadCount();
+  const markAsReadMutation = useMarkAsRead();
+  const markAllAsReadMutation = useMarkAllAsRead();
+
+  // Accumulate notifications for pagination
+  useEffect(() => {
+    if (page === 0) {
+      // Reset for new filter or first load
+      setAllNotifications(notifications);
+    } else {
+      // Append for pagination
+      setAllNotifications(prev => [...prev, ...notifications]);
+    }
+  }, [notifications, page]);
+
+  // Reset pagination when filter changes
+  useEffect(() => {
+    setPage(0);
+    setAllNotifications([]);
+  }, [filter]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -45,69 +83,9 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Load notifications and set up real-time updates
-  useEffect(() => {
-    if (!session) return;
-
-    loadNotifications(true);
-    loadUnreadCount();
-
-    // Subscribe to real-time updates
-    const unsubscribeNotifications = notificationService.subscribe(
-      'notification-center',
-      (updatedNotifications) => {
-        setNotifications(updatedNotifications);
-      }
-    );
-
-    const unsubscribeUnreadCount = notificationService.subscribeToUnreadCount(
-      (count) => {
-        setUnreadCount(count);
-      }
-    );
-
-    return () => {
-      unsubscribeNotifications();
-      unsubscribeUnreadCount();
-    };
-  }, [session, filter]);
-
-  const loadNotifications = async (reset = false) => {
-    if (loading || (!reset && !hasMore)) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const currentPage = reset ? 0 : page;
-      const response = await notificationService.getNotifications({
-        ...filter,
-        limit,
-        offset: currentPage * limit,
-      });
-
-      if (reset) {
-        setNotifications(response.data);
-        setPage(1);
-      } else {
-        setNotifications(prev => [...prev, ...response.data]);
-        setPage(prev => prev + 1);
-      }
-
-      setHasMore(response.data.length === limit);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load notifications');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadUnreadCount = async () => {
-    try {
-      const response = await notificationService.getUnreadCount();
-      setUnreadCount(response.count);
-    } catch (err) {
-      console.error('Failed to load unread count:', err);
+  const loadMoreNotifications = () => {
+    if (!isLoading && notifications.length === limit) {
+      setPage(prev => prev + 1);
     }
   };
 
@@ -115,16 +93,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     event.stopPropagation();
     
     try {
-      await notificationService.markAsRead(notificationId);
-      
-      // Update local state
-      setNotifications(prev => 
-        prev.map(n => 
-          n._id === notificationId 
-            ? { ...n, status: 'read' as NotificationStatus, readAt: new Date().toISOString() }
-            : n
-        )
-      );
+      await markAsReadMutation.mutateAsync(notificationId);
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
     }
@@ -132,17 +101,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
 
   const handleMarkAllAsRead = async () => {
     try {
-      await notificationService.markAllAsRead();
-      
-      // Update local state
-      setNotifications(prev => 
-        prev.map(n => ({ 
-          ...n, 
-          status: 'read' as NotificationStatus, 
-          readAt: new Date().toISOString() 
-        }))
-      );
-      setUnreadCount(0);
+      await markAllAsReadMutation.mutateAsync();
     } catch (err) {
       console.error('Failed to mark all notifications as read:', err);
     }
@@ -164,6 +123,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         return '📝';
       case 'reflection_submitted':
         return '💭';
+      case 'feedback_request':
+        return '📝';
       default:
         return '📢';
     }
@@ -206,7 +167,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
               'text-sm font-semibold truncate',
               isUnread ? 'text-gradient-purple' : 'text-gray-900'
             )}>
-              {notificationService.getTypeDisplayName(notification.type)}
+              {supabaseNotificationService.getTypeDisplayName(notification.type)}
             </h4>
             
             {/* Priority Badge */}
@@ -231,18 +192,19 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
             isRTL && 'flex-row-reverse'
           )}>
             <span>
-              {notificationService.formatDate(notification.createdAt)}
+              {supabaseNotificationService.formatDate(notification.created_at)}
             </span>
             
             {/* Mark as read button */}
             {isUnread && (
               <button
-                onClick={(e) => handleMarkAsRead(notification._id, e)}
+                onClick={(e) => handleMarkAsRead(notification.id, e)}
                 className={cn(
                   'flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-blue-100 text-blue-600 transition-colors duration-200',
                   isRTL && 'flex-row-reverse space-x-reverse'
                 )}
                 title={t('notifications.markAsRead')}
+                disabled={markAsReadMutation.isPending}
               >
                 <Check className="w-3 h-3" />
                 <span className="hidden sm:inline">{t('notifications.markAsRead')}</span>
@@ -255,6 +217,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   };
 
   if (!session) return null;
+
+  const hasMore = allNotifications.length < total && notifications.length === limit;
 
   return (
     <div className={cn('relative', className)} ref={dropdownRef}>
@@ -301,7 +265,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                 {unreadCount > 0 && (
                   <button
                     onClick={handleMarkAllAsRead}
-                    className="flex items-center space-x-1 px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors duration-200"
+                    disabled={markAllAsReadMutation.isPending}
+                    className="flex items-center space-x-1 px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors duration-200 disabled:opacity-50"
                     title={t('notifications.markAllAsRead')}
                   >
                     <CheckCheck className="w-4 h-4" />
@@ -354,6 +319,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                 <option value="session_cancelled">{t('notifications.sessionCancelled')}</option>
                 <option value="session_rescheduled">{t('notifications.sessionRescheduled')}</option>
                 <option value="reflection_submitted">New Reflection</option>
+                <option value="feedback_request">Feedback Request</option>
               </select>
             </div>
           </div>
@@ -362,29 +328,29 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
           <div className="max-h-96 overflow-y-auto">
             {error && (
               <div className="p-4 text-center text-red-600 bg-red-50/50">
-                {error}
+                {error instanceof Error ? error.message : 'Failed to load notifications'}
               </div>
             )}
             
-            {notifications.length === 0 && !loading && !error && (
+            {allNotifications.length === 0 && !isLoading && !error && (
               <div className="p-8 text-center text-gray-500">
                 <Bell className="w-12 h-12 mx-auto mb-3 opacity-30" />
                 <p>{t('notifications.empty')}</p>
               </div>
             )}
             
-            {notifications.map((notification) => (
+            {allNotifications.map((notification) => (
               <NotificationItem 
-                key={notification._id} 
+                key={notification.id} 
                 notification={notification}
               />
             ))}
             
             {/* Load More Button */}
-            {hasMore && !loading && notifications.length > 0 && (
+            {hasMore && !isLoading && (
               <div className="p-4 text-center border-t border-white/10">
                 <button
-                  onClick={() => loadNotifications(false)}
+                  onClick={loadMoreNotifications}
                   className="text-sm text-blue-600 hover:text-blue-800 font-medium"
                 >
                   {t('notifications.loadMore')}
@@ -392,28 +358,11 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
               </div>
             )}
             
-            {loading && (
+            {isLoading && (
               <div className="p-4 text-center">
                 <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
               </div>
             )}
-          </div>
-          
-          {/* Footer */}
-          <div className="p-3 border-t border-white/20 bg-gradient-background-subtle/50 rounded-b-2xl">
-            <button
-              onClick={() => {
-                setIsOpen(false);
-                // Navigate to notification settings - implement based on routing structure
-              }}
-              className={cn(
-                'flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-800 transition-colors duration-200',
-                isRTL && 'flex-row-reverse space-x-reverse'
-              )}
-            >
-              <Settings className="w-4 h-4" />
-              <span>{t('notifications.settings')}</span>
-            </button>
           </div>
         </div>
       )}

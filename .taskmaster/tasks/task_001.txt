@@ -1,79 +1,37 @@
 # Task ID: 1
-# Title: Epic 1: User Onboarding & Management
-# Status: pending
+# Title: Emergency Backend Server Recovery
+# Status: done
 # Dependencies: None
 # Priority: high
-# Description: Covers foundational features for user registration, login, profile management, and coach-client association.
+# Description: Diagnose and fix critical backend server connection issues causing ECONNREFUSED errors on all API endpoints
 # Details:
-Implement user stories 1.1 through 1.5 from the PRD. This includes registration flows for Clients and Coaches (with admin approval for coaches), secure login, password reset, profile editing, and the ability for coaches to manage their client list.
+The backend server is completely disconnected from the client. All API endpoints (/api/dashboard/stats, /api/sessions/upcoming, /api/reflections/recent, /api/notifications, /api/sessions/timer/analytics) are failing with ECONNREFUSED errors. Need to check server process status, verify Vite proxy configuration, validate environment variables, and test Supabase connectivity.
 
 # Test Strategy:
-E2E tests for registration, login, and password reset. Integration tests for API endpoints. Unit tests for validation logic.
+Verify all API endpoints respond without proxy errors, confirm dashboard shows live data, ensure no ECONNREFUSED errors in console
 
 # Subtasks:
-## 1. Configure Passport.js for Drizzle [done]
+## 1. Check Backend Server Process Status [done]
 ### Dependencies: None
-### Description: Create `serializeUser` and `deserializeUser` functions that work with the Drizzle user object and its numeric `id`. This is the first step in replacing Mongoose in the authentication flow.
+### Description: Verify if the backend server is running and check for any startup errors
 ### Details:
+Check if the backend server process is running, examine server logs for errors, verify package.json scripts are working correctly
 
-
-## 2. Rewrite Passport's LocalStrategy [done]
+## 2. Verify Vite Proxy Configuration [done]
 ### Dependencies: None
-### Description: Rewrite the current `LocalStrategy` to use Drizzle for database lookups (`db.query.users.findFirst`) and password verification (`bcrypt.compare`). This will replace the Mongoose-based user finding and password checking.
+### Description: Check Vite proxy settings and port configuration for API routing
 ### Details:
+Examine vite.config.ts proxy settings, verify target URLs and port mappings, ensure proxy is correctly routing API calls
 
-
-## 3. Update Express req.user Type Definition [done]
+## 3. Validate Environment Variables [done]
 ### Dependencies: None
-### Description: Change the global type definition for `Express.Request['user']` from the Mongoose `IUser` to a new interface representing the Drizzle user payload. This ensures type safety throughout the application when accessing the logged-in user.
+### Description: Check all required environment variables are properly configured
 ### Details:
+Verify Supabase URL, API keys, database connections, and all environment variables needed for backend operation
 
-
-## 4. Refactor /login and /signup Routes [done]
+## 4. Test API Endpoints Connectivity [done]
 ### Dependencies: None
-### Description: Update the `/login` and `/signup` routes to use the new Drizzle-based Passport configuration. The `signup` controller will now be much simpler as it no longer needs to mock a Mongoose user.
+### Description: Verify that all API endpoints are accessible and returning proper responses
 ### Details:
-
-
-## 5. Refactor /current-user Route [done]
-### Dependencies: None
-### Description: Update this route to work with the new Drizzle user object that will be present in the session after the refactor.
-### Details:
-
-
-## 7. Remove Mongoose from Authentication [done]
-### Dependencies: None
-### Description: Remove the Mongoose `User` model (`server/src/models/User.ts`), and refactor any remaining Mongoose calls in `server/src/storage.js`. Finally, remove the `mongoose` package from `package.json`. This is the final cleanup step.
-### Details:
-
-
-## 8. Design Prisma schema for password reset tokens [in-progress]
-### Dependencies: None
-### Description: Create a new `password_reset_tokens` table in the database.
-### Details:
-Define columns: id (uuid PK), userId (FK), token (varchar 64), expiresAt (timestamp). Generate Prisma migration.
-
-## 9. Implement token generation & email service [pending]
-### Dependencies: None
-### Description: Generate secure token, store in DB, and send password reset email.
-### Details:
-Create service using crypto.randomBytes(32). Implement email via Resend with reset link containing token.
-
-## 10. Implement /request-password-reset route [pending]
-### Dependencies: None
-### Description: Endpoint to request password reset which triggers token creation and email.
-### Details:
-Create POST /api/auth/request-password-reset. Validate email exists. Call token service. Return 204.
-
-## 11. Implement /reset-password route [pending]
-### Dependencies: None
-### Description: Endpoint to verify token and set new password.
-### Details:
-POST /api/auth/reset-password with token and new password. Validate token, check expiry, hash new password, delete token.
-
-## 12. Integration & E2E tests for password reset flow [pending]
-### Dependencies: None
-### Description: Write tests ensuring end-to-end password reset works.
-### Details:
-Integration tests for token creation and password change. E2E test simulating user requesting reset and logging in with new password.
+Test key API endpoints like /api/dashboard/stats, /api/sessions/upcoming, /api/reflections/recent to ensure they are no longer returning ECONNREFUSED errors and are properly connected to Supabase
 

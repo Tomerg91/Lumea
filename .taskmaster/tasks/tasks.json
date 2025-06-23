@@ -253,7 +253,7 @@
         "id": 6,
         "title": "Reflection System Live Data Implementation",
         "description": "Implement live reflection data with real-time updates",
-        "status": "pending",
+        "status": "done",
         "priority": "medium",
         "dependencies": [
           3
@@ -265,7 +265,7 @@
         "id": 7,
         "title": "Notification System Live Integration",
         "description": "Connect notification system to live delivery and storage",
-        "status": "pending",
+        "status": "done",
         "priority": "medium",
         "dependencies": [
           3
@@ -343,6 +343,33 @@
             "status": "done",
             "dependencies": [],
             "parentTaskId": 10
+          },
+          {
+            "id": 5,
+            "title": "Fix Dashboard.tsx Translation Issues",
+            "description": "Replace 50+ hardcoded bilingual strings in Dashboard.tsx with proper t() translation calls",
+            "details": "Critical Priority - Dashboard.tsx has extensive hardcoded text like 'Sessions Completed / מפגשים שהושלמו' that needs to be replaced with proper translation keys. This affects the main user interface significantly.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 10
+          },
+          {
+            "id": 6,
+            "title": "Fix Sessions.tsx Translation Issues",
+            "description": "Replace all hardcoded English strings in Sessions.tsx with proper translation calls",
+            "details": "High Priority - Sessions.tsx has all UI strings hardcoded in English including buttons, labels, and status messages. This affects core session management functionality.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 10
+          },
+          {
+            "id": 7,
+            "title": "Add Missing Hebrew Translations",
+            "description": "Add the 42 missing Hebrew translation keys identified in the audit",
+            "details": "Medium Priority - Add missing Hebrew translations for 42 keys, primarily in settings.* namespace. This ensures complete Hebrew language support across the application.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 10
           }
         ]
       },
@@ -407,6 +434,92 @@
         ],
         "details": "Optimize real-time feature performance, conduct load testing, ensure scalability for production use.",
         "testStrategy": "Performance metrics meet targets, load testing passes, real-time features scale properly"
+      },
+      {
+        "id": 16,
+        "title": "Security Vulnerability Remediation",
+        "description": "Fix 6 high-severity dependency vulnerabilities in client workspace",
+        "status": "pending",
+        "priority": "critical",
+        "dependencies": [],
+        "details": "Address critical security vulnerabilities found in npm audit:\n\n1. tar-fs vulnerabilities (2 issues):\n   - GHSA-pq67-2wwv-3xjx: Vulnerable to Link Following and Path Traversal\n   - GHSA-8cj5-5rvv-wf4v: Can extract outside specified directory\n\n2. ws vulnerability (1 issue):\n   - GHSA-3h5v-q93c-6h6q: DoS when handling requests with many HTTP headers\n\nAffected dependency chain:\n- @size-limit/preset-app (main package)\n- @size-limit/time → estimo → puppeteer-core → tar-fs\n- @size-limit/time → estimo → puppeteer-core → ws\n\nAll vulnerabilities are in development dependencies used for bundle analysis and performance testing. Fix available via 'npm audit fix --force' but requires careful analysis to avoid breaking changes.",
+        "testStrategy": "Run npm audit and verify 0 vulnerabilities, ensure bundle analyzer still works, confirm no breaking changes to development tools, test performance measurement functionality",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Analyze Vulnerability Impact",
+            "description": "Assess the security impact and affected functionality",
+            "details": "Analyze each vulnerability:\n- Understand attack vectors and potential impact\n- Identify which development tools are affected\n- Determine if vulnerabilities affect production builds\n- Research available fixes and version compatibility",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 16
+          },
+          {
+            "id": 2,
+            "title": "Backup Current Bundle Analyzer Configuration",
+            "description": "Create backup of working bundle analyzer setup",
+            "details": "Before making changes:\n- Document current @size-limit/preset-app configuration\n- Backup client/bundle-analyzer.js\n- Test current bundle analysis functionality\n- Document any custom configurations or scripts",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 16
+          },
+          {
+            "id": 3,
+            "title": "Research Alternative Solutions",
+            "description": "Investigate alternative packages or update paths",
+            "details": "Research options:\n- Check if newer versions of @size-limit/preset-app fix vulnerabilities\n- Investigate alternative bundle analysis tools\n- Research if estimo/puppeteer-core can be replaced\n- Evaluate webpack-bundle-analyzer or other alternatives",
+            "status": "pending",
+            "dependencies": [
+              1
+            ],
+            "parentTaskId": 16
+          },
+          {
+            "id": 4,
+            "title": "Test Automated Fix",
+            "description": "Test npm audit fix --force in isolated environment",
+            "details": "Test the automated fix:\n- Create a backup branch\n- Run 'npm audit fix --force' in client workspace\n- Test bundle analyzer functionality\n- Check for any breaking changes in scripts\n- Verify performance measurement tools still work",
+            "status": "pending",
+            "dependencies": [
+              2,
+              3
+            ],
+            "parentTaskId": 16
+          },
+          {
+            "id": 5,
+            "title": "Implement Security Fix",
+            "description": "Apply the security fix with minimal disruption",
+            "details": "Implement the chosen solution:\n- Apply npm audit fix or alternative solution\n- Update package.json and package-lock.json\n- Test all bundle analysis scripts\n- Verify CI/CD pipeline compatibility\n- Update documentation if needed",
+            "status": "pending",
+            "dependencies": [
+              4
+            ],
+            "parentTaskId": 16
+          },
+          {
+            "id": 6,
+            "title": "Validate Fix and Test Functionality",
+            "description": "Comprehensive testing of security fix",
+            "details": "Validate the implementation:\n- Run npm audit to confirm 0 vulnerabilities\n- Test bundle-analyzer.js script functionality\n- Verify size-limit preset still works\n- Test performance measurement tools\n- Run full test suite to ensure no regressions\n- Document any configuration changes",
+            "status": "pending",
+            "dependencies": [
+              5
+            ],
+            "parentTaskId": 16
+          },
+          {
+            "id": 7,
+            "title": "Update Security Documentation",
+            "description": "Document security remediation process",
+            "details": "Create security documentation:\n- Document vulnerabilities found and fixed\n- Record remediation steps taken\n- Update dependency management guidelines\n- Add security audit to CI/CD checklist\n- Create process for regular security audits",
+            "status": "pending",
+            "dependencies": [
+              6
+            ],
+            "parentTaskId": 16
+          }
+        ]
       }
     ],
     "metadata": {
@@ -424,7 +537,7 @@
       },
       "currentTag": "master",
       "created": "2025-06-22T10:38:44.462Z",
-      "updated": "2025-06-22T11:54:08.421Z"
+      "updated": "2025-06-23T13:48:14.290Z"
     }
   }
 }

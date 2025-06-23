@@ -1,0 +1,73 @@
+# Task ID: 10
+# Title: Translation Coverage Audit
+# Status: done
+# Dependencies: None
+# Priority: medium
+# Description: Complete audit of all components for translation coverage
+# Details:
+Systematically review all components to ensure complete Hebrew and English translation coverage, identify missing translations.
+
+# Test Strategy:
+All text elements have translations, no missing translation keys, both languages display correctly
+
+# Subtasks:
+## 1. Analyze Current Translation Infrastructure [done]
+### Dependencies: None
+### Description: Review existing translation setup, i18n configuration, and translation files
+### Details:
+Examine the current translation infrastructure including:
+- i18n configuration files
+- Translation key structure
+- Available language files (Hebrew/English)
+- Translation hook implementation
+- Language switching mechanism
+
+## 2. Audit Component Translation Coverage [done]
+### Dependencies: None
+### Description: Systematically review all React components for missing translations
+### Details:
+Go through each component directory and identify:
+- Hard-coded English text that should be translated
+- Missing translation keys
+- Components not using the translation hook
+- Inconsistent translation key naming
+
+## 3. Hebrew Translation File Completeness [done]
+### Dependencies: None
+### Description: Verify Hebrew translations exist for all English keys
+### Details:
+Compare English and Hebrew translation files to ensure:
+- All English keys have corresponding Hebrew translations
+- Hebrew translations are accurate and culturally appropriate
+- No missing or incomplete Hebrew translations
+- Proper RTL text formatting where needed
+
+## 4. Create Translation Coverage Report [done]
+### Dependencies: None
+### Description: Generate comprehensive report of translation gaps and recommendations
+### Details:
+Create a detailed report documenting:
+- List of components with missing translations
+- Missing translation keys by component
+- Hebrew translation gaps
+- Prioritized action items for translation completion
+- Recommendations for translation workflow improvements
+
+## 5. Fix Dashboard.tsx Translation Issues [done]
+### Dependencies: None
+### Description: Replace 50+ hardcoded bilingual strings in Dashboard.tsx with proper t() translation calls
+### Details:
+Critical Priority - Dashboard.tsx has extensive hardcoded text like 'Sessions Completed / מפגשים שהושלמו' that needs to be replaced with proper translation keys. This affects the main user interface significantly.
+
+## 6. Fix Sessions.tsx Translation Issues [done]
+### Dependencies: None
+### Description: Replace all hardcoded English strings in Sessions.tsx with proper translation calls
+### Details:
+High Priority - Sessions.tsx has all UI strings hardcoded in English including buttons, labels, and status messages. This affects core session management functionality.
+
+## 7. Add Missing Hebrew Translations [done]
+### Dependencies: None
+### Description: Add the 42 missing Hebrew translation keys identified in the audit
+### Details:
+Medium Priority - Add missing Hebrew translations for 42 keys, primarily in settings.* namespace. This ensures complete Hebrew language support across the application.
+

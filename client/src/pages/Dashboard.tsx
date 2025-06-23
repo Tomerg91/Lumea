@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import {
   Calendar,
@@ -56,6 +57,7 @@ interface RecentReflection {
 const Dashboard = () => {
   const { profile } = useAuth();
   const { isRTL } = useLanguage();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { isMobile } = useMobileDetection();
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -132,7 +134,7 @@ const Dashboard = () => {
           setUpcomingSessions([
             {
               id: '1',
-              title: 'מפגש עם שרה מזרחי / Session with Sarah Mizrahi',
+              title: t('dashboard.upcomingSessions.title'),
               date: '2024-01-15',
               time: '14:00',
               client: 'שרה מזרחי / Sarah Mizrahi',
@@ -140,7 +142,7 @@ const Dashboard = () => {
             },
             {
               id: '2',
-              title: 'מפגש עם דוד כהן / Session with David Cohen', 
+              title: t('dashboard.upcomingSessions.title'), 
               date: '2024-01-16',
               time: '10:30',
               client: 'דוד כהן / David Cohen',
@@ -159,7 +161,7 @@ const Dashboard = () => {
           setUpcomingSessions([
             {
               id: '1',
-              title: 'מפגש הנחיה אישית / Personal Guidance Session',
+              title: t('dashboard.upcomingSessions.title'),
               date: '2024-01-15',
               time: '14:00',
               coach: 'ד"ר רונית לוי / Dr. Ronit Levy',
@@ -171,21 +173,21 @@ const Dashboard = () => {
         setRecentReflections([
           {
             id: '1',
-            title: isCoach ? 'הערכה שבועית / Weekly Assessment' : 'יומן אישי / Personal Journal',
+            title: isCoach ? t('dashboard.recentReflections.assessmentTitle') : t('dashboard.recentReflections.journalTitle'),
             date: '2024-01-14',
             mood: '😊',
             preview: isCoach 
-              ? 'התקדמות מעולה של הלקוחות השבוע... / Excellent client progress this week...'
-              : 'היום הרגשתי יותר בטוח בעצמי... / Today I felt more confident...'
+              ? t('dashboard.recentReflections.assessmentPreview')
+              : t('dashboard.recentReflections.journalPreview')
           },
           {
             id: '2', 
-            title: isCoach ? 'תובנות מפגש / Session Insights' : 'מחשבות על המטרות / Thoughts on Goals',
+            title: isCoach ? t('dashboard.recentReflections.insightsTitle') : t('dashboard.recentReflections.goalsTitle'),
             date: '2024-01-12',
             mood: '🎯',
             preview: isCoach
-              ? 'גילויים חשובים במפגש עם לקוח... / Important discoveries in client session...'
-              : 'הבנתי שאני צריך להתמקד יותר ב... / I realized I need to focus more on...'
+              ? t('dashboard.recentReflections.insightsPreview')
+              : t('dashboard.recentReflections.goalsPreview')
           }
         ]);
 
@@ -198,49 +200,49 @@ const Dashboard = () => {
     };
 
     fetchDashboardData();
-  }, [isCoach]);
+  }, [isCoach, t]);
 
   const quickActions = isCoach ? [
     {
       icon: <Plus className="w-6 h-6" />,
-      title: 'הוסף לקוח חדש / Add New Client',
-      description: 'צור פרופיל לקוח חדש / Create new client profile',
+      title: t('dashboard.quickActions.addClient.title'),
+      description: t('dashboard.quickActions.addClient.description'),
       action: () => navigate('/coach/clients?action=add'),
       gradient: 'bg-gradient-coral-teal'
     },
     {
       icon: <Calendar className="w-6 h-6" />,
-      title: 'תזמן מפגש / Schedule Session',
-      description: 'הזמן מפגש עם לקוח / Schedule a client session',
+      title: t('dashboard.quickActions.scheduleSession.title'),
+      description: t('dashboard.quickActions.scheduleSession.description'),
       action: () => navigate('/coach/sessions?action=schedule'),
       gradient: 'bg-gradient-yellow-coral'
     },
     {
       icon: <PenTool className="w-6 h-6" />,
-      title: 'כתוב הערכה / Write Assessment',
-      description: 'צור הערכה חדשה / Create new assessment',
+      title: t('dashboard.quickActions.writeAssessment.title'),
+      description: t('dashboard.quickActions.writeAssessment.description'),
       action: () => navigate('/coach/assessments'),
       gradient: 'bg-gradient-warm'
     }
   ] : [
     {
       icon: <Calendar className="w-6 h-6" />,
-      title: 'הזמן מפגש / Book Session',
-      description: 'הזמן מפגש חדש / Schedule new session',
+      title: t('dashboard.quickActions.bookSession.title'),
+      description: t('dashboard.quickActions.bookSession.description'),
       action: () => navigate('/client/sessions?action=book'),
       gradient: 'bg-gradient-coral-teal'
     },
     {
       icon: <PenTool className="w-6 h-6" />,
-      title: 'כתוב הרהור / Write Reflection',
-      description: 'שתף את המחשבות שלך / Share your thoughts',
+      title: t('dashboard.quickActions.writeReflection.title'),
+      description: t('dashboard.quickActions.writeReflection.description'),
       action: () => navigate('/client/reflections?action=new'),
       gradient: 'bg-gradient-yellow-coral'
     },
     {
       icon: <Target className="w-6 h-6" />,
-      title: 'עדכן מטרות / Update Goals',
-      description: 'עקוב אחר ההתקדמות / Track your progress',
+      title: t('dashboard.quickActions.updateGoals.title'),
+      description: t('dashboard.quickActions.updateGoals.description'),
       action: () => navigate('/client/goals'),
       gradient: 'bg-gradient-warm'
     }
@@ -253,7 +255,7 @@ const Dashboard = () => {
           <div className="w-12 h-12 bg-gradient-coral-teal rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse-soft">
             <Activity className="w-6 h-6 text-white" />
           </div>
-          <p className="text-lg font-medium">טוען נתונים... / Loading data...</p>
+          <p className="text-lg font-medium">{t('dashboard.loading')}</p>
         </div>
       </div>
     );
@@ -265,14 +267,14 @@ const Dashboard = () => {
         <div className="card-lumea-strong max-w-md mx-auto text-center">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gradient-coral mb-4">
-            שגיאה / Error
+            {t('dashboard.error')}
           </h2>
           <p className="opacity-80 mb-6">{error}</p>
           <button
             onClick={() => window.location.reload()}
             className="btn-primary"
           >
-            נסה שוב / Try Again
+            {t('dashboard.tryAgain')}
           </button>
         </div>
       </div>
@@ -293,8 +295,8 @@ const Dashboard = () => {
         <div className="mb-8 animate-fade-in">
           <h1 className="text-4xl lg:text-5xl font-bold text-gradient-coral mb-4">
             {isCoach 
-              ? 'ברוך הבא, מאמן / Welcome, Coach' 
-              : 'ברוך הבא / Welcome'
+              ? t('dashboard.welcome.coach')
+              : t('dashboard.welcome.client')
             }
           </h1>
           <p className="text-xl opacity-80">
@@ -309,7 +311,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm opacity-70 mb-1">
-                    {isCoach ? 'סה"כ לקוחות / Total Clients' : 'סה"כ מפגשים / Total Sessions'}
+                    {isCoach ? t('dashboard.stats.totalClients') : t('dashboard.stats.totalSessions')}
                   </p>
                   <p className="text-3xl font-bold text-gradient-teal">
                     {isCoach ? '12' : stats.totalSessions}
@@ -325,7 +327,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm opacity-70 mb-1">
-                    מפגשים השבוע / This Week's Sessions
+                    {t('dashboard.stats.weekSessions')}
                   </p>
                   <p className="text-3xl font-bold text-gradient-coral">
                     {stats.upcomingSessions}
@@ -341,7 +343,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm opacity-70 mb-1">
-                    הרהורים / Reflections
+                    {t('dashboard.stats.reflections')}
                   </p>
                   <p className="text-3xl font-bold text-gradient-teal">
                     {stats.totalReflections}
@@ -357,7 +359,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm opacity-70 mb-1">
-                    התקדמות / Progress
+                    {t('dashboard.stats.progress')}
                   </p>
                   <p className="text-3xl font-bold text-gradient-coral">
                     {stats.weeklyProgress}%
@@ -377,13 +379,13 @@ const Dashboard = () => {
             <div className="card-lumea-strong">
               <div className={`flex items-center justify-between mb-6 ${isRTL ? 'rtl-flex-row-reverse' : ''}`}>
                 <h2 className="text-2xl font-bold text-gradient-teal">
-                  מפגשים קרובים / Upcoming Sessions
+                  {t('dashboard.upcomingSessions.title')}
                 </h2>
                 <button 
                   onClick={() => navigate(`/${isCoach ? 'coach' : 'client'}/sessions`)}
                   className="btn-tertiary flex items-center space-x-2"
                 >
-                  <span>צפה בכל / View All</span>
+                  <span>{t('dashboard.upcomingSessions.viewAll')}</span>
                   <ArrowRight className={`w-4 h-4 ${isRTL ? 'rtl-flip' : ''}`} />
                 </button>
               </div>
@@ -407,7 +409,7 @@ const Dashboard = () => {
                           </div>
                           {(session.coach || session.client) && (
                             <p className="text-sm mt-1 opacity-80">
-                              {isCoach ? `עם: ${session.client}` : `מאמן: ${session.coach}`}
+                              {isCoach ? `${t('dashboard.upcomingSessions.with')} ${session.client}` : `${t('dashboard.upcomingSessions.coach')} ${session.coach}`}
                             </p>
                           )}
                         </div>
@@ -419,9 +421,9 @@ const Dashboard = () => {
                               ? 'bg-blue-100 text-blue-800'
                               : 'bg-yellow-100 text-yellow-800'
                           }`}>
-                            {session.status === 'confirmed' ? '✅ מאושר / Confirmed' : 
-                             session.status === 'scheduled' ? '📅 מתוזמן / Scheduled' : 
-                             '⏱️ ממתין / Pending'}
+                            {session.status === 'confirmed' ? t('dashboard.upcomingSessions.status.confirmed') : 
+                             session.status === 'scheduled' ? t('dashboard.upcomingSessions.status.scheduled') : 
+                             t('dashboard.upcomingSessions.status.pending')}
                           </span>
                           <button className="p-2 hover:bg-white/20 rounded-lg transition-colors duration-200">
                             <Video className="w-4 h-4" />
@@ -433,7 +435,7 @@ const Dashboard = () => {
                 ) : (
                   <div className="text-center py-8 opacity-70">
                     <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>אין מפגשים קרובים / No upcoming sessions</p>
+                    <p>{t('dashboard.upcomingSessions.noSessions')}</p>
                   </div>
                 )}
               </div>
@@ -444,7 +446,7 @@ const Dashboard = () => {
           <div className="space-y-6">
             <div className="card-lumea-strong">
               <h2 className="text-2xl font-bold text-gradient-coral mb-6">
-                פעולות מהירות / Quick Actions
+                {t('dashboard.quickActions.title')}
               </h2>
               <div className="space-y-4">
                 {quickActions.map((action, index) => (
@@ -471,7 +473,7 @@ const Dashboard = () => {
             <div className="card-lumea-strong">
               <div className={`flex items-center justify-between mb-6 ${isRTL ? 'rtl-flex-row-reverse' : ''}`}>
                 <h2 className="text-2xl font-bold text-gradient-coral">
-                  הרהורים אחרונים / Recent Reflections
+                  {t('dashboard.recentReflections.title')}
                 </h2>
                 <button 
                   onClick={() => navigate(`/${isCoach ? 'coach' : 'client'}/reflections`)}
@@ -506,10 +508,10 @@ const Dashboard = () => {
               <div className={`flex items-center justify-between mb-6 ${isRTL ? 'rtl-flex-row-reverse' : ''}`}>
                 <div>
                   <h2 className="text-2xl font-bold text-gradient-coral mb-2">
-                    ניתוח משך מפגשים / Session Duration Analytics
+                    {t('dashboard.analytics.title')}
                   </h2>
                   <p className="text-sm opacity-70">
-                    מעקב אחר מגמות זמן מפגשים ומדדי יעילות / Track session timing trends and efficiency metrics
+                    {t('dashboard.analytics.subtitle')}
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-gradient-coral-teal rounded-xl flex items-center justify-center">

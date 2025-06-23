@@ -51,6 +51,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import SubscriptionStep from './SubscriptionStep';
 
 // Validation schemas for each step
 const profileSchema = z.object({
@@ -62,19 +63,13 @@ const profileSchema = z.object({
   profileImage: z.string().optional(),
 });
 
-const paymentSchema = z.object({
-  hourlyRate: z.number().min(10, 'Hourly rate must be at least $10'),
-  sessionPackageRate: z.number().min(50, 'Session package rate must be at least $50'),
-  currency: z.enum(['USD', 'EUR', 'GBP', 'ILS']),
-  stripeConnectId: z.string().optional(),
-});
-
 const calendarSchema = z.object({
   calendarConnected: z.boolean(),
   workingDays: z.array(z.string()).min(1, 'Please select at least one working day'),
   startTime: z.string().min(1, 'Please select start time'),
   endTime: z.string().min(1, 'Please select end time'),
   bufferTime: z.number().min(0, 'Buffer time must be 0 or more minutes'),
+  personalMessage: z.string().min(20, 'Personal message must be at least 20 characters'),
 });
 
 const clientInviteSchema = z.object({
@@ -83,7 +78,6 @@ const clientInviteSchema = z.object({
 });
 
 type ProfileData = z.infer<typeof profileSchema>;
-type PaymentData = z.infer<typeof paymentSchema>;
 type CalendarData = z.infer<typeof calendarSchema>;
 type ClientInviteData = z.infer<typeof clientInviteSchema>;
 
@@ -113,9 +107,9 @@ interface OnboardingState {
   currentStep: number;
   completedSteps: Set<string>;
   profile: CoachProfile;
-  stripeConnected: boolean;
   calendarConnected: boolean;
   sampleClientCreated: boolean;
+  subscriptionPlan?: 'seeker' | 'explorer' | 'navigator';
 }
 
 const SPECIALIZATIONS = [
@@ -163,12 +157,16 @@ const CoachOnboardingWizard: React.FC = () => {
       languages: [],
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
-    stripeConnected: false,
     calendarConnected: false,
     sampleClientCreated: false,
   });
 
   const [loading, setLoading] = useState(false);
+
+  const handleSubscribed = (planId: 'seeker' | 'explorer' | 'navigator') => {
+    setState(prev => ({ ...prev, subscriptionPlan: planId, completedSteps: new Set([...prev.completedSteps, 'subscription']) }));
+    handleNext();
+  };
 
   // Profile Setup Step
   const ProfileSetupStep: React.FC = () => (
@@ -296,55 +294,9 @@ const CoachOnboardingWizard: React.FC = () => {
     </div>
   );
 
-  // Stripe Setup Step
-  const StripeSetupStep: React.FC = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-6">
-        <CreditCard className="mx-auto h-16 w-16 text-blue-600 mb-4" />
-        <h2 className="text-2xl font-bold text-gray-900">Payment Setup</h2>
-        <p className="text-gray-600 mt-2">Connect your Stripe account to receive payments</p>
-      </div>
-
-      {!state.stripeConnected ? (
-        <div className="space-y-4">
-          <Alert>
-            <Shield className="h-4 w-4" />
-            <AlertDescription>
-              Stripe is our secure payment processor. Your financial information is protected with bank-level security.
-            </AlertDescription>
-          </Alert>
-
-          <div className="bg-gray-50 p-6 rounded-lg">
-            <h3 className="font-semibold mb-3">What you'll need:</h3>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li>• Bank account information</li>
-              <li>• Tax ID or SSN</li>
-              <li>• Business address</li>
-              <li>• Government-issued ID</li>
-            </ul>
-          </div>
-
-          <Button 
-            onClick={handleStripeConnect} 
-            className="w-full"
-            disabled={loading}
-          >
-            {loading ? 'Connecting...' : 'Connect with Stripe'}
-          </Button>
-        </div>
-      ) : (
-        <div className="text-center">
-          <CheckCircle className="mx-auto h-16 w-16 text-green-600 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900">Stripe Connected!</h3>
-          <p className="text-gray-600">You're ready to receive payments from clients.</p>
-        </div>
-      )}
-    </div>
-  );
-
   // Calendar Integration Step
   const CalendarIntegrationStep: React.FC = () => (
-    <div className="space-y-6">
+    <div className="space-y-6 text-center">
       <div className="text-center mb-6">
         <Calendar className="mx-auto h-16 w-16 text-blue-600 mb-4" />
         <h2 className="text-2xl font-bold text-gray-900">Calendar Integration</h2>
@@ -401,6 +353,7 @@ const CoachOnboardingWizard: React.FC = () => {
           <CheckCircle className="mx-auto h-16 w-16 text-green-600 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900">Calendar Connected!</h3>
           <p className="text-gray-600">Your availability is now synced with your calendar.</p>
+          <p className="text-gray-500">Your profile is complete and you're ready to start coaching!</p>
         </div>
       )}
     </div>
@@ -471,59 +424,43 @@ const CoachOnboardingWizard: React.FC = () => {
     {
       id: 'profile',
       title: 'Profile Setup',
-      description: 'Complete your coaching profile',
+      description: 'Build your professional presence',
       icon: User,
       component: ProfileSetupStep,
     },
     {
-      id: 'stripe',
-      title: 'Payment Setup',
-      description: 'Connect your Stripe account',
-      icon: CreditCard,
-      component: StripeSetupStep,
+      id: 'subscription',
+      title: 'Choose Your Plan',
+      description: 'Select a subscription that fits your coaching style',
+      icon: DollarSign,
+      component: () => <SubscriptionStep onSubscribed={handleSubscribed} loading={loading} setLoading={setLoading} />,
     },
     {
       id: 'calendar',
       title: 'Calendar Integration',
-      description: 'Sync your calendar',
+      description: 'Connect your calendar for availability',
       icon: Calendar,
       component: CalendarIntegrationStep,
     },
     {
-      id: 'sample-client',
-      title: 'Client Tutorial',
-      description: 'Learn client management',
-      icon: Users,
+      id: 'sampleClient',
+      title: 'Invite a Client',
+      description: 'Send an invitation to your first client',
+      icon: UserPlus,
       component: SampleClientStep,
+    },
+    {
+      id: 'finalize',
+      title: 'Finalize Setup',
+      description: 'Review and complete your onboarding',
+      icon: Star,
+      component: FinalizeStep,
     },
   ];
 
   const currentStepData = steps[state.currentStep];
   const CurrentStepComponent = currentStepData.component;
   const progress = ((state.currentStep + 1) / steps.length) * 100;
-
-  const handleStripeConnect = async () => {
-    setLoading(true);
-    try {
-      // TODO: Implement Stripe Connect integration
-      // This would typically redirect to Stripe Connect flow
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
-      
-      setState(prev => ({ ...prev, stripeConnected: true }));
-      toast({
-        title: "Stripe Connected",
-        description: "Your payment account has been successfully connected.",
-      });
-    } catch (error) {
-      toast({
-        title: "Connection Failed",
-        description: "Failed to connect to Stripe. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCalendarConnect = async (provider: 'google' | 'outlook') => {
     setLoading(true);
@@ -570,32 +507,22 @@ const CoachOnboardingWizard: React.FC = () => {
   };
 
   const handleNext = () => {
-    const currentStep = steps[state.currentStep];
-    setState(prev => ({
-      ...prev,
-      currentStep: Math.min(prev.currentStep + 1, steps.length - 1),
-      completedSteps: new Set([...prev.completedSteps, currentStep.id])
-    }));
+    setState((prev) => ({ ...prev, currentStep: prev.currentStep + 1 }));
   };
 
   const handlePrevious = () => {
-    setState(prev => ({
-      ...prev,
-      currentStep: Math.max(prev.currentStep - 1, 0)
-    }));
+    setState((prev) => ({ ...prev, currentStep: prev.currentStep - 1 }));
   };
 
   const canProceed = () => {
     switch (state.currentStep) {
-      case 0: // Profile step
-        return state.profile.firstName && state.profile.lastName && 
-               state.profile.email && state.profile.bio && 
-               state.profile.hourlyRate > 0;
-      case 1: // Stripe step
-        return state.stripeConnected;
-      case 2: // Calendar step
+      case 0: // Profile
+        return state.profile.firstName && state.profile.lastName && state.profile.bio.length > 10;
+      case 1: // Calendar
         return state.calendarConnected;
-      case 3: // Sample client step
+      case 2: // Subscription
+        return !!state.subscriptionPlan;
+      case 3: // Sample Client
         return state.sampleClientCreated;
       default:
         return true;
