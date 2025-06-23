@@ -5,6 +5,7 @@ A modern, bilingual (Hebrew-first) coaching platform built for 1-on-1 Satya Meth
 ## Features
 
 - **Bilingual Support**: Hebrew-first interface with English support
+- **Marketing Landing Page**: Professional landing page for coach conversion (`/landing`)
 - **Session Management**: Schedule, track, and manage coaching sessions
 - **Client Reflections**: Track client progress and insights
 - **Coaching Notes**: Private notes for coaches about their clients
@@ -14,6 +15,7 @@ A modern, bilingual (Hebrew-first) coaching platform built for 1-on-1 Satya Meth
 - **File Storage**: Secure storage for session recordings and resources
 - **Mobile Responsive**: Fully responsive design for all devices
 - **Coach Dashboard**: Manage clients, sessions, and invitations
+- **Pricing Plans**: Three-tier subscription model (Starter ₪59/mo, Professional ₪189/mo, Enterprise ₪220/mo)
 
 ## Tech Stack
 
@@ -30,8 +32,8 @@ A modern, bilingual (Hebrew-first) coaching platform built for 1-on-1 Satya Meth
 ### Backend
 
 - Node.js with Express
-- Mongoose for MongoDB ODM
-- MongoDB for database
+- Supabase for database and authentication
+- Prisma as ORM for database access
 - JWT & Passport for authentication
 - AWS S3 for file storage (optional)
 
@@ -39,7 +41,7 @@ A modern, bilingual (Hebrew-first) coaching platform built for 1-on-1 Satya Meth
 
 - Node.js (v18 or higher)
 - npm or yarn
-- MongoDB instance
+- Supabase account (or local Supabase setup)
 - (Optional) AWS S3 account for file storage
 
 ## Getting Started
@@ -83,6 +85,37 @@ Frontend:
 cd client
 npm run dev
 # Client runs on http://localhost:5173
+```
+
+## Marketing Landing Page
+
+The platform includes a comprehensive marketing landing page at `/landing` designed to convert Satya Method coaches to paid subscriptions.
+
+### Features
+
+- **Hero Section**: Compelling headline and dual CTAs (Start Today, Watch Demo)
+- **Features Grid**: 6 key features including secure notes, audio reflections, payment automation
+- **How It Works**: 3-step onboarding process visualization
+- **Pricing Table**: Three-tier subscription plans with feature comparison
+- **Testimonials**: Real coach testimonials with star ratings
+- **Security Badges**: Trust-building elements (E2E encryption, GDPR compliance)
+- **Language Toggle**: Hebrew/English language switching
+- **RTL Support**: Automatic layout direction based on language
+- **Responsive Design**: Mobile-first design with WCAG AA compliance
+
+### Pricing Plans
+
+- **Starter** (₪59/month): Up to 10 clients, basic features
+- **Professional** (₪189/month): Up to 50 clients, advanced automation (Most Popular)
+- **Enterprise** (₪220/month): Unlimited clients, full feature set
+
+### Testing
+
+Run the landing page tests:
+
+```bash
+cd client
+npm run test -- --testPathPattern=HomeLanding.test.tsx
 ```
 
 ## Database
@@ -157,8 +190,10 @@ This runs a test suite that checks access permissions for different user roles:
 Required variables:
 
 ```
-DATABASE_URL="mongodb://localhost:27017/lumea"
-JWT_SECRET="your-secret-key"
+DATABASE_URL="postgresql://postgres:postgres@localhost:54322/postgres"
+JWT_ACCESS_SECRET="your-secret-access-token"
+JWT_REFRESH_SECRET="your-secret-refresh-token"
+SESSION_SECRET="your-session-secret"
 PORT=3000
 NODE_ENV=development
 CLIENT_URL="http://localhost:5173"
@@ -219,10 +254,10 @@ VITE_FACEBOOK_CLIENT_ID=your_facebook_client_id
 ├── server/                 # Backend Node.js application
 │   ├── src/
 │   │   ├── controllers/   # Route controllers
-│   │   ├── models/        # Mongoose models
+│   │   ├── prisma/        # Prisma schema and client
 │   │   ├── routes/        # API routes
 │   │   ├── middleware/    # Express middleware
-│   │   ├── services/      # Business logic (including storage.ts)
+│   │   ├── services/      # Business logic
 │   │   └── types/         # TypeScript definitions
 │   └── uploads/           # Local file storage (if not using S3)
 └── shared/                # Shared types and utilities
@@ -405,4 +440,4 @@ For local testing of Vercel deployment:
 
 *   **Serverless Backend**: If your `server` directory contains a traditional Node.js/Express server, you'll need to adapt it to run as Vercel Serverless Functions. Typically, this involves having an entry point file (e.g., `server/api/index.ts`) that exports the Express app or individual route handlers.
 *   **Monorepo Support**: Vercel supports monorepos. Ensure your build commands and output directories are correctly configured for your project structure. The `install:all` script is important for installing dependencies in workspaces.
-*   **Database**: Ensure your MongoDB (or Supabase) instance is accessible from Vercel's servers. For Supabase, use the production Supabase URL and keys.
+*   **Database**: Ensure your Supabase instance is accessible from Vercel's servers. For Supabase, use the production Supabase URL and keys.

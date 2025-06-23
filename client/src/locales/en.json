@@ -48,7 +48,149 @@
     "feature2Title": "Tailored Coaching",
     "feature2Description": "Receive personalized coaching sessions designed to meet your unique needs and goals.",
     "feature3Title": "Track Progress",
-    "feature3Description": "Monitor your growth and achievements with our intuitive progress tracking tools."
+    "feature3Description": "Monitor your growth and achievements with our intuitive progress tracking tools.",
+    "features": {
+      "title": "Why Choose Lumea?",
+      "subtitle": "Professional tools designed specifically for Satya Method coaches",
+      "coaches": {
+        "title": "Expert Coaches",
+        "description": "Connect with certified coaches who specialize in the Satya Method."
+      },
+      "scheduling": {
+        "title": "Seamless Scheduling",
+        "description": "Book and manage sessions effortlessly with our integrated calendar."
+      },
+      "progress": {
+        "title": "Track Your Growth",
+        "description": "Visualize your journey with powerful progress tracking and reflection tools."
+      },
+      "secure_notes": {
+        "title": "Secure Session Notes",
+        "desc": "End-to-end encrypted notes with advanced search and organization"
+      },
+      "audio_reflections": {
+        "title": "Audio Reflections",
+        "desc": "Record and store encrypted audio reflections for deeper insights"
+      },
+      "payment_automation": {
+        "title": "Payment Automation",
+        "desc": "Automated Israeli payment system with Tranzila and Cardcom integration"
+      },
+      "client_onboarding": {
+        "title": "Client Onboarding",
+        "desc": "Guided onboarding process that saves time and improves first impressions"
+      },
+      "data_export": {
+        "title": "Data Export",
+        "desc": "Export your data anytime with full ownership and portability"
+      },
+      "hebrew_first": {
+        "title": "Hebrew-First Design",
+        "desc": "Built specifically for Israeli coaches with RTL support and cultural awareness"
+      }
+    },
+    "hero": {
+      "title": "The Professional Platform for Every Satya Method Coach",
+      "subtitle": "Manage your clients, keep secure notes, and grow your business with advanced tools designed for Israeli culture",
+      "cta_primary": "Start Today",
+      "cta_secondary": "Watch Demo",
+      "description": "Experience a transformative coaching journey grounded in truth, awareness, and compassion. Our HIPAA-compliant platform connects you with certified coaches for a personalized path to growth.",
+      "cta": {
+        "primary": "Begin Your Journey",
+        "secondary": "Explore Coaches"
+      },
+      "welcome": "Welcome back",
+      "continue": "Go to your Dashboard"
+    },
+    "how_it_works": {
+      "title": "How It Works?",
+      "subtitle": "Three simple steps to make your coaching more professional",
+      "step1": {
+        "title": "Sign Up for a Plan",
+        "desc": "Choose the plan that fits you and sign up in just minutes"
+      },
+      "step2": {
+        "title": "Add Clients",
+        "desc": "Invite clients using private links and onboard them to the system"
+      },
+      "step3": {
+        "title": "Start Working",
+        "desc": "Manage sessions, save notes, and grow your business with professional tools"
+      }
+    },
+    "pricing": {
+      "title": "Simple and Transparent Pricing",
+      "subtitle": "Choose the plan that fits your business size. No hidden fees",
+      "per_month": "per month",
+      "popular": "Popular",
+      "get_started": "Get Started",
+      "starter": {
+        "name": "Starter",
+        "feature1": "Up to 10 active clients",
+        "feature2": "Unlimited secure notes",
+        "feature3": "Hebrew and English support",
+        "feature4": "Basic data export"
+      },
+      "professional": {
+        "name": "Professional",
+        "feature1": "Up to 50 active clients",
+        "feature2": "Encrypted audio reflections",
+        "feature3": "Automated payment system",
+        "feature4": "Advanced reports",
+        "feature5": "Priority technical support"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "feature1": "Unlimited clients",
+        "feature2": "Custom API",
+        "feature3": "Advanced backups",
+        "feature4": "Enterprise-grade security",
+        "feature5": "Personal training and support",
+        "feature6": "Professional services"
+      }
+    },
+    "testimonials": {
+      "title": "What Coaches Are Saying",
+      "subtitle": "Dozens of coaches are already using Lumea and growing their businesses",
+      "1": {
+        "name": "Alex Johnson",
+        "role": "Tech Lead",
+        "content": "Satya Coaching has been a game-changer for my personal and professional life. The platform is intuitive and secure."
+      },
+      "2": {
+        "name": "Samantha Lee",
+        "role": "Product Manager",
+        "content": "The reflection tools are incredibly powerful. It's more than just coaching; it's a holistic growth experience."
+      },
+      "3": {
+        "name": "David Chen",
+        "role": "Entrepreneur",
+        "content": "Finally, a coaching platform that respects privacy without compromising on features. Highly recommended."
+      },
+      "coach1": {
+        "name": "Rachel Cohen - Senior Coach",
+        "text": "Lumea has changed the way I work. Everything is organized, secure, and in Hebrew!"
+      },
+      "coach2": {
+        "name": "Danny Levy - Business Coach",
+        "text": "The most professional system I've seen for coaches. The time savings are tremendous"
+      },
+      "coach3": {
+        "name": "Sarah Goldman - Personal Coach",
+        "text": "Finally a platform that understands our needs as Israeli coaches"
+      }
+    },
+    "security": {
+      "title": "Your Security is Our Top Priority",
+      "description": "We understand that your information and your clients' information is the most important thing. That's why we use the most advanced security technologies",
+      "e2e_encryption": "End-to-End Encryption",
+      "gdpr_compliant": "GDPR Compliant",
+      "privacy_first": "Privacy First"
+    },
+    "footer": {
+      "description": "The professional platform for Satya Method coaches in Israel",
+      "copyright": "© 2024 Lumea. All rights reserved"
+    }
   },
   "footer": {
     "copyright": "Lumea. All rights reserved."
@@ -322,5 +464,137 @@
     "audioReflection": "Audio reflection",
     "coachNote": "Coach Note",
     "invalidDate": "Invalid Date"
+  },
+  "dashboard": {
+    "welcome": {
+      "coach": "Welcome, Coach",
+      "client": "Welcome"
+    },
+    "loading": "Loading data...",
+    "error": "Error",
+    "tryAgain": "Try Again",
+    "stats": {
+      "totalClients": "Total Clients",
+      "totalSessions": "Total Sessions",
+      "weekSessions": "This Week's Sessions",
+      "reflections": "Reflections",
+      "progress": "Progress"
+    },
+    "upcomingSessions": {
+      "title": "Upcoming Sessions",
+      "viewAll": "View All",
+      "noSessions": "No upcoming sessions",
+      "with": "with:",
+      "coach": "Coach:",
+      "status": {
+        "confirmed": "✅ Confirmed",
+        "scheduled": "📅 Scheduled",
+        "pending": "⏱️ Pending"
+      }
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "addClient": {
+        "title": "Add New Client",
+        "description": "Create new client profile"
+      },
+      "scheduleSession": {
+        "title": "Schedule Session",
+        "description": "Schedule a client session"
+      },
+      "writeAssessment": {
+        "title": "Write Assessment",
+        "description": "Create new assessment"
+      },
+      "bookSession": {
+        "title": "Book Session",
+        "description": "Schedule new session"
+      },
+      "writeReflection": {
+        "title": "Write Reflection",
+        "description": "Share your thoughts"
+      },
+      "updateGoals": {
+        "title": "Update Goals",
+        "description": "Track your progress"
+      }
+    },
+    "recentReflections": {
+      "title": "Recent Reflections",
+      "assessmentTitle": "Weekly Assessment",
+      "journalTitle": "Personal Journal",
+      "insightsTitle": "Session Insights",
+      "goalsTitle": "Thoughts on Goals",
+      "assessmentPreview": "Excellent client progress this week...",
+      "journalPreview": "Today I felt more confident...",
+      "insightsPreview": "Important discoveries in client session...",
+      "goalsPreview": "I realized I need to focus more on..."
+    },
+    "analytics": {
+      "title": "Session Duration Analytics",
+      "subtitle": "Track session timing trends and efficiency metrics"
+    }
+  },
+  "sessions": {
+    "title": "Sessions",
+    "subtitle": "Manage your coaching appointments",
+    "loading": "Loading sessions...",
+    "error": "Failed to load sessions",
+    "errorDescription": "Please try refreshing the page. If the issue persists, the backend might be unavailable.",
+    "newSession": "New Session",
+    "scheduleSession": "Schedule a Session",
+    "scheduleDescription": "Create a new coaching session. Click save when you're done.",
+    "form": {
+      "date": "Date",
+      "time": "Time",
+      "coach": "Coach",
+      "sessionType": "Session Type",
+      "notes": "Notes",
+      "notesPlaceholder": "Add any details or topics you'd like to cover...",
+      "loadingCoaches": "Loading coaches...",
+      "selectCoach": "Select a coach",
+      "noCoachesAvailable": "No coaches available",
+      "selectSessionType": "Select session type",
+      "sessionTypes": {
+        "oneOnOne": "One-on-one Session",
+        "group": "Group Session",
+        "assessment": "Assessment"
+      }
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "schedule": "Schedule Session",
+      "reschedule": "Reschedule",
+      "join": "Join Session"
+    },
+    "tabs": {
+      "upcoming": "Upcoming",
+      "past": "Past",
+      "cancelled": "Cancelled"
+    },
+    "views": {
+      "calendar": "Calendar",
+      "list": "List"
+    },
+    "calendar": {
+      "title": "Calendar View",
+      "description": "Select a date to view sessions",
+      "sessionsOn": "Sessions on",
+      "noSessionsDate": "No sessions scheduled for this date.",
+      "scheduleSessionBtn": "Schedule a Session"
+    },
+    "sessionCard": {
+      "withCoach": "with Coach",
+      "sessionWith": "Session with",
+      "status": {
+        "upcoming": "Upcoming"
+      }
+    },
+    "toast": {
+      "loginRequired": "You must be logged in to create a session.",
+      "fillRequiredFields": "Please fill in all required fields.",
+      "sessionScheduled": "Your session has been scheduled.",
+      "createError": "Could not create session."
+    }
   }
 }

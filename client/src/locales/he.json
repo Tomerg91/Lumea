@@ -48,7 +48,118 @@
     "feature2Title": "אימון מותאם אישית",
     "feature2Description": "קבל פגישות אימון מותאמות אישית המיועדות לענות על הצרכים והמטרות הייחודיים שלך.",
     "feature3Title": "מעקב התקדמות",
-    "feature3Description": "עקוב אחר הצמיחה וההישגים שלך באמצעות כלי מעקב התקדמות אינטואיטיביים."
+    "feature3Description": "עקוב אחר הצמיחה וההישגים שלך באמצעות כלי מעקב התקדמות אינטואיטיביים.",
+    "features": {
+      "coaches": {
+        "title": "מאמנים מומחים",
+        "description": "התחבר עם מאמנים מוסמכים המתמחים בשיטת סאטיה."
+      },
+      "scheduling": {
+        "title": "תזמון פשוט",
+        "description": "הזמן ונהל פגישות ללא מאמץ עם לוח השנה המשולב שלנו."
+      },
+      "progress": {
+        "title": "עקוב אחר צמיחתך",
+        "description": "הצג את המסע שלך עם כלי מעקב התקדמות והרהורים רבי עוצמה."
+      }
+    },
+    "hero": {
+      "title": "הפלטפורמה המקצועית לכל מאמן בשיטת סטיה",
+      "subtitle": "נהל את הלקוחות שלך, שמור הערות מאובטחות, וצמח את העסק שלך עם כלים מתקדמים ומותאמים לתרבות הישראלית",
+      "cta_primary": "התחל היום",
+      "cta_secondary": "צפה בהדגמה"
+    },
+    "testimonials": {
+      "1": {
+        "name": "אלכס כהן",
+        "role": "ראש צוות טכנולוגי",
+        "content": "אימון סאטיה שינה את חיי האישיים והמקצועיים. הפלטפורמה אינטואיטיבית ומאובטחת."
+      },
+      "2": {
+        "name": "סמנתה לוי",
+        "role": "מנהלת מוצר",
+        "content": "כלי ההרהורים חזקים להפליא. זה יותר מסתם אימון; זו חווית צמיחה הוליסטית."
+      },
+      "3": {
+        "name": "דוד חן",
+        "role": "יזם",
+        "content": "סוף סוף, פלטפורמת אימון שמכבדת פרטיות מבלי להתפשר על תכונות. מומלץ בחום."
+      }
+    },
+    "how_it_works": {
+      "title": "איך זה עובד?",
+      "subtitle": "שלושה שלבים פשוטים להפיכת הקואצ'ינג שלך למקצועי יותר",
+      "step1": {
+        "title": "הירשם לתוכנית",
+        "desc": "בחר את התוכנית המתאימה לך והירשם תוך דקות ספורות"
+      },
+      "step2": {
+        "title": "הוסף לקוחות",
+        "desc": "הזמן לקוחות באמצעות קישור פרטי וקלוט אותם למערכת"
+      },
+      "step3": {
+        "title": "התחל לעבוד",
+        "desc": "נהל פגישות, שמור הערות, וצמח את העסק שלך עם כלים מקצועיים"
+      }
+    },
+    "pricing": {
+      "title": "תוכניות מחיר פשוטות ושקופות",
+      "subtitle": "בחר את התוכנית המתאימה לגודל העסק שלך. אין עמלות נסתרות",
+      "per_month": "לחודש",
+      "popular": "פופולרי",
+      "get_started": "התחל עכשיו",
+      "starter": {
+        "name": "מתחיל",
+        "feature1": "עד 10 לקוחות פעילים",
+        "feature2": "הערות מאובטחות ללא הגבלה",
+        "feature3": "תמיכה בעברית ואנגלית",
+        "feature4": "ייצוא נתונים בסיסי"
+      },
+      "professional": {
+        "name": "מקצועי",
+        "feature1": "עד 50 לקוחות פעילים",
+        "feature2": "רפלקציות קוליות מוצפנות",
+        "feature3": "מערכת תשלומים אוטומטית",
+        "feature4": "דוחות מתקדמים",
+        "feature5": "תמיכה טכנית מועדפת"
+      },
+      "enterprise": {
+        "name": "ארגוני",
+        "feature1": "לקוחות ללא הגבלה",
+        "feature2": "API מותאם אישית",
+        "feature3": "גיבויים מתקדמים",
+        "feature4": "אבטחה ברמה ארגונית",
+        "feature5": "הכשרה ותמיכה אישית",
+        "feature6": "שירותים מקצועיים"
+      }
+    },
+    "testimonials": {
+      "title": "מה אומרים המאמנים",
+      "subtitle": "עשרות מאמנים כבר משתמשים בלומיאה וצומחים את העסק שלהם",
+      "coach1": {
+        "name": "רחל כהן - מאמנת בכירה",
+        "text": "לומיאה שינתה לי את האופן שבו אני עובדת. הכל מאורגן, מאובטח, ובעברית!"
+      },
+      "coach2": {
+        "name": "דני לוי - מאמן עסקי",
+        "text": "המערכת הכי מקצועית שראיתי למאמנים. החסכון בזמן הוא אדיר"
+      },
+      "coach3": {
+        "name": "שרה גולדמן - מאמנת אישית",
+        "text": "סוף סוף פלטפורמה שמבינה את הצרכים שלנו כמאמנים ישראלים"
+      }
+    },
+    "security": {
+      "title": "האבטחה שלך בראש סדר העדיפויות",
+      "description": "אנחנו מבינים שהמידע שלך ושל הלקוחות שלך הוא הדבר הכי חשוב. לכן אנחנו משתמשים בטכנולוגיות האבטחה המתקדמות ביותר",
+      "e2e_encryption": "הצפנה מקצה לקצה",
+      "gdpr_compliant": "תואם GDPR",
+      "privacy_first": "פרטיות ראשונה"
+    },
+    "footer": {
+      "description": "הפלטפורמה המקצועית למאמנים בשיטת סטיה בישראל",
+      "copyright": "© 2024 לומיאה. כל הזכויות שמורות"
+    }
   },
   "footer": {
     "copyright": "Lumea. כל הזכויות שמורות."
@@ -114,7 +225,108 @@
     "optional": "אופציונלי",
     "refresh": "רענן",
     "apply": "החל",
-    "retry": "נסה שוב"
+    "retry": "נסה שוב",
+    "error": "שגיאה",
+    "success": "הצלחה",
+    "delete": "מחק",
+    "edit": "ערוך",
+    "create": "צור",
+    "submit": "שלח",
+    "back": "חזור",
+    "next": "הבא",
+    "previous": "הקודם",
+    "close": "סגור",
+    "open": "פתח",
+    "yes": "כן",
+    "no": "לא",
+    "select": "בחר",
+    "search": "חפש",
+    "filter": "סנן",
+    "sort": "מיין",
+    "export": "ייצא",
+    "import": "ייבא",
+    "download": "הורד",
+    "upload": "העלה",
+    "view": "צפה",
+    "hide": "הסתר",
+    "show": "הצג",
+    "add": "הוסף",
+    "remove": "הסר",
+    "update": "עדכן",
+    "confirm": "אשר",
+    "settings": "הגדרות",
+    "profile": "פרופיל",
+    "logout": "התנתק",
+    "login": "התחבר",
+    "register": "הירשם",
+    "password": "סיסמה",
+    "email": "אימייל",
+    "name": "שם",
+    "firstName": "שם פרטי",
+    "lastName": "שם משפחה",
+    "phone": "טלפון",
+    "address": "כתובת",
+    "city": "עיר",
+    "country": "מדינה",
+    "zipCode": "מיקוד",
+    "date": "תאריך",
+    "time": "שעה",
+    "status": "סטטוס",
+    "type": "סוג",
+    "category": "קטגוריה",
+    "description": "תיאור",
+    "notes": "הערות",
+    "comments": "תגובות",
+    "tags": "תגיות",
+    "priority": "עדיפות",
+    "high": "גבוה",
+    "medium": "בינוני",
+    "low": "נמוך",
+    "urgent": "דחוף",
+    "normal": "רגיל",
+    "active": "פעיל",
+    "inactive": "לא פעיל",
+    "enabled": "מופעל",
+    "disabled": "מבוטל",
+    "public": "ציבורי",
+    "private": "פרטי",
+    "draft": "טיוטה",
+    "published": "פורסם",
+    "pending": "ממתין",
+    "approved": "מאושר",
+    "rejected": "נדחה",
+    "completed": "הושלם",
+    "failed": "נכשל",
+    "warning": "אזהרה",
+    "info": "מידע",
+    "help": "עזרה",
+    "support": "תמיכה",
+    "contact": "צור קשר",
+    "about": "אודות",
+    "privacy": "פרטיות",
+    "terms": "תנאי שימוש",
+    "faq": "שאלות נפוצות",
+    "documentation": "תיעוד",
+    "tutorial": "הדרכה",
+    "example": "דוגמה",
+    "sample": "מדגם",
+    "template": "תבנית",
+    "copy": "העתק",
+    "paste": "הדבק",
+    "cut": "גזור",
+    "undo": "בטל",
+    "redo": "בצע שוב",
+    "share": "שתף",
+    "print": "הדפס",
+    "email": "שלח במייל",
+    "bookmark": "הוסף למועדפים",
+    "favorite": "מועדף",
+    "like": "אהב",
+    "unlike": "בטל אהב",
+    "follow": "עקוב",
+    "unfollow": "בטל עקיבה",
+    "subscribe": "הירשם",
+    "unsubscribe": "בטל הרשמה"
   },
   "sessionTimer": {
     "sessionTimer": "שעון מפגש",
@@ -278,5 +490,185 @@
     "audioReflection": "הרהור קולי",
     "coachNote": "הערת מאמן",
     "invalidDate": "תאריך לא תקין"
+  },
+  "dashboard": {
+    "welcome": {
+      "coach": "ברוך הבא, מאמן",
+      "client": "ברוך הבא"
+    },
+    "loading": "טוען נתונים...",
+    "error": "שגיאה",
+    "tryAgain": "נסה שוב",
+    "stats": {
+      "totalClients": "סה\"כ לקוחות",
+      "totalSessions": "סה\"כ מפגשים",
+      "weekSessions": "מפגשים השבוע",
+      "reflections": "הרהורים",
+      "progress": "התקדמות"
+    },
+    "upcomingSessions": {
+      "title": "מפגשים קרובים",
+      "viewAll": "צפה בכל",
+      "noSessions": "אין מפגשים קרובים",
+      "with": "עם:",
+      "coach": "מאמן:",
+      "status": {
+        "confirmed": "✅ מאושר",
+        "scheduled": "📅 מתוזמן",
+        "pending": "⏱️ ממתין"
+      }
+    },
+    "quickActions": {
+      "title": "פעולות מהירות",
+      "addClient": {
+        "title": "הוסף לקוח חדש",
+        "description": "צור פרופיל לקוח חדש"
+      },
+      "scheduleSession": {
+        "title": "תזמן מפגש",
+        "description": "הזמן מפגש עם לקוח"
+      },
+      "writeAssessment": {
+        "title": "כתוב הערכה",
+        "description": "צור הערכה חדשה"
+      },
+      "bookSession": {
+        "title": "הזמן מפגש",
+        "description": "הזמן מפגש חדש"
+      },
+      "writeReflection": {
+        "title": "כתוב הרהור",
+        "description": "שתף את המחשבות שלך"
+      },
+      "updateGoals": {
+        "title": "עדכן מטרות",
+        "description": "עקוב אחר ההתקדמות"
+      }
+    },
+    "recentReflections": {
+      "title": "הרהורים אחרונים",
+      "assessmentTitle": "הערכה שבועית",
+      "journalTitle": "יומן אישי",
+      "insightsTitle": "תובנות מפגש",
+      "goalsTitle": "מחשבות על המטרות",
+      "assessmentPreview": "התקדמות מעולה של הלקוחות השבוע...",
+      "journalPreview": "היום הרגשתי יותר בטוח בעצמי...",
+      "insightsPreview": "גילויים חשובים במפגש עם לקוח...",
+      "goalsPreview": "הבנתי שאני צריך להתמקד יותר ב..."
+    },
+    "analytics": {
+      "title": "ניתוח משך מפגשים",
+      "subtitle": "מעקב אחר מגמות זמן מפגשים ומדדי יעילות"
+    }
+  },
+  "sessions": {
+    "title": "מפגשים",
+    "subtitle": "נהל את פגישות הקואצ'ינג שלך",
+    "loading": "טוען מפגשים...",
+    "error": "נכשל בטעינת מפגשים",
+    "errorDescription": "אנא נסה לרענן את הדף. אם הבעיה נמשכת, השרת עלול להיות לא זמין.",
+    "newSession": "מפגש חדש",
+    "scheduleSession": "תזמן מפגש",
+    "scheduleDescription": "צור מפגש קואצ'ינג חדש. לחץ שמור כשתסיים.",
+    "form": {
+      "date": "תאריך",
+      "time": "שעה",
+      "coach": "מאמן",
+      "sessionType": "סוג מפגש",
+      "notes": "הערות",
+      "notesPlaceholder": "הוסף פרטים או נושאים שתרצה לכסות...",
+      "loadingCoaches": "טוען מאמנים...",
+      "selectCoach": "בחר מאמן",
+      "noCoachesAvailable": "אין מאמנים זמינים",
+      "selectSessionType": "בחר סוג מפגש",
+      "sessionTypes": {
+        "oneOnOne": "מפגש אחד על אחד",
+        "group": "מפגש קבוצתי",
+        "assessment": "הערכה"
+      }
+    },
+    "actions": {
+      "cancel": "ביטול",
+      "schedule": "תזמן מפגש",
+      "reschedule": "תזמן מחדש",
+      "join": "הצטרף למפגש"
+    },
+    "tabs": {
+      "upcoming": "קרובים",
+      "past": "עבר",
+      "cancelled": "מבוטלים"
+    },
+    "views": {
+      "calendar": "לוח שנה",
+      "list": "רשימה"
+    },
+    "calendar": {
+      "title": "תצוגת לוח שנה",
+      "description": "בחר תאריך לצפייה במפגשים",
+      "sessionsOn": "מפגשים ב",
+      "noSessionsDate": "אין מפגשים מתוזמנים לתאריך זה.",
+      "scheduleSessionBtn": "תזמן מפגש"
+    },
+    "sessionCard": {
+      "withCoach": "עם מאמן",
+      "sessionWith": "מפגש עם",
+      "status": {
+        "upcoming": "קרוב"
+      }
+    },
+    "toast": {
+      "loginRequired": "עליך להיות מחובר כדי ליצור מפגש.",
+      "fillRequiredFields": "אנא מלא את כל השדות הנדרשים.",
+      "sessionScheduled": "המפגש שלך נקבע.",
+      "createError": "לא ניתן ליצור מפגש."
+    }
+  },
+  "settings": {
+    "title": "הגדרות",
+    "subtitle": "נהל את החשבון וההעדפות שלך",
+    "profile": "פרופיל",
+    "notifications": "התראות",
+    "privacy": "פרטיות",
+    "appearance": "מראה",
+    "profileSaved": "הפרופיל נשמר בהצלחה",
+    "notificationsSaved": "הגדרות התראות נשמרו",
+    "privacySaved": "הגדרות פרטיות נשמרו",
+    "saving": "שומר...",
+    "saveProfile": "שמור פרופיל",
+    "saveNotifications": "שמור התראות",
+    "savePrivacy": "שמור פרטיות",
+    "noName": "ללא שם",
+    "memberSince": "חבר מאז",
+    "fullName": "שם מלא",
+    "email": "אימייל",
+    "phone": "טלפון",
+    "location": "מיקום",
+    "bio": "אודות",
+    "bioPlaceholder": "ספר לנו על עצמך...",
+    "emailNotifications": "התראות אימייל",
+    "emailNotificationsDesc": "קבל התראות באמצעות אימייל",
+    "pushNotifications": "התראות דחיפה",
+    "pushNotificationsDesc": "קבל התראות דחיפה במכשיר שלך",
+    "sessionReminders": "תזכורות מפגש",
+    "sessionRemindersDesc": "קבל תזכורת על מפגשים קרובים",
+    "weeklyReports": "דוחות שבועיים",
+    "weeklyReportsDesc": "קבל דוחות התקדמות שבועיים",
+    "profileVisibility": "נראות פרופיל",
+    "public": "ציבורי",
+    "private": "פרטי",
+    "connectionsOnly": "קשרים בלבד",
+    "showEmail": "הצג אימייל",
+    "showEmailDesc": "הצג את האימייל שלך בפרופיל",
+    "showPhone": "הצג טלפון",
+    "showPhoneDesc": "הצג את מספר הטלפון שלך בפרופיל",
+    "dataSharing": "שיתוף נתונים",
+    "dataSharingDesc": "אפשר שיתוף נתונים אנונימיים למחקר",
+    "language": "שפה",
+    "darkMode": "מצב כהה",
+    "darkModeDesc": "השתמש בערכת נושא כהה לממשק",
+    "success": "הצלחה",
+    "error": "שגיאה",
+    "languageChanged": "השפה שונתה בהצלחה",
+    "languageChangeFailed": "נכשל בשינוי השפה"
   }
 }

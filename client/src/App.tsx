@@ -11,6 +11,7 @@ import './App.css';
 // Implement more aggressive lazy loading - only load what's needed
 const HomePage = lazy(() => import('./pages/Index'));
 const AuthPage = lazy(() => import('./pages/Auth'));
+const HomeLanding = lazy(() => import('./pages/HomeLanding'));
 
 // Dashboard components - load on demand
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -206,6 +207,7 @@ const App: React.FC = () => {
               <Route path="/offline" element={<Offline />} />
               <Route path="/calendar/callback" element={<CalendarCallback />} />
               <Route path="/book/:coachId" element={<BookingPage />} />
+              <Route path="/landing" element={<HomeLanding />} />
             </Route>
 
             {/* Protected Coach Routes */}
