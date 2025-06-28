@@ -39,10 +39,38 @@ A modern, bilingual (Hebrew-first) coaching platform built for 1-on-1 Satya Meth
 
 ## Prerequisites
 
-- Node.js (v18 or higher)
-- npm or yarn
+- Node.js (v20 or higher) - **Updated requirement**
+- npm (latest version recommended)
 - Supabase account (or local Supabase setup)
 - (Optional) AWS S3 account for file storage
+
+## Quick Start Commands
+
+```bash
+# Install all dependencies
+npm install
+
+# Start development servers (client + server)
+npm run dev
+
+# Run tests
+npm run test
+
+# Run linting
+npm run lint
+
+# Generate Lighthouse report
+npm run lighthouse
+
+# Check bundle size
+npm run analyze:bundle
+
+# Run security audit
+npm audit
+
+# Run type checking
+npm run typecheck
+```
 
 ## Getting Started
 
