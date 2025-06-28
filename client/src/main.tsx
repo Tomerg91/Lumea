@@ -66,8 +66,32 @@ const preloadCriticalResources = () => {
   }
 };
 
-// Optimize root creation and rendering
-const root = ReactDOM.createRoot(document.getElementById('root')!);
+// Optimize root creation with React 19 error handling
+const root = ReactDOM.createRoot(document.getElementById('root')!, {
+  // Enhanced error handling for better debugging and monitoring
+  onCaughtError: (error: Error, errorInfo: any) => {
+    console.error('Error caught by boundary:', error);
+    // Send to error reporting service
+    if (import.meta.env.PROD) {
+      // In production, send to error monitoring service
+      // Example: Sentry.captureException(error, { extra: errorInfo });
+    }
+  },
+  onUncaughtError: (error: Error, errorInfo: any) => {
+    console.error('Uncaught error:', error);
+    // Send to error reporting service
+    if (import.meta.env.PROD) {
+      // Example: Sentry.captureException(error, { extra: errorInfo });
+    }
+  },
+  onRecoverableError: (error: Error, errorInfo: any) => {
+    console.warn('Recoverable error:', error);
+    // Log for debugging - these are typically hydration mismatches
+    if (import.meta.env.DEV) {
+      console.debug('Error info:', errorInfo);
+    }
+  }
+});
 
 // Remove initial loading screen when React app is ready
 const removeInitialLoader = () => {
