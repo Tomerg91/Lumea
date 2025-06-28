@@ -1,209 +1,277 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import { format, isToday, isYesterday, isSameWeek, isSameMonth, differenceInHours } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { FileText } from 'lucide-react';
+import { 
+  FileText, 
+  Calendar, 
+  Clock, 
+  User, 
+  Phone, 
+  Video, 
+  MapPin, 
+  MessageSquare,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  ChevronRight,
+  Sparkles,
+  X,
+  MoreHorizontal,
+  Eye
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import { cn } from '../lib/utils';
+import { 
+  SessionsListSkeleton, 
+  NoSessionsEmptyState, 
+  NoSearchResultsEmptyState 
+} from './SessionLoadingStates';
 import { Client } from './ClientsTable';
+// Import centralized session types
+import { 
+  SessionWithUsers,
+  SessionStatus,
+  UISessionStatus,
+  SessionListProps as BaseSessionListProps
+} from '../types/session';
 
-export type SessionStatus = 'pending' | 'in-progress' | 'completed' | 'cancelled';
-
+// Legacy Session type for backward compatibility
 export type Session = {
-  _id: string;
-  coachId: string;
-  clientId: string;
-  client: Omit<Client, 'lastSessionDate'>;
+  _id: string; // Maps to SupabaseSession.id
+  coachId: string; // Maps to SupabaseSession.coach_id
+  clientId: string; // Maps to SupabaseSession.client_id
+  client: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    createdAt: string;
+  }; // Aligned with SupabaseSession.client structure
   date: string;
-  status: SessionStatus;
+  status: UISessionStatus; // Use UI status for backward compatibility
   notes: string;
   createdAt: string;
   updatedAt: string;
+  title: string; // Added, from SupabaseSession.title
+  type: 'video' | 'phone' | 'in-person'; // Added, from SupabaseSession.type
+  time: string; // Added, from SupabaseSession.time
+  description?: string; // Added, from SupabaseSession.description
+  clientName?: string; // Added, derived from SupabaseSession.client
+  coachName?: string; // Added, derived from SupabaseSession.coach
 };
+
+// Export UISessionStatus for backward compatibility
+export { UISessionStatus as SessionStatus };
 
 interface SessionListProps {
   sessions: Session[];
   isLoading: boolean;
   onCreateClick: () => void;
-  onStatusChange?: (sessionId: string, newStatus: SessionStatus) => void;
+  onStatusChange?: (sessionId: string, newStatus: UISessionStatus) => void;
   isUpdatingStatus?: boolean;
   userRole?: 'coach' | 'client' | 'admin';
+  onReschedule?: (session: Session) => void;
+  onCancel?: (session: Session) => void;
 }
 
-// Status configuration for display
+// Enhanced status configuration for modern display - moved outside to prevent recreation
 const statusConfig = {
   pending: {
     label: 'sessions.status.pending',
-    bgColor: 'bg-yellow-100',
-    textColor: 'text-yellow-800',
-    borderColor: 'border-yellow-200',
-    icon: '⏳',
+    bgColor: 'bg-gradient-to-r from-amber-50 to-orange-50',
+    textColor: 'text-amber-700',
+    borderColor: 'border-amber-200',
+    icon: Clock,
+    iconColor: 'text-amber-500',
+    badgeColor: 'bg-amber-100 text-amber-800',
   },
   'in-progress': {
     label: 'sessions.status.inProgress',
-    bgColor: 'bg-blue-100',
-    textColor: 'text-blue-800',
+    bgColor: 'bg-gradient-to-r from-blue-50 to-indigo-50',
+    textColor: 'text-blue-700',
     borderColor: 'border-blue-200',
-    icon: '🟢',
+    icon: Sparkles,
+    iconColor: 'text-blue-500',
+    badgeColor: 'bg-blue-100 text-blue-800',
   },
   completed: {
     label: 'sessions.status.completed',
-    bgColor: 'bg-green-100',
-    textColor: 'text-green-800',
+    bgColor: 'bg-gradient-to-r from-green-50 to-emerald-50',
+    textColor: 'text-green-700',
     borderColor: 'border-green-200',
-    icon: '✅',
+    icon: CheckCircle,
+    iconColor: 'text-green-500',
+    badgeColor: 'bg-green-100 text-green-800',
   },
   cancelled: {
     label: 'sessions.status.cancelled',
-    bgColor: 'bg-red-100',
-    textColor: 'text-red-800',
+    bgColor: 'bg-gradient-to-r from-red-50 to-pink-50',
+    textColor: 'text-red-700',
     borderColor: 'border-red-200',
-    icon: '❌',
+    icon: XCircle,
+    iconColor: 'text-red-500',
+    badgeColor: 'bg-red-100 text-red-800',
   },
-};
+} as const;
 
-// Status Badge Component
-const StatusBadge: React.FC<{ status: SessionStatus }> = ({ status }) => {
+// Memoized Status Badge Component
+const StatusBadge = memo<{ status: UISessionStatus }>(({ status }) => {
   const { t } = useTranslation();
   const config = statusConfig[status];
+  const IconComponent = config.icon;
   
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.bgColor} ${config.textColor} ${config.borderColor} border`}>
-      <span className="mr-1">{config.icon}</span>
+    <span className={cn(
+      'inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border shadow-sm',
+      config.badgeColor,
+      config.borderColor
+    )}>
+      <IconComponent className="w-4 h-4 mr-1.5" />
       {t(config.label)}
     </span>
   );
-};
+});
 
-// Status Change Dropdown Component
-const StatusChangeDropdown: React.FC<{
-  currentStatus: SessionStatus;
-  sessionId: string;
-  sessionDate: string;
-  onStatusChange: (sessionId: string, newStatus: SessionStatus) => void;
+StatusBadge.displayName = 'StatusBadge';
+
+// Memoized Session Type Icon Component
+const SessionTypeIcon = memo<{ type: string; className?: string }>(({ type, className }) => {
+  const getTypeIcon = useMemo(() => {
+    switch (type) {
+      case 'video': return Video;
+      case 'phone': return Phone;
+      case 'in-person': return MapPin;
+      default: return Video;
+    }
+  }, [type]);
+
+  return <getTypeIcon className={cn('w-5 h-5', className)} />;
+});
+
+SessionTypeIcon.displayName = 'SessionTypeIcon';
+
+// Memoized Session Actions Component
+const SessionActions = memo<{
+  session: Session;
+  onStatusChange: (sessionId: string, newStatus: UISessionStatus) => void;
+  onReschedule?: (session: Session) => void;
+  onCancel?: (session: Session) => void;
+  onViewDetails?: (sessionId: string) => void;
   isUpdating: boolean;
-}> = ({ currentStatus, sessionId, sessionDate, onStatusChange, isUpdating }) => {
+  userRole?: 'coach' | 'client' | 'admin';
+}>(({ session, onStatusChange, onReschedule, onCancel, onViewDetails, isUpdating, userRole }) => {
   const { t } = useTranslation();
-  const [isOpen, setIsOpen] = useState(false);
+  const { isRTL } = useLanguage();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [activeAction, setActiveAction] = useState<string | null>(null);
 
-  // Define valid status transitions based on business logic
-  const getValidTransitions = (status: SessionStatus, sessionDate: string): SessionStatus[] => {
-    const sessionTime = new Date(sessionDate);
+  const canReschedule = useMemo(() => {
+    const sessionTime = new Date(session.date);
     const now = new Date();
     const hoursUntilSession = differenceInHours(sessionTime, now);
+    return session.status === 'pending' && hoursUntilSession > 24;
+  }, [session.date, session.status]);
 
-    switch (status) {
-      case 'pending': {
-        const validFromPending: SessionStatus[] = ['in-progress', 'completed'];
-        
-        // Can only cancel if more than 2 hours away
-        if (hoursUntilSession <= 0 || hoursUntilSession >= 2) {
-          validFromPending.push('cancelled');
-        }
-        
-        return validFromPending;
-        
-        break;
-      }
-      
-      case 'in-progress': {
-        const validFromInProgress: SessionStatus[] = ['completed'];
-        
-        // Can still cancel if more than 2 hours away
-        if (hoursUntilSession <= 0 || hoursUntilSession >= 2) {
-          validFromInProgress.push('cancelled');
-        }
-        
-        return validFromInProgress;
-        
-        break;
-      }
-        
-      case 'completed':
-        // Completed sessions cannot be changed
-        return [];
-        
-      case 'cancelled':
-        // Cancelled sessions can only be reset to pending
-        return ['pending'];
-        
-      default:
-        return [];
-    }
-  };
+  const canCancel = useMemo(() => {
+    const sessionTime = new Date(session.date);
+    const now = new Date();
+    const hoursUntilSession = differenceInHours(sessionTime, now);
+    return ['pending', 'in-progress'].includes(session.status) && hoursUntilSession > 2;
+  }, [session.date, session.status]);
 
-  const availableStatuses = getValidTransitions(currentStatus, sessionDate);
-  
-  const handleStatusSelect = (newStatus: SessionStatus) => {
-    if (newStatus !== currentStatus) {
-      onStatusChange(sessionId, newStatus);
-    }
-    setIsOpen(false);
-  };
+  const canViewDetails = useMemo(() => {
+    return userRole === 'coach' || session.status === 'completed';
+  }, [userRole, session.status]);
 
-  // Don't show dropdown if no transitions are available
-  if (availableStatuses.length === 0) {
-    return (
-      <span className="px-3 py-1 text-sm text-gray-500 bg-gray-100 rounded-md">
-        {currentStatus === 'completed' ? t('sessions.statusFinal') : t('sessions.noActions')}
-      </span>
-    );
+  const handleReschedule = useCallback(() => {
+    setActiveAction('reschedule');
+    onReschedule?.(session);
+  }, [onReschedule, session]);
+
+  const handleCancel = useCallback(() => {
+    setActiveAction('cancel');
+    onCancel?.(session);
+  }, [onCancel, session]);
+
+  const handleViewDetails = useCallback(() => {
+    onViewDetails?.(session._id);
+  }, [onViewDetails, session._id]);
+
+  const quickActions = useMemo(() => [
+    ...(canReschedule && onReschedule ? [{
+      id: 'reschedule',
+      label: t('sessions.reschedule', 'Reschedule'),
+      icon: <Calendar className="w-4 h-4 transition-transform group-hover:scale-110" />,
+      action: handleReschedule,
+      color: 'text-blue-600 hover:text-blue-700',
+      bgColor: 'hover:bg-blue-50/80 active:bg-blue-100/80',
+      tooltip: t('sessions.rescheduleTooltip', 'Reschedule this session'),
+    }] : []),
+    ...(canCancel && onCancel ? [{
+      id: 'cancel',
+      label: t('sessions.cancel', 'Cancel'),
+      icon: <X className="w-4 h-4 transition-transform group-hover:scale-110" />,
+      action: handleCancel,
+      color: 'text-red-600 hover:text-red-700',
+      bgColor: 'hover:bg-red-50/80 active:bg-red-100/80',
+      tooltip: t('sessions.cancelTooltip', 'Cancel this session'),
+    }] : []),
+    ...(canViewDetails && onViewDetails ? [{
+      id: 'view-details',
+      label: t('sessions.viewDetails', 'View Details'),
+      icon: <Eye className="w-4 h-4 transition-transform group-hover:scale-110" />,
+      action: handleViewDetails,
+      color: 'text-purple-600 hover:text-purple-700',
+      bgColor: 'hover:bg-purple-50/80 active:bg-purple-100/80',
+      tooltip: t('sessions.viewDetailsTooltip', 'View session details'),
+    }] : []),
+  ], [canReschedule, onReschedule, canCancel, onCancel, canViewDetails, onViewDetails, t, handleReschedule, handleCancel, handleViewDetails]);
+
+  if (quickActions.length === 0) {
+    return <div className="w-8" />; // Placeholder for spacing
   }
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        disabled={isUpdating}
-        className="px-3 py-1 text-sm font-medium text-lumea-primary bg-lumea-light hover:bg-lumea-light-dark rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {isUpdating ? (
-          <div className="flex items-center">
-            <div className="animate-spin h-3 w-3 border-2 border-lumea-primary border-t-transparent rounded-full mr-1" />
-            {t('sessions.updating')}
-          </div>
-        ) : (
-          t('sessions.changeStatus')
-        )}
-      </button>
-      
-      {isOpen && !isUpdating && (
-        <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
-          <div className="py-1">
-            {availableStatuses.map((status) => (
-              <button
-                key={status}
-                onClick={() => handleStatusSelect(status)}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors flex items-center"
-              >
-                <span className="mr-2">{statusConfig[status].icon}</span>
-                {t(statusConfig[status].label)}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {/* Click outside to close */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 z-0" 
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+    <div className="flex items-center gap-2">
+      {quickActions.map((action) => (
+        <button
+          key={action.id}
+          onClick={action.action}
+          disabled={isUpdating && activeAction === action.id}
+          className={cn(
+            'p-2 rounded-lg transition-all duration-200 group',
+            action.color,
+            action.bgColor,
+            'disabled:opacity-50 disabled:cursor-not-allowed',
+            'flex items-center justify-center'
+          )}
+          title={action.tooltip}
+        >
+          {isUpdating && activeAction === action.id ? (
+            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          ) : (
+            action.icon
+          )}
+        </button>
+      ))}
     </div>
   );
-};
+});
 
-// Group sessions by date category
+SessionActions.displayName = 'SessionActions';
+
+// Optimized date grouping function - memoized outside component
 const groupSessionsByDate = (sessions: Session[]) => {
   const today = new Date();
-  const grouped: Record<string, Session[]> = {
-    today: [],
-    yesterday: [],
-    thisWeek: [],
-    thisMonth: [],
-    older: [],
+  const grouped = {
+    today: [] as Session[],
+    yesterday: [] as Session[],
+    thisWeek: [] as Session[],
+    thisMonth: [] as Session[],
+    older: [] as Session[],
   };
 
   sessions.forEach((session) => {
@@ -225,28 +293,181 @@ const groupSessionsByDate = (sessions: Session[]) => {
   return grouped;
 };
 
-const SessionList: React.FC<SessionListProps> = ({ sessions, isLoading, onCreateClick, onStatusChange, isUpdatingStatus, userRole }) => {
+// Memoized individual session component
+const SessionCard = memo<{
+  session: Session;
+  onStatusChange: (sessionId: string, newStatus: UISessionStatus) => void;
+  onReschedule?: (session: Session) => void;
+  onCancel?: (session: Session) => void;
+  onViewDetails: (sessionId: string) => void;
+  onAddNote: (sessionId: string, clientId: string, clientName: string) => void;
+  isUpdatingStatus: boolean;
+  userRole?: 'coach' | 'client' | 'admin';
+  formatDate: (dateString: string) => string;
+  formatTime: (dateString: string) => string;
+  locale: any;
+}>(({ 
+  session, 
+  onStatusChange, 
+  onReschedule, 
+  onCancel, 
+  onViewDetails, 
+  onAddNote, 
+  isUpdatingStatus, 
+  userRole, 
+  formatDate, 
+  formatTime, 
+  locale 
+}) => {
+  const { t } = useTranslation();
+  
+  const handleAddNote = useCallback(() => {
+    if (session.client) {
+      onAddNote(session._id, session.client._id, `${session.client.firstName} ${session.client.lastName}`);
+    }
+  }, [session, onAddNote]);
+
+  const sessionTitle = useMemo(() => {
+    return session.title || t('sessions.sessionWith', { 
+      client: session.client 
+        ? `${session.client.firstName} ${session.client.lastName}`
+        : t('sessions.unknownClient')
+    });
+  }, [session.title, session.client, t]);
+
+  const clientName = useMemo(() => {
+    return session.client ? `${session.client.firstName} ${session.client.lastName}` : '';
+  }, [session.client]);
+
+  const lastUpdated = useMemo(() => {
+    return format(new Date(session.updatedAt), 'MMM d, h:mm a', { locale });
+  }, [session.updatedAt, locale]);
+
+  return (
+    <div className="group relative bg-gradient-to-br from-white via-purple-50/30 to-blue-50/30 rounded-xl border border-gray-200/80 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+      {/* Status accent bar */}
+      <div className={cn(
+        'absolute top-0 left-0 w-1 h-full',
+        statusConfig[session.status].bgColor
+      )} />
+      
+      <div className="p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start space-x-4">
+            {/* Session Type Icon */}
+            <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl flex items-center justify-center">
+              <SessionTypeIcon type={session.type} className="w-6 h-6 text-purple-600" />
+            </div>
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-2">
+                <h4 className="text-lg font-semibold text-gray-900 truncate">
+                  {sessionTitle}
+                </h4>
+                <StatusBadge status={session.status} />
+              </div>
+              
+              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                <div className="flex items-center">
+                  <Clock className="w-4 h-4 mr-1.5" />
+                  <span>{formatDate(session.date)} • {formatTime(session.date)}</span>
+                </div>
+                
+                {session.client && (
+                  <div className="flex items-center">
+                    <User className="w-4 h-4 mr-1.5" />
+                    <span>{clientName}</span>
+                  </div>
+                )}
+              </div>
+              
+              {session.description && (
+                <p className="mt-2 text-sm text-gray-600 line-clamp-2">
+                  {session.description}
+                </p>
+              )}
+            </div>
+          </div>
+          
+          {/* Session Actions */}
+          <SessionActions
+            session={session}
+            onStatusChange={onStatusChange}
+            onReschedule={onReschedule}
+            onCancel={onCancel}
+            onViewDetails={onViewDetails}
+            isUpdating={isUpdatingStatus}
+            userRole={userRole}
+          />
+        </div>
+        
+        {/* Additional Actions for Coaches */}
+        {userRole === 'coach' && session.client && (
+          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handleAddNote}
+                className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center"
+              >
+                <FileText className="w-4 h-4 mr-1.5" />
+                {t('sessions.addNote')}
+              </button>
+            </div>
+            
+            <div className="text-xs text-gray-500">
+              {t('sessions.lastUpdated')}: {lastUpdated}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
+SessionCard.displayName = 'SessionCard';
+
+const SessionList: React.FC<SessionListProps> = ({ 
+  sessions, 
+  isLoading, 
+  onCreateClick, 
+  onStatusChange, 
+  isUpdatingStatus = false, 
+  userRole,
+  onReschedule,
+  onCancel 
+}) => {
   const { t, i18n } = useTranslation();
+  const { isRTL } = useLanguage();
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const isRTL = i18n.language === 'he';
-  const locale = isRTL ? he : undefined;
+  const locale = useMemo(() => isRTL ? he : undefined, [isRTL]);
 
-  const formatDate = (dateString: string) => {
+  // Memoized date formatting functions
+  const formatDate = useCallback((dateString: string) => {
     try {
       const date = new Date(dateString);
       return format(date, 'EEEE, MMMM d, yyyy', { locale });
     } catch (error) {
       return t('sessions.invalidDate');
     }
-  };
+  }, [locale, t]);
 
-  const handleViewDetails = (sessionId: string) => {
+  const formatTime = useCallback((dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return format(date, 'h:mm a', { locale });
+    } catch (error) {
+      return '';
+    }
+  }, [locale]);
+
+  // Memoized callback functions
+  const handleViewDetails = useCallback((sessionId: string) => {
     const basePath = profile?.role === 'coach' ? '/coach/sessions' : '/client/sessions';
     navigate(`${basePath}/${sessionId}`);
-  };
+  }, [profile?.role, navigate]);
 
-  const handleAddNote = (sessionId: string, clientId: string, clientName: string) => {
+  const handleAddNote = useCallback((sessionId: string, clientId: string, clientName: string) => {
     // Navigate to coach notes with pre-filled session and client context
     const params = new URLSearchParams({
       sessionId,
@@ -254,128 +475,59 @@ const SessionList: React.FC<SessionListProps> = ({ sessions, isLoading, onCreate
       clientName
     });
     navigate(`/coach/notes?${params.toString()}`);
-  };
+  }, [navigate]);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin h-8 w-8 border-4 border-lumea-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
+  // Memoized grouped sessions
+  const groupedSessions = useMemo(() => {
+    return groupSessionsByDate(sessions);
+  }, [sessions]);
 
-  if (sessions.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8 text-center">
-        <div className="w-64 h-64 bg-lumea-light rounded-full mb-4 flex items-center justify-center">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-32 w-32 text-lumea-primary"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
-        </div>
-        <h3 className="text-xl font-semibold mb-2">{t('sessions.noSessionsYet')}</h3>
-        <p className="text-gray-600 mb-6">{t('sessions.noSessionsMessage')}</p>
-        <button
-          onClick={onCreateClick}
-          className="bg-lumea-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-lumea-primary-dark transition-colors"
-        >
-          {t('sessions.createSession')}
-        </button>
-      </div>
-    );
-  }
-
-  const groupedSessions = groupSessionsByDate(sessions);
-  const groupTitles = {
+  // Memoized group titles
+  const groupTitles = useMemo(() => ({
     today: t('sessions.today'),
     yesterday: t('sessions.yesterday'),
     thisWeek: t('sessions.thisWeek'),
     thisMonth: t('sessions.thisMonth'),
     older: t('sessions.older'),
-  };
+  }), [t]);
+
+  if (isLoading) {
+    return <SessionsListSkeleton isMobile={false} withGrouping={true} />;
+  }
+
+  if (sessions.length === 0) {
+    return <NoSessionsEmptyState onCreateClick={onCreateClick} isMobile={false} />;
+  }
 
   return (
     <div className="space-y-8">
-      {Object.entries(groupedSessions).map(([group, groupSessions]) => {
+      {Object.entries(groupedSessions).map(([groupKey, groupSessions]) => {
         if (groupSessions.length === 0) return null;
 
         return (
-          <div key={group} className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <h3 className="px-6 py-3 bg-gray-50 font-medium">
-              {groupTitles[group as keyof typeof groupTitles]}
+          <div key={groupKey} className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
+              {groupTitles[groupKey as keyof typeof groupTitles]} ({groupSessions.length})
             </h3>
-            <ul className="divide-y divide-gray-200">
+            
+            <div className="grid gap-4">
               {groupSessions.map((session) => (
-                <li key={session._id} className="p-4 hover:bg-gray-50">
-                  <div className="md:flex md:justify-between md:items-center">
-                    <div className="mb-2 md:mb-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium">{formatDate(session.date)}</h4>
-                        <StatusBadge status={session.status} />
-                      </div>
-                      <div className="flex items-center mt-1">
-                        <div className="h-6 w-6 rounded-full bg-lumea-light flex items-center justify-center mr-2">
-                          <span className="text-lumea-primary text-xs font-semibold">
-                            {session.client.firstName.charAt(0)}
-                            {session.client.lastName.charAt(0)}
-                          </span>
-                        </div>
-                        <span className="text-gray-700">
-                          {session.client.firstName} {session.client.lastName}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="md:text-right flex flex-col md:flex-row gap-2">
-                      <button
-                        onClick={() => handleViewDetails(session._id)}
-                        className="px-3 py-1 bg-lumea-light text-lumea-primary rounded hover:bg-lumea-light-dark transition-colors text-sm font-medium"
-                      >
-                        {t('sessions.viewDetails')}
-                      </button>
-                      {/* Show Add Note button for coaches */}
-                      {userRole === 'coach' && (
-                        <button
-                          onClick={() => handleAddNote(
-                            session._id, 
-                            session.client._id, 
-                            `${session.client.firstName} ${session.client.lastName}`
-                          )}
-                          className="px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-sm font-medium flex items-center gap-1"
-                        >
-                          <FileText className="h-3 w-3" />
-                          Add Note
-                        </button>
-                      )}
-                      {/* Show status change controls only for coaches */}
-                      {userRole === 'coach' && onStatusChange && (
-                        <StatusChangeDropdown
-                          currentStatus={session.status}
-                          sessionId={session._id}
-                          sessionDate={session.date}
-                          onStatusChange={onStatusChange}
-                          isUpdating={isUpdatingStatus || false}
-                        />
-                      )}
-                    </div>
-                  </div>
-                  {session.notes && (
-                    <div className="mt-3 bg-gray-50 p-3 rounded text-gray-700 text-sm">
-                      {session.notes}
-                    </div>
-                  )}
-                </li>
+                <SessionCard
+                  key={session._id}
+                  session={session}
+                  onStatusChange={onStatusChange || (() => {})}
+                  onReschedule={onReschedule}
+                  onCancel={onCancel}
+                  onViewDetails={handleViewDetails}
+                  onAddNote={handleAddNote}
+                  isUpdatingStatus={isUpdatingStatus}
+                  userRole={userRole}
+                  formatDate={formatDate}
+                  formatTime={formatTime}
+                  locale={locale}
+                />
               ))}
-            </ul>
+            </div>
           </div>
         );
       })}
@@ -383,4 +535,4 @@ const SessionList: React.FC<SessionListProps> = ({ sessions, isLoading, onCreate
   );
 };
 
-export default SessionList;
+export default memo(SessionList);

@@ -32,8 +32,8 @@ import {
 } from '../ui/alert-dialog';
 import { useToast } from '../../hooks/use-toast';
 import { paymentService } from '../../services/paymentService';
-import { useCoaches } from '../../hooks/useCoaches';
-import { useSessions } from '../../hooks/useSessions';
+import { usePayments } from '../../hooks/usePayments';
+import { usePaymentSummary } from '../../hooks/usePaymentSummary';
 import type { PaymentStatus } from '../../../../shared/types/database';
 import { 
   DollarSign, 
@@ -71,24 +71,7 @@ interface PaymentWithRelations {
   };
 }
 
-interface PaymentSummary {
-  total_payments: number;
-  total_amount: number;
-  paid_amount: number;
-  overdue_amount: number;
-  due_amount: number;
-  by_status: {
-    due: number;
-    paid: number;
-    overdue: number;
-    cancelled: number;
-  };
-}
-
 export const PaymentDashboard: React.FC = () => {
-  const [payments, setPayments] = useState<PaymentWithRelations[]>([]);
-  const [summary, setSummary] = useState<PaymentSummary | null>(null);
-  const [loading, setLoading] = useState(true);
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
   const [filterStatus, setFilterStatus] = useState<PaymentStatus | 'all'>('all');
   const [filterClient, setFilterClient] = useState<string>('all');
@@ -97,105 +80,52 @@ export const PaymentDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
   
   const { toast } = useToast();
-  const { data: sessions } = useSessions();
-  const { data: coaches } = useCoaches();
+  const { data: payments = [], isLoading: isLoadingPayments, refetch: refetchPayments } = usePayments({ status: filterStatus, client_id: filterClient });
+  const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = usePaymentSummary();
 
-  useEffect(() => {
-    loadPaymentData();
-  }, [filterStatus, filterClient]);
-
-  const loadPaymentData = async () => {
-    try {
-      setLoading(true);
-      
-      // Load summary
-      const summaryData = await paymentService.getPaymentSummary();
-      setSummary(summaryData);
-      
-      // Load payments with filters
-      const params: any = {};
-      if (filterStatus !== 'all') params.status = filterStatus;
-      if (filterClient !== 'all') params.client_id = filterClient;
-      
-      const paymentsData = await paymentService.getPayments(params);
-      setPayments(paymentsData);
-    } catch (error) {
-      console.error('Failed to load payment data:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load payment data',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
+  const loadPaymentData = () => {
+    refetchPayments();
+    refetchSummary();
   };
 
   const handlePaymentStatusUpdate = async (paymentId: string, status: PaymentStatus) => {
-    try {
-      await paymentService.updatePaymentStatus(paymentId, status);
-      await loadPaymentData();
-      toast({
-        title: 'Success',
-        description: `Payment status updated to ${status}`,
-      });
-    } catch (error) {
-      console.error('Failed to update payment status:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update payment status',
-        variant: 'destructive',
-      });
-    }
+    await paymentService.updatePaymentStatus(paymentId, status);
+    loadPaymentData();
+    toast({
+      title: 'Success',
+      description: `Payment status updated to ${status}`,
+    });
   };
 
   const handleBatchUpdate = async () => {
     if (selectedPayments.length === 0) return;
     
-    try {
-      await paymentService.batchUpdatePaymentStatus({
-        payment_ids: selectedPayments,
-        status: batchUpdateStatus,
-      });
-      
-      setSelectedPayments([]);
-      setShowBatchUpdateDialog(false);
-      await loadPaymentData();
-      
-      toast({
-        title: 'Success',
-        description: `Updated ${selectedPayments.length} payments to ${batchUpdateStatus}`,
-      });
-    } catch (error) {
-      console.error('Failed to batch update payments:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to batch update payments',
-        variant: 'destructive',
-      });
-    }
+    await paymentService.batchUpdatePaymentStatus({
+      payment_ids: selectedPayments,
+      status: batchUpdateStatus,
+    });
+    
+    setSelectedPayments([]);
+    setShowBatchUpdateDialog(false);
+    loadPaymentData();
+    
+    toast({
+      title: 'Success',
+      description: `Updated ${selectedPayments.length} payments to ${batchUpdateStatus}`,
+    });
   };
 
   const handleMarkSessionsPaid = async (sessionIds: string[], amount: number) => {
-    try {
-      await paymentService.markSessionsAsPaid({
-        session_ids: sessionIds,
-        amount,
-      });
-      
-      await loadPaymentData();
-      toast({
-        title: 'Success',
-        description: `Marked ${sessionIds.length} sessions as paid`,
-      });
-    } catch (error) {
-      console.error('Failed to mark sessions as paid:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to mark sessions as paid',
-        variant: 'destructive',
-      });
-    }
+    await paymentService.markSessionsAsPaid({
+      session_ids: sessionIds,
+      amount,
+    });
+    
+    loadPaymentData();
+    toast({
+      title: 'Success',
+      description: `Marked ${sessionIds.length} sessions as paid`,
+    });
   };
 
   const togglePaymentSelection = (paymentId: string) => {
@@ -242,7 +172,7 @@ export const PaymentDashboard: React.FC = () => {
     new Set(payments.map(p => p.client).filter(Boolean))
   ).map(client => client!);
 
-  if (loading) {
+  if (isLoadingPayments || isLoadingSummary) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>

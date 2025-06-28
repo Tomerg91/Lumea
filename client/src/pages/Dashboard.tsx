@@ -1,32 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTranslation } from 'react-i18next';
-import { supabase } from '../lib/supabase';
+import { useRealtimeSessions } from '../hooks/useSessions';
+import { useRealtimeReflections } from '../hooks/useReflections';
 import {
   Calendar,
   MessageSquare,
-  TrendingUp,
   Users,
   Clock,
   ArrowRight,
-  BookOpen,
   Target,
-  Activity,
-  Plus,
   Video,
   PenTool,
   AlertCircle,
   CheckCircle,
-  Star,
-  Heart,
   Zap,
-  BarChart3
+  BarChart3,
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
 import SessionDurationAnalytics from '../components/analytics/SessionDurationAnalytics';
 import { useMobileDetection } from '../hooks/useMobileDetection';
 import MobileSessionDurationAnalytics from '../components/analytics/MobileSessionDurationAnalytics';
+import { cn } from '../lib/utils';
+import { 
+  LoadingSkeleton,
+  LoadingSpinner,
+  StatsCardSkeleton, 
+  QuickActionCardSkeleton,
+  StatusIndicator,
+  LoadingButton
+} from '../components/LoadingSystem';
 
 interface DashboardStats {
   totalSessions: number;
@@ -54,227 +60,439 @@ interface RecentReflection {
   preview: string;
 }
 
+// Helper Components
+interface StatsCardProps {
+  icon: React.ComponentType<any>;
+  title: string;
+  value: number;
+  color: string;
+  isRTL: boolean;
+}
+
+const StatsCard: React.FC<StatsCardProps> = ({ icon: Icon, title, value, color, isRTL }) => (
+  <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
+    <div className={cn(
+      "flex items-center justify-between",
+      isRTL && "flex-row-reverse"
+    )}>
+      <div>
+        <p className="text-gray-600 text-sm font-medium mb-1">{title}</p>
+        <p className="text-3xl font-bold text-gray-900">{value}</p>
+      </div>
+      <div className={cn(
+        "w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-r",
+        color
+      )}>
+        <Icon className="w-6 h-6 text-white" />
+      </div>
+    </div>
+  </div>
+);
+
+interface QuickActionCardProps {
+  icon: React.ComponentType<any>;
+  title: string;
+  description: string;
+  action: () => void;
+  color: string;
+  isRTL: boolean;
+}
+
+const QuickActionCard: React.FC<QuickActionCardProps> = ({ 
+  icon: Icon, 
+  title, 
+  description, 
+  action, 
+  color, 
+  isRTL 
+}) => (
+  <button
+    onClick={action}
+    className="w-full bg-gradient-to-r from-gray-50 to-white rounded-xl p-4 border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 text-left"
+  >
+    <div className={cn(
+      "flex items-center gap-4",
+      isRTL && "flex-row-reverse text-right"
+    )}>
+      <div className={cn(
+        "w-10 h-10 rounded-lg flex items-center justify-center",
+        color
+      )}>
+        <Icon className="w-5 h-5 text-white" />
+      </div>
+      <div className="flex-1">
+        <h3 className="font-semibold text-gray-900 mb-1">{title}</h3>
+        <p className="text-sm text-gray-600">{description}</p>
+      </div>
+      <ArrowRight className={cn(
+        "w-5 h-5 text-gray-400",
+        isRTL && "rotate-180"
+      )} />
+    </div>
+  </button>
+);
+
+interface SessionCardProps {
+  session: UpcomingSession;
+  isRTL: boolean;
+}
+
+const SessionCard: React.FC<SessionCardProps> = ({ session, isRTL }) => (
+  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
+    <div className={cn(
+      "flex items-center justify-between",
+      isRTL && "flex-row-reverse"
+    )}>
+      <div className={cn(isRTL && "text-right")}>
+        <h3 className="font-semibold text-gray-900 mb-1">{session.title}</h3>
+        <div className={cn(
+          "flex items-center gap-4 text-sm text-gray-600",
+          isRTL && "flex-row-reverse"
+        )}>
+          <span className="flex items-center gap-1">
+            <Calendar className="w-4 h-4" />
+            {session.date}
+          </span>
+          <span className="flex items-center gap-1">
+            <Clock className="w-4 h-4" />
+            {session.time}
+          </span>
+        </div>
+        {(session.coach || session.client) && (
+          <p className="text-sm text-gray-700 mt-1">
+            {session.coach ? `Coach: ${session.coach}` : `Client: ${session.client}`}
+          </p>
+        )}
+      </div>
+      <div className={cn(
+        "flex items-center gap-2",
+        isRTL && "flex-row-reverse"
+      )}>
+        <span className={cn(
+          "px-3 py-1 rounded-full text-xs font-medium",
+          session.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+          session.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
+          'bg-yellow-100 text-yellow-800'
+        )}>
+          {session.status === 'confirmed' ? 'Confirmed' :
+           session.status === 'scheduled' ? 'Scheduled' : 'Pending'}
+        </span>
+        <Video className="w-5 h-5 text-blue-500" />
+      </div>
+    </div>
+  </div>
+);
+
+interface ReflectionCardProps {
+  reflection: RecentReflection;
+  isRTL: boolean;
+}
+
+const ReflectionCard: React.FC<ReflectionCardProps> = ({ reflection, isRTL }) => (
+  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+    <div className={cn(
+      "flex items-start justify-between",
+      isRTL && "flex-row-reverse"
+    )}>
+      <div className={cn("flex-1", isRTL && "text-right")}>
+        <div className={cn(
+          "flex items-center gap-2 mb-2",
+          isRTL && "flex-row-reverse"
+        )}>
+          <span className="text-lg">{reflection.mood}</span>
+          <h3 className="font-semibold text-gray-900">{reflection.title}</h3>
+        </div>
+        <p className="text-sm text-gray-600 mb-2">{reflection.preview}</p>
+        <p className="text-xs text-gray-500">{reflection.date}</p>
+      </div>
+      <PenTool className="w-5 h-5 text-purple-500 ml-3" />
+    </div>
+  </div>
+);
+
+interface EmptyStateProps {
+  icon: React.ComponentType<any>;
+  title: string;
+  description: string;
+  actionText: string;
+  onAction: () => void;
+  isRTL: boolean;
+}
+
+const EmptyState: React.FC<EmptyStateProps> = ({ 
+  icon: Icon, 
+  title, 
+  description, 
+  actionText, 
+  onAction, 
+  isRTL 
+}) => (
+  <div className={cn(
+    "text-center py-8",
+    isRTL && "text-right"
+  )}>
+    <div className="w-16 h-16 bg-gradient-to-r from-gray-200 to-gray-300 rounded-2xl flex items-center justify-center mx-auto mb-4">
+      <Icon className="w-8 h-8 text-gray-500" />
+    </div>
+    <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
+    <p className="text-gray-600 mb-4">{description}</p>
+    <button
+      onClick={onAction}
+      className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all duration-200"
+    >
+      {actionText}
+    </button>
+  </div>
+);
+
 const Dashboard = () => {
   const { profile } = useAuth();
   const { isRTL } = useLanguage();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { isMobile } = useMobileDetection();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [upcomingSessions, setUpcomingSessions] = useState<UpcomingSession[]>([]);
-  const [recentReflections, setRecentReflections] = useState<RecentReflection[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: sessionsData, isLoading: isLoadingSessions, error: sessionsError } = useRealtimeSessions();
+  const { data: reflectionsData, isLoading: isLoadingReflections, error: reflectionsError } = useRealtimeReflections();
 
   const isCoach = profile?.role === 'coach';
   const isClient = profile?.role === 'client';
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const sessions = sessionsData || [];
+  const reflections = reflectionsData || [];
 
-        // Try to fetch from backend API first
-        try {
-          // Get the current session to extract the access token
-          const { data: { session } } = await supabase.auth.getSession();
-          
-          if (!session?.access_token) {
-            console.log('No authentication token, using mock data');
-            throw new Error('Not authenticated');
-          }
+  const now = new Date();
+  const upcomingSessions = sessions.filter(session => new Date(session.date) > now);
+  const completedSessions = sessions.filter(session => session.status === 'Completed');
 
-          const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`
-          };
+  const stats: DashboardStats = {
+    totalSessions: sessions.length,
+    completedSessions: completedSessions.length,
+    upcomingSessions: upcomingSessions.length,
+    totalReflections: reflections.length,
+    weeklyProgress: sessions.length > 0 ? Math.round((completedSessions.length / sessions.length) * 100) : 0
+  };
 
-          const [statsResponse, sessionsResponse, reflectionsResponse] = await Promise.all([
-            fetch('/api/dashboard/stats', { headers }),
-            fetch('/api/sessions/upcoming', { headers }),
-            fetch('/api/reflections/recent', { headers })
-          ]);
+  const formattedUpcomingSessions = upcomingSessions.slice(0, 3).map(session => ({
+    id: session.id,
+    title: isCoach ? 'Coaching Session' : 'Session with Coach',
+    date: new Date(session.date).toLocaleDateString(),
+    time: new Date(session.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    coach: isCoach ? undefined : 'Dr. Satya',
+    client: isCoach ? 'Client' : undefined,
+    status: session.status === 'Upcoming' ? 'scheduled' : session.status === 'Completed' ? 'confirmed' : 'pending'
+  }));
 
-          if (statsResponse.ok && sessionsResponse.ok && reflectionsResponse.ok) {
-            const [statsData, sessionsData, reflectionsData] = await Promise.all([
-              statsResponse.json(),
-              sessionsResponse.json(),
-              reflectionsResponse.json()
-            ]);
+  const recentReflections = reflections.map(reflection => ({
+    id: reflection.id,
+    title: (reflection as any).title || (reflection as any).content?.slice(0, 50) + '...' || 'Reflection',
+    date: new Date((reflection as any).created_at || reflection.created_at).toLocaleDateString(),
+    mood: (reflection as any).mood_rating ? getMoodEmoji((reflection as any).mood_rating) : '😊',
+    preview: (reflection as any).content?.slice(0, 100) + ((reflection as any).content?.length > 100 ? '...' : '') || 'No content'
+  }));
 
-            console.log('Successfully fetched live data:', { statsData, sessionsData, reflectionsData });
-            setStats(statsData);
-            setUpcomingSessions(sessionsData);
-            setRecentReflections(reflectionsData);
-            return;
-          } else {
-            console.log('API responses not OK:', {
-              stats: statsResponse.status,
-              sessions: sessionsResponse.status,
-              reflections: reflectionsResponse.status
-            });
-          }
-        } catch (apiError) {
-          console.log('API error, using mock data:', apiError);
-        }
+  // Helper function to safely get display name
+  const getDisplayName = () => {
+    if (profile?.full_name) return profile.full_name;
+    if (profile?.email) {
+      return (profile.email as string).split('@')[0];
+    }
+    return 'User';
+  };
 
-        // Fallback to mock data with appropriate content for role
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
-
-        if (isCoach) {
-          setStats({
-            totalSessions: 47,
-            completedSessions: 42,
-            upcomingSessions: 5,
-            totalReflections: 89,
-            weeklyProgress: 85
-          });
-
-          setUpcomingSessions([
-            {
-              id: '1',
-              title: t('dashboard.upcomingSessions.title'),
-              date: '2024-01-15',
-              time: '14:00',
-              client: 'שרה מזרחי / Sarah Mizrahi',
-              status: 'confirmed'
-            },
-            {
-              id: '2',
-              title: t('dashboard.upcomingSessions.title'), 
-              date: '2024-01-16',
-              time: '10:30',
-              client: 'דוד כהן / David Cohen',
-              status: 'scheduled'
-            }
-          ]);
-        } else {
-          setStats({
-            totalSessions: 12,
-            completedSessions: 8,
-            upcomingSessions: 2,
-            totalReflections: 24,
-            weeklyProgress: 75
-          });
-
-          setUpcomingSessions([
-            {
-              id: '1',
-              title: t('dashboard.upcomingSessions.title'),
-              date: '2024-01-15',
-              time: '14:00',
-              coach: 'ד"ר רונית לוי / Dr. Ronit Levy',
-              status: 'confirmed'
-            }
-          ]);
-        }
-
-        setRecentReflections([
-          {
-            id: '1',
-            title: isCoach ? t('dashboard.recentReflections.assessmentTitle') : t('dashboard.recentReflections.journalTitle'),
-            date: '2024-01-14',
-            mood: '😊',
-            preview: isCoach 
-              ? t('dashboard.recentReflections.assessmentPreview')
-              : t('dashboard.recentReflections.journalPreview')
-          },
-          {
-            id: '2', 
-            title: isCoach ? t('dashboard.recentReflections.insightsTitle') : t('dashboard.recentReflections.goalsTitle'),
-            date: '2024-01-12',
-            mood: '🎯',
-            preview: isCoach
-              ? t('dashboard.recentReflections.insightsPreview')
-              : t('dashboard.recentReflections.goalsPreview')
-          }
-        ]);
-
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        setError('Failed to load dashboard data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, [isCoach, t]);
+  const getMoodEmoji = (rating: number): string => {
+    if (rating >= 8) return '😊';
+    if (rating >= 6) return '😐';
+    if (rating >= 4) return '😔';
+    return '😢';
+  };
 
   const quickActions = isCoach ? [
     {
-      icon: <Plus className="w-6 h-6" />,
-      title: t('dashboard.quickActions.addClient.title'),
-      description: t('dashboard.quickActions.addClient.description'),
-      action: () => navigate('/coach/clients?action=add'),
-      gradient: 'bg-gradient-coral-teal'
+      icon: Users,
+      title: 'View Clients',
+      description: 'Manage your client relationships',
+      action: () => navigate('/coach/clients'),
+      color: 'bg-blue-500'
     },
     {
-      icon: <Calendar className="w-6 h-6" />,
-      title: t('dashboard.quickActions.scheduleSession.title'),
-      description: t('dashboard.quickActions.scheduleSession.description'),
-      action: () => navigate('/coach/sessions?action=schedule'),
-      gradient: 'bg-gradient-yellow-coral'
+      icon: Calendar,
+      title: 'Schedule Session',
+      description: 'Book new coaching sessions',
+      action: () => navigate('/coach/sessions'),
+      color: 'bg-green-500'
     },
     {
-      icon: <PenTool className="w-6 h-6" />,
-      title: t('dashboard.quickActions.writeAssessment.title'),
-      description: t('dashboard.quickActions.writeAssessment.description'),
-      action: () => navigate('/coach/assessments'),
-      gradient: 'bg-gradient-warm'
+      icon: BarChart3,
+      title: 'Analytics',
+      description: 'View performance insights',
+      action: () => navigate('/coach/analytics'),
+      color: 'bg-purple-500'
     }
   ] : [
     {
-      icon: <Calendar className="w-6 h-6" />,
-      title: t('dashboard.quickActions.bookSession.title'),
-      description: t('dashboard.quickActions.bookSession.description'),
-      action: () => navigate('/client/sessions?action=book'),
-      gradient: 'bg-gradient-coral-teal'
+      icon: Calendar,
+      title: 'Book Session',
+      description: 'Schedule your next coaching session',
+      action: () => navigate('/sessions'),
+      color: 'bg-blue-500'
     },
     {
-      icon: <PenTool className="w-6 h-6" />,
-      title: t('dashboard.quickActions.writeReflection.title'),
-      description: t('dashboard.quickActions.writeReflection.description'),
-      action: () => navigate('/client/reflections?action=new'),
-      gradient: 'bg-gradient-yellow-coral'
+      icon: PenTool,
+      title: 'Write Reflection',
+      description: 'Capture your thoughts and insights',
+      action: () => navigate('/reflections'),
+      color: 'bg-green-500'
     },
     {
-      icon: <Target className="w-6 h-6" />,
-      title: t('dashboard.quickActions.updateGoals.title'),
-      description: t('dashboard.quickActions.updateGoals.description'),
-      action: () => navigate('/client/goals'),
-      gradient: 'bg-gradient-warm'
+      icon: Target,
+      title: 'View Goals',
+      description: 'Track your progress and achievements',
+      action: () => navigate('/goals'),
+      color: 'bg-purple-500'
     }
   ];
 
-  if (loading) {
+  if (isLoadingSessions || isLoadingReflections) {
     return (
-      <div className="min-h-screen bg-gradient-background flex items-center justify-center">
-        <div className="glass-card-strong rounded-2xl p-8 text-center">
-          <div className="w-12 h-12 bg-gradient-coral-teal rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse-soft">
-            <Activity className="w-6 h-6 text-white" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className={cn(
+          "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8",
+          isRTL && "direction-rtl"
+        )}>
+          {/* Welcome Header Skeleton */}
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg mb-8">
+            <div className={cn(
+              "flex items-center justify-between",
+              isRTL && "flex-row-reverse"
+            )}>
+              <div className="flex-1">
+                <LoadingSkeleton width="280px" height="36px" className="mb-2" />
+                <LoadingSkeleton width="200px" height="20px" />
+              </div>
+              <div className="hidden md:block">
+                <LoadingSkeleton width="64px" height="64px" variant="rounded" />
+              </div>
+            </div>
           </div>
-          <p className="text-lg font-medium">{t('dashboard.loading')}</p>
+
+          {/* Stats Grid Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <StatsCardSkeleton key={index} delay={index * 100} />
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Quick Actions Skeleton */}
+            <div className="lg:col-span-1">
+              <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+                <div className="flex items-center gap-3 mb-6">
+                  <LoadingSkeleton width="24px" height="24px" variant="rounded" />
+                  <LoadingSkeleton width="120px" height="24px" />
+                </div>
+                <div className="space-y-4">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <QuickActionCardSkeleton key={index} delay={index * 150} />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Main Content Skeleton */}
+            <div className="lg:col-span-2 space-y-8">
+              {/* Upcoming Sessions Skeleton */}
+              <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+                <div className={cn(
+                  "flex items-center justify-between mb-6",
+                  isRTL && "flex-row-reverse"
+                )}>
+                  <div className="flex items-center gap-3">
+                    <LoadingSkeleton width="24px" height="24px" variant="rounded" />
+                    <LoadingSkeleton width="140px" height="24px" />
+                  </div>
+                  <LoadingSkeleton width="80px" height="20px" />
+                </div>
+                <div className="space-y-4">
+                  {Array.from({ length: 2 }).map((_, index) => (
+                    <div key={index} className="bg-gray-50/50 rounded-xl p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <LoadingSkeleton width="160px" height="20px" />
+                        <LoadingSkeleton width="60px" height="16px" variant="badge" />
+                      </div>
+                      <LoadingSkeleton width="120px" height="16px" className="mb-1" />
+                      <LoadingSkeleton width="80px" height="14px" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recent Reflections Skeleton (for clients) */}
+              {!isCoach && (
+                <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+                  <div className={cn(
+                    "flex items-center justify-between mb-6",
+                    isRTL && "flex-row-reverse"
+                  )}>
+                    <div className="flex items-center gap-3">
+                      <LoadingSkeleton width="24px" height="24px" variant="rounded" />
+                      <LoadingSkeleton width="150px" height="24px" />
+                    </div>
+                    <LoadingSkeleton width="80px" height="20px" />
+                  </div>
+                  <div className="space-y-4">
+                    {Array.from({ length: 2 }).map((_, index) => (
+                      <div key={index} className="bg-gray-50/50 rounded-xl p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <LoadingSkeleton width="180px" height="18px" />
+                          <LoadingSkeleton width="20px" height="20px" variant="circle" />
+                        </div>
+                        <LoadingSkeleton width="100px" height="14px" className="mb-2" />
+                        <LoadingSkeleton width="240px" height="14px" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Analytics Section Skeleton */}
+          <div className="mt-8">
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+              <div className="flex items-center gap-3 mb-6">
+                <LoadingSkeleton width="24px" height="24px" variant="rounded" />
+                <LoadingSkeleton width="100px" height="24px" />
+              </div>
+              <LoadingSkeleton width="100%" height="200px" variant="rounded" />
+            </div>
+          </div>
+
+          {/* Loading Status Indicator */}
+          <div className="fixed bottom-4 right-4">
+            <StatusIndicator 
+              status="loading" 
+              message={`${t('loading')}...`}
+              className="bg-white/90 backdrop-blur-sm shadow-lg" 
+            />
+          </div>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (sessionsError || reflectionsError) {
+    const errorMessage = sessionsError?.message || reflectionsError?.message || "An unknown error occurred.";
     return (
-      <div className="min-h-screen bg-gradient-background flex items-center justify-center">
-        <div className="card-lumea-strong max-w-md mx-auto text-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white rounded-2xl p-8 shadow-sm max-w-md mx-auto text-center">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gradient-coral mb-4">
-            {t('dashboard.error')}
-          </h2>
-          <p className="opacity-80 mb-6">{error}</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Something went wrong</h2>
+          <p className="text-gray-600 mb-6">{errorMessage}</p>
           <button
             onClick={() => window.location.reload()}
-            className="btn-primary"
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
-            {t('dashboard.tryAgain')}
+            Try again
           </button>
         </div>
       </div>
@@ -282,257 +500,196 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-background">
-      {/* Floating Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-coral-teal rounded-full opacity-10 animate-float"></div>
-        <div className="absolute top-60 right-20 w-24 h-24 bg-gradient-cream-peach rounded-full opacity-15 animate-float-delayed"></div>
-        <div className="absolute bottom-32 left-32 w-40 h-40 bg-gradient-warm rounded-full opacity-10 animate-float"></div>
-      </div>
-
-      <div className={`container mx-auto px-4 py-8 ${isRTL ? 'rtl-text-right' : ''}`}>
-        {/* Header */}
-        <div className="mb-8 animate-fade-in">
-          <h1 className="text-4xl lg:text-5xl font-bold text-gradient-coral mb-4">
-            {isCoach 
-              ? t('dashboard.welcome.coach')
-              : t('dashboard.welcome.client')
-            }
-          </h1>
-          <p className="text-xl opacity-80">
-            {String(profile?.full_name || profile?.name || 'User')}
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className={cn(
+        "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8",
+        isRTL && "direction-rtl"
+      )}>
+        {/* Welcome Header */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg mb-8">
+          <div className={cn(
+            "flex items-center justify-between",
+            isRTL && "flex-row-reverse"
+          )}>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                {t('dashboard.welcome')}, {getDisplayName()}!
+              </h1>
+              <p className="text-gray-600 text-lg">
+                {isCoach 
+                  ? t('dashboard.coachWelcome')
+                  : t('dashboard.clientWelcome')
+                }
+              </p>
+            </div>
+            <div className="hidden md:block">
+              <div className="w-16 h-16 bg-gradient-to-r from-teal-500 to-blue-500 rounded-2xl flex items-center justify-center">
+                <Sparkles className="w-8 h-8 text-white" />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Stats Grid */}
         {stats && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="card-lumea hover-lift">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm opacity-70 mb-1">
-                    {isCoach ? t('dashboard.stats.totalClients') : t('dashboard.stats.totalSessions')}
-                  </p>
-                  <p className="text-3xl font-bold text-gradient-teal">
-                    {isCoach ? '12' : stats.totalSessions}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-gradient-coral-teal rounded-xl flex items-center justify-center">
-                  <Users className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </div>
-
-            <div className="card-lumea hover-lift">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm opacity-70 mb-1">
-                    {t('dashboard.stats.weekSessions')}
-                  </p>
-                  <p className="text-3xl font-bold text-gradient-coral">
-                    {stats.upcomingSessions}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-gradient-yellow-coral rounded-xl flex items-center justify-center">
-                  <Calendar className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </div>
-
-            <div className="card-lumea hover-lift">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm opacity-70 mb-1">
-                    {t('dashboard.stats.reflections')}
-                  </p>
-                  <p className="text-3xl font-bold text-gradient-teal">
-                    {stats.totalReflections}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-gradient-warm rounded-xl flex items-center justify-center">
-                  <MessageSquare className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </div>
-
-            <div className="card-lumea hover-lift">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm opacity-70 mb-1">
-                    {t('dashboard.stats.progress')}
-                  </p>
-                  <p className="text-3xl font-bold text-gradient-coral">
-                    {stats.weeklyProgress}%
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-gradient-coral-teal rounded-xl flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <StatsCard
+              icon={Users}
+              title={t('dashboard.totalSessions')}
+              value={stats.totalSessions}
+              color="from-blue-500 to-cyan-500"
+              isRTL={isRTL}
+            />
+            <StatsCard
+              icon={CheckCircle}
+              title={t('dashboard.completedSessions')}
+              value={stats.completedSessions}
+              color="from-green-500 to-emerald-500"
+              isRTL={isRTL}
+            />
+            <StatsCard
+              icon={Calendar}
+              title={t('dashboard.upcomingSessions')}
+              value={stats.upcomingSessions}
+              color="from-orange-500 to-amber-500"
+              isRTL={isRTL}
+            />
+            <StatsCard
+              icon={MessageSquare}
+              title={t('dashboard.totalReflections')}
+              value={stats.totalReflections}
+              color="from-purple-500 to-pink-500"
+              isRTL={isRTL}
+            />
           </div>
         )}
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Upcoming Sessions */}
-          <div className="lg:col-span-2">
-            <div className="card-lumea-strong">
-              <div className={`flex items-center justify-between mb-6 ${isRTL ? 'rtl-flex-row-reverse' : ''}`}>
-                <h2 className="text-2xl font-bold text-gradient-teal">
-                  {t('dashboard.upcomingSessions.title')}
-                </h2>
-                <button 
-                  onClick={() => navigate(`/${isCoach ? 'coach' : 'client'}/sessions`)}
-                  className="btn-tertiary flex items-center space-x-2"
-                >
-                  <span>{t('dashboard.upcomingSessions.viewAll')}</span>
-                  <ArrowRight className={`w-4 h-4 ${isRTL ? 'rtl-flip' : ''}`} />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {upcomingSessions.length > 0 ? (
-                  upcomingSessions.map((session) => (
-                    <div key={session.id} className="glass-card rounded-xl p-4 hover-lift">
-                      <div className={`flex items-center justify-between ${isRTL ? 'rtl-flex-row-reverse' : ''}`}>
-                        <div className="flex-1">
-                          <h3 className="font-semibold mb-2">{session.title}</h3>
-                          <div className={`flex items-center space-x-4 text-sm opacity-70 ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                            <div className={`flex items-center space-x-1 ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                              <Calendar className="w-4 h-4" />
-                              <span>{session.date}</span>
-                            </div>
-                            <div className={`flex items-center space-x-1 ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                              <Clock className="w-4 h-4" />
-                              <span>{session.time}</span>
-                            </div>
-                          </div>
-                          {(session.coach || session.client) && (
-                            <p className="text-sm mt-1 opacity-80">
-                              {isCoach ? `${t('dashboard.upcomingSessions.with')} ${session.client}` : `${t('dashboard.upcomingSessions.coach')} ${session.coach}`}
-                            </p>
-                          )}
-                        </div>
-                        <div className={`flex items-center space-x-3 ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            session.status === 'confirmed' 
-                              ? 'bg-green-100 text-green-800' 
-                              : session.status === 'scheduled'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {session.status === 'confirmed' ? t('dashboard.upcomingSessions.status.confirmed') : 
-                             session.status === 'scheduled' ? t('dashboard.upcomingSessions.status.scheduled') : 
-                             t('dashboard.upcomingSessions.status.pending')}
-                          </span>
-                          <button className="p-2 hover:bg-white/20 rounded-lg transition-colors duration-200">
-                            <Video className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8 opacity-70">
-                    <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>{t('dashboard.upcomingSessions.noSessions')}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Quick Actions */}
-          <div className="space-y-6">
-            <div className="card-lumea-strong">
-              <h2 className="text-2xl font-bold text-gradient-coral mb-6">
-                {t('dashboard.quickActions.title')}
+          <div className="lg:col-span-1">
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-3">
+                <Zap className="w-6 h-6 text-teal-500" />
+                {t('dashboard.quickActions')}
               </h2>
               <div className="space-y-4">
                 {quickActions.map((action, index) => (
-                  <button
+                  <QuickActionCard
                     key={index}
-                    onClick={action.action}
-                    className="w-full glass-card rounded-xl p-4 hover-lift text-start transition-all duration-300"
-                  >
-                    <div className={`flex items-center space-x-4 ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                      <div className={`${action.gradient} w-12 h-12 rounded-xl flex items-center justify-center`}>
-                        {React.cloneElement(action.icon, { className: 'w-6 h-6 text-white' })}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold mb-1">{action.title}</h3>
-                        <p className="text-sm opacity-70">{action.description}</p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Recent Reflections */}
-            <div className="card-lumea-strong">
-              <div className={`flex items-center justify-between mb-6 ${isRTL ? 'rtl-flex-row-reverse' : ''}`}>
-                <h2 className="text-2xl font-bold text-gradient-coral">
-                  {t('dashboard.recentReflections.title')}
-                </h2>
-                <button 
-                  onClick={() => navigate(`/${isCoach ? 'coach' : 'client'}/reflections`)}
-                  className="btn-tertiary"
-                >
-                  <ArrowRight className={`w-4 h-4 ${isRTL ? 'rtl-flip' : ''}`} />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {recentReflections.map((reflection) => (
-                  <div key={reflection.id} className="glass-card rounded-xl p-4 hover-lift">
-                    <div className={`flex items-start space-x-3 ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                      <span className="text-2xl">{reflection.mood}</span>
-                      <div className="flex-1">
-                        <h3 className="font-semibold mb-1">{reflection.title}</h3>
-                        <p className="text-sm opacity-70 mb-2">{reflection.date}</p>
-                        <p className="text-sm opacity-80">{reflection.preview}</p>
-                      </div>
-                    </div>
-                  </div>
+                    {...action}
+                    isRTL={isRTL}
+                  />
                 ))}
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Session Duration Analytics (Coach Only) */}
-        {isCoach && (
-          <div className="mt-8 animate-fade-in">
-            <div className="card-lumea-strong">
-              <div className={`flex items-center justify-between mb-6 ${isRTL ? 'rtl-flex-row-reverse' : ''}`}>
-                <div>
-                  <h2 className="text-2xl font-bold text-gradient-coral mb-2">
-                    {t('dashboard.analytics.title')}
-                  </h2>
-                  <p className="text-sm opacity-70">
-                    {t('dashboard.analytics.subtitle')}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-gradient-coral-teal rounded-xl flex items-center justify-center">
-                  <BarChart3 className="w-6 h-6 text-white" />
-                </div>
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Upcoming Sessions */}
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+              <div className={cn(
+                "flex items-center justify-between mb-6",
+                isRTL && "flex-row-reverse"
+              )}>
+                <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-3">
+                  <Calendar className="w-6 h-6 text-blue-500" />
+                  {t('dashboard.upcomingSessions')}
+                </h2>
+                <button
+                  onClick={() => navigate('/sessions')}
+                  className="text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200 flex items-center gap-2"
+                >
+                  {t('dashboard.viewAll')}
+                  <ChevronRight className={cn(
+                    "w-4 h-4",
+                    isRTL && "rotate-180"
+                  )} />
+                </button>
               </div>
-              
-              {isMobile ? (
-                <MobileSessionDurationAnalytics
-                  coachId={profile?.id}
-                  compact={true}
-                />
+              {upcomingSessions.length > 0 ? (
+                <div className="space-y-4">
+                  {upcomingSessions.map((session) => (
+                    <SessionCard
+                      key={session.id}
+                      session={session}
+                      isRTL={isRTL}
+                    />
+                  ))}
+                </div>
               ) : (
-                <SessionDurationAnalytics
-                  coachId={profile?.id}
-                  compact={true}
+                <EmptyState
+                  icon={Calendar}
+                  title={t('dashboard.noUpcomingSessions')}
+                  description={t('dashboard.scheduleNewSession')}
+                  actionText={t('dashboard.bookSession')}
+                  onAction={() => navigate('/sessions')}
+                  isRTL={isRTL}
                 />
               )}
             </div>
+
+            {/* Recent Reflections */}
+            {!isCoach && (
+              <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+                <div className={cn(
+                  "flex items-center justify-between mb-6",
+                  isRTL && "flex-row-reverse"
+                )}>
+                  <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-3">
+                    <MessageSquare className="w-6 h-6 text-purple-500" />
+                    {t('dashboard.recentReflections')}
+                  </h2>
+                  <button
+                    onClick={() => navigate('/reflections')}
+                    className="text-purple-600 hover:text-purple-700 font-medium transition-colors duration-200 flex items-center gap-2"
+                  >
+                    {t('dashboard.viewAll')}
+                    <ChevronRight className={cn(
+                      "w-4 h-4",
+                      isRTL && "rotate-180"
+                    )} />
+                  </button>
+                </div>
+                {recentReflections.length > 0 ? (
+                  <div className="space-y-4">
+                    {recentReflections.map((reflection) => (
+                      <ReflectionCard
+                        key={reflection.id}
+                        reflection={reflection}
+                        isRTL={isRTL}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState
+                    icon={MessageSquare}
+                    title={t('dashboard.noReflections')}
+                    description={t('dashboard.writeFirstReflection')}
+                    actionText={t('dashboard.createReflection')}
+                    onAction={() => navigate('/reflections')}
+                    isRTL={isRTL}
+                  />
+                )}
+              </div>
+            )}
           </div>
-        )}
+        </div>
+
+        {/* Analytics Section */}
+        <div className="mt-8">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+            <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-3">
+              <BarChart3 className="w-6 h-6 text-indigo-500" />
+              {t('dashboard.analytics')}
+            </h2>
+            {isMobile ? (
+              <MobileSessionDurationAnalytics />
+            ) : (
+              <SessionDurationAnalytics />
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

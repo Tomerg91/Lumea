@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Bell, X, Check, CheckCheck, Filter, Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -31,7 +31,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const [filter, setFilter] = useState<{
     status?: NotificationStatus;
     type?: NotificationType;
-  }>({});
+  }>(() => ({}));
   const [page, setPage] = useState(0);
   const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
   
@@ -65,11 +65,13 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     }
   }, [notifications, page]);
 
-  // Reset pagination when filter changes
+  // Reset pagination when filter changes - use JSON.stringify for deep comparison
+  const filterKey = useMemo(() => JSON.stringify(filter), [filter]);
+  
   useEffect(() => {
     setPage(0);
     setAllNotifications([]);
-  }, [filter]);
+  }, [filterKey]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

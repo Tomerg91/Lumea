@@ -1,494 +1,567 @@
 import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
+import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
-import MainLayout from '@/components/MainLayout';
-import ThemeToggle from '@/components/ThemeToggle';
-import { UserProfile, fetchUserProfile, updateUserProfile } from '@/services/userService';
+import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { User, Mail, Phone, MapPin, Edit, Save, X, Camera, Shield, Heart, Sparkles, Loader2, Lock, Bell, Globe, Palette } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { UserProfile } from '@/contexts/AuthContext';
+import { useImageStorage } from '@/hooks/useSupabaseStorage';
 
-const profileSchema = z.object({
-  name: z.string().min(2, { message: 'Name must be at least 2 characters long' }),
-  email: z.string().email({ message: 'Please enter a valid email address' }),
-  bio: z.string().optional(),
-  role: z.enum(['client', 'coach']),
-});
-
-type ProfileFormValues = z.infer<typeof profileSchema>;
-
-const securitySchema = z
-  .object({
-    currentPassword: z.string().min(6, { message: 'Current password is required' }),
-    newPassword: z.string().min(6, { message: 'Password must be at least 6 characters long' }),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
-  });
-
-type SecurityFormValues = z.infer<typeof securitySchema>;
+interface ProfileFormData {
+  full_name: string;
+  email: string;
+  phone: string;
+  bio: string;
+  location: string;
+  website: string;
+  timezone: string;
+}
 
 const Profile = () => {
+  const { t } = useTranslation();
+  const { isRTL } = useLanguage();
+  const navigate = useNavigate();
+  const { user, profile, updateProfile } = useAuth();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-
-  const profileForm = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      bio: '',
-      role: 'client',
-    },
-  });
-
-  const securityForm = useForm<SecurityFormValues>({
-    resolver: zodResolver(securitySchema),
-    defaultValues: {
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    },
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const imageStorage = useImageStorage();
+  const [formData, setFormData] = useState<ProfileFormData>({
+    full_name: profile?.full_name || '',
+    email: profile?.email || user?.email || '',
+    phone: profile?.phone || '',
+    bio: profile?.bio || '',
+    location: profile?.location || '',
+    website: profile?.website || '',
+    timezone: profile?.timezone || '',
   });
 
   useEffect(() => {
-    const loadUserProfile = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const userProfileData = await fetchUserProfile();
-        profileForm.reset(userProfileData);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load profile');
-        toast({
-          title: 'Error Loading Profile',
-          description: 'Could not fetch your profile. Displaying default or empty form.',
-          variant: 'destructive',
-        });
-        profileForm.reset({
-          name: 'Default User',
-          email: 'default@example.com',
-          bio: 'Could not load profile from server.',
-          role: 'client',
-        });
-        setImagePreview('https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=150&auto=format&fit=crop');
-      }
-      setIsLoading(false);
-    };
-    loadUserProfile();
-  }, [profileForm, toast]);
-
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (profile) {
+      setFormData({
+        full_name: (profile.full_name as string) || '',
+        email: (profile.email as string) || user?.email || '',
+        phone: (profile.phone as string) || '',
+        bio: (profile.bio as string) || '',
+        location: (profile.location as string) || '',
+        website: (profile.website as string) || '',
+        timezone: (profile.timezone as string) || '',
+      });
     }
+  }, [profile, user]);
+
+  const validateForm = (data: ProfileFormData): Record<string, string> => {
+    const errors: Record<string, string> = {};
+
+    // Email validation
+    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      errors.email = t('profile.validation.invalidEmail', 'Please enter a valid email address');
+    }
+
+    // Phone validation (basic international format)
+    if (data.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(data.phone.replace(/[\s\-\(\)]/g, ''))) {
+      errors.phone = t('profile.validation.invalidPhone', 'Please enter a valid phone number');
+    }
+
+    // Full name validation
+    if (data.full_name && data.full_name.trim().length < 2) {
+      errors.full_name = t('profile.validation.shortName', 'Name must be at least 2 characters long');
+    }
+
+    return errors;
   };
 
-  const onProfileSubmit = async (data: ProfileFormValues) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const profileToUpdate: UserProfile = {
-        name: data.name,
-        email: data.email,
-        role: data.role,
-        ...(data.bio && { bio: data.bio }),
-      };
-      const updatedProfile = await updateUserProfile(profileToUpdate);
-      profileForm.reset(updatedProfile);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate form data
+    const errors = validateForm(formData);
+    setValidationErrors(errors);
+    
+    if (Object.keys(errors).length > 0) {
       toast({
-        title: 'Profile Updated',
-        description: 'Your profile information has been saved (mocked).',
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update profile');
-      toast({
-        title: 'Error Updating Profile',
-        description: err instanceof Error ? err.message : 'Could not save your profile.',
+        title: t('profile.error.title', 'Validation Error'),
+        description: t('profile.error.validationDescription', 'Please fix the errors in the form before submitting.'),
         variant: 'destructive',
       });
+      return;
     }
-    setIsLoading(false);
+
+    setLoading(true);
+
+    try {
+      // Ensure updateProfile is defined before calling
+      if (updateProfile) {
+        const result = await updateProfile(formData);
+        if (result.error) {
+          throw result.error;
+        }
+      } else {
+        throw new Error('updateProfile function is not available.');
+      }
+      setIsEditing(false);
+      setValidationErrors({});
+      toast({
+        title: t('profile.success.title', 'Profile Updated'),
+        description: t('profile.success.description', 'Your profile has been updated successfully.'),
+      });
+    } catch (error) {
+      toast({
+        title: t('profile.error.title', 'Update Failed'),
+        description: error instanceof Error ? error.message : t('profile.error.description', 'Failed to update profile. Please try again.'),
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const onSecuritySubmit = (data: SecurityFormValues) => {
-    console.log('Security data:', data);
-    toast({
-      title: 'Password Changed',
-      description: 'Your password has been updated successfully.',
-    });
-    securityForm.reset({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    });
+  const handleCancel = () => {
+    if (profile) {
+      setFormData({
+        full_name: (profile.full_name as string) || '',
+        email: (profile.email as string) || user?.email || '',
+        phone: (profile.phone as string) || '',
+        bio: (profile.bio as string) || '',
+        location: (profile.location as string) || '',
+        website: (profile.website as string) || '',
+        timezone: (profile.timezone as string) || '',
+      });
+    }
+    setIsEditing(false);
   };
 
-  if (isLoading && !profileForm.formState.isDirty && !profileForm.getValues('name')) {
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: t('profile.error.title', 'Upload Failed'),
+        description: t('profile.error.invalidFileType', 'Please select a valid image file.'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: t('profile.error.title', 'Upload Failed'),
+        description: t('profile.error.fileTooLarge', 'File size must be less than 5MB.'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploadingAvatar(true);
+
+    try {
+      // Upload image using the existing image storage hook
+      const uploadResult = await imageStorage.uploadImage(file, {
+        folder: 'avatars',
+        contentType: file.type,
+      });
+
+      // Update profile with new avatar URL
+      if (updateProfile) {
+        const result = await updateProfile({ avatar_url: uploadResult.publicUrl });
+        if (result.error) {
+          throw result.error;
+        }
+      }
+
+      toast({
+        title: t('profile.success.title', 'Avatar Updated'),
+        description: t('profile.success.avatarDescription', 'Your profile picture has been updated successfully.'),
+      });
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      toast({
+        title: t('profile.error.title', 'Upload Failed'),
+        description: error instanceof Error ? error.message : t('profile.error.avatarDescription', 'Failed to update avatar. Please try again.'),
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingAvatar(false);
+      // Clear the input value to allow re-uploading the same file
+      event.target.value = '';
+    }
+  };
+
+  if (loading && !profile) {
     return (
-      <MainLayout>
-        <div className="max-w-4xl mx-auto flex justify-center items-center h-[calc(100vh-200px)]">
-          <p className="text-xl">Loading profile...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
+          <div className="flex items-center gap-3">
+            <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+            <span className="text-lg font-medium text-gray-700">
+              {t('profile.loading', 'Loading profile...')}
+            </span>
+          </div>
         </div>
-      </MainLayout>
+      </div>
     );
   }
 
   return (
-    <MainLayout>
-      <div className="max-w-4xl mx-auto animate-fade-in">
-        <header className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-playfair mb-2">Profile Settings</h1>
-          <p className="text-muted-foreground">Manage your personal information and preferences</p>
-        </header>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {/* Language Switcher - Fixed position */}
+      <div className="fixed top-4 right-4 z-50">
+        <LanguageSwitcher />
+      </div>
 
-        <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="security">Security</TabsTrigger>
-            <TabsTrigger value="preferences">Preferences</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="profile">
-            <Card className="lumea-card">
-              <CardHeader>
-                <CardTitle>Personal Information</CardTitle>
-                <CardDescription>Update your personal details and profile photo</CardDescription>
-              </CardHeader>
-              <form onSubmit={profileForm.handleSubmit(onProfileSubmit)}>
-                <CardContent className="space-y-6">
-                  <div className="flex flex-col sm:flex-row gap-6">
-                    <div className="flex flex-col items-center space-y-3">
-                      <div className="relative">
-                        <div className="h-32 w-32 rounded-full overflow-hidden border-2 border-lumea-beige dark:border-lumea-taupe/50">
-                          {imagePreview ? (
-                            <img
-                              src={imagePreview}
-                              alt="Profile"
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="h-full w-full bg-lumea-beige dark:bg-lumea-taupe/30 flex items-center justify-center text-4xl font-playfair">
-                              {profileForm.getValues('name').charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                        </div>
-                        <label
-                          htmlFor="profile-image"
-                          className="absolute bottom-0 right-0 bg-lumea-stone dark:bg-lumea-stone/80 text-white p-1 rounded-full cursor-pointer hover:opacity-90 transition-opacity"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"></path>
-                            <path d="m16 3 5 5"></path>
-                            <path d="M14 11a2 2 0 0 1 2-2 2 2 0 0 1 2 2v2h-4v-2Z"></path>
-                            <path d="M14 17h4"></path>
-                          </svg>
-                        </label>
-                        <input
-                          id="profile-image"
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleImageUpload}
-                        />
-                      </div>
-                      <p className="text-xs text-center text-muted-foreground">
-                        Click the edit icon to change photo.
-                        <br />
-                        JPG, PNG or GIF, max 2MB.
-                      </p>
-                    </div>
-
-                    <div className="flex-1 space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="name">Full Name</Label>
-                          <Input id="name" {...profileForm.register('name')} />
-                          {profileForm.formState.errors.name && (
-                            <p className="text-sm text-red-500">
-                              {profileForm.formState.errors.name.message}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="email">Email</Label>
-                          <Input id="email" type="email" {...profileForm.register('email')} />
-                          {profileForm.formState.errors.email && (
-                            <p className="text-sm text-red-500">
-                              {profileForm.formState.errors.email.message}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="role">Role</Label>
-                        <Select
-                          value={profileForm.watch('role')}
-                          onValueChange={(value: 'client' | 'coach') =>
-                            profileForm.setValue('role', value)
-                          }
-                        >
-                          <SelectTrigger id="role">
-                            <SelectValue placeholder="Select your role" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="client">Client</SelectItem>
-                            <SelectItem value="coach">Coach</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="bio">Bio</Label>
-                        <Textarea
-                          id="bio"
-                          placeholder="Tell us a bit about yourself..."
-                          className="min-h-[100px]"
-                          {...profileForm.register('bio')}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="justify-end">
-                  <Button
-                    type="submit"
-                    className="bg-lumea-stone text-lumea-beige hover:bg-lumea-stone/90"
-                    disabled={isLoading || !profileForm.formState.isDirty}
-                  >
-                    Save Changes
-                  </Button>
-                </CardFooter>
-              </form>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="security">
-            <Card className="lumea-card">
-              <CardHeader>
-                <CardTitle>Security Settings</CardTitle>
-                <CardDescription>Update your password and security preferences</CardDescription>
-              </CardHeader>
-              <form onSubmit={securityForm.handleSubmit(onSecuritySubmit)}>
-                <CardContent className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="currentPassword">Current Password</Label>
-                      <Input
-                        id="currentPassword"
-                        type="password"
-                        placeholder="••••••••"
-                        {...securityForm.register('currentPassword')}
-                      />
-                      {securityForm.formState.errors.currentPassword && (
-                        <p className="text-sm text-red-500">
-                          {securityForm.formState.errors.currentPassword.message}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="newPassword">New Password</Label>
-                      <Input
-                        id="newPassword"
-                        type="password"
-                        placeholder="••••••••"
-                        {...securityForm.register('newPassword')}
-                      />
-                      {securityForm.formState.errors.newPassword && (
-                        <p className="text-sm text-red-500">
-                          {securityForm.formState.errors.newPassword.message}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                      <Input
-                        id="confirmPassword"
-                        type="password"
-                        placeholder="••••••••"
-                        {...securityForm.register('confirmPassword')}
-                      />
-                      {securityForm.formState.errors.confirmPassword && (
-                        <p className="text-sm text-red-500">
-                          {securityForm.formState.errors.confirmPassword.message}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-4">
-                    <h3 className="text-lg font-medium mb-3">Two-Factor Authentication</h3>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p>Enhance your account security by enabling 2FA</p>
-                        <p className="text-sm text-muted-foreground">
-                          Receive verification codes via email or authenticator app
-                        </p>
-                      </div>
-                      <Switch id="enable-2fa" />
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="justify-end">
-                  <Button
-                    type="submit"
-                    className="bg-lumea-stone text-lumea-beige hover:bg-lumea-stone/90"
-                  >
-                    Update Password
-                  </Button>
-                </CardFooter>
-              </form>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="preferences">
-            <Card className="lumea-card">
-              <CardHeader>
-                <CardTitle>Preferences</CardTitle>
-                <CardDescription>Customize your app experience</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-medium">Theme</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Choose between light and dark mode
-                      </p>
-                    </div>
-                    <ThemeToggle />
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-medium">Language</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Select your preferred language
-                      </p>
-                    </div>
-                    <Select defaultValue="english">
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Select a language" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="english">English</SelectItem>
-                        <SelectItem value="hebrew">Hebrew</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-medium">Email Notifications</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Receive emails about your sessions and updates
-                      </p>
-                    </div>
-                    <Switch id="email-notifications" defaultChecked />
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-medium">App Notifications</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Receive in-app notifications about your sessions
-                      </p>
-                    </div>
-                    <Switch id="app-notifications" defaultChecked />
-                  </div>
+      <div className={cn(
+        "max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8",
+        isRTL && "direction-rtl"
+      )}>
+        {/* Header Section */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 sm:p-8 shadow-lg hover:shadow-xl mb-6 sm:mb-8 transition-all duration-300 border border-white/50">
+          <div className={cn(
+            "flex items-center justify-between",
+            isRTL && "flex-row-reverse"
+          )}>
+            <div className={cn(
+              "flex items-center gap-3 sm:gap-6",
+              isRTL && "flex-row-reverse"
+            )}>
+              <div className="relative">
+                <Avatar className="w-16 h-16 sm:w-20 sm:h-20 border-4 border-white shadow-lg">
+                  <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || t('profile.avatarAlt', 'User profile picture')} />
+                  <AvatarFallback className="text-2xl font-semibold bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+                    {profile?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <button 
+                  onClick={() => document.getElementById('avatar-upload')?.click()}
+                  disabled={uploadingAvatar}
+                  className="absolute -bottom-1 -right-1 w-8 h-8 bg-gradient-to-r from-teal-500 to-blue-500 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-300 group disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label={t('profile.changeAvatar', 'Change profile picture')}
+                  title={t('profile.changeAvatar', 'Change profile picture')}
+                >
+                  {uploadingAvatar ? (
+                    <Loader2 className="w-4 h-4 text-white animate-spin" />
+                  ) : (
+                    <Camera className="w-4 h-4 text-white group-hover:rotate-12 transition-transform duration-300" />
+                  )}
+                </button>
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                  {profile?.full_name || t('profile.unnamed', 'Unnamed User')}
+                </h1>
+                <p className="text-gray-600 text-lg mb-2">
+                  {profile?.email || user?.email}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="px-3 py-1">
+                    {profile?.role === 'coach' ? t('profile.role.coach', 'Coach') : t('profile.role.client', 'Client')}
+                  </Badge>
+                  {profile?.verified && (
+                    <Badge variant="default" className="px-3 py-1 bg-green-100 text-green-800">
+                      <Shield className="w-3 h-3 mr-1" />
+                      {t('profile.verified', 'Verified')}
+                    </Badge>
+                  )}
                 </div>
+              </div>
+            </div>
+            <div className="hidden md:block">
+              <div className="w-16 h-16 bg-gradient-to-r from-teal-500 to-blue-500 rounded-2xl flex items-center justify-center">
+                <User className="w-8 h-8 text-white" />
+              </div>
+            </div>
+          </div>
+        </div>
 
-                <div className="border-t pt-4">
-                  <h3 className="text-lg font-medium mb-3">Privacy</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p>Share profile with coaches</p>
-                        <p className="text-sm text-muted-foreground">
-                          Allow coaches to view your profile information
-                        </p>
-                      </div>
-                      <Switch id="share-profile" defaultChecked />
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p>Analytics consent</p>
-                        <p className="text-sm text-muted-foreground">
-                          Allow anonymous usage data collection to improve app experience
-                        </p>
-                      </div>
-                      <Switch id="analytics-consent" defaultChecked />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t pt-4">
-                  <h3 className="text-lg font-medium mb-3">Data Management</h3>
-                  <div className="flex gap-4">
-                    <Button variant="outline">Export Your Data</Button>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Profile Form */}
+          <div className="lg:col-span-2">
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 sm:p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-white/50">
+              <div className={cn(
+                "flex items-center justify-between mb-6",
+                isRTL && "flex-row-reverse"
+              )}>
+                <h2 className="text-2xl font-semibold text-gray-800 flex items-center gap-3">
+                  <Edit className="w-6 h-6 text-purple-500" />
+                  {t('profile.personalInfo', 'Personal Information')}
+                </h2>
+                {!isEditing ? (
+                  <Button
+                    onClick={() => setIsEditing(true)}
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    {t('profile.edit', 'Edit Profile')}
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2">
                     <Button
+                      type="button"
                       variant="outline"
-                      className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 border-red-200 hover:border-red-300 dark:border-red-900 dark:hover:border-red-800"
+                      onClick={handleCancel}
+                      className="hover:bg-gray-50"
                     >
-                      Delete Account
+                      <X className="w-4 h-4 mr-2" />
+                      {t('common.cancel', 'Cancel')}
+                    </Button>
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={loading}
+                      className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                    >
+                      {loading ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4 mr-2" />
+                      )}
+                      {t('common.save', 'Save')}
                     </Button>
                   </div>
+                )}
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Full Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="full_name" className="text-gray-700 font-medium flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    {t('profile.fields.fullName', 'Full Name')}
+                  </Label>
+                  <Input
+                    id="full_name"
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                    disabled={!isEditing}
+                    className="h-12 bg-white/50 border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-lg transition-all duration-200"
+                    placeholder={t('profile.placeholders.fullName', 'Enter your full name')}
+                    dir={isRTL ? 'rtl' : 'ltr'}
+                  />
                 </div>
-              </CardContent>
-              <CardFooter className="justify-end">
-                <Button className="bg-lumea-stone text-lumea-beige hover:bg-lumea-stone/90">
-                  Save Preferences
+
+                {/* Email */}
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-gray-700 font-medium flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    {t('profile.fields.email', 'Email')}
+                    <span className="text-red-500" aria-hidden="true">*</span>
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => {
+                      setFormData({ ...formData, email: e.target.value });
+                      if (validationErrors.email) {
+                        setValidationErrors({ ...validationErrors, email: '' });
+                      }
+                    }}
+                    disabled={!isEditing}
+                    className={cn(
+                      "h-12 bg-white/50 border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-lg transition-all duration-200",
+                      validationErrors.email && "border-red-400 focus:border-red-400 focus:ring-red-400"
+                    )}
+                    placeholder={t('profile.placeholders.email', 'Enter your email')}
+                    dir={isRTL ? 'rtl' : 'ltr'}
+                    aria-invalid={!!validationErrors.email}
+                    aria-describedby={validationErrors.email ? 'email-error' : undefined}
+                    required
+                  />
+                  {validationErrors.email && (
+                    <p id="email-error" className="text-red-500 text-sm" role="alert">
+                      {validationErrors.email}
+                    </p>
+                  )}
+                </div>
+
+                {/* Phone */}
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-gray-700 font-medium flex items-center gap-2">
+                    <Phone className="w-4 h-4" />
+                    {t('profile.fields.phone', 'Phone')}
+                  </Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    disabled={!isEditing}
+                    className="h-12 bg-white/50 border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-lg transition-all duration-200"
+                    placeholder={t('profile.placeholders.phone', 'Enter your phone number')}
+                    dir={isRTL ? 'rtl' : 'ltr'}
+                  />
+                </div>
+
+                {/* Location */}
+                <div className="space-y-2">
+                  <Label htmlFor="location" className="text-gray-700 font-medium flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    {t('profile.fields.location', 'Location')}
+                  </Label>
+                  <Input
+                    id="location"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    disabled={!isEditing}
+                    className="h-12 bg-white/50 border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-lg transition-all duration-200"
+                    placeholder={t('profile.placeholders.location', 'Enter your location')}
+                    dir={isRTL ? 'rtl' : 'ltr'}
+                  />
+                </div>
+
+                {/* Bio */}
+                <div className="space-y-2">
+                  <Label htmlFor="bio" className="text-gray-700 font-medium flex items-center gap-2">
+                    <Heart className="w-4 h-4" />
+                    {t('profile.fields.bio', 'Bio')}
+                  </Label>
+                  <Textarea
+                    id="bio"
+                    value={formData.bio}
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                    disabled={!isEditing}
+                    rows={4}
+                    className="bg-white/50 border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-lg transition-all duration-200 resize-none"
+                    placeholder={t('profile.placeholders.bio', 'Tell us about yourself...')}
+                    dir={isRTL ? 'rtl' : 'ltr'}
+                  />
+                </div>
+              </form>
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-4 sm:space-y-6">
+            {/* Quick Stats */}
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-white/50">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-500" />
+                {t('profile.quickStats', 'Quick Stats')}
+              </h3>
+              <div className="space-y-4">
+                <div className={cn(
+                  "flex items-center justify-between",
+                  isRTL && "flex-row-reverse"
+                )}>
+                  <span className="text-gray-600">
+                    {t('profile.stats.memberSince', 'Member Since')}
+                  </span>
+                  <span className="font-semibold text-gray-900">
+                    {profile?.created_at ? new Date(profile.created_at).toLocaleDateString(isRTL ? 'he-IL' : 'en-US') : 'N/A'}
+                  </span>
+                </div>
+                <div className={cn(
+                  "flex items-center justify-between",
+                  isRTL && "flex-row-reverse"
+                )}>
+                  <span className="text-gray-600">
+                    {t('profile.stats.profileViews', 'Profile Views')}
+                  </span>
+                  <span className="font-semibold text-gray-900">
+                    {profile?.profile_views || 0}
+                  </span>
+                </div>
+                <div className={cn(
+                  "flex items-center justify-between",
+                  isRTL && "flex-row-reverse"
+                )}>
+                  <span className="text-gray-600">
+                    {t('profile.stats.completedSessions', 'Completed Sessions')}
+                  </span>
+                  <span className="font-semibold text-gray-900">
+                    {profile?.completed_sessions || 0}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Account Settings */}
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-white/50">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <Lock className="w-5 h-5 text-purple-500" />
+                {t('profile.accountSettings', 'Account Settings')}
+              </h3>
+              <div className="space-y-3">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start hover:bg-purple-50 hover:text-purple-600 hover:border-purple-300"
+                  onClick={() => navigate('/settings/security')}
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  {t('profile.security', 'Security & Privacy')}
                 </Button>
-              </CardFooter>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300"
+                  onClick={() => navigate('/settings/notifications')}
+                >
+                  <Bell className="w-4 h-4 mr-2" />
+                  {t('profile.notifications', 'Notifications')}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start hover:bg-green-50 hover:text-green-600 hover:border-green-300"
+                  onClick={() => navigate('/settings/preferences')}
+                >
+                  <Palette className="w-4 h-4 mr-2" />
+                  {t('profile.preferences', 'Preferences')}
+                </Button>
+              </div>
+            </div>
+
+            {/* Language & Region */}
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-white/50">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <Globe className="w-5 h-5 text-purple-500" />
+                {t('profile.languageRegion', 'Language & Region')}
+              </h3>
+              <div className="space-y-4">
+                <div className={cn(
+                  "flex items-center justify-between",
+                  isRTL && "flex-row-reverse"
+                )}>
+                  <span className="text-gray-600">
+                    {t('profile.language', 'Language')}
+                  </span>
+                  <LanguageSwitcher />
+                </div>
+                <div className={cn(
+                  "flex items-center justify-between",
+                  isRTL && "flex-row-reverse"
+                )}>
+                  <span className="text-gray-600">
+                    {t('profile.timezone', 'Timezone')}
+                  </span>
+                  <span className="text-sm text-gray-900">
+                    {Intl.DateTimeFormat().resolvedOptions().timeZone}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </MainLayout>
+    </div>
   );
 };
 

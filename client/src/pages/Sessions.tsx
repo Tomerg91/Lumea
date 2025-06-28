@@ -1,34 +1,29 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from 'react-i18next';
-import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import MainLayout from '@/components/MainLayout';
-import { useToast } from '@/hooks/use-toast';
-import { useRealtimeSessions, useCreateSession, Session, CreateSessionData } from '@/hooks/useSessions';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Calendar, Clock, Users, Plus, Search, Video, MapPin, User, Eye, Edit, Trash2, CheckCircle, XCircle, Loader2, Phone, Sparkles } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { 
+  LoadingSkeleton,
+  LoadingSpinner,
+  StatsCardSkeleton,
+  FormFieldSkeleton,
+  StatusIndicator
+} from '@/components/LoadingSystem';
+import { useRealtimeSessions, useCreateSession, useDeleteSession, Session, CreateSessionData } from '@/hooks/useSessions';
 import { useAvailableCoaches } from '@/hooks/useCoaches';
-import { useAuth } from '@/contexts/AuthContext';
 import { CancelSessionModal } from '@/components/ui/CancelSessionModal';
 import { RescheduleSessionModal } from '@/components/ui/RescheduleSessionModal';
 
@@ -37,14 +32,18 @@ interface NewSessionFormData {
   date: Date;
   time: string;
   coach: string;
-  type: string;
+  type: 'video' | 'phone' | 'in-person'; // Updated to match Session type
   notes: string;
+  title: string; // Added
+  description: string; // Added
 }
 
 const Sessions = () => {
   const { t } = useTranslation();
+  const { isRTL } = useLanguage();
+  const navigate = useNavigate();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
-  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
 
@@ -64,8 +63,10 @@ const Sessions = () => {
     date: new Date(),
     time: '',
     coach: '',
-    type: '',
+    type: 'video', // Default to video
     notes: '',
+    title: '',
+    description: '',
   });
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -73,6 +74,11 @@ const Sessions = () => {
   const [sessionToCancel, setSessionToCancel] = useState<Session | null>(null);
   const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
   const [sessionToReschedule, setSessionToReschedule] = useState<Session | null>(null);
+  
+  // Filter and search state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
 
   const handleCancelSession = (session: Session) => {
     setSessionToCancel(session);
@@ -127,6 +133,8 @@ const Sessions = () => {
         coach_id: newSessionData.coach,
         date: sessionDateTime.toISOString(),
         notes: newSessionData.notes,
+        title: newSessionData.title, // Added
+        type: newSessionData.type,   // Added
       };
 
       await createSessionMutation.mutateAsync(createSessionPayload);
@@ -163,572 +171,457 @@ const Sessions = () => {
   const selectedDateStr = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
   const selectedSessions = selectedDateStr ? sessionsByDate[selectedDateStr] || [] : [];
 
+  // Filter sessions based on search term and filters
+  const filteredSessions = sessions.filter(session => {
+    const matchesSearch = searchTerm === '' || 
+      session.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      session.notes?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || session.status === statusFilter;
+    const matchesType = typeFilter === 'all' || session.type === typeFilter;
+    
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
+  const deleteSessionMutation = useDeleteSession();
+
+  // Add delete session handler
+  const handleDeleteSession = async (sessionId: string) => {
+    if (window.confirm(t('sessions.confirmDelete', 'Are you sure you want to delete this session?'))) {
+      try {
+        await deleteSessionMutation.mutateAsync(sessionId);
+        toast({
+          title: t('common.success'),
+          description: t('sessions.toast.sessionDeleted', 'Session deleted successfully'),
+        });
+      } catch (err) {
+        toast({
+          title: t('common.error'),
+          description: err instanceof Error ? err.message : t('sessions.toast.deleteError', 'Failed to delete session'),
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
   if (isLoading && !sessions.length) {
     return (
-      <MainLayout>
-        <div className="max-w-6xl mx-auto flex justify-center items-center h-[calc(100vh-200px)]">
-          <p className="text-xl">{t('sessions.loading')}</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        {/* Language Switcher - Fixed position */}
+        <div className="fixed top-4 right-4 z-50">
+          <LanguageSwitcher />
         </div>
-      </MainLayout>
+
+        <div className={cn(
+          "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8",
+          isRTL && "direction-rtl"
+        )}>
+          {/* Header Section Skeleton */}
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg mb-8">
+            <div className={cn(
+              "flex items-center justify-between",
+              isRTL && "flex-row-reverse"
+            )}>
+              <div className="flex-1">
+                <LoadingSkeleton width="180px" height="36px" className="mb-2" />
+                <LoadingSkeleton width="300px" height="20px" />
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="hidden md:block">
+                  <LoadingSkeleton width="64px" height="64px" variant="rounded" />
+                </div>
+                <LoadingSkeleton width="120px" height="40px" variant="button" />
+              </div>
+            </div>
+          </div>
+
+          {/* Stats Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <StatsCardSkeleton key={index} delay={index * 100} />
+            ))}
+          </div>
+
+          {/* Filters and Search Skeleton */}
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormFieldSkeleton />
+              <FormFieldSkeleton />
+              <FormFieldSkeleton />
+            </div>
+          </div>
+
+          {/* Sessions Content Skeleton */}
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+            {/* View toggle skeleton */}
+            <div className="flex justify-between items-center mb-6">
+              <LoadingSkeleton width="140px" height="24px" />
+              <LoadingSkeleton width="120px" height="36px" variant="button" />
+            </div>
+            
+            {/* Calendar/List view skeleton */}
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="border border-gray-200 rounded-xl p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1">
+                      <LoadingSkeleton width="200px" height="20px" className="mb-2" />
+                      <LoadingSkeleton width="150px" height="16px" />
+                    </div>
+                    <LoadingSkeleton width="80px" height="24px" variant="badge" />
+                  </div>
+                  <div className="flex gap-4">
+                    <LoadingSkeleton width="100px" height="14px" />
+                    <LoadingSkeleton width="80px" height="14px" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Loading Status Indicator */}
+          <div className="fixed bottom-4 right-4">
+            <StatusIndicator 
+              status="loading" 
+              message={t('sessions.loading', 'Loading sessions...')}
+              className="bg-white/90 backdrop-blur-sm shadow-lg" 
+            />
+          </div>
+        </div>
+      </div>
     );
   }
 
   if (error && !sessions.length) {
     return (
-      <MainLayout>
-        <div className="max-w-6xl mx-auto flex flex-col justify-center items-center h-[calc(100vh-200px)]">
-          <p className="text-xl text-red-500">{t('common.error')}: {error?.message || t('sessions.error')}</p>
-          <p>{t('sessions.errorDescription')}</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg">
+          <div className="flex flex-col items-center">
+            <p className="text-red-500 text-xl mb-4">{t('common.error')}: {error?.message || t('sessions.error')}</p>
+            <p className="text-gray-600 text-lg">{t('sessions.errorDescription')}</p>
+            <Button 
+              onClick={() => navigate('/sessions/new')}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              {t('sessions.createNew', 'New Session')}
+            </Button>
+          </div>
         </div>
-      </MainLayout>
+      </div>
     );
   }
 
   return (
-    <MainLayout>
-      <div className="max-w-6xl mx-auto animate-fade-in">
-        <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-playfair mb-2">{t('sessions.title')}</h1>
-            <p className="text-muted-foreground">{t('sessions.subtitle')}</p>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {/* Language Switcher - Fixed position */}
+      <div className="fixed top-4 right-4 z-50">
+        <LanguageSwitcher />
+      </div>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-lumea-stone text-lumea-beige hover:bg-lumea-stone/90">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="mr-2"
-                >
-                  <line x1="12" x2="12" y1="5" y2="19"></line>
-                  <line x1="5" x2="19" y1="12" y2="12"></line>
-                </svg>
-{t('sessions.newSession')}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>{t('sessions.scheduleSession')}</DialogTitle>
-                <DialogDescription>
-                  {t('sessions.scheduleDescription')}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="date">{t('sessions.form.date')}</Label>
-                  <Calendar
-                    mode="single"
-                    selected={newSessionData.date}
-                    onSelect={(date) => date && setNewSessionData({ ...newSessionData, date })}
-                    className="rounded-md border p-3"
-                    disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="time">{t('sessions.form.time')}</Label>
-                  <Input
-                    id="time"
-                    type="time"
-                    value={newSessionData.time}
-                    onChange={(e) => setNewSessionData({ ...newSessionData, time: e.target.value })}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="coach">{t('sessions.form.coach')}</Label>
-                  <Select
-                    value={newSessionData.coach}
-                    onValueChange={(value) => setNewSessionData({ ...newSessionData, coach: value })}
-                    disabled={coachesLoading}
-                  >
-                    <SelectTrigger id="coach">
-                      <SelectValue placeholder={coachesLoading ? t('sessions.form.loadingCoaches') : t('sessions.form.selectCoach')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableCoaches.map((coach) => (
-                        <SelectItem key={coach.id} value={coach.id}>
-                          {coach.firstName} {coach.lastName}
-                        </SelectItem>
-                      ))}
-                      {availableCoaches.length === 0 && !coachesLoading && (
-                        <SelectItem value="" disabled>
-                          {t('sessions.form.noCoachesAvailable')}
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="type">{t('sessions.form.sessionType')}</Label>
-                  <Select
-                    value={newSessionData.type}
-                    onValueChange={(value) => setNewSessionData({ ...newSessionData, type: value })}
-                  >
-                    <SelectTrigger id="type">
-                      <SelectValue placeholder={t('sessions.form.selectSessionType')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="One-on-one Session">{t('sessions.form.sessionTypes.oneOnOne')}</SelectItem>
-                      <SelectItem value="Group Session">{t('sessions.form.sessionTypes.group')}</SelectItem>
-                      <SelectItem value="Assessment">{t('sessions.form.sessionTypes.assessment')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="notes">{t('sessions.form.notes')}</Label>
-                  <Textarea
-                    id="notes"
-                    value={newSessionData.notes}
-                    onChange={(e) => setNewSessionData({ ...newSessionData, notes: e.target.value })}
-                    placeholder={t('sessions.form.notesPlaceholder')}
-                  />
+      <div className={cn(
+        "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8",
+        isRTL && "direction-rtl"
+      )}>
+        {/* Header Section */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 shadow-lg mb-8">
+          <div className={cn(
+            "flex items-center justify-between",
+            isRTL && "flex-row-reverse"
+          )}>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                {t('sessions.title', 'Sessions')}
+              </h1>
+              <p className="text-gray-600 text-lg">
+                {t('sessions.subtitle', 'Manage your coaching sessions and appointments')}
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="hidden md:block">
+                <div className="w-16 h-16 bg-gradient-to-r from-teal-500 to-blue-500 rounded-2xl flex items-center justify-center">
+                  <Calendar className="w-8 h-8 text-white" />
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  {t('sessions.actions.cancel')}
-                </Button>
-                <Button
-                  className="bg-lumea-stone text-lumea-beige hover:bg-lumea-stone/90"
-                  onClick={handleCreateSession}
-                  disabled={!newSessionData.time || !newSessionData.coach || !newSessionData.type || isLoading}
-                >
-                  {t('sessions.actions.schedule')}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </header>
-
-        <Tabs defaultValue="upcoming" className="mb-8">
-          <TabsList>
-            <TabsTrigger value="upcoming">{t('sessions.tabs.upcoming')}</TabsTrigger>
-            <TabsTrigger value="past">{t('sessions.tabs.past')}</TabsTrigger>
-            <TabsTrigger value="cancelled">{t('sessions.tabs.cancelled')}</TabsTrigger>
-          </TabsList>
-
-          <div className="flex justify-end my-4">
-            <div className="inline-flex rounded-md border border-input">
-              <Button
-                variant="ghost"
-                className={`rounded-r-none ${view === 'calendar' ? 'bg-muted' : ''}`}
-                onClick={() => setView('calendar')}
+              <Button 
+                onClick={() => navigate('/sessions/new')}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="mr-1"
-                >
-                  <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
-                  <line x1="16" x2="16" y1="2" y2="6"></line>
-                  <line x1="8" x2="8" y1="2" y2="6"></line>
-                  <line x1="3" x2="21" y1="10" y2="10"></line>
-                </svg>
-                {t('sessions.views.calendar')}
-              </Button>
-              <Button
-                variant="ghost"
-                className={`rounded-l-none ${view === 'list' ? 'bg-muted' : ''}`}
-                onClick={() => setView('list')}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="mr-1"
-                >
-                  <line x1="8" x2="21" y1="6" y2="6"></line>
-                  <line x1="8" x2="21" y1="12" y2="12"></line>
-                  <line x1="8" x2="21" y1="18" y2="18"></line>
-                  <line x1="3" x2="3.01" y1="6" y2="6"></line>
-                  <line x1="3" x2="3.01" y1="12" y2="12"></line>
-                  <line x1="3" x2="3.01" y1="18" y2="18"></line>
-                </svg>
-                {t('sessions.views.list')}
+                <Plus className="w-4 h-4 mr-2" />
+                {t('sessions.createNew', 'New Session')}
               </Button>
             </div>
           </div>
+        </div>
 
-          <TabsContent value="upcoming">
-            <div
-              className={`grid ${view === 'calendar' ? 'grid-cols-1 lg:grid-cols-3 gap-6' : 'grid-cols-1 gap-4'}`}
-            >
-              {view === 'calendar' && (
-                <Card className="lumea-card">
-                  <CardHeader>
-                    <CardTitle>{t('sessions.calendar.title')}</CardTitle>
-                    <CardDescription>{t('sessions.calendar.description')}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={setSelectedDate}
-                      className="rounded-md border w-full"
-                    />
-                  </CardContent>
-                </Card>
-              )}
-
-              <div className={view === 'calendar' ? 'lg:col-span-2' : ''}>
-                {view === 'calendar' ? (
-                  <>
-                    <h3 className="text-xl font-medium mb-4">
-                      Sessions on{' '}
-                      {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Selected Date'}
-                    </h3>
-                    {selectedSessions.length === 0 && (
-                      <Card className="lumea-card">
-                        <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="48"
-                            height="48"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-muted-foreground mb-4"
-                          >
-                            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
-                            <line x1="16" x2="16" y1="2" y2="6"></line>
-                            <line x1="8" x2="8" y1="2" y2="6"></line>
-                            <line x1="3" x2="21" y1="10" y2="10"></line>
-                          </svg>
-                          <p>No sessions scheduled for this date.</p>
-                          <Button
-                            variant="outline"
-                            className="mt-4"
-                            onClick={() => setIsDialogOpen(true)}
-                          >
-                            Schedule a Session
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    )}
-                    {selectedSessions
-                      .filter((session) => session.status === 'Upcoming')
-                      .map((session) => (
-                        <Card key={session.id} className="lumea-card mb-4">
-                          <CardHeader className="pb-2">
-                            <CardTitle>
-                              {format(new Date(session.date), 'HH:mm')} - {session.client ? `${session.client.firstName} ${session.client.lastName}` : 'Session'}
-                            </CardTitle>
-                            <CardDescription>with Coach</CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                            {session.notes && <p className="text-sm mb-4">{session.notes}</p>}
-                            <div className="flex gap-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleRescheduleSession(session)}
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width="16"
-                                  height="16"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  className="mr-1"
-                                >
-                                  <circle cx="12" cy="12" r="10"></circle>
-                                  <path d="M12 8v4l3 3"></path>
-                                </svg>
-                                Reschedule
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleCancelSession(session)}
-                                className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width="16"
-                                  height="16"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  className="mr-1"
-                                >
-                                  <path d="M3 6h18"></path>
-                                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                                </svg>
-                                Cancel
-                              </Button>
-                              <Button
-                                className="bg-lumea-stone text-lumea-beige hover:bg-lumea-stone/90"
-                                size="sm"
-                              >
-                                Join Session
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                  </>
-                ) : (
-                  <>
-                    {sessions
-                      .filter((session) => session.status === 'Upcoming')
-                      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                      .map((session) => (
-                        <Card key={session.id} className="lumea-card mb-4">
-                          <CardHeader className="pb-2">
-                            <div className="flex justify-between">
-                              <div>
-                                <CardTitle>
-                                  {format(new Date(session.date), 'MMMM d, yyyy')} at {format(new Date(session.date), 'HH:mm')}
-                                </CardTitle>
-                                <CardDescription>
-                                  Session with {session.client ? `${session.client.firstName} ${session.client.lastName}` : 'Coach'}
-                                </CardDescription>
-                              </div>
-                              <div className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-medium px-2.5 py-0.5 rounded-full h-fit">
-                                Upcoming
-                              </div>
-                            </div>
-                          </CardHeader>
-                          <CardContent>
-                            {session.notes && <p className="text-sm mb-4">{session.notes}</p>}
-                            <div className="flex gap-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleRescheduleSession(session)}
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width="16"
-                                  height="16"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  className="mr-1"
-                                >
-                                  <circle cx="12" cy="12" r="10"></circle>
-                                  <path d="M12 8v4l3 3"></path>
-                                </svg>
-                                Reschedule
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleCancelSession(session)}
-                                className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width="16"
-                                  height="16"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  className="mr-1"
-                                >
-                                  <path d="M3 6h18"></path>
-                                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                                </svg>
-                                Cancel
-                              </Button>
-                              <Button
-                                className="bg-lumea-stone text-lumea-beige hover:bg-lumea-stone/90"
-                                size="sm"
-                              >
-                                Join Session
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    {sessions.filter((session) => session.status === 'Upcoming').length === 0 && (
-                      <Card className="lumea-card">
-                        <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="48"
-                            height="48"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-muted-foreground mb-4"
-                          >
-                            <rect width="18" height="18" x="3" y="4" rx="2" ry="2"></rect>
-                            <line x1="16" x2="16" y1="2" y2="6"></line>
-                            <line x1="8" x2="8" y1="2" y2="6"></line>
-                            <line x1="3" x2="21" y1="10" y2="10"></line>
-                          </svg>
-                          <p>No upcoming sessions.</p>
-                          <Button
-                            variant="outline"
-                            className="mt-4"
-                            onClick={() => setIsDialogOpen(true)}
-                          >
-                            Schedule a Session
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </>
-                )}
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+            <div className={cn(
+              "flex items-center justify-between",
+              isRTL && "flex-row-reverse"
+            )}>
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  {t('sessions.stats.total', 'Total Sessions')}
+                </p>
+                <p className="text-2xl font-bold text-gray-900">{sessions.length}</p>
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                <Users className="w-6 h-6 text-white" />
               </div>
             </div>
-          </TabsContent>
+          </div>
 
-          <TabsContent value="past">
-            <div className="grid grid-cols-1 gap-4">
-              {sessions
-                .filter((session) => session.status === 'Completed')
-                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                .map((session) => (
-                  <Card key={session.id} className="lumea-card">
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between">
-                        <div>
-                          <CardTitle>
-                            {format(new Date(session.date), 'MMMM d, yyyy')} at {format(new Date(session.date), 'HH:mm')}
-                          </CardTitle>
-                          <CardDescription>
-                            Session with {session.client ? `${session.client.firstName} ${session.client.lastName}` : 'Coach'}
-                          </CardDescription>
-                        </div>
-                        <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-medium px-2.5 py-0.5 rounded-full h-fit">
-                          Completed
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      {session.notes && <p className="text-sm mb-4">{session.notes}</p>}
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          View Summary
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          Book Follow-up
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              {sessions.filter((session) => session.status === 'Completed').length === 0 && (
-                <Card className="lumea-card">
-                  <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="48"
-                      height="48"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="text-muted-foreground mb-4"
-                    >
-                      <clock></clock>
-                    </svg>
-                    <p>No past sessions yet.</p>
-                  </CardContent>
-                </Card>
-              )}
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+            <div className={cn(
+              "flex items-center justify-between",
+              isRTL && "flex-row-reverse"
+            )}>
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  {t('sessions.stats.upcoming', 'Upcoming')}
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {sessions.filter(s => s.status === 'scheduled').length}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                <Calendar className="w-6 h-6 text-white" />
+              </div>
             </div>
-          </TabsContent>
+          </div>
 
-          <TabsContent value="cancelled">
-            <div className="grid grid-cols-1 gap-4">
-              {sessions
-                .filter((session) => session.status === 'Cancelled')
-                .map((session) => (
-                  <Card key={session.id} className="lumea-card">
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between">
-                        <div>
-                          <CardTitle>
-                            {format(new Date(session.date), 'MMMM d, yyyy')} at {format(new Date(session.date), 'HH:mm')}
-                          </CardTitle>
-                          <CardDescription>
-                            Session with {session.client ? `${session.client.firstName} ${session.client.lastName}` : 'Coach'}
-                          </CardDescription>
-                        </div>
-                        <div className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs font-medium px-2.5 py-0.5 rounded-full h-fit">
-                          Cancelled
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+            <div className={cn(
+              "flex items-center justify-between",
+              isRTL && "flex-row-reverse"
+            )}>
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  {t('sessions.stats.completed', 'Completed')}
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {sessions.filter(s => s.status === 'completed').length}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+            <div className={cn(
+              "flex items-center justify-between",
+              isRTL && "flex-row-reverse"
+            )}>
+              <div>
+                <p className="text-sm font-medium text-gray-600">
+                  {t('sessions.stats.thisMonth', 'This Month')}
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {sessions.filter(s => new Date(s.date).getMonth() === new Date().getMonth()).length}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters and Search */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="search" className="text-gray-700 font-medium">
+                {t('sessions.search.placeholder', 'Search sessions...')}
+              </Label>
+              <div className="relative">
+                <Search className={cn(
+                  "absolute top-3 w-4 h-4 text-gray-400",
+                  isRTL ? "right-3" : "left-3"
+                )} />
+                <Input
+                  id="search"
+                  placeholder={t('sessions.search.placeholder', 'Search sessions...')}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={cn(
+                    "h-12 bg-white/50 border-gray-200 focus:border-purple-400 focus:ring-purple-400 rounded-lg transition-all duration-200",
+                    isRTL ? "pr-10" : "pl-10"
+                  )}
+                  dir={isRTL ? 'rtl' : 'ltr'}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-gray-700 font-medium">
+                {t('sessions.filter.status', 'Status')}
+              </Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-12 bg-white/50 border-gray-200 focus:border-purple-400 rounded-lg">
+                  <SelectValue placeholder={t('sessions.filter.allStatuses', 'All statuses')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('sessions.filter.allStatuses', 'All statuses')}</SelectItem>
+                  <SelectItem value="scheduled">{t('sessions.status.scheduled', 'Scheduled')}</SelectItem>
+                  <SelectItem value="completed">{t('sessions.status.completed', 'Completed')}</SelectItem>
+                  <SelectItem value="cancelled">{t('sessions.status.cancelled', 'Cancelled')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-gray-700 font-medium">
+                {t('sessions.filter.type', 'Type')}
+              </Label>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="h-12 bg-white/50 border-gray-200 focus:border-purple-400 rounded-lg">
+                  <SelectValue placeholder={t('sessions.filter.allTypes', 'All types')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('sessions.filter.allTypes', 'All types')}</SelectItem>
+                  <SelectItem value="video">{t('sessions.type.video', 'Video Call')}</SelectItem>
+                  <SelectItem value="phone">{t('sessions.type.phone', 'Phone Call')}</SelectItem>
+                  <SelectItem value="in-person">{t('sessions.type.inPerson', 'In Person')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* Sessions List */}
+        <div className="space-y-6">
+          {filteredSessions.length > 0 ? (
+            filteredSessions.map((session) => (
+              <div key={session.id} className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-200">
+                <div className={cn(
+                  "flex items-center justify-between",
+                  isRTL && "flex-row-reverse"
+                )}>
+                  <div className="flex-1">
+                    <div className={cn(
+                      "flex items-center gap-4 mb-4",
+                      isRTL && "flex-row-reverse"
+                    )}>
+                      <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
+                        {session.type === 'video' && <Video className="w-6 h-6 text-white" />}
+                        {session.type === 'phone' && <Phone className="w-6 h-6 text-white" />}
+                        {session.type === 'in-person' && <MapPin className="w-6 h-6 text-white" />}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                          {session.title}
+                        </h3>
+                        <div className={cn(
+                          "flex items-center gap-4 text-sm text-gray-600",
+                          isRTL && "flex-row-reverse"
+                        )}>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            {new Date(session.date).toLocaleDateString(isRTL ? 'he-IL' : 'en-US')}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            {session.time}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <User className="w-4 h-4" />
+                            {session.clientName || session.coachName}
+                          </span>
                         </div>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      {session.notes && <p className="text-sm mb-4">{session.notes}</p>}
-                      <Button variant="outline" size="sm">
-                        Reschedule
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              {sessions.filter((session) => session.status === 'Cancelled').length === 0 && (
-                <Card className="lumea-card">
-                  <CardContent className="flex flex-col items-center justify-center p-8 text-center">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="48"
-                      height="48"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="text-muted-foreground mb-4"
+                    </div>
+
+                    {session.description && (
+                      <p className="text-gray-600 mb-4 line-clamp-2">
+                        {session.description}
+                      </p>
+                    )}
+
+                    <div className={cn(
+                      "flex items-center gap-3",
+                      isRTL && "flex-row-reverse"
+                    )}>
+                      <Badge 
+                        variant={session.status === 'completed' ? 'default' : session.status === 'scheduled' ? 'secondary' : 'destructive'}
+                        className="px-3 py-1"
+                      >
+                        {t(`sessions.status.${session.status}`, session.status)}
+                      </Badge>
+                      <Badge variant="outline" className="px-3 py-1">
+                        {t(`sessions.type.${session.type}`, session.type)}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className={cn(
+                    "flex items-center gap-2 ml-6",
+                    isRTL && "flex-row-reverse mr-6 ml-0"
+                  )}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate(`/sessions/${session.id}`)}
+                      className="h-10 px-3 hover:bg-purple-50 hover:text-purple-600"
                     >
-                      <path d="M18 6 6 18"></path>
-                      <path d="m6 6 12 12"></path>
-                    </svg>
-                    <p>No cancelled sessions.</p>
-                  </CardContent>
-                </Card>
-              )}
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate(`/sessions/${session.id}/edit`)}
+                      className="h-10 px-3 hover:bg-blue-50 hover:text-blue-600"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteSession(session.id)}
+                      className="h-10 px-3 hover:bg-red-50 hover:text-red-600"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate(`/sessions/${session.id}`)}
+                      className="h-10 px-3 hover:bg-gray-50 hover:text-gray-600"
+                    >
+                      <ChevronRight className={cn(
+                        "w-4 h-4",
+                        isRTL && "rotate-180"
+                      )} />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-12 shadow-lg text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-gray-400 to-gray-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Calendar className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                {t('sessions.empty.title', 'No sessions found')}
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {t('sessions.empty.description', 'Start by creating your first session or adjust your filters.')}
+              </p>
+              <Button 
+                onClick={() => navigate('/sessions/new')}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {t('sessions.createNew', 'New Session')}
+              </Button>
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </div>
 
       <CancelSessionModal
@@ -750,7 +643,7 @@ const Sessions = () => {
         }}
         onRescheduleSuccess={handleRescheduleSuccess}
       />
-    </MainLayout>
+    </div>
   );
 };
 

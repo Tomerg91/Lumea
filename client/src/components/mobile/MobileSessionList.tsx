@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { format, isToday, isYesterday, isSameWeek, isSameMonth, differenceInHours } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -10,6 +10,8 @@ import {
   Clock, 
   User, 
   Phone, 
+  Video,
+  MapPin,
   MessageSquare, 
   Check, 
   X, 
@@ -17,9 +19,24 @@ import {
   ChevronRight,
   RefreshCw,
   Plus,
-  FileText
+  FileText,
+  Edit3,
+  Trash2,
+  Sparkles,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Search,
+  Filter,
+  SlidersHorizontal
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { 
+  SessionsListSkeleton, 
+  NoSessionsEmptyState, 
+  NoSearchResultsEmptyState,
+  SessionStatusUpdateLoader 
+} from '../SessionLoadingStates';
 
 export type SessionStatus = 'pending' | 'in-progress' | 'completed' | 'cancelled';
 
@@ -38,6 +55,9 @@ export type Session = {
   notes: string;
   createdAt: string;
   updatedAt: string;
+  title?: string;
+  type?: 'video' | 'phone' | 'in-person';
+  clientName?: string;
 };
 
 interface MobileSessionListProps {
@@ -48,45 +68,78 @@ interface MobileSessionListProps {
   isUpdatingStatus?: boolean;
   userRole?: 'coach' | 'client' | 'admin';
   onRefresh?: () => void;
+  // New props for enhanced search/filter
+  searchTerm?: string;
+  onSearchChange?: (term: string) => void;
+  statusFilter?: 'all' | SessionStatus;
+  onStatusFilterChange?: (status: 'all' | SessionStatus) => void;
+  typeFilter?: 'all' | 'video' | 'phone' | 'in-person';
+  onTypeFilterChange?: (type: 'all' | 'video' | 'phone' | 'in-person') => void;
 }
 
-// Status configuration for mobile display
+// Enhanced status configuration for mobile display
 const statusConfig = {
   pending: {
-    label: 'sessions.status.pending',
-    bgColor: 'bg-yellow-100',
-    textColor: 'text-yellow-800',
-    borderColor: 'border-yellow-200',
-    icon: '⏳',
-    color: '#f59e0b',
+    label: 'Upcoming',
+    bgColor: 'bg-gradient-to-r from-amber-50 to-orange-50',
+    textColor: 'text-amber-800',
+    borderColor: 'border-amber-200',
+    icon: Clock,
+    iconColor: 'text-amber-600',
+    dotColor: 'bg-amber-400',
   },
   'in-progress': {
-    label: 'sessions.status.inProgress',
-    bgColor: 'bg-blue-100',
+    label: 'In Progress',
+    bgColor: 'bg-gradient-to-r from-blue-50 to-indigo-50',
     textColor: 'text-blue-800',
     borderColor: 'border-blue-200',
-    icon: '🟢',
-    color: '#3b82f6',
+    icon: Sparkles,
+    iconColor: 'text-blue-600',
+    dotColor: 'bg-blue-400',
   },
   completed: {
-    label: 'sessions.status.completed',
-    bgColor: 'bg-green-100',
+    label: 'Completed',
+    bgColor: 'bg-gradient-to-r from-green-50 to-emerald-50',
     textColor: 'text-green-800',
     borderColor: 'border-green-200',
-    icon: '✅',
-    color: '#10b981',
+    icon: CheckCircle,
+    iconColor: 'text-green-600',
+    dotColor: 'bg-green-400',
   },
   cancelled: {
-    label: 'sessions.status.cancelled',
-    bgColor: 'bg-red-100',
+    label: 'Cancelled',
+    bgColor: 'bg-gradient-to-r from-red-50 to-pink-50',
     textColor: 'text-red-800',
     borderColor: 'border-red-200',
-    icon: '❌',
-    color: '#ef4444',
+    icon: XCircle,
+    iconColor: 'text-red-600',
+    dotColor: 'bg-red-400',
   },
 };
 
-// Swipe gesture hook
+// Session type configuration
+const sessionTypeConfig = {
+  video: {
+    icon: Video,
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-100',
+    label: 'Video Call',
+  },
+  phone: {
+    icon: Phone,
+    color: 'text-green-600',
+    bgColor: 'bg-green-100',
+    label: 'Phone Call',
+  },
+  'in-person': {
+    icon: MapPin,
+    color: 'text-purple-600',
+    bgColor: 'bg-purple-100',
+    label: 'In Person',
+  },
+};
+
+// Enhanced swipe gesture hook with haptic feedback
 const useSwipeGesture = (
   onSwipeLeft?: () => void,
   onSwipeRight?: () => void,
@@ -95,6 +148,12 @@ const useSwipeGesture = (
   const startX = useRef<number>(0);
   const startY = useRef<number>(0);
   const isDragging = useRef<boolean>(false);
+
+  const triggerHaptic = useCallback(() => {
+    if ('vibrate' in navigator) {
+      navigator.vibrate(10);
+    }
+  }, []);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     startX.current = e.touches[0].clientX;
@@ -124,6 +183,7 @@ const useSwipeGesture = (
     
     // Only trigger swipe if horizontal movement is greater than vertical
     if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > threshold) {
+      triggerHaptic();
       if (deltaX > 0) {
         onSwipeRight?.();
       } else {
@@ -132,7 +192,7 @@ const useSwipeGesture = (
     }
     
     isDragging.current = false;
-  }, [onSwipeLeft, onSwipeRight, threshold]);
+  }, [onSwipeLeft, onSwipeRight, threshold, triggerHaptic]);
 
   return {
     onTouchStart: handleTouchStart,
@@ -141,38 +201,135 @@ const useSwipeGesture = (
   };
 };
 
-// Mobile Status Badge Component
+// Mobile Search and Filter Bar Component
+const MobileSearchFilter: React.FC<{
+  searchTerm: string;
+  onSearchChange: (term: string) => void;
+  statusFilter: 'all' | SessionStatus;
+  onStatusFilterChange: (status: 'all' | SessionStatus) => void;
+  typeFilter: 'all' | 'video' | 'phone' | 'in-person';
+  onTypeFilterChange: (type: 'all' | 'video' | 'phone' | 'in-person') => void;
+  isExpanded: boolean;
+  onToggleExpanded: () => void;
+}> = ({ 
+  searchTerm, 
+  onSearchChange, 
+  statusFilter, 
+  onStatusFilterChange, 
+  typeFilter, 
+  onTypeFilterChange,
+  isExpanded,
+  onToggleExpanded 
+}) => {
+  const { t, isRTL } = useLanguage();
+
+  return (
+    <div className="bg-white/95 backdrop-blur-sm border-b border-gray-100 sticky top-0 z-40">
+      {/* Search Bar */}
+      <div className="p-4">
+        <div className="relative">
+          <Search className={cn(
+            'absolute top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400',
+            isRTL ? 'right-3' : 'left-3'
+          )} />
+          <input
+            type="text"
+            placeholder={t('sessions.searchPlaceholder', 'Search sessions...')}
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className={cn(
+              'w-full h-11 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-200',
+              isRTL ? 'pr-10 pl-12' : 'pl-10 pr-12'
+            )}
+            dir={isRTL ? 'rtl' : 'ltr'}
+          />
+          <button
+            onClick={onToggleExpanded}
+            className={cn(
+              'absolute top-1/2 transform -translate-y-1/2 p-2 rounded-lg hover:bg-gray-100 transition-colors',
+              isRTL ? 'left-1' : 'right-1'
+            )}
+          >
+            <SlidersHorizontal className={cn(
+              'w-5 h-5 text-gray-400 transition-transform duration-200',
+              isExpanded && 'rotate-180'
+            )} />
+          </button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      {isExpanded && (
+        <div className="px-4 pb-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('sessions.status', 'Status')}
+              </label>
+              <select
+                value={statusFilter}
+                onChange={(e) => onStatusFilterChange(e.target.value as 'all' | SessionStatus)}
+                className="w-full h-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent text-sm"
+                dir={isRTL ? 'rtl' : 'ltr'}
+              >
+                <option value="all">{t('sessions.allStatuses', 'All Statuses')}</option>
+                <option value="pending">{t('sessions.pending', 'Upcoming')}</option>
+                <option value="completed">{t('sessions.completed', 'Completed')}</option>
+                <option value="cancelled">{t('sessions.cancelled', 'Cancelled')}</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('sessions.type', 'Type')}
+              </label>
+              <select
+                value={typeFilter}
+                onChange={(e) => onTypeFilterChange(e.target.value as 'all' | 'video' | 'phone' | 'in-person')}
+                className="w-full h-10 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent text-sm"
+                dir={isRTL ? 'rtl' : 'ltr'}
+              >
+                <option value="all">{t('sessions.allTypes', 'All Types')}</option>
+                <option value="video">{t('sessions.videoCall', 'Video Call')}</option>
+                <option value="phone">{t('sessions.phoneCall', 'Phone Call')}</option>
+                <option value="in-person">{t('sessions.inPerson', 'In Person')}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Enhanced Mobile Status Badge Component
 const MobileStatusBadge: React.FC<{ status: SessionStatus; isCompact?: boolean }> = ({ 
   status, 
   isCompact = false 
 }) => {
-  const { t } = useLanguage();
   const config = statusConfig[status];
+  const StatusIcon = config.icon;
   
   if (isCompact) {
     return (
-      <div 
-        className="w-3 h-3 rounded-full"
-        style={{ backgroundColor: config.color }}
-        title={t(config.label)}
-      />
+      <div className={cn('w-3 h-3 rounded-full', config.dotColor)} />
     );
   }
   
   return (
-    <span className={cn(
-      'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border',
+    <div className={cn(
+      'inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-medium border backdrop-blur-sm',
       config.bgColor,
       config.textColor,
       config.borderColor
     )}>
-      <span className="mr-1.5">{config.icon}</span>
-      {t(config.label)}
-    </span>
+      <StatusIcon className={cn('w-3.5 h-3.5 mr-1.5', config.iconColor)} />
+      {config.label}
+    </div>
   );
 };
 
-// Mobile Session Card Component
+// Enhanced Mobile Session Card Component with improved animations
 const MobileSessionCard: React.FC<{
   session: Session;
   userRole?: string;
@@ -182,9 +339,32 @@ const MobileSessionCard: React.FC<{
 }> = ({ session, userRole, onStatusChange, isUpdatingStatus, onViewDetails }) => {
   const { t, isRTL } = useLanguage();
   const [showActions, setShowActions] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
   const navigate = useNavigate();
+  const { isTouchDevice } = useMobileDetection();
   
-  // Quick actions for coaches
+  // Memoize date formatting for performance
+  const formattedTime = useMemo(() => {
+    const date = new Date(session.date);
+    return format(date, 'HH:mm', { locale: isRTL ? he : undefined });
+  }, [session.date, isRTL]);
+
+  const formattedDate = useMemo(() => {
+    const date = new Date(session.date);
+    const now = new Date();
+    
+    if (isToday(date)) {
+      return t('Today');
+    } else if (isYesterday(date)) {
+      return t('Yesterday');
+    } else if (isSameWeek(date, now)) {
+      return format(date, 'EEEE', { locale: isRTL ? he : undefined });
+    } else {
+      return format(date, 'MMM d', { locale: isRTL ? he : undefined });
+    }
+  }, [session.date, isRTL, t]);
+  
+  // Quick actions for coaches with enhanced mobile interactions
   const quickActions = userRole === 'coach' ? [
     {
       label: 'Add Note',
@@ -192,7 +372,6 @@ const MobileSessionCard: React.FC<{
       action: () => {
         const params = new URLSearchParams({
           sessionId: session._id,
-          clientId: session.client._id,
           clientName: `${session.client.firstName} ${session.client.lastName}`
         });
         navigate(`/coach/notes?${params.toString()}`);
@@ -200,157 +379,199 @@ const MobileSessionCard: React.FC<{
       color: 'bg-blue-500',
     },
     {
-      label: 'Call',
-      icon: <Phone className="w-4 h-4" />,
-      action: () => {
-        window.location.href = `tel:${session.client.email}`;
-      },
-      color: 'bg-green-500',
+      label: 'Edit Session',
+      icon: <Edit3 className="w-4 h-4" />,
+      action: () => navigate(`/coach/sessions/${session._id}/edit`),
+      color: 'bg-purple-500',
     },
     {
-      label: 'Message',
-      icon: <MessageSquare className="w-4 h-4" />,
-      action: () => {
-        // Navigate to messaging or open communication
-        console.log('Open messaging for', session.client);
-      },
-      color: 'bg-blue-500',
+      label: 'Mark Complete',
+      icon: <Check className="w-4 h-4" />,
+      action: () => onStatusChange?.(session._id, 'completed'),
+      color: 'bg-green-500',
+      show: session.status === 'pending' || session.status === 'in-progress',
     },
-  ] : [];
+    {
+      label: 'Cancel',
+      icon: <X className="w-4 h-4" />,
+      action: () => onStatusChange?.(session._id, 'cancelled'),
+      color: 'bg-red-500',
+      show: session.status === 'pending' || session.status === 'in-progress',
+    },
+  ].filter(action => action.show !== false) : [];
 
-  // Swipe gestures for session management
-  const swipeGestures = useSwipeGesture(
-    // Swipe left - show quick actions
-    () => {
-      if (userRole === 'coach') {
-        setShowActions(true);
-        setTimeout(() => setShowActions(false), 3000);
-      }
-    },
-    // Swipe right - mark as completed (if possible)
-    () => {
-      if (userRole === 'coach' && onStatusChange && 
-          (session.status === 'pending' || session.status === 'in-progress')) {
-        onStatusChange(session._id, 'completed');
-      }
-    }
+  const swipeGesture = useSwipeGesture(
+    () => setShowActions(true),
+    () => setShowActions(false)
   );
 
-  const formatTime = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'HH:mm');
-    } catch {
-      return '--:--';
-    }
+  const getSessionTypeConfig = () => {
+    const type = session.type || 'video';
+    return sessionTypeConfig[type] || sessionTypeConfig.video;
   };
 
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      if (isToday(date)) return t('sessions.today');
-      if (isYesterday(date)) return t('sessions.yesterday');
-      return format(date, 'MMM d', { locale: isRTL ? he : undefined });
-    } catch {
-      return t('sessions.invalidDate');
+  const typeConfig = getSessionTypeConfig();
+  const TypeIcon = typeConfig.icon;
+
+  // Long press handler for additional actions
+  const longPressTimer = useRef<NodeJS.Timeout>();
+  const handleTouchStart = () => {
+    setIsPressed(true);
+    longPressTimer.current = setTimeout(() => {
+      if (userRole === 'coach') {
+        setShowActions(true);
+        if ('vibrate' in navigator) {
+          navigator.vibrate(50);
+        }
+      }
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    setIsPressed(false);
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
     }
   };
 
   return (
-    <div
-      className={cn(
-        'relative bg-white/95 backdrop-blur-sm rounded-2xl shadow-lumea-medium border border-white/20 overflow-hidden mb-3 touch-manipulation',
-        showActions && 'transform scale-[0.98] transition-transform duration-200'
-      )}
-      {...swipeGestures}
-    >
-      {/* Main card content */}
-      <div 
-        className="p-4 min-h-[88px] flex items-center space-x-4"
+    <div className="relative">
+      {/* Main Card */}
+      <div
+        className={cn(
+          'relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden transition-all duration-300',
+          'transform-gpu', // Hardware acceleration
+          isPressed && isTouchDevice ? 'scale-[0.98]' : 'scale-100',
+          showActions ? 'translate-x-[-80px]' : 'translate-x-0',
+          'hover:shadow-xl hover:border-white/40'
+        )}
+        {...swipeGesture}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
         onClick={() => onViewDetails(session._id)}
       >
-        {/* Client avatar */}
-        <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-purple flex items-center justify-center">
-          <span className="text-white font-semibold text-sm">
-            {session.client.firstName.charAt(0)}
-            {session.client.lastName.charAt(0)}
-          </span>
-        </div>
-
-        {/* Session info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-1">
-            <h3 className="font-semibold text-gray-900 truncate">
-              {session.client.firstName} {session.client.lastName}
-            </h3>
-            <MobileStatusBadge status={session.status} isCompact />
+        {/* Status accent bar */}
+        <div className={cn('h-1 w-full', statusConfig[session.status].dotColor)} />
+        
+        <div className="p-4">
+          {/* Header Row */}
+          <div className={cn(
+            'flex items-start justify-between mb-3',
+            isRTL && 'flex-row-reverse'
+          )}>
+            <div className="flex-1 min-w-0">
+              <div className={cn(
+                'flex items-center gap-2 mb-1',
+                isRTL && 'flex-row-reverse'
+              )}>
+                <div className={cn(
+                  'w-8 h-8 rounded-lg flex items-center justify-center',
+                  typeConfig.bgColor
+                )}>
+                  <TypeIcon className={cn('w-4 h-4', typeConfig.color)} />
+                </div>
+                <h3 className="font-semibold text-gray-900 truncate">
+                  {session.client.firstName} {session.client.lastName}
+                </h3>
+              </div>
+              
+              <div className={cn(
+                'flex items-center gap-3 text-sm text-gray-600',
+                isRTL && 'flex-row-reverse'
+              )}>
+                <div className={cn(
+                  'flex items-center gap-1',
+                  isRTL && 'flex-row-reverse'
+                )}>
+                  <Calendar className="w-4 h-4" />
+                  <span>{formattedDate}</span>
+                </div>
+                <div className={cn(
+                  'flex items-center gap-1',
+                  isRTL && 'flex-row-reverse'
+                )}>
+                  <Clock className="w-4 h-4" />
+                  <span>{formattedTime}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex flex-col items-end gap-2">
+              <MobileStatusBadge status={session.status} />
+              <ChevronRight className={cn(
+                'w-5 h-5 text-gray-400',
+                isRTL && 'rotate-180'
+              )} />
+            </div>
           </div>
-          
-          <div className="flex items-center text-sm text-gray-600 mb-1">
-            <Calendar className="w-4 h-4 mr-1.5" />
-            <span>{formatDate(session.date)}</span>
-            <Clock className="w-4 h-4 ml-3 mr-1.5" />
-            <span>{formatTime(session.date)}</span>
-          </div>
 
+          {/* Notes Preview */}
           {session.notes && (
-            <p className="text-xs text-gray-500 truncate mt-1">
-              {session.notes}
-            </p>
+            <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-700 line-clamp-2">
+                {session.notes}
+              </p>
+            </div>
           )}
         </div>
 
-        {/* Action indicator */}
-        <div className="flex-shrink-0">
-          <ChevronRight className="w-5 h-5 text-gray-400" />
-        </div>
+        {/* Loading overlay */}
+        {isUpdatingStatus && (
+          <SessionStatusUpdateLoader 
+            status={session.status} 
+            message={t('sessions.updatingStatus', 'Updating status...')} 
+          />
+        )}
       </div>
 
-      {/* Quick actions overlay */}
-      {showActions && quickActions.length > 0 && (
-        <div className="absolute inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-end pr-4 space-x-3">
-          {quickActions.map((action, index) => (
-            <button
-              key={index}
-              onClick={(e) => {
-                e.stopPropagation();
-                action.action();
-                setShowActions(false);
-              }}
-              className={cn(
-                'w-12 h-12 rounded-xl text-white flex items-center justify-center',
-                'transform hover:scale-105 transition-all duration-200',
-                action.color
-              )}
-              style={{ 
-                animationDelay: `${index * 100}ms`,
-                animation: 'slideInRight 0.3s ease-out forwards'
-              }}
-            >
-              {action.icon}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Swipe indicator */}
+      {/* Quick Actions Panel */}
       {userRole === 'coach' && (
-        <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
-          <div className="w-8 h-1 bg-gray-300 rounded-full opacity-30" />
+        <div
+          className={cn(
+            'absolute top-0 right-0 h-full flex items-center transition-all duration-300',
+            showActions ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+          )}
+        >
+          <div className="flex gap-1 px-2">
+            {quickActions.map((action, index) => (
+              <button
+                key={action.label}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  action.action();
+                  setShowActions(false);
+                }}
+                className={cn(
+                  'w-12 h-12 rounded-2xl text-white flex items-center justify-center',
+                  'transform transition-all duration-200 hover:scale-110 active:scale-95',
+                  'shadow-lg',
+                  action.color
+                )}
+                style={{
+                  animationDelay: `${index * 50}ms`,
+                }}
+                title={action.label}
+              >
+                {action.icon}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-// Pull to refresh component
+// Enhanced Pull to Refresh with better visual feedback
 const PullToRefresh: React.FC<{ 
   onRefresh: () => void; 
   isRefreshing: boolean;
   children: React.ReactNode;
 }> = ({ onRefresh, isRefreshing, children }) => {
-  const [pullDistance, setPullDistance] = useState(0);
   const [isPulling, setIsPulling] = useState(false);
-  const startY = useRef(0);
+  const [pullDistance, setPullDistance] = useState(0);
+  const startY = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -366,15 +587,18 @@ const PullToRefresh: React.FC<{
     const currentY = e.touches[0].clientY;
     const diff = currentY - startY.current;
     
-    if (diff > 0 && diff < 100) {
+    if (diff > 0 && diff < 120) {
       setPullDistance(diff);
       e.preventDefault();
     }
   };
 
   const handleTouchEnd = () => {
-    if (isPulling && pullDistance > 60) {
+    if (isPulling && pullDistance > 80) {
       onRefresh();
+      if ('vibrate' in navigator) {
+        navigator.vibrate(20);
+      }
     }
     setIsPulling(false);
     setPullDistance(0);
@@ -388,34 +612,42 @@ const PullToRefresh: React.FC<{
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Pull indicator */}
-      {isPulling && (
+      {/* Enhanced Pull indicator */}
+      {(isPulling || isRefreshing) && (
         <div 
-          className="absolute top-0 left-1/2 transform -translate-x-1/2 z-10 transition-all duration-200"
+          className="absolute top-0 left-1/2 transform -translate-x-1/2 z-10 transition-all duration-300"
           style={{ 
-            transform: `translateX(-50%) translateY(${pullDistance - 40}px)`,
-            opacity: pullDistance / 60
+            transform: `translateX(-50%) translateY(${Math.max(pullDistance - 60, -40)}px)`,
+            opacity: Math.min(pullDistance / 60, 1)
           }}
         >
-          <div className="bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-lg">
-            <RefreshCw 
-              className={cn(
-                "w-5 h-5 text-blue-600",
-                isRefreshing && "animate-spin"
-              )} 
-            />
+          <div className="bg-white/95 backdrop-blur-md rounded-2xl p-3 shadow-xl border border-white/20">
+            <div className="flex flex-col items-center gap-2">
+              <RefreshCw 
+                className={cn(
+                  "w-6 h-6 text-purple-600 transition-transform duration-300",
+                  (isRefreshing || pullDistance > 80) && "animate-spin"
+                )} 
+              />
+              <span className="text-xs font-medium text-gray-600">
+                {isRefreshing ? 'Refreshing...' : pullDistance > 80 ? 'Release to refresh' : 'Pull to refresh'}
+              </span>
+            </div>
           </div>
         </div>
       )}
       
-      <div style={{ transform: `translateY(${pullDistance * 0.3}px)` }}>
+      <div 
+        className="transition-transform duration-200"
+        style={{ transform: `translateY(${pullDistance * 0.4}px)` }}
+      >
         {children}
       </div>
     </div>
   );
 };
 
-// Group sessions by date category
+// Group sessions by date category - memoized for performance
 const groupSessionsByDate = (sessions: Session[]) => {
   const today = new Date();
   const grouped: Record<string, Session[]> = {
@@ -452,92 +684,115 @@ const MobileSessionList: React.FC<MobileSessionListProps> = ({
   onStatusChange, 
   isUpdatingStatus, 
   userRole,
-  onRefresh 
+  onRefresh,
+  searchTerm = '',
+  onSearchChange,
+  statusFilter = 'all',
+  onStatusFilterChange,
+  typeFilter = 'all',
+  onTypeFilterChange
 }) => {
   const { t, isRTL } = useLanguage();
   const navigate = useNavigate();
   const { profile } = useAuth();
   const { isMobile } = useMobileDetection();
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
 
-  const handleViewDetails = (sessionId: string) => {
+  const handleViewDetails = useCallback((sessionId: string) => {
     const basePath = profile?.role === 'coach' ? '/coach/sessions' : '/client/sessions';
     navigate(`${basePath}/${sessionId}`);
-  };
+  }, [navigate, profile?.role]);
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     onRefresh?.();
-  };
+  }, [onRefresh]);
+
+  // Memoize grouped sessions for performance
+  const groupedSessions = useMemo(() => {
+    return groupSessionsByDate(sessions);
+  }, [sessions]);
+
+  const groupTitles = useMemo(() => ({
+    today: t('sessions.today', 'Today'),
+    yesterday: t('sessions.yesterday', 'Yesterday'),
+    thisWeek: t('sessions.thisWeek', 'This Week'),
+    thisMonth: t('sessions.thisMonth', 'This Month'),
+    older: t('sessions.older', 'Older'),
+  }), [t]);
 
   if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8 min-h-[200px]">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-lavender animate-pulse-soft mb-4" />
-        <div className="w-32 h-4 bg-gradient-lavender animate-pulse-soft rounded" />
-      </div>
-    );
+    return <SessionsListSkeleton isMobile={true} withGrouping={true} />;
   }
 
   if (sessions.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8 text-center min-h-[300px]">
-        <div className="w-24 h-24 bg-gradient-lavender rounded-3xl mb-6 flex items-center justify-center">
-          <Calendar className="w-12 h-12 text-white" />
-        </div>
-        <h3 className="text-xl font-semibold mb-2 text-gradient-purple">
-          {t('sessions.noSessionsYet')}
-        </h3>
-        <p className="text-gray-600 mb-6 max-w-sm">
-          {t('sessions.noSessionsMessage')}
-        </p>
-        <button
-          onClick={onCreateClick}
-          className="btn-primary flex items-center space-x-2"
-        >
-          <Plus className="w-5 h-5" />
-          <span>{t('sessions.createSession')}</span>
-        </button>
-      </div>
-    );
+    // Check if this is due to search/filter results
+    const hasActiveFilters = searchTerm || statusFilter !== 'all' || typeFilter !== 'all';
+    
+    if (hasActiveFilters) {
+      return (
+        <NoSearchResultsEmptyState
+          searchTerm={searchTerm}
+          onClearFilters={() => {
+            onSearchChange?.('');
+            onStatusFilterChange?.('all');
+            onTypeFilterChange?.('all');
+          }}
+          onCreateClick={onCreateClick}
+        />
+      );
+    }
+    
+    return <NoSessionsEmptyState onCreateClick={onCreateClick} isMobile={true} />;
   }
 
-  const groupedSessions = groupSessionsByDate(sessions);
-  const groupTitles = {
-    today: t('sessions.today'),
-    yesterday: t('sessions.yesterday'),
-    thisWeek: t('sessions.thisWeek'),
-    thisMonth: t('sessions.thisMonth'),
-    older: t('sessions.older'),
-  };
-
   const content = (
-    <div className="space-y-6 p-4">
-      {Object.entries(groupedSessions).map(([group, groupSessions]) => {
-        if (groupSessions.length === 0) return null;
+    <div className="min-h-screen bg-gray-50">
+      {/* Mobile Search and Filter */}
+      {(onSearchChange || onStatusFilterChange || onTypeFilterChange) && (
+        <MobileSearchFilter
+          searchTerm={searchTerm}
+          onSearchChange={onSearchChange || (() => {})}
+          statusFilter={statusFilter}
+          onStatusFilterChange={onStatusFilterChange || (() => {})}
+          typeFilter={typeFilter}
+          onTypeFilterChange={onTypeFilterChange || (() => {})}
+          isExpanded={isFilterExpanded}
+          onToggleExpanded={() => setIsFilterExpanded(!isFilterExpanded)}
+        />
+      )}
 
-        return (
-          <div key={group}>
-            <h3 className="text-lg font-semibold text-gradient-purple mb-4 px-2">
-              {groupTitles[group as keyof typeof groupTitles]}
-              <span className="ml-2 text-sm text-gray-500 font-normal">
-                ({groupSessions.length})
-              </span>
-            </h3>
-            
-            <div className="space-y-2">
-              {groupSessions.map((session) => (
-                <MobileSessionCard
-                  key={session._id}
-                  session={session}
-                  userRole={userRole}
-                  onStatusChange={onStatusChange}
-                  isUpdatingStatus={isUpdatingStatus}
-                  onViewDetails={handleViewDetails}
-                />
-              ))}
+      {/* Sessions List */}
+      <div className="space-y-6 p-4 pb-24"> {/* Extra bottom padding for FAB */}
+        {Object.entries(groupedSessions).map(([group, groupSessions]) => {
+          if (groupSessions.length === 0) return null;
+
+          return (
+            <div key={group} className="space-y-3">
+              <div className="flex items-center justify-between px-2">
+                <h3 className="text-lg font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                  {groupTitles[group as keyof typeof groupTitles]}
+                </h3>
+                <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                  {groupSessions.length}
+                </span>
+              </div>
+              
+              <div className="space-y-3">
+                {groupSessions.map((session) => (
+                  <MobileSessionCard
+                    key={session._id}
+                    session={session}
+                    userRole={userRole}
+                    onStatusChange={onStatusChange}
+                    isUpdatingStatus={isUpdatingStatus}
+                    onViewDetails={handleViewDetails}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 

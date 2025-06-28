@@ -12,6 +12,9 @@ export const isAuthenticated = (req: Request, res: Response, next: NextFunction)
   next();
 };
 
+// Alias for isAuthenticated for consistency
+export const requireAuth = isAuthenticated;
+
 // Middleware to check if the user is already authenticated (redirect if logged in)
 export const isAlreadyAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   if (req.user) {

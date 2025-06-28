@@ -1,6 +1,16 @@
-import { supabase } from './supabase.js';
+import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { Session } from '../../../shared/types/database';
 import crypto from 'crypto';
+
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error('Missing Supabase environment variables');
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // Type definitions for our entities
 export interface User {
@@ -18,28 +28,9 @@ export interface User {
 
 export interface UserLink {
   id: string;
-  coachId: string;
-  clientId: string;
-  createdAt: string;
-}
-
-export interface Session {
-  id: string;
-  coachId: string;
-  clientId: string;
-  dateTime: string;
-  duration: number;
-  status: 'scheduled' | 'completed' | 'cancelled' | 'rescheduled';
-  paymentStatus: 'pending' | 'paid' | 'overdue';
-  isRecurring: boolean;
-  recurrenceRule?: string;
-  recurrenceEndDate?: string;
-  textNotes?: string;
-  audioNotes?: string;
-  clientReflectionReminderSent: boolean;
-  coachReflectionReminderSent: boolean;
-  createdAt: string;
-  updatedAt: string;
+  coach_id: string;
+  client_id: string;
+  created_at: string;
 }
 
 export interface Reflection {
@@ -141,15 +132,14 @@ export interface File {
 
 // Validation schemas
 export const createSessionSchema = z.object({
-  coachId: z.string(),
-  clientId: z.string(),
-  dateTime: z.string().datetime(),
-  duration: z.number().min(1),
-  status: z.enum(['scheduled', 'completed', 'cancelled', 'rescheduled']).default('scheduled'),
-  paymentStatus: z.enum(['pending', 'paid', 'overdue']).default('pending'),
-  isRecurring: z.boolean().default(false),
-  recurrenceRule: z.string().optional(),
-  recurrenceEndDate: z.string().datetime().optional(),
+  coach_id: z.string(),
+  client_id: z.string(),
+  date: z.string(),
+  status: z.enum(['Upcoming', 'Completed', 'Cancelled', 'Rescheduled']).default('Upcoming'),
+  notes: z.string().optional(),
+  payment_id: z.string().optional(),
+  reminder_sent: z.boolean().default(false),
+  audio_file: z.string().optional(),
 });
 
 export const createReflectionSchema = z.object({
@@ -350,7 +340,7 @@ export class SupabaseStorage {
     const { data, error } = await supabase
       .from('user_links')
       .select('*')
-      .eq('coachId', coachId);
+      .eq('coach_id', coachId);
 
     if (error) {
       console.error('Error fetching user links by coach:', error);
@@ -364,7 +354,7 @@ export class SupabaseStorage {
     const { data, error } = await supabase
       .from('user_links')
       .select('*')
-      .eq('clientId', clientId);
+      .eq('client_id', clientId);
 
     if (error) {
       console.error('Error fetching user links by client:', error);
@@ -378,8 +368,8 @@ export class SupabaseStorage {
     const { data, error } = await supabase
       .from('user_links')
       .select('*')
-      .eq('coachId', coachId)
-      .eq('clientId', clientId)
+      .eq('coach_id', coachId)
+      .eq('client_id', clientId)
       .single();
 
     if (error) {
@@ -395,11 +385,7 @@ export class SupabaseStorage {
   async createSession(sessionData: any): Promise<Session | null> {
     const { data, error } = await supabase
       .from('sessions')
-      .insert([{
-        ...sessionData,
-        clientReflectionReminderSent: false,
-        coachReflectionReminderSent: false,
-      }])
+      .insert([sessionData])
       .select()
       .single();
 
@@ -431,8 +417,8 @@ export class SupabaseStorage {
     const { data, error } = await supabase
       .from('sessions')
       .select('*')
-      .eq('coachId', coachId)
-      .order('dateTime', { ascending: false });
+      .eq('coach_id', coachId)
+      .order('date', { ascending: false });
 
     if (error) {
       console.error('Error fetching sessions by coach:', error);
@@ -446,8 +432,8 @@ export class SupabaseStorage {
     const { data, error } = await supabase
       .from('sessions')
       .select('*')
-      .eq('clientId', clientId)
-      .order('dateTime', { ascending: false });
+      .eq('client_id', clientId)
+      .order('date', { ascending: false });
 
     if (error) {
       console.error('Error fetching sessions by client:', error);
@@ -460,7 +446,7 @@ export class SupabaseStorage {
   async updateSession(id: string, sessionData: Partial<Session>): Promise<Session | null> {
     const { data, error } = await supabase
       .from('sessions')
-      .update({ ...sessionData, updatedAt: new Date().toISOString() })
+      .update({ ...sessionData, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
       .single();
@@ -538,7 +524,7 @@ export class SupabaseStorage {
   async getSharedReflectionsForCoach(coachId: string): Promise<Reflection[]> {
     // Get all client IDs linked to this coach
     const links = await this.getUserLinksByCoachId(coachId);
-    const clientIds = links.map(link => link.clientId);
+    const clientIds = links.map(link => link.client_id);
 
     if (clientIds.length === 0) return [];
 
@@ -701,7 +687,7 @@ export class SupabaseStorage {
   async getVisibleResourcesForClient(clientId: string): Promise<Resource[]> {
     // Get coach IDs linked to this client
     const links = await this.getUserLinksByClientId(clientId);
-    const coachIds = links.map(link => link.coachId);
+    const coachIds = links.map(link => link.coach_id);
 
     if (coachIds.length === 0) return [];
 

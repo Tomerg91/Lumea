@@ -3,23 +3,26 @@ import { Outlet, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import Logo from '@/components/Logo';
 import { useAuth } from '../contexts/AuthContext';
+import { cn } from '@/lib/utils';
 
 const Layout = () => {
   const { t, i18n } = useTranslation();
   const { user, signOut, loading } = useAuth();
+  const isRTL = i18n.language === 'he';
 
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col" dir={isRTL ? 'rtl' : 'ltr'}>
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 max-w-screen-2xl items-center">
-          <div className="mr-4 hidden md:flex">
-            <Link to="/dashboard" className="mr-6 flex items-center space-x-2">
+          <div className={cn("hidden md:flex", isRTL ? "ml-4" : "mr-4")}>
+            <Link to="/dashboard" className={cn("flex items-center space-x-2", isRTL ? "ml-6" : "mr-6")}>
               <Logo size="sm" />
               <span className="font-bold sm:inline-block">Lumea</span> {/* TODO: Translate? */}
             </Link>

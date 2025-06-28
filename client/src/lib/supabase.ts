@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database, TypedSupabaseClient } from '../../../shared/types/database';
 
-// Get Supabase configuration from environment variables with fallbacks
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://cjxbfpsbrufxpqqlyueh.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqeGJmcHNicnVmeHBxcWx5dWVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1ODQ3MDQsImV4cCI6MjA2NjE2MDcwNH0.1jFZVD-o-_TxMWPmRF_81AbeCtphD8NyHO1hon2c-I4';
+// Get Supabase configuration from environment variables (PRODUCTION ONLY)
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Detect if we're using local development
 const isLocalDev = supabaseUrl.includes('localhost') || supabaseUrl.includes('127.0.0.1');
@@ -19,13 +19,17 @@ if (import.meta.env.DEV) {
   });
 }
 
-// Validate configuration
-if (!supabaseUrl || supabaseUrl.includes('YOUR_PROJECT_REF')) {
-  throw new Error('Missing or invalid Supabase URL. Please check VITE_SUPABASE_URL environment variable.');
+// Validate configuration (REQUIRED for production)
+if (!supabaseUrl) {
+  throw new Error('VITE_SUPABASE_URL environment variable is required. Please set up your Supabase project configuration.');
 }
 
-if (!supabaseAnonKey || supabaseAnonKey.includes('YOUR_SUPABASE_ANON_KEY')) {
-  throw new Error('Missing or invalid Supabase anon key. Please check VITE_SUPABASE_ANON_KEY environment variable.');
+if (!supabaseAnonKey) {
+  throw new Error('VITE_SUPABASE_ANON_KEY environment variable is required. Please set up your Supabase project configuration.');
+}
+
+if (supabaseUrl.includes('YOUR_PROJECT_REF') || supabaseAnonKey.includes('YOUR_SUPABASE_ANON_KEY')) {
+  throw new Error('Please update your environment variables with actual Supabase project credentials.');
 }
 
 // Create and export the typed Supabase client
@@ -102,8 +106,7 @@ export async function checkSupabaseConnection(): Promise<boolean> {
   }
 }
 
-// Export development status
-export const isDevelopmentMode = isLocalDev && import.meta.env.DEV;
+// Development mode detection removed for production security
 
 // Utility function to check if the client is properly typed
 export function validateSupabaseTypes(): boolean {

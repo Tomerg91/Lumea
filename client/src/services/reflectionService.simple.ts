@@ -6,6 +6,18 @@ import {
   MoodType 
 } from '../../../shared/types/database';
 
+// Temporary interface that matches actual database schema until types are updated
+interface ActualReflectionInsert {
+  id?: string;
+  title: string;
+  content: string;
+  client_id: string;
+  session_id?: string | null;
+  mood_rating?: number | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface CreateTextReflectionData {
   content: string;
   mood?: MoodType;
@@ -20,16 +32,30 @@ export interface UpdateTextReflectionData {
 
 export class SimpleReflectionService {
   /**
+   * Convert mood type to rating (1-10 scale)
+   */
+  private static convertMoodToRating(mood: MoodType): number {
+    switch (mood) {
+      case 'positive': return 8;
+      case 'neutral': return 5;
+      case 'negative': return 3;
+      case 'mixed': return 6;
+      default: return 5;
+    }
+  }
+
+  /**
    * Create a new text reflection
    */
   static async createReflection(data: CreateTextReflectionData): Promise<Reflection> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    const reflectionData: ReflectionInsert = {
+    const reflectionData: ActualReflectionInsert = {
+      title: data.content.slice(0, 100) + (data.content.length > 100 ? '...' : ''), // Generate title from content
       content: data.content,
-      user_id: user.id,
-      mood: data.mood || null,
+      client_id: user.id, // Schema uses client_id, not user_id
+      mood_rating: data.mood ? this.convertMoodToRating(data.mood) : null, // Convert mood to rating
       session_id: data.session_id || null,
     };
 
@@ -81,7 +107,7 @@ export class SimpleReflectionService {
       .from('reflections')
       .select('*')
       .eq('id', reflectionId)
-      .eq('user_id', user.id)
+      .eq('client_id', user.id) // Use client_id instead of user_id
       .single();
 
     if (error) {
@@ -100,14 +126,14 @@ export class SimpleReflectionService {
     offset?: number;
     session_id?: string;
     mood?: MoodType;
-  } = {}): Promise<{ reflections: Reflection[]; count: number }> {
+  } = {}): Promise<{ reflections: any[]; count: number }> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
     let query = supabase
       .from('reflections')
       .select('*', { count: 'exact' })
-      .eq('user_id', user.id)
+      .eq('client_id', user.id) // Use client_id instead of user_id
       .order('created_at', { ascending: false });
 
     if (options.session_id) {
@@ -115,7 +141,7 @@ export class SimpleReflectionService {
     }
 
     if (options.mood) {
-      query = query.eq('mood', options.mood);
+      query = query.eq('mood_rating', this.convertMoodToRating(options.mood));
     }
 
     if (options.limit) {
@@ -143,7 +169,7 @@ export class SimpleReflectionService {
       .from('reflections')
       .delete()
       .eq('id', reflectionId)
-      .eq('user_id', user.id);
+      .eq('client_id', user.id); // Use client_id instead of user_id
 
     if (error) throw error;
   }

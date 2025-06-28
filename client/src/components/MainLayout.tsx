@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import Logo from './Logo';
 import ThemeToggle from './ThemeToggle';
 import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -11,6 +13,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const { signOut, profile, loading } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { isRTL } = useLanguage();
 
   // Debug logging for MainLayout
   useEffect(() => {
@@ -228,7 +231,11 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <div className="flex flex-1">
         {/* Sidebar */}
         <aside
-          className={`fixed inset-y-0 left-0 z-20 flex h-full flex-col border-r bg-background transition-all duration-300 md:static md:block ${isMobileMenuOpen ? 'w-64' : 'w-0 overflow-hidden md:w-20'}`}
+          className={cn(
+            "fixed inset-y-0 z-20 flex h-full flex-col border-r bg-background transition-all duration-300 md:static md:block",
+            isRTL ? "right-0 border-l" : "left-0 border-r",
+            isMobileMenuOpen ? "w-64" : "w-0 overflow-hidden md:w-20"
+          )}
         >
           <nav className="flex flex-col items-center gap-4 px-2 py-5 md:items-stretch">
             {currentNavItems.map((item) => (
@@ -240,10 +247,18 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                         navigate(item.path);
                         if (isMobileMenuOpen) setIsMobileMenuOpen(false); // Close mobile menu on nav
                       }}
-                      className={`flex h-10 items-center justify-center rounded-lg px-3 text-muted-foreground transition-colors hover:text-foreground md:justify-start md:px-4 ${location.pathname === item.path ? 'bg-accent text-accent-foreground' : ''} ${isMobileMenuOpen ? 'w-full justify-start' : 'md:w-full md:h-10'}`}
+                      className={cn(
+                        "flex h-10 items-center justify-center rounded-lg px-3 text-muted-foreground transition-colors hover:text-foreground",
+                        isRTL ? "md:justify-end md:px-4" : "md:justify-start md:px-4",
+                        location.pathname === item.path ? 'bg-accent text-accent-foreground' : '',
+                        isMobileMenuOpen ? 'w-full justify-start' : 'md:w-full md:h-10'
+                      )}
                     >
                       {item.icon}
-                      <span className={`ml-3 ${isMobileMenuOpen ? 'inline' : 'hidden md:hidden'}`}>
+                      <span className={cn(
+                        isRTL ? "mr-3" : "ml-3",
+                        isMobileMenuOpen ? 'inline' : 'hidden md:hidden'
+                      )}>
                         {item.label}
                       </span>
                       <span className="sr-only">{item.label}</span>
@@ -251,7 +266,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   </TooltipTrigger>
                   {/* Tooltip only for collapsed desktop view */}
                   {!isMobileMenuOpen && (
-                    <TooltipContent side="right" className="hidden md:block">
+                    <TooltipContent side={isRTL ? "left" : "right"} className="hidden md:block">
                       {item.label}
                     </TooltipContent>
                   )}

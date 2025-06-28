@@ -34,27 +34,25 @@ const AISettingsPage = lazy(() => import('./pages/AISettingsPage'));
 // Admin components - only load for admin users
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 
-// Development/testing components - only load in development or when needed
-const TestPage = lazy(() => import('./pages/Test'));
-const DebugPage = lazy(() => import('./pages/Debug'));
-const DesignSystemPage = lazy(() => import('./pages/DesignSystem'));
-
-// Demo components - load only when specifically accessed
-const RichTextEditorDemo = lazy(() => 
+// Development/testing components - conditionally loaded only in development
+const TestPage = import.meta.env.DEV ? lazy(() => import('./pages/Test')) : null;
+const DebugPage = import.meta.env.DEV ? lazy(() => import('./pages/Debug')) : null;
+const DesignSystemPage = import.meta.env.DEV ? lazy(() => import('./pages/DesignSystem')) : null;
+const RichTextEditorDemo = import.meta.env.DEV ? lazy(() => 
   import('./components/RichTextEditorDemo').then(module => ({ default: module.RichTextEditorDemo }))
-);
-const ReflectionDemo = lazy(() => import('./pages/ReflectionDemo'));
-const AudioRecorderDemo = lazy(() => import('./components/audio/AudioRecorderDemo'));
-const AudioReflectionTest = lazy(() => 
+) : null;
+const ReflectionDemo = import.meta.env.DEV ? lazy(() => import('./pages/ReflectionDemo')) : null;
+const AudioRecorderDemo = import.meta.env.DEV ? lazy(() => import('./components/audio/AudioRecorderDemo')) : null;
+const AudioReflectionTest = import.meta.env.DEV ? lazy(() => 
   import('./components/audio/AudioReflectionTest').then(module => ({ default: module.AudioReflectionTest }))
-);
-const MobileAudioTest = lazy(() => 
+) : null;
+const MobileAudioTest = import.meta.env.DEV ? lazy(() => 
   import('./components/audio/MobileAudioTest').then(module => ({ default: module.MobileAudioTest }))
-);
-const NotesDemo = lazy(() => 
+) : null;
+const NotesDemo = import.meta.env.DEV ? lazy(() => 
   import('./components/notes/NotesDemo').then(module => ({ default: module.NotesDemo }))
-);
-const HIPAAComplianceDashboard = lazy(() => import('./components/analytics/HIPAAComplianceDashboard'));
+) : null;
+const HIPAAComplianceDashboard = import.meta.env.DEV ? lazy(() => import('./components/analytics/HIPAAComplianceDashboard')) : null;
 
 // Utility pages
 const Offline = lazy(() => import('./pages/Offline'));

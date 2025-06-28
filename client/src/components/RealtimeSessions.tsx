@@ -1,15 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useRealtimeSessions } from '../hooks/useRealtime';
 import { RealtimeEvent } from '../services/realtimeService';
-
-interface Session {
-  id: string;
-  client_id: string;
-  coach_id: string;
-  date: string;
-  status: string;
-  notes?: string;
-}
+import { Session } from '../types/session';
 
 export const RealtimeSessions: React.FC = () => {
   const [sessions, setSessions] = useState<Session[]>([]);

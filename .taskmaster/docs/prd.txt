@@ -1,20 +1,97 @@
-# SatyaCoaching Platform Upgrade & Recovery PRD
+# Product Requirements Document (PRD): Lumea Coaching Platform
 
-## Project Overview
+## 1. Introduction & Vision
+
+**Product:** Lumea  
+**Vision:** To provide a secure, dedicated, calm, and supportive Progressive Web App (PWA) for the Satya Method coaching practice. Lumea aims to move beyond generic tools, offering a unified and specialized digital environment that fosters a serene, safe, and reflective space for both coaches and their clients.  
+**Core Goal:** Build a 1-on-1 personal development coaching platform that is mobile-first, bilingual (Hebrew/RTL primary), and meets high standards of UI/UX and accessibility (WCAG 2.1 AA).
+
+## 2. User Roles & Personas
+
+* **Client:** An individual receiving coaching. They need to reflect on sessions, track their journey, and access resources provided by their coach.
+* **Coach:** A certified Satya Method coach. They need to manage their clients, schedule sessions, keep private notes, share resources, and monitor client progress and payments.
+* **Platform Admin:** An administrator responsible for maintaining the platform's integrity. They onboard/approve new coaches and oversee platform-level metrics.
+
+## 3. Key Feature Areas (Epics)
+
+1. User Onboarding & Management
+2. Session & Scheduling Management
+3. Reflections Journal
+4. Coach's Private Notes
+5. Resource Center
+6. Client Progress Tracking
+7. Admin Dashboard & Coach Approval
+8. Technical Excellence & Debt Reduction
+
+## 4. Feature Details
+
+### Epic 1: User Onboarding & Management
+- User Registration (Client, Coach)
+- User Login with secure credentials
+- Password Reset functionality
+- Profile Management
+- Coach-Client Association
+
+### Epic 2: Session & Scheduling Management
+- Schedule Session functionality
+- Session Calendar/List View
+- Session Reminders
+- Reschedule/Cancel Session
+- Manual Payment Tracking
+
+### Epic 3: Reflections Journal
+- Text Reflection submission
+- Audio Reflection capability
+- View Reflections history
+- Reflection Notifications
+
+### Epic 4: Coach's Private Notes
+- Create Private Notes
+- View/Edit Private Notes with encryption
+
+### Epic 5: Resource Center
+- Upload Resource functionality
+- Assign Resources to clients
+- View Assigned Resources
+
+### Epic 6: Client Progress Tracking
+- Progress Timeline View
+- Define/Track Milestones
+
+### Epic 7: Admin Dashboard & Coach Approval
+- Coach Approval Queue
+- Approve/Reject Coach functionality
+- Platform Metrics Dashboard
+
+### Epic 8: Technical Excellence
+- TypeScript Strict Mode implementation
+- Database Migration Strategy
+- Enhanced Test Coverage
+- Native Wrapper completion
+
+## 5. Non-Functional Requirements
+
+- Security standards compliance
+- High performance benchmarks
+- WCAG 2.1 AA accessibility
+- Bilingual support (Hebrew/English)
+- Robust error handling
+
+## 6. Project Overview
 The SatyaCoaching platform is a comprehensive 1-on-1 personal development coaching platform with 10/11 epics complete (100% core functionality). The platform currently faces critical backend connection issues preventing access to live data, requiring immediate recovery and systematic upgrade to replace mock data with live Supabase integration.
 
-## Current Critical Issues
+## 7. Current Critical Issues
 - **EMERGENCY**: Backend server completely disconnected, all API endpoints failing with ECONNREFUSED
 - **Mock Data Dependency**: Multiple components still using mock data instead of live Supabase queries
 - **Bilingual Experience**: Partially complete bilingual enhancement needs finalization
 
-## Project Goals
+## 8. Project Goals
 1. **Emergency Backend Recovery**: Restore full backend connectivity and API functionality
 2. **Mock Data Elimination**: Replace all remaining mock data with live Supabase integration
 3. **Bilingual Experience Polish**: Complete the bilingual enhancement for production readiness
 4. **Real-Time Features Enhancement**: Optimize real-time capabilities for better user experience
 
-## Technical Requirements
+## 9. Technical Requirements
 
 ### Phase 1: Emergency Backend Recovery (CRITICAL)
 - Diagnose and fix backend server connection issues
@@ -43,7 +120,7 @@ The SatyaCoaching platform is a comprehensive 1-on-1 personal development coachi
 - **Notification Delivery**: Enhance real-time notification system
 - **Performance Optimization**: Optimize real-time features for scalability
 
-## Technical Constraints
+## 10. Technical Constraints
 - Must maintain existing Supabase-first architecture
 - Preserve enterprise-grade security with RLS policies
 - Maintain performance optimization and bundle analysis
@@ -51,7 +128,7 @@ The SatyaCoaching platform is a comprehensive 1-on-1 personal development coachi
 - Mobile-first responsive design requirements
 - Accessibility compliance (WCAG 2.1 AA)
 
-## Technology Stack
+## 11. Technology Stack
 - **Frontend**: React 18 + TypeScript + Vite with performance optimization
 - **Backend**: Supabase PostgreSQL + Express.js API layer
 - **Real-time**: Supabase subscriptions with authentication filtering
@@ -59,7 +136,7 @@ The SatyaCoaching platform is a comprehensive 1-on-1 personal development coachi
 - **Mobile**: PWA + Capacitor for native capabilities
 - **Testing**: Comprehensive E2E testing framework (187 tests)
 
-## Success Criteria
+## 12. Success Criteria
 - Zero API connection errors (no ECONNREFUSED)
 - 100% mock data replaced with live Supabase queries
 - Seamless bilingual experience on all devices
@@ -67,23 +144,23 @@ The SatyaCoaching platform is a comprehensive 1-on-1 personal development coachi
 - All existing tests passing with live data integration
 - Performance metrics maintained or improved
 
-## Priority Levels
+## 13. Priority Levels
 1. **CRITICAL**: Backend recovery and API connectivity
 2. **HIGH**: Mock data replacement with live Supabase integration
 3. **MEDIUM**: Bilingual experience finalization
 4. **LOW**: Real-time feature enhancements and optimization
 
-## Risk Mitigation
+## 14. Risk Mitigation
 - Maintain backward compatibility during transitions
 - Implement proper error handling and loading states
 - Preserve existing authentication and security measures
 - Ensure graceful degradation for network issues
 - Maintain comprehensive test coverage throughout changes
 
-## 1. Overview
+## 15. 1. Overview
 Our application currently relies on a traditional PostgreSQL database served through a Node.js/Prisma backend. We want to migrate fully to Supabase to leverage its hosted Postgres offering, built-in authentication, serverless functions, real-time capabilities, and especially Row-Level Security (RLS) to tighten data-access control. The migration must be seamless for end-users and maintain parity (or improvements) in performance, security, and developer experience.
 
-## 2. Goals
+## 16. 2. Goals
 - Replace the self-hosted database & Prisma layer with Supabase Postgres.
 - Implement Supabase Auth for user management while preserving existing user accounts.
 - Configure comprehensive RLS policies for all tables to enforce least-privilege access.
@@ -93,18 +170,18 @@ Our application currently relies on a traditional PostgreSQL database served thr
 - Update CI/CD, env variables, infrastructure, and documentation.
 - Provide rollback strategy and observability during and after cut-over.
 
-## 3. Non-Goals
+## 17. 3. Non-Goals
 - Major UI redesigns (except needed API integration tweaks).
 - Switching mobile push infrastructure—handled separately.
 - Migrating analytics/BI pipelines.
 
-## 4. Assumptions
+## 18. 4. Assumptions
 - All current production data resides in a single Postgres instance.
 - Typescript codebase already modular; DI facilitates swapping data layer.
 - Team has admin access to Supabase organization & billing.
 - We target Supabase Postgres version ≥ 15 which supports RLS and PG-bouncer.
 
-## 5. Technical Requirements
+## 19. 5. Technical Requirements
 ### 5.1 Database & Data
 - Design target schema in Supabase matching existing tables; leverage generated columns where useful.
 - Create staging + production Supabase projects.
@@ -132,7 +209,7 @@ Our application currently relies on a traditional PostgreSQL database served thr
 - Enable Supabase Logs & Dashboard alerts.
 - Integrate with Datadog/NewRelic for DB metrics.
 
-## 6. User Stories & Acceptance Criteria
+## 20. 6. User Stories & Acceptance Criteria
 1. **As an existing user**, I can log in during migration without noticing downtime.
 2. **As a developer**, I can create a new RLS policy and apply it via CI in <30 sec.
 3. **As a user**, I cannot access data belonging to another tenant.
@@ -144,7 +221,7 @@ Acceptance Criteria:
 - Data discrepancy between old and new DBs ≤ 0.01 %.
 - Dashboard shows <100 ms p95 query latency post-migration.
 
-## 7. Migration Phases
+## 21. 7. Migration Phases
 1. **Preparation & Schema Alignment**
    - Audit current schema and ER-diagrams.
    - Draft Supabase schema SQL and review.
@@ -167,7 +244,7 @@ Acceptance Criteria:
 10. **Post-Migration Cleanup & Monitoring**
     - Remove Prisma, deprecate old infra, refine alerts.
 
-## 8. Timeline (Estimate)
+## 22. 8. Timeline (Estimate)
 | Phase | Duration |
 |-------|----------|
 | Preparation           | 1 week |
@@ -181,19 +258,19 @@ Acceptance Criteria:
 | Cut-over & Validation | 3 days |
 | Cleanup               | 2 days |
 
-## 9. Risks & Mitigations
+## 23. 9. Risks & Mitigations
 - **Performance Regression** → Run load tests; enable Supabase Index Advisor.
 - **RLS Misconfiguration** → Implement thorough policy tests + security audit.
 - **Migration Downtime** → Use logical replication, cut-over during low-traffic window.
 - **Auth Token Conflicts** → Run dual-auth during transition, clear stale cookies.
 
-## 10. Success Metrics
+## 24. 10. Success Metrics
 - 0 critical incidents in first 30 days post-migration.
 - <1 % user-reported auth/login failures.
 - Query p95 latency maintained or improved vs. baseline.
 - Developer on-boarding time to create a new table with RLS <10 min.
 
-## 11. Appendices
+## 25. 11. Appendices
 - **Existing ER Diagram** (link TBD)
 - **Supabase CLI commands cheat-sheet**
 - **Rollback Procedure Doc** 

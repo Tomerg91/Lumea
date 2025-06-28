@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
-import { App } from '@capacitor/app';
 import axios from 'axios';
+import { Session } from '../types/session';
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
@@ -59,15 +59,7 @@ export const API_BASE_URL = determinedApiBaseUrl;
 // We might need a more complete User type later based on Prisma schema for other endpoints
 export type User = AuthenticatedUser;
 
-// Define type for sessions
-interface Session {
-  id: string;
-  date: string;
-  status: string;
-  clientId: string;
-  coachId: string;
-  [key: string]: unknown;
-}
+// Session type is now imported from unified types
 
 // Define type for resources
 interface Resource {
@@ -274,7 +266,3 @@ export const getClientResources = (): Promise<any[]> => {
 
 // Export the apiFetch function for services that need custom backend endpoints
 export { apiFetch };
-
-export const handleLogin = async (
-  // ... existing code ...
-);

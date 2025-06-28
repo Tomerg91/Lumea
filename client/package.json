@@ -22,11 +22,8 @@
     "types:generate": "supabase gen types typescript --project-id=humlrpbtrbjnpnsusils --schema=public > src/types/database.types.ts",
     "types:generate:local": "supabase gen types typescript --local --schema=public > src/types/database.types.ts",
     "types:update": "npm run types:generate && npm run typecheck",
-    "lighthouse": "lhci autorun",
-    "size": "npm run build && npx webpack-bundle-analyzer dist/assets/index-*.js",
-    "analyze:bundle": "node bundle-analyzer.js",
-    "analyze:bundle:verbose": "node bundle-analyzer.js --verbose",
-    "analyze:bundle:ci": "node bundle-analyzer.js --ci"
+    "lighthouse": "lhci autorun --config ../lighthouserc.json",
+    "analyze:bundle": "npm run build && open dist/stats.html"
   },
   "dependencies": {
     "@capacitor/core": "^7.2.0",

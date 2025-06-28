@@ -7,7 +7,7 @@ import createDatabaseIndexes from './utils/createIndexes';
 import performanceMonitor from './middleware/performance';
 
 // Import middleware
-import configureSecurityMiddleware from './middleware/security';
+import configureSecurityMiddleware, { cspViolationReporter, applyHIPAASecurity } from './middleware/security';
 
 // Import routes
 import inviteRoutes from './routes/inviteRoutes';
@@ -23,6 +23,7 @@ import analyticsRoutes from './routes/analytics';
 import healthRoutes from './routes/health';
 import operationsRoutes from './routes/operations';
 import supportRoutes from './routes/support';
+import mfaRoutes from './routes/mfaRoutes';
 
 // Import services
 import { feedbackTriggerService } from './services/feedbackTriggerService';
@@ -125,6 +126,16 @@ app.use(morgan('combined', { stream: morganStream }));
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
+// Security routes
+app.post('/api/security/csp-report', express.json(), cspViolationReporter);
+
+// Apply HIPAA security middleware to PHI endpoints
+app.use('/api/coach-notes', applyHIPAASecurity);
+app.use('/api/reflections', applyHIPAASecurity);
+app.use('/api/sessions', applyHIPAASecurity);
+app.use('/api/clients', applyHIPAASecurity);
+app.use('/api/users', applyHIPAASecurity);
+
 // Routes
 app.use('/api', inviteRoutes);
 app.use('/api', passwordResetRoutes);
@@ -138,6 +149,7 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/operations', operationsRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/mfa', mfaRoutes); // MFA routes for HIPAA compliance
 app.use('/', healthRoutes); // Health checks at root level (no /api prefix)
 
 // 404 handler

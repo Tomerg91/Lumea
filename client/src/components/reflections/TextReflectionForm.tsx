@@ -10,12 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Label } from '../ui/label';
 import { Loader2, Save, Send } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-
-interface Session {
-  id: string;
-  date: string;
-  status: string;
-}
+import { Session } from '../../types/session';
 
 interface TextReflectionFormProps {
   onSubmit?: () => void;

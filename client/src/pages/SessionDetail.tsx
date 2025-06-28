@@ -11,36 +11,43 @@ import { SessionNotes } from '../components/notes';
 import MobileSessionDetail from '../components/mobile/MobileSessionDetail';
 import SessionTimer from '../components/SessionTimer';
 import DurationAdjustment from '../components/DurationAdjustment';
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  User,
+  Edit,
+  Save,
+  X,
+  Info,
+  AlertTriangle,
+  FileText,
+  MessageSquare,
+  ClipboardList,
+} from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Textarea } from '../components/ui/textarea';
+import { Input } from '../components/ui/input';
+import { Skeleton } from '../components/ui/skeleton';
 
-// Status configuration for display (reused from SessionList)
-const statusConfig = {
+// Status configuration for display
+const statusConfig: { [key in Session['status']]: { label: string; className: string } } = {
   pending: {
     label: 'sessions.status.pending',
-    bgColor: 'bg-yellow-100',
-    textColor: 'text-yellow-800',
-    borderColor: 'border-yellow-200',
-    icon: '⏳',
+    className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   },
   'in-progress': {
     label: 'sessions.status.inProgress',
-    bgColor: 'bg-blue-100',
-    textColor: 'text-blue-800',
-    borderColor: 'border-blue-200',
-    icon: '🟢',
+    className: 'bg-blue-100 text-blue-800 border-blue-200',
   },
   completed: {
     label: 'sessions.status.completed',
-    bgColor: 'bg-green-100',
-    textColor: 'text-green-800',
-    borderColor: 'border-green-200',
-    icon: '✅',
+    className: 'bg-green-100 text-green-800 border-green-200',
   },
   cancelled: {
     label: 'sessions.status.cancelled',
-    bgColor: 'bg-red-100',
-    textColor: 'text-red-800',
-    borderColor: 'border-red-200',
-    icon: '❌',
+    className: 'bg-red-100 text-red-800 border-red-200',
   },
 };
 
@@ -49,9 +56,16 @@ const StatusBadge: React.FC<{ status: Session['status'] }> = ({ status }) => {
   const { t } = useTranslation();
   const config = statusConfig[status];
   
+  const icons: { [key in Session['status']]: React.ReactNode } = {
+    pending: <Calendar className="h-4 w-4" />,
+    'in-progress': <Clock className="h-4 w-4" />,
+    completed: <ClipboardList className="h-4 w-4" />,
+    cancelled: <X className="h-4 w-4" />,
+  };
+
   return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${config.bgColor} ${config.textColor} ${config.borderColor} border`}>
-      <span className="mr-2">{config.icon}</span>
+    <span className={`inline-flex items-center gap-x-1.5 rounded-full px-2.5 py-1 text-xs font-medium border ${config.className}`}>
+      {icons[status]}
       {t(config.label)}
     </span>
   );
@@ -90,7 +104,7 @@ const SessionDetail: React.FC = () => {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return format(date, 'EEEE, MMMM d, yyyy', { locale });
+      return format(date, isRTL ? 'EEEE, d MMMM yyyy' : 'EEEE, MMMM d, yyyy', { locale });
     } catch (error) {
       return t('sessions.invalidDate');
     }
@@ -99,7 +113,7 @@ const SessionDetail: React.FC = () => {
   const formatTime = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return format(date, 'HH:mm', { locale });
+      return format(date, 'p', { locale });
     } catch (error) {
       return '';
     }
@@ -115,7 +129,7 @@ const SessionDetail: React.FC = () => {
   };
 
   const handleBackClick = () => {
-    const basePath = profile?.role === 'coach' ? '/coach/sessions' : '/client/sessions';
+    const basePath = profile?.role === 'coach' ? '/sessions' : '/sessions';
     navigate(basePath);
   };
 
@@ -131,10 +145,6 @@ const SessionDetail: React.FC = () => {
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setEditForm({
-      date: '',
-      notes: '',
-    });
   };
 
   const handleSaveEdit = async () => {
@@ -145,7 +155,7 @@ const SessionDetail: React.FC = () => {
       const updateData: any = {};
       
       // Only include changed fields
-      if (editForm.date !== formatDateTime(session.date)) {
+      if (editForm.date && editForm.date !== formatDateTime(session.date)) {
         updateData.date = new Date(editForm.date).toISOString();
       }
       
@@ -155,22 +165,22 @@ const SessionDetail: React.FC = () => {
 
       // Only make API call if there are changes
       if (Object.keys(updateData).length > 0) {
-        const updatedSession = await updateSession(sessionId, updateData);
-        setSession(updatedSession);
+        const updatedSessionData = await updateSession(sessionId, updateData);
+        setSession(updatedSessionData);
       }
       
       setIsEditing(false);
     } catch (error) {
       console.error('Error updating session:', error);
-      setError(error instanceof Error ? error.message : 'Failed to update session');
+      setError(t('errors.updateSessionFailed'));
     } finally {
       setIsSaving(false);
     }
   };
 
   const canEdit = () => {
-    return profile?.role === 'coach' && session && 
-           (session.status === 'pending' || session.status === 'in-progress');
+    if (profile?.role !== 'coach') return false;
+    return session && (session.status === 'pending' || session.status === 'in-progress');
   };
 
   useEffect(() => {
@@ -187,167 +197,190 @@ const SessionDetail: React.FC = () => {
         setSession(sessionData);
       } catch (error) {
         console.error('Error loading session:', error);
-        setError(error instanceof Error ? error.message : 'Failed to load session');
+        setError(t('errors.loadSessionFailed'));
       } finally {
         setLoading(false);
       }
     };
 
     loadSession();
-  }, [sessionId]);
+  }, [sessionId, t]);
 
   // Use mobile component on mobile devices
   if (isMobile) {
     return <MobileSessionDetail />;
   }
 
+  const PageSkeleton = () => (
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <Skeleton className="h-8 w-48 mb-6" />
+      <Card className="bg-white/90 backdrop-blur-sm border-gray-200/80 shadow-sm mb-6">
+        <CardHeader>
+          <div className="flex justify-between items-start">
+            <div>
+              <Skeleton className="h-8 w-64 mb-2" />
+              <Skeleton className="h-6 w-32" />
+            </div>
+            <Skeleton className="h-8 w-24 rounded-full" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="border-t pt-4">
+            <Skeleton className="h-6 w-32 mb-4" />
+            <div className="flex items-center">
+              <Skeleton className="h-12 w-12 rounded-full mr-4" />
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-4 w-48" />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      <Card className="bg-white/90 backdrop-blur-sm border-gray-200/80 shadow-sm mb-6">
+        <CardHeader><Skeleton className="h-6 w-40" /></CardHeader>
+        <CardContent><Skeleton className="h-24 w-full" /></CardContent>
+      </Card>
+    </div>
+  );
+
   if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center p-8">
-          <div className="animate-spin h-8 w-8 border-4 border-lumea-primary border-t-transparent rounded-full" />
-        </div>
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <h3 className="text-lg font-medium text-red-800 mb-2">Error</h3>
-          <p className="text-red-700">{error}</p>
-          <button
-            onClick={handleBackClick}
-            className="mt-4 text-lumea-primary hover:text-lumea-primary-dark"
-          >
-            {t('sessions.backToSessions')}
-          </button>
-        </div>
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <Card className="bg-red-50/90 backdrop-blur-sm border-red-200/80 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-800">
+              <AlertTriangle className="h-6 w-6" />
+              {t('common.error')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-red-700 mb-4">{error}</p>
+            <Button variant="outline" onClick={handleBackClick}>
+              <ArrowLeft className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+              {t('sessions.backToSessions')}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (!session) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center p-8">
-          <h3 className="text-lg font-medium mb-2">Session not found</h3>
-          <button
-            onClick={handleBackClick}
-            className="text-lumea-primary hover:text-lumea-primary-dark"
-          >
-            {t('sessions.backToSessions')}
-          </button>
-        </div>
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <Card className="bg-white/90 backdrop-blur-sm border-gray-200/80 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-gray-700">
+              <Info className="h-6 w-6" />
+              {t('sessions.notFound')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-4">{t('sessions.notFoundText')}</p>
+            <Button variant="outline" onClick={handleBackClick}>
+              <ArrowLeft className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+              {t('sessions.backToSessions')}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Breadcrumb Navigation */}
-      <nav className="mb-6">
-        <button
-          onClick={handleBackClick}
-          className="flex items-center text-lumea-primary hover:text-lumea-primary-dark transition-colors"
-        >
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          {t('sessions.backToSessions')}
-        </button>
-      </nav>
-
-      {/* Session Header */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4">
-          <div className="mb-4 md:mb-0">
-            {isEditing ? (
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  {t('sessions.sessionDate')}
-                </label>
-                <input
-                  type="datetime-local"
-                  value={editForm.date}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-lumea-primary focus:border-lumea-primary"
-                />
-              </div>
-            ) : (
-              <>
-                <h1 className="text-2xl font-bold mb-2">
-                  {formatDate(session.date)}
-                </h1>
-                <p className="text-gray-600 text-lg">
-                  {formatTime(session.date)}
-                </p>
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            <StatusBadge status={session.status} />
-            {canEdit() && !isEditing && (
-              <button
-                onClick={handleEditClick}
-                className="px-3 py-1 bg-lumea-light text-lumea-primary rounded hover:bg-lumea-light-dark transition-colors text-sm font-medium"
-              >
-                {t('sessions.editSession')}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Client Information */}
-        <div className="border-t pt-4">
-          <h3 className="text-lg font-medium mb-3">{t('sessions.client')}</h3>
-          <div className="flex items-center">
-            <div className="h-10 w-10 rounded-full bg-lumea-light flex items-center justify-center mr-3">
-              <span className="text-lumea-primary font-semibold">
-                {session.client.firstName.charAt(0)}
-                {session.client.lastName.charAt(0)}
-              </span>
-            </div>
-            <div>
-              <div className="font-medium text-gray-900">
-                {session.client.firstName} {session.client.lastName}
-              </div>
-              <div className="text-gray-500 text-sm">{session.client.email}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Coach Information (for clients) */}
-        {profile?.role === 'client' && session.coach && (
-          <div className="border-t pt-4 mt-4">
-            <h3 className="text-lg font-medium mb-3">{t('sessions.coach')}</h3>
-            <div className="flex items-center">
-              <div className="h-10 w-10 rounded-full bg-lumea-light flex items-center justify-center mr-3">
-                <span className="text-lumea-primary font-semibold">
-                  {session.coach.firstName.charAt(0)}
-                  {session.coach.lastName.charAt(0)}
-                </span>
-              </div>
-              <div>
-                <div className="font-medium text-gray-900">
-                  {session.coach.firstName} {session.coach.lastName}
-                </div>
-                <div className="text-gray-500 text-sm">{session.coach.email}</div>
-              </div>
-            </div>
-          </div>
-        )}
+  const renderUserInfo = (user: { firstName: string; lastName: string; email: string; _id?: string }, role: string) => (
+    <div className="flex items-center">
+      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-lg font-semibold text-slate-600 ring-2 ring-white/50 mr-4 rtl:mr-0 rtl:ml-4">
+        {user.firstName?.charAt(0) || ''}
+        {user.lastName?.charAt(0) || ''}
       </div>
+      <div>
+        <div className="font-semibold text-gray-800">
+          {user.firstName} {user.lastName}
+        </div>
+        <div className="text-gray-500 text-sm">{user.email}</div>
+      </div>
+    </div>
+  );
 
-      {/* Session Timer */}
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-4xl" dir={isRTL ? 'rtl' : 'ltr'}>
+      <Button variant="ghost" onClick={handleBackClick} className="mb-6">
+        <ArrowLeft className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+        {t('sessions.backToSessions')}
+      </Button>
+
+      {/* Session Header Card */}
+      <Card className="bg-white/90 backdrop-blur-sm border-gray-200/80 shadow-sm mb-6 overflow-hidden">
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4">
+            <div className="mb-4 md:mb-0">
+              {isEditing ? (
+                <div className="space-y-2">
+                  <label htmlFor="session-date" className="block text-sm font-medium text-gray-700">
+                    {t('sessions.sessionDate')}
+                  </label>
+                  <Input
+                    id="session-date"
+                    type="datetime-local"
+                    value={editForm.date}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
+                  />
+                </div>
+              ) : (
+                <>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl bg-clip-text text-transparent bg-gradient-to-br from-slate-700 to-slate-500 mb-1">
+                    {formatDate(session.date)}
+                  </h1>
+                  <p className="text-lg text-gray-600 flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-gray-500" />
+                    {formatTime(session.date)}
+                  </p>
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-3 self-start">
+              <StatusBadge status={session.status} />
+              {canEdit() && !isEditing && (
+                <Button size="sm" variant="outline" onClick={handleEditClick}>
+                  <Edit className={`h-3 w-3 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                  {t('common.edit')}
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="border-t border-gray-200/80 pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <User className="h-4 w-4" />
+                {t('sessions.client')}
+              </h3>
+              {renderUserInfo(session.client, 'client')}
+            </div>
+            {profile?.role === 'client' && session.coach && (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  {t('sessions.coach')}
+                </h3>
+                {renderUserInfo(session.coach, 'coach')}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Session Timer & Duration Adjustment */}
       <SessionTimer
         sessionId={sessionId!}
         sessionStatus={session.status}
         className="mb-6"
       />
-
-      {/* Duration Adjustment (for completed sessions) */}
       {session.status === 'completed' && (
         <DurationAdjustment
           sessionId={sessionId!}
@@ -356,87 +389,92 @@ const SessionDetail: React.FC = () => {
         />
       )}
 
-      {/* Session Notes */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium">{t('sessions.notes')}</h3>
-        </div>
-        
-        {isEditing ? (
-          <div className="space-y-4">
-            <textarea
-              value={editForm.notes}
-              onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder={t('sessions.notesPlaceholder')}
-              rows={6}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-lumea-primary focus:border-lumea-primary"
-            />
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={handleCancelEdit}
-                disabled={isSaving}
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
-              >
-                {t('common.cancel')}
-              </button>
-              <button
-                onClick={handleSaveEdit}
-                disabled={isSaving}
-                className="px-4 py-2 bg-lumea-primary text-white rounded-md hover:bg-lumea-primary-dark transition-colors disabled:opacity-50 flex items-center"
-              >
-                {isSaving ? (
-                  <>
-                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
-                    Saving...
-                  </>
-                ) : (
-                  t('common.save')
-                )}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="prose max-w-none">
-            {session.notes ? (
-              <div className="whitespace-pre-wrap text-gray-700">
-                {session.notes}
+      {/* Session Notes Card */}
+      <Card className="bg-white/90 backdrop-blur-sm border-gray-200/80 shadow-sm mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl font-semibold text-gray-800">
+            <FileText className="h-5 w-5" />
+            {t('sessions.notes')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isEditing ? (
+            <div className="space-y-4">
+              <Textarea
+                value={editForm.notes}
+                onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder={t('sessions.notesPlaceholder')}
+                rows={8}
+              />
+              <div className="flex justify-end gap-3">
+                <Button variant="ghost" onClick={handleCancelEdit} disabled={isSaving}>
+                  {t('common.cancel')}
+                </Button>
+                <Button onClick={handleSaveEdit} disabled={isSaving}>
+                  {isSaving ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2 rtl:mr-0 rtl:ml-2" />
+                      {t('common.saving')}
+                    </>
+                  ) : (
+                    <>
+                      <Save className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                      {t('common.save')}
+                    </>
+                  )}
+                </Button>
               </div>
-            ) : (
-              <p className="text-gray-500 italic">
-                {t('sessions.noNotes')}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          ) : (
+            <div className="prose prose-slate max-w-none prose-p:my-1 prose-ul:my-1">
+              {session.notes ? (
+                <div className="whitespace-pre-wrap text-gray-700">
+                  {session.notes}
+                </div>
+              ) : (
+                <p className="text-gray-500 italic">
+                  {t('sessions.noNotes')}
+                </p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Session Information */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h3 className="text-lg font-medium mb-4">{t('sessions.sessionInfo')}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="font-medium text-gray-700">{t('sessions.createdAt')}:</span>
-            <span className="ml-2 text-gray-600">
-              {format(new Date(session.createdAt), 'PPP p', { locale })}
-            </span>
-          </div>
-          <div>
-            <span className="font-medium text-gray-700">{t('sessions.updatedAt')}:</span>
-            <span className="ml-2 text-gray-600">
-              {format(new Date(session.updatedAt), 'PPP p', { locale })}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Private Coach Notes Section */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      {/* Private Coach Notes Card */}
+      <Card className="bg-white/90 backdrop-blur-sm border-gray-200/80 shadow-sm mb-6">
         <SessionNotes
           sessionId={sessionId!}
           clientName={`${session.client.firstName} ${session.client.lastName}`}
           isCoach={profile?.role === 'coach'}
         />
-      </div>
+      </Card>
+
+      {/* Session Information Card */}
+      <Card className="bg-white/90 backdrop-blur-sm border-gray-200/80 shadow-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base font-semibold text-gray-700">
+            <Info className="h-4 w-4" />
+            {t('sessions.sessionInfo')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+            <div>
+              <span className="font-medium text-gray-600">{t('sessions.createdAt')}:</span>
+              <span className={`text-gray-500 ${isRTL ? 'mr-2' : 'ml-2'}`}>
+                {format(new Date(session.createdAt), 'PPP p', { locale })}
+              </span>
+            </div>
+            <div>
+              <span className="font-medium text-gray-600">{t('sessions.updatedAt')}:</span>
+              <span className={`text-gray-500 ${isRTL ? 'mr-2' : 'ml-2'}`}>
+                {format(new Date(session.updatedAt), 'PPP p', { locale })}
+              </span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

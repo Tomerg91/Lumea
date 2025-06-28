@@ -44,10 +44,10 @@ const COLORS = {
   scheduled: '#3b82f6'
 };
 
-export const SessionMetricsChart: React.FC<SessionMetricsChartProps> = ({
+export const SessionMetricsChart = React.memo(({
   data,
   className
-}) => {
+}: SessionMetricsChartProps) => {
   const { t } = useTranslation();
 
   // Prepare data for pie chart
@@ -138,9 +138,36 @@ export const SessionMetricsChart: React.FC<SessionMetricsChartProps> = ({
           <h4 className="text-sm font-medium text-gray-700 mb-3">
             {t('analytics.sessionMetrics.trends', 'Session Trends')}
           </h4>
-          <div className="h-[250px] bg-gray-50 rounded-lg flex items-center justify-center">
-            <div className="text-gray-500 text-sm">Line chart temporarily disabled for testing</div>
-          </div>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart
+              data={trendData}
+              margin={{
+                top: 5,
+                right: 30,
+                left: 20,
+                bottom: 5
+              }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+              <XAxis dataKey="date" tickLine={false} axisLine={false} />
+              <YAxis tickLine={false} axisLine={false} />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="sessions"
+                stroke="#8884d8"
+                activeDot={{ r: 8 }}
+                name={t('analytics.sessionMetrics.totalSessions')}
+              />
+              <Line
+                type="monotone"
+                dataKey="completed"
+                stroke="#82ca9d"
+                name={t('analytics.sessionMetrics.completedSessions')}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
 
         {/* Session Status Distribution */}
@@ -182,10 +209,24 @@ export const SessionMetricsChart: React.FC<SessionMetricsChartProps> = ({
         <h4 className="text-sm font-medium text-gray-700 mb-3">
           {t('analytics.sessionMetrics.completionTrend', 'Completion Rate Trend')}
         </h4>
-        <div className="h-[150px] bg-gray-50 rounded-lg flex items-center justify-center">
-          <div className="text-gray-500 text-sm">Bar chart temporarily disabled for testing</div>
-        </div>
+        <ResponsiveContainer width="100%" height={150}>
+          <BarChart
+            data={trendData}
+            margin={{
+              top: 5,
+              right: 30,
+              left: 20,
+              bottom: 5
+            }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+            <XAxis dataKey="date" tickLine={false} axisLine={false} />
+            <YAxis tickLine={false} axisLine={false} />
+            <Tooltip content={<CustomTooltip />} />
+            <Bar dataKey="completionRate" fill="#82ca9d" name={t('analytics.sessionMetrics.completionRate')} />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
-}; 
+});

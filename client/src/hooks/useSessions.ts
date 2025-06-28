@@ -2,68 +2,56 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useRealtimeTable } from './useRealtime';
+import { 
+  Session, 
+  SessionWithUsers, 
+  CreateSessionData, 
+  UpdateSessionData, 
+  SessionFilters 
+} from '../types/session';
 
-// ====================== TYPES ======================
+// ====================== QUERY OPTIONS ======================
 
-export interface Session {
-  id: string;
-  date: string;
-  status: 'Upcoming' | 'Completed' | 'Cancelled' | 'Rescheduled';
-  notes?: string;
-  client_id: string;
-  coach_id: string;
-  payment_id?: string;
-  reminder_sent: boolean;
-  audio_file?: string;
-  created_at: string;
-  updated_at: string;
-  // Joined user data
-  client?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  coach?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-}
+/**
+ * Default query options for sessions
+ */
+const DEFAULT_SESSIONS_QUERY_OPTIONS = {
+  staleTime: 5 * 60 * 1000, // 5 minutes
+  cacheTime: 10 * 60 * 1000, // 10 minutes
+  refetchOnWindowFocus: false,
+  refetchOnMount: false,
+  retry: (failureCount: number, error: any) => {
+    // Retry up to 3 times for network errors
+    if (failureCount >= 3) return false;
+    
+    // Don't retry for auth errors
+    if (error?.message?.includes('JWT') || error?.status === 401) {
+      return false;
+    }
+    
+    return true;
+  },
+  retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
+};
 
-export interface CreateSessionData {
-  client_id: string;
-  coach_id?: string;
-  date: string;
-  notes?: string;
-  status?: 'Upcoming' | 'Completed' | 'Cancelled' | 'Rescheduled';
-}
-
-export interface UpdateSessionData {
-  date?: string;
-  status?: 'Upcoming' | 'Completed' | 'Cancelled' | 'Rescheduled';
-  notes?: string;
-}
-
-export interface SessionFilters {
-  coach_id?: string;
-  client_id?: string;
-  status?: string;
-  start_date?: string;
-  end_date?: string;
-}
+/**
+ * Background refetch options for sessions
+ */
+const BACKGROUND_REFETCH_OPTIONS = {
+  refetchInterval: 30 * 1000, // 30 seconds
+  refetchIntervalInBackground: false,
+};
 
 // ====================== HOOKS ======================
 
 /**
- * Get all sessions with optional filtering
+ * Get all sessions with optional filtering - optimized version
  */
 export function useSessions(filters: SessionFilters = {}) {
   const { user } = useAuth();
   
   return useQuery({
-    queryKey: ['sessions', filters, user?.id],
+    queryKey: ['sessions', 'list', filters, user?.id],
     queryFn: async () => {
       let query = supabase
         .from('sessions')
@@ -71,14 +59,12 @@ export function useSessions(filters: SessionFilters = {}) {
           *,
           client:client_id (
             id,
-            firstName,
-            lastName,
+            name,
             email
           ),
           coach:coach_id (
             id,
-            firstName,
-            lastName,
+            name,
             email
           )
         `)
@@ -94,35 +80,51 @@ export function useSessions(filters: SessionFilters = {}) {
       // Apply additional filters
       if (filters.coach_id) query = query.eq('coach_id', filters.coach_id);
       if (filters.client_id) query = query.eq('client_id', filters.client_id);
-      if (filters.status) query = query.eq('status', filters.status);
+      if (filters.status) {
+        if (Array.isArray(filters.status)) {
+          query = query.in('status', filters.status);
+        } else {
+          query = query.eq('status', filters.status);
+        }
+      }
       if (filters.start_date) query = query.gte('date', filters.start_date);
       if (filters.end_date) query = query.lte('date', filters.end_date);
+      if (filters.limit) query = query.limit(filters.limit);
+      if (filters.offset) query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1);
 
       const { data, error } = await query;
-      if (error) throw error;
-      return data as Session[];
+      if (error) {
+        console.error('Sessions query error:', error);
+        throw error;
+      }
+      return data as SessionWithUsers[];
     },
     enabled: !!user,
+    ...DEFAULT_SESSIONS_QUERY_OPTIONS,
+    // Add background refetch for live data
+    ...(filters.live ? BACKGROUND_REFETCH_OPTIONS : {}),
   });
 }
 
 /**
- * Get upcoming sessions for the current user
+ * Get upcoming sessions for the current user - optimized
  */
 export function useUpcomingSessions() {
   const now = new Date().toISOString();
   return useSessions({ 
-    status: 'Upcoming',
-    start_date: now 
+    status: 'upcoming',
+    start_date: now,
+    limit: 20, // Limit for performance
+    live: true // Enable background refetch for upcoming sessions
   });
 }
 
 /**
- * Get a specific session by ID
+ * Get a specific session by ID - optimized
  */
 export function useSession(sessionId: string) {
   return useQuery({
-    queryKey: ['session', sessionId],
+    queryKey: ['sessions', 'detail', sessionId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sessions')
@@ -130,29 +132,31 @@ export function useSession(sessionId: string) {
           *,
           client:client_id (
             id,
-            firstName,
-            lastName,
+            name,
             email
           ),
           coach:coach_id (
             id,
-            firstName,
-            lastName,
+            name,
             email
           )
         `)
         .eq('id', sessionId)
         .single();
       
-      if (error) throw error;
-      return data as Session;
+      if (error) {
+        console.error('Session detail query error:', error);
+        throw error;
+      }
+      return data as SessionWithUsers;
     },
     enabled: !!sessionId,
+    ...DEFAULT_SESSIONS_QUERY_OPTIONS,
   });
 }
 
 /**
- * Create a new session
+ * Create a new session - optimized with error handling
  */
 export function useCreateSession() {
   const { user } = useAuth();
@@ -163,7 +167,7 @@ export function useCreateSession() {
       const sessionData = {
         ...data,
         coach_id: data.coach_id || user?.id,
-        status: data.status || 'Upcoming' as const,
+        status: data.status || 'upcoming' as const,
       };
 
       const { data: newSession, error } = await supabase
@@ -173,43 +177,256 @@ export function useCreateSession() {
           *,
           client:client_id (
             id,
-            firstName,
-            lastName,
+            name,
             email
           ),
           coach:coach_id (
             id,
-            firstName,
-            lastName,
+            name,
             email
           )
         `)
         .single();
 
-      if (error) throw error;
-      return newSession as Session;
+      if (error) {
+        console.error('Create session error:', error);
+        throw error;
+      }
+      return newSession as SessionWithUsers;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['session-stats'] });
+    onSuccess: (newSession) => {
+      // Optimistically update cache
+      queryClient.setQueryData(['sessions', 'detail', newSession.id], newSession);
+      
+      // Invalidate list queries to refetch
+      queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
+      
+      // Update stats if they exist
+      queryClient.invalidateQueries({ queryKey: ['sessions', 'stats'] });
     },
+    onError: (error) => {
+      console.error('Failed to create session:', error);
+    },
+    retry: 2,
+    retryDelay: 1000,
   });
 }
 
 /**
- * Update session data
+ * Update an existing session - optimized with optimistic updates
  */
 export function useUpdateSession() {
   const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: async ({ sessionId, data }: { sessionId: string; data: UpdateSessionData }) => {
-      const updateData = {
-        ...data,
-        updated_at: new Date().toISOString(),
-      };
-
       const { data: updatedSession, error } = await supabase
+        .from('sessions')
+        .update(data)
+        .eq('id', sessionId)
+        .select(`
+          *,
+          client:client_id (
+            id,
+            name,
+            email
+          ),
+          coach:coach_id (
+            id,
+            name,
+            email
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error('Update session error:', error);
+        throw error;
+      }
+      return updatedSession as SessionWithUsers;
+    },
+    onMutate: async ({ sessionId, data }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['sessions', 'detail', sessionId] });
+      
+      // Snapshot the previous value
+      const previousSession = queryClient.getQueryData(['sessions', 'detail', sessionId]);
+      
+      // Optimistically update to the new value
+      if (previousSession) {
+        queryClient.setQueryData(['sessions', 'detail', sessionId], {
+          ...previousSession,
+          ...data,
+        });
+      }
+      
+      return { previousSession };
+    },
+    onSuccess: (updatedSession) => {
+      // Update the cache with the server response
+      queryClient.setQueryData(['sessions', 'detail', updatedSession.id], updatedSession);
+      
+      // Invalidate list queries
+      queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
+      queryClient.invalidateQueries({ queryKey: ['sessions', 'stats'] });
+    },
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousSession) {
+        queryClient.setQueryData(
+          ['sessions', 'detail', variables.sessionId], 
+          context.previousSession
+        );
+      }
+      console.error('Failed to update session:', error);
+    },
+    retry: 2,
+    retryDelay: 1000,
+  });
+}
+
+/**
+ * Cancel a session - enhanced with optimistic updates
+ */
+export function useCancelSession() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (sessionId: string) => {
+      const { data, error } = await supabase
+        .from('sessions')
+        .update({ status: 'cancelled' })
+        .eq('id', sessionId)
+        .select(`
+          *,
+          client:client_id (
+            id,
+            name,
+            email
+          ),
+          coach:coach_id (
+            id,
+            name,
+            email
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error('Cancel session error:', error);
+        throw error;
+      }
+      return data as SessionWithUsers;
+    },
+    onMutate: async (sessionId) => {
+      await queryClient.cancelQueries({ queryKey: ['sessions', 'detail', sessionId] });
+      
+      const previousSession = queryClient.getQueryData(['sessions', 'detail', sessionId]);
+      
+      if (previousSession) {
+        queryClient.setQueryData(['sessions', 'detail', sessionId], {
+          ...previousSession,
+          status: 'cancelled',
+        });
+      }
+      
+      return { previousSession };
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(['sessions', 'detail', data.id], data);
+      queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
+      queryClient.invalidateQueries({ queryKey: ['sessions', 'stats'] });
+    },
+    onError: (error, sessionId, context) => {
+      if (context?.previousSession) {
+        queryClient.setQueryData(['sessions', 'detail', sessionId], context.previousSession);
+      }
+      console.error('Failed to cancel session:', error);
+    },
+    retry: 2,
+  });
+}
+
+/**
+ * Reschedule a session - enhanced with optimistic updates
+ */
+export function useRescheduleSession() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ sessionId, newDate }: { sessionId: string; newDate: string }) => {
+      const { data, error } = await supabase
+        .from('sessions')
+        .update({ 
+          date: newDate,
+          status: 'upcoming', // Reset status when rescheduling
+        })
+        .eq('id', sessionId)
+        .select(`
+          *,
+          client:client_id (
+            id,
+            name,
+            email
+          ),
+          coach:coach_id (
+            id,
+            name,
+            email
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error('Reschedule session error:', error);
+        throw error;
+      }
+      return data as SessionWithUsers;
+    },
+    onMutate: async ({ sessionId, newDate }) => {
+      await queryClient.cancelQueries({ queryKey: ['sessions', 'detail', sessionId] });
+      
+      const previousSession = queryClient.getQueryData(['sessions', 'detail', sessionId]);
+      
+      if (previousSession) {
+        queryClient.setQueryData(['sessions', 'detail', sessionId], {
+          ...previousSession,
+          date: newDate,
+          status: 'upcoming',
+        });
+      }
+      
+      return { previousSession };
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(['sessions', 'detail', data.id], data);
+      queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
+      queryClient.invalidateQueries({ queryKey: ['sessions', 'stats'] });
+    },
+    onError: (error, variables, context) => {
+      if (context?.previousSession) {
+        queryClient.setQueryData(['sessions', 'detail', variables.sessionId], context.previousSession);
+      }
+      console.error('Failed to reschedule session:', error);
+    },
+    retry: 2,
+  });
+}
+
+/**
+ * Complete a session - enhanced with optimistic updates
+ */
+export function useCompleteSession() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ sessionId, notes }: { sessionId: string; notes?: string }) => {
+      const updateData: UpdateSessionData = { 
+        status: 'completed',
+        ...(notes && { notes }) 
+      };
+      
+      const { data, error } = await supabase
         .from('sessions')
         .update(updateData)
         .eq('id', sessionId)
@@ -217,162 +434,55 @@ export function useUpdateSession() {
           *,
           client:client_id (
             id,
-            firstName,
-            lastName,
+            name,
             email
           ),
           coach:coach_id (
             id,
-            firstName,
-            lastName,
+            name,
             email
           )
         `)
         .single();
 
-      if (error) throw error;
-      return updatedSession as Session;
+      if (error) {
+        console.error('Complete session error:', error);
+        throw error;
+      }
+      return data as SessionWithUsers;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['session', variables.sessionId] });
-      queryClient.invalidateQueries({ queryKey: ['session-stats'] });
+    onMutate: async ({ sessionId, notes }) => {
+      await queryClient.cancelQueries({ queryKey: ['sessions', 'detail', sessionId] });
+      
+      const previousSession = queryClient.getQueryData(['sessions', 'detail', sessionId]);
+      
+      if (previousSession) {
+        queryClient.setQueryData(['sessions', 'detail', sessionId], {
+          ...previousSession,
+          status: 'completed',
+          ...(notes && { notes }),
+        });
+      }
+      
+      return { previousSession };
     },
+    onSuccess: (data) => {
+      queryClient.setQueryData(['sessions', 'detail', data.id], data);
+      queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
+      queryClient.invalidateQueries({ queryKey: ['sessions', 'stats'] });
+    },
+    onError: (error, variables, context) => {
+      if (context?.previousSession) {
+        queryClient.setQueryData(['sessions', 'detail', variables.sessionId], context.previousSession);
+      }
+      console.error('Failed to complete session:', error);
+    },
+    retry: 2,
   });
 }
 
 /**
- * Cancel a session
- */
-export function useCancelSession() {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async (sessionId: string) => {
-      const { data: cancelledSession, error } = await supabase
-        .from('sessions')
-        .update({ 
-          status: 'Cancelled',
-          updated_at: new Date().toISOString() 
-        })
-        .eq('id', sessionId)
-        .select(`
-          *,
-          client:client_id (
-            id,
-            firstName,
-            lastName,
-            email
-          ),
-          coach:coach_id (
-            id,
-            firstName,
-            lastName,
-            email
-          )
-        `)
-        .single();
-
-      if (error) throw error;
-      return cancelledSession as Session;
-    },
-    onSuccess: (_, sessionId) => {
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
-      queryClient.invalidateQueries({ queryKey: ['session-stats'] });
-    },
-  });
-}
-
-/**
- * Reschedule a session
- */
-export function useRescheduleSession() {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async ({ sessionId, newDate }: { sessionId: string; newDate: string }) => {
-      const { data: rescheduledSession, error } = await supabase
-        .from('sessions')
-        .update({ 
-          date: newDate,
-          status: 'Upcoming',
-          updated_at: new Date().toISOString() 
-        })
-        .eq('id', sessionId)
-        .select(`
-          *,
-          client:client_id (
-            id,
-            firstName,
-            lastName,
-            email
-          ),
-          coach:coach_id (
-            id,
-            firstName,
-            lastName,
-            email
-          )
-        `)
-        .single();
-
-      if (error) throw error;
-      return rescheduledSession as Session;
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['session', variables.sessionId] });
-      queryClient.invalidateQueries({ queryKey: ['session-stats'] });
-    },
-  });
-}
-
-/**
- * Complete a session
- */
-export function useCompleteSession() {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async (sessionId: string) => {
-      const { data: completedSession, error } = await supabase
-        .from('sessions')
-        .update({ 
-          status: 'Completed',
-          updated_at: new Date().toISOString() 
-        })
-        .eq('id', sessionId)
-        .select(`
-          *,
-          client:client_id (
-            id,
-            firstName,
-            lastName,
-            email
-          ),
-          coach:coach_id (
-            id,
-            firstName,
-            lastName,
-            email
-          )
-        `)
-        .single();
-
-      if (error) throw error;
-      return completedSession as Session;
-    },
-    onSuccess: (_, sessionId) => {
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
-      queryClient.invalidateQueries({ queryKey: ['session-stats'] });
-    },
-  });
-}
-
-/**
- * Delete a session
+ * Delete a session - enhanced with optimistic updates
  */
 export function useDeleteSession() {
   const queryClient = useQueryClient();
@@ -384,103 +494,131 @@ export function useDeleteSession() {
         .delete()
         .eq('id', sessionId);
 
-      if (error) throw error;
-      return { success: true };
+      if (error) {
+        console.error('Delete session error:', error);
+        throw error;
+      }
+      
+      return sessionId;
     },
-    onSuccess: (_, sessionId) => {
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['session', sessionId] });
-      queryClient.invalidateQueries({ queryKey: ['session-stats'] });
+    onMutate: async (sessionId) => {
+      await queryClient.cancelQueries({ queryKey: ['sessions'] });
+      
+      const previousSessions = queryClient.getQueryData(['sessions', 'list']);
+      
+      return { previousSessions };
     },
+    onSuccess: (sessionId) => {
+      // Remove from cache
+      queryClient.removeQueries({ queryKey: ['sessions', 'detail', sessionId] });
+      queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
+      queryClient.invalidateQueries({ queryKey: ['sessions', 'stats'] });
+    },
+    onError: (error, sessionId, context) => {
+      if (context?.previousSessions) {
+        queryClient.setQueryData(['sessions', 'list'], context.previousSessions);
+      }
+      console.error('Failed to delete session:', error);
+    },
+    retry: 1,
   });
 }
 
 /**
- * Hook to get real-time session updates
+ * Real-time sessions with optimized subscriptions
  */
 export function useRealtimeSessions(filters: SessionFilters = {}) {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const sessionsQuery = useSessions(filters);
   
-  // Set up real-time subscription for sessions
+  // Use realtime subscription for live updates
   useRealtimeTable(
     'sessions',
-    user?.role === 'coach' ? `coach_id=eq.${user.id}` : 
-    user?.role === 'client' ? `client_id=eq.${user.id}` : null,
-    () => {
-      // Invalidate session queries on real-time updates
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['session-stats'] });
+    {
+      onInsert: (payload) => {
+        // Handle new session
+        const queryClient = useQueryClient();
+        queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
+        queryClient.invalidateQueries({ queryKey: ['sessions', 'stats'] });
+      },
+      onUpdate: (payload) => {
+        // Handle session update
+        const queryClient = useQueryClient();
+        queryClient.invalidateQueries({ queryKey: ['sessions', 'detail', payload.new.id] });
+        queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
+      },
+      onDelete: (payload) => {
+        // Handle session deletion
+        const queryClient = useQueryClient();
+        queryClient.removeQueries({ queryKey: ['sessions', 'detail', payload.old.id] });
+        queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
+      }
     }
   );
-
-  // Return the regular sessions query which will be updated by real-time events
-  return useSessions(filters);
+  
+  return sessionsQuery;
 }
 
-// ====================== UTILITY HOOKS ======================
-
 /**
- * Get session statistics
+ * Session statistics with enhanced caching
  */
 export function useSessionStats() {
   const { user } = useAuth();
   
   return useQuery({
-    queryKey: ['session-stats', user?.id],
+    queryKey: ['sessions', 'stats', user?.id],
     queryFn: async () => {
-      let query = supabase.from('sessions').select('status, date');
+      let query = supabase.from('sessions').select('status');
       
       if (user?.role === 'client') {
         query = query.eq('client_id', user.id);
       } else if (user?.role === 'coach') {
         query = query.eq('coach_id', user.id);
       }
-
+      
       const { data, error } = await query;
-      if (error) throw error;
-
+      
+      if (error) {
+        console.error('Session stats error:', error);
+        throw error;
+      }
+      
       const stats = {
         total: data.length,
-        upcoming: data.filter(s => s.status === 'Upcoming').length,
-        completed: data.filter(s => s.status === 'Completed').length,
-        cancelled: data.filter(s => s.status === 'Cancelled').length,
-        thisMonth: data.filter(s => {
-          const sessionDate = new Date(s.date);
-          const now = new Date();
-          return sessionDate.getMonth() === now.getMonth() && 
-                 sessionDate.getFullYear() === now.getFullYear();
-        }).length,
+        upcoming: data.filter(s => s.status === 'upcoming').length,
+        completed: data.filter(s => s.status === 'completed').length,
+        cancelled: data.filter(s => s.status === 'cancelled').length,
       };
-
+      
       return stats;
     },
     enabled: !!user,
+    ...DEFAULT_SESSIONS_QUERY_OPTIONS,
+    staleTime: 2 * 60 * 1000, // Stats can be a bit more stale
   });
 }
 
 /**
- * Check if user can create sessions (coaches only)
+ * Enhanced session permissions check
  */
 export function useCanCreateSessions() {
   const { user } = useAuth();
-  return user?.role === 'coach';
+  return !!user && ['coach', 'admin'].includes(user.role || '');
 }
 
 /**
- * Check if user can modify a specific session
+ * Enhanced session modification permissions
  */
-export function useCanModifySession(session: Session | undefined) {
+export function useCanModifySession(session: SessionWithUsers | undefined) {
   const { user } = useAuth();
-  if (!session || !user) return false;
+  
+  if (!user || !session) return false;
+  
+  // Admin can modify any session
+  if (user.role === 'admin') return true;
   
   // Coach can modify their own sessions
   if (user.role === 'coach' && session.coach_id === user.id) return true;
   
-  // Client can reschedule/cancel their upcoming sessions
-  if (user.role === 'client' && session.client_id === user.id && session.status === 'Upcoming') {
-    return true;
-  }
-  
+  // Client can only view their sessions (no modification)
   return false;
 } 

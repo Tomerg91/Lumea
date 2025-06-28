@@ -21,12 +21,18 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useNativeFeatures } from '../hooks/useNativeFeatures';
 import { useToast } from '../hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 
 const MobileSettingsPage: React.FC = () => {
   const { t, isRTL } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
   const { deviceInfo, isNative, platform } = useNativeFeatures();
+  const { i18n } = useTranslation();
+
+  const changeLanguage = (lng: string) => {
+    i18n.changeLanguage(lng);
+  };
   
   const [settings, setSettings] = useState({
     theme: 'system' as 'light' | 'dark' | 'system',
@@ -167,13 +173,40 @@ const MobileSettingsPage: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Language */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">{t('settings.language')}</label>
+                    <p className="text-sm text-muted-foreground">{t('settings.chooseLanguage')}</p>
+                  </div>
+                  <Select value={i18n.language} onValueChange={(value: string) => changeLanguage(value)}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">
+                        <div className="flex items-center gap-2">
+                          <span role="img" aria-label="English">🇬🇧</span>
+                          English
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="he">
+                        <div className="flex items-center gap-2">
+                          <span role="img" aria-label="Hebrew">🇮🇱</span>
+                          עברית
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {/* Theme */}
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
                     <label className="text-sm font-medium">Theme</label>
                     <p className="text-sm text-muted-foreground">Choose your preferred theme</p>
                   </div>
-                  <Select value={settings.theme} onValueChange={(value: any) => saveSettings({ theme: value })}>
+                  <Select value={settings.theme} onValueChange={(value: any) => saveSettings({ theme: value })}> 
                     <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>

@@ -40,7 +40,7 @@ export const getClientIp = (req: Request): string => {
          'unknown';
 };
 
-// Security headers middleware using Helmet
+// HIPAA-compliant security headers middleware using Helmet
 export const securityHeaders = helmet({
   contentSecurityPolicy: {
     directives: {
@@ -48,21 +48,30 @@ export const securityHeaders = helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      scriptSrc: ["'self'"],
-      connectSrc: ["'self'", "wss:", "ws:"],
+      scriptSrc: ["'self'", "'strict-dynamic'"],
+      connectSrc: ["'self'", "wss:", "ws:", process.env.API_BASE_URL || "'self'"].filter(Boolean),
       mediaSrc: ["'self'", "blob:"],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
       frameAncestors: ["'none'"],
       formAction: ["'self'"],
+      childSrc: ["'none'"],
+      workerSrc: ["'self'"],
+      manifestSrc: ["'self'"],
+      // HIPAA compliance: prevent data exfiltration
+      requireTrustedTypesFor: ["'script'"],
+      trustedTypes: ["default"],
     },
     ...(process.env.NODE_ENV === 'production' && {
       upgradeInsecureRequests: true,
+      reportUri: '/api/security/csp-report',
     }),
   },
-  crossOriginEmbedderPolicy: false, // Disable for file uploads
+  crossOriginEmbedderPolicy: { policy: 'credentialless' }, // Enhanced security for HIPAA
+  crossOriginOpenerPolicy: { policy: 'same-origin' },
+  crossOriginResourcePolicy: { policy: 'same-origin' },
   hsts: {
-    maxAge: 31536000, // 1 year
+    maxAge: 63072000, // 2 years for HIPAA compliance
     includeSubDomains: true,
     preload: true,
   },
@@ -70,6 +79,9 @@ export const securityHeaders = helmet({
   xssFilter: true,
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   permittedCrossDomainPolicies: false,
+  // Additional HIPAA security headers
+  frameguard: { action: 'deny' },
+  hidePoweredBy: true,
 });
 
 // Request size limiting middleware
@@ -310,6 +322,73 @@ export const cleanupSecurityStores = () => {
   }
 };
 
+// CSP violation reporting endpoint
+export const cspViolationReporter = (req: Request, res: Response) => {
+  try {
+    const violation = req.body;
+    console.error('🚨 CSP Violation Detected:', {
+      timestamp: new Date().toISOString(),
+      violation,
+      userAgent: req.headers['user-agent'],
+      ip: getClientIp(req),
+      userId: (req as any).user?.id,
+    });
+    
+    // Log to audit system if available
+    // auditService.logSecurityEvent('csp_violation', violation);
+    
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error processing CSP violation:', error);
+    res.status(500).send();
+  }
+};
+
+// HIPAA session timeout middleware for PHI access
+export const hipaaSessionTimeout = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user?.id) {
+      return next(); // Skip for unauthenticated requests
+    }
+
+    const phiEndpoints = [
+      '/api/coach-notes',
+      '/api/reflections',
+      '/api/sessions',
+      '/api/clients',
+      '/api/users'
+    ];
+
+    const isPHIAccess = phiEndpoints.some(endpoint => req.path.startsWith(endpoint));
+    
+    if (isPHIAccess && req.user.role === 'coach') {
+      // For healthcare providers accessing PHI, enforce stricter session management
+      const sessionStart = req.user.sessionStart || Date.now();
+      const sessionAge = Date.now() - sessionStart;
+      const maxSessionAge = 15 * 60 * 1000; // 15 minutes for PHI access
+
+      if (sessionAge > maxSessionAge) {
+        res.status(401).json({
+          error: 'Session expired for PHI access',
+          code: 'HIPAA_SESSION_TIMEOUT',
+          requiresReauth: true
+        });
+        return;
+      }
+
+      // Set warning headers for upcoming timeout
+      const timeRemaining = maxSessionAge - sessionAge;
+      if (timeRemaining < 5 * 60 * 1000) { // Less than 5 minutes remaining
+        res.setHeader('X-Session-Timeout-Warning', Math.floor(timeRemaining / 1000));
+      }
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Start periodic cleanup
 if (process.env.NODE_ENV !== 'test') {
   setInterval(cleanupSecurityStores, 10 * 60 * 1000); // Clean every 10 minutes
@@ -322,6 +401,11 @@ export const applySecurity = [
   securityLogging,
   suspiciousActivityDetection,
   ipChangeDetection,
+];
+
+// HIPAA-specific middleware for PHI access
+export const applyHIPAASecurity = [
+  hipaaSessionTimeout,
 ];
 
 export const applyCSRF = [

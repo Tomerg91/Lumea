@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Progress } from '../ui/progress';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useRevenueAnalytics } from '../../hooks/useRevenueAnalytics';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -28,50 +29,6 @@ import {
   Zap
 } from 'lucide-react';
 
-interface RevenueMetrics {
-  totalRevenue: number;
-  monthlyRecurringRevenue: number;
-  averageRevenuePerUser: number;
-  averageSessionValue: number;
-  revenueGrowthRate: number;
-  profitMargin: number;
-  churnRate: number;
-  customerLifetimeValue: number;
-  monthlyActiveRevenue: number;
-  yearOverYearGrowth: number;
-}
-
-interface RevenueBreakdown {
-  sessionFees: number;
-  subscriptions: number;
-  packages: number;
-  oneTimeServices: number;
-  cancellationFees: number;
-  refunds: number;
-}
-
-interface RevenueForecast {
-  month: string;
-  projected: number;
-  conservative: number;
-  optimistic: number;
-  actual?: number;
-}
-
-interface ProfitLossData {
-  revenue: RevenueBreakdown;
-  expenses: {
-    platformFees: number;
-    marketingCosts: number;
-    operationalCosts: number;
-    coachPayouts: number;
-    technologyCosts: number;
-    customerSupport: number;
-  };
-  netProfit: number;
-  profitMargin: number;
-}
-
 interface RevenueAnalyticsDashboardProps {
   className?: string;
   compact?: boolean;
@@ -86,52 +43,27 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
   
   const [activeTab, setActiveTab] = useState<'overview' | 'breakdown' | 'forecast' | 'profitloss'>('overview');
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
-  const [loading, setLoading] = useState(false);
-  
-  const [revenueMetrics, setRevenueMetrics] = useState<RevenueMetrics>({
-    totalRevenue: 127450,
-    monthlyRecurringRevenue: 89200,
-    averageRevenuePerUser: 245,
-    averageSessionValue: 150,
-    revenueGrowthRate: 18.5,
-    profitMargin: 42.3,
-    churnRate: 5.2,
-    customerLifetimeValue: 2850,
-    monthlyActiveRevenue: 95600,
-    yearOverYearGrowth: 156.7
-  });
 
-  const [revenueBreakdown, setRevenueBreakdown] = useState<RevenueBreakdown>({
-    sessionFees: 78450,
-    subscriptions: 34200,
-    packages: 12800,
-    oneTimeServices: 1850,
-    cancellationFees: 150,
-    refunds: -2100
-  });
+  const endDate = new Date();
+  const startDate = new Date();
+  switch (timeRange) {
+    case '7d':
+      startDate.setDate(endDate.getDate() - 7);
+      break;
+    case '30d':
+      startDate.setDate(endDate.getDate() - 30);
+      break;
+    case '90d':
+      startDate.setDate(endDate.getDate() - 90);
+      break;
+    case '1y':
+      startDate.setFullYear(endDate.getFullYear() - 1);
+      break;
+  }
 
-  const [revenueForecast, setRevenueForecast] = useState<RevenueForecast[]>([
-    { month: 'Jan 2025', projected: 132000, conservative: 125000, optimistic: 145000, actual: 127450 },
-    { month: 'Feb 2025', projected: 138000, conservative: 130000, optimistic: 152000 },
-    { month: 'Mar 2025', projected: 145000, conservative: 135000, optimistic: 160000 },
-    { month: 'Apr 2025', projected: 152000, conservative: 142000, optimistic: 168000 },
-    { month: 'May 2025', projected: 159000, conservative: 148000, optimistic: 175000 },
-    { month: 'Jun 2025', projected: 167000, conservative: 155000, optimistic: 185000 }
-  ]);
+  const { data, isLoading, error, refetch } = useRevenueAnalytics(startDate, endDate);
 
-  const [profitLossData, setProfitLossData] = useState<ProfitLossData>({
-    revenue: revenueBreakdown,
-    expenses: {
-      platformFees: 8950,
-      marketingCosts: 15200,
-      operationalCosts: 12300,
-      coachPayouts: 45800,
-      technologyCosts: 6500,
-      customerSupport: 4200
-    },
-    netProfit: 54000,
-    profitMargin: 42.3
-  });
+  const { revenueMetrics, revenueBreakdown, revenueForecast, profitLossData } = data || {};
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -146,11 +78,8 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
     return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
   };
 
-  const handleRefresh = async () => {
-    setLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setLoading(false);
+  const handleRefresh = () => {
+    refetch();
   };
 
   const handleExport = (format: 'pdf' | 'excel' | 'csv') => {
@@ -166,6 +95,18 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
         <p className="text-gray-600">Revenue analytics require admin or coach privileges.</p>
       </div>
     );
+  }
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error.message}</div>;
+  }
+
+  if (!data) {
+    return <div>No data available.</div>;
   }
 
   return (
@@ -194,8 +135,8 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
             </SelectContent>
           </Select>
           
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
           
@@ -219,10 +160,10 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(revenueMetrics.totalRevenue)}</p>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(data.revenueMetrics.totalRevenue)}</p>
                 <p className="text-xs text-green-600 flex items-center mt-1">
                   <TrendingUp className="w-3 h-3 mr-1" />
-                  {formatPercentage(revenueMetrics.revenueGrowthRate)} vs last period
+                  {formatPercentage(data.revenueMetrics.revenueGrowthRate)} vs last period
                 </p>
               </div>
               <DollarSign className="w-8 h-8 text-green-600" />
@@ -235,7 +176,7 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Monthly Recurring Revenue</p>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(revenueMetrics.monthlyRecurringRevenue)}</p>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(data.revenueMetrics.monthlyRecurringRevenue)}</p>
                 <p className="text-xs text-blue-600 flex items-center mt-1">
                   <ArrowUpRight className="w-3 h-3 mr-1" />
                   Stable growth
@@ -251,7 +192,7 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Profit Margin</p>
-                <p className="text-2xl font-bold text-gray-900">{revenueMetrics.profitMargin.toFixed(1)}%</p>
+                <p className="text-2xl font-bold text-gray-900">{data.revenueMetrics.profitMargin.toFixed(1)}%</p>
                 <p className="text-xs text-green-600 flex items-center mt-1">
                   <CheckCircle className="w-3 h-3 mr-1" />
                   Healthy margin
@@ -267,7 +208,7 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Customer LTV</p>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(revenueMetrics.customerLifetimeValue)}</p>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(data.revenueMetrics.customerLifetimeValue)}</p>
                 <p className="text-xs text-orange-600 flex items-center mt-1">
                   <Star className="w-3 h-3 mr-1" />
                   Above industry avg
@@ -303,25 +244,25 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
                   <div>
                     <div className="flex justify-between text-sm mb-2">
                       <span>Revenue Growth Rate</span>
-                      <span className="font-medium">{formatPercentage(revenueMetrics.revenueGrowthRate)}</span>
+                      <span className="font-medium">{formatPercentage(data.revenueMetrics.revenueGrowthRate)}</span>
                     </div>
-                    <Progress value={Math.min(revenueMetrics.revenueGrowthRate, 100)} className="h-2" />
+                    <Progress value={Math.min(data.revenueMetrics.revenueGrowthRate, 100)} className="h-2" />
                   </div>
                   
                   <div>
                     <div className="flex justify-between text-sm mb-2">
                       <span>Year over Year Growth</span>
-                      <span className="font-medium">{formatPercentage(revenueMetrics.yearOverYearGrowth)}</span>
+                      <span className="font-medium">{formatPercentage(data.revenueMetrics.yearOverYearGrowth)}</span>
                     </div>
-                    <Progress value={Math.min(revenueMetrics.yearOverYearGrowth / 2, 100)} className="h-2" />
+                    <Progress value={Math.min(data.revenueMetrics.yearOverYearGrowth / 2, 100)} className="h-2" />
                   </div>
                   
                   <div>
                     <div className="flex justify-between text-sm mb-2">
                       <span>Churn Rate</span>
-                      <span className="font-medium text-red-600">{revenueMetrics.churnRate.toFixed(1)}%</span>
+                      <span className="font-medium text-red-600">{data.revenueMetrics.churnRate.toFixed(1)}%</span>
                     </div>
-                    <Progress value={revenueMetrics.churnRate * 5} className="h-2" />
+                    <Progress value={data.revenueMetrics.churnRate * 5} className="h-2" />
                   </div>
                 </div>
               </CardContent>
@@ -338,19 +279,19 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-center p-3 bg-blue-50 rounded-lg">
                     <p className="text-sm text-blue-600 font-medium">ARPU</p>
-                    <p className="text-lg font-bold text-blue-900">{formatCurrency(revenueMetrics.averageRevenuePerUser)}</p>
+                    <p className="text-lg font-bold text-blue-900">{formatCurrency(data.revenueMetrics.averageRevenuePerUser)}</p>
                   </div>
                   <div className="text-center p-3 bg-green-50 rounded-lg">
                     <p className="text-sm text-green-600 font-medium">Avg Session Value</p>
-                    <p className="text-lg font-bold text-green-900">{formatCurrency(revenueMetrics.averageSessionValue)}</p>
+                    <p className="text-lg font-bold text-green-900">{formatCurrency(data.revenueMetrics.averageSessionValue)}</p>
                   </div>
                   <div className="text-center p-3 bg-purple-50 rounded-lg">
                     <p className="text-sm text-purple-600 font-medium">Monthly Active Revenue</p>
-                    <p className="text-lg font-bold text-purple-900">{formatCurrency(revenueMetrics.monthlyActiveRevenue)}</p>
+                    <p className="text-lg font-bold text-purple-900">{formatCurrency(data.revenueMetrics.monthlyActiveRevenue)}</p>
                   </div>
                   <div className="text-center p-3 bg-orange-50 rounded-lg">
                     <p className="text-sm text-orange-600 font-medium">Customer LTV</p>
-                    <p className="text-lg font-bold text-orange-900">{formatCurrency(revenueMetrics.customerLifetimeValue)}</p>
+                    <p className="text-lg font-bold text-orange-900">{formatCurrency(data.revenueMetrics.customerLifetimeValue)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -370,8 +311,8 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {Object.entries(revenueBreakdown).map(([source, amount]) => {
-                  const percentage = (Math.abs(amount) / Object.values(revenueBreakdown).reduce((sum, val) => sum + Math.abs(val), 0)) * 100;
+                {Object.entries(data.revenueBreakdown).map(([source, amount]) => {
+                  const percentage = (Math.abs(amount) / Object.values(data.revenueBreakdown).reduce((sum, val) => sum + Math.abs(val), 0)) * 100;
                   const isNegative = amount < 0;
                   
                   return (
@@ -411,7 +352,7 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {revenueForecast.map((forecast, index) => (
+                {data.revenueForecast.map((forecast, index) => (
                   <div key={index} className="grid grid-cols-5 gap-4 p-3 border rounded-lg">
                     <div>
                       <p className="text-sm font-medium">{forecast.month}</p>
@@ -453,7 +394,7 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {Object.entries(profitLossData.revenue).map(([item, amount]) => (
+                  {Object.entries(data.profitLossData.revenue).map(([item, amount]) => (
                     <div key={item} className="flex justify-between">
                       <span className="text-sm capitalize">{item.replace(/([A-Z])/g, ' $1').trim()}</span>
                       <span className={`text-sm font-medium ${amount < 0 ? 'text-red-600' : 'text-gray-900'}`}>
@@ -465,7 +406,7 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
                   <div className="flex justify-between font-medium">
                     <span>Total Revenue</span>
                     <span className="text-green-600">
-                      {formatCurrency(Object.values(profitLossData.revenue).reduce((sum, val) => sum + val, 0))}
+                      {formatCurrency(Object.values(data.profitLossData.revenue).reduce((sum, val) => sum + val, 0))}
                     </span>
                   </div>
                 </div>
@@ -481,7 +422,7 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {Object.entries(profitLossData.expenses).map(([item, amount]) => (
+                  {Object.entries(data.profitLossData.expenses).map(([item, amount]) => (
                     <div key={item} className="flex justify-between">
                       <span className="text-sm capitalize">{item.replace(/([A-Z])/g, ' $1').trim()}</span>
                       <span className="text-sm font-medium text-red-600">-{formatCurrency(amount)}</span>
@@ -491,7 +432,7 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
                   <div className="flex justify-between font-medium">
                     <span>Total Expenses</span>
                     <span className="text-red-600">
-                      -{formatCurrency(Object.values(profitLossData.expenses).reduce((sum, val) => sum + val, 0))}
+                      -{formatCurrency(Object.values(data.profitLossData.expenses).reduce((sum, val) => sum + val, 0))}
                     </span>
                   </div>
                 </div>
@@ -511,7 +452,7 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
                 <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
                   <DollarSign className="w-8 h-8 text-green-600 mx-auto mb-2" />
                   <p className="text-sm text-green-600 font-medium">Net Profit</p>
-                  <p className="text-2xl font-bold text-green-900">{formatCurrency(profitLossData.netProfit)}</p>
+                  <p className="text-2xl font-bold text-green-900">{formatCurrency(data.profitLossData.netProfit)}</p>
                 </div>
                 <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
                   <BarChart3 className="w-8 h-8 text-blue-600 mx-auto mb-2" />
@@ -522,7 +463,7 @@ export const RevenueAnalyticsDashboard: React.FC<RevenueAnalyticsDashboardProps>
                   <TrendingUp className="w-8 h-8 text-purple-600 mx-auto mb-2" />
                   <p className="text-sm text-purple-600 font-medium">ROI</p>
                   <p className="text-2xl font-bold text-purple-900">
-                    {((profitLossData.netProfit / Object.values(profitLossData.expenses).reduce((sum, val) => sum + val, 0)) * 100).toFixed(1)}%
+                    {((data.profitLossData.netProfit / Object.values(data.profitLossData.expenses).reduce((sum, val) => sum + val, 0)) * 100).toFixed(1)}%
                   </p>
                 </div>
               </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../../hooks/use-toast';
 import { SimpleReflectionService } from '../../services/reflectionService.simple';
-import { MoodType } from '../../../../shared/types/database';
+import { MoodType, Session } from '../../../../shared/types/database';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -10,12 +10,6 @@ import { Label } from '../ui/label';
 import { Loader2, Save, Send, Mic, AlertCircle } from 'lucide-react';
 import AudioRecorder, { RecordingData } from '../audio/AudioRecorder';
 import { Alert, AlertDescription } from '../ui/alert';
-
-interface Session {
-  id: string;
-  date: string;
-  status: string;
-}
 
 interface AudioReflectionFormProps {
   onSubmit?: () => void;

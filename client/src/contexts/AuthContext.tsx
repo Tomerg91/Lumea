@@ -1,15 +1,23 @@
 import * as React from 'react';
-import { supabase, checkSupabaseConnection, isDevelopmentMode } from '@/lib/supabase';
+import { supabase, checkSupabaseConnection } from '@/lib/supabase';
 import { AuthError, Session, User } from '@supabase/supabase-js';
 import type { Session as TypeSession, User as TypeUser } from '@supabase/supabase-js';
 
 // Define types for the user profile
-interface UserProfile {
+export interface UserProfile {
   id: string;
   created_at?: string;
   updated_at?: string;
   email?: string;
-  name?: string;
+  full_name?: string; // Added
+  phone?: string; // Added
+  bio?: string; // Added
+  location?: string; // Added
+  website?: string; // Added
+  timezone?: string; // Added
+  avatar_url?: string; // Added
+  profile_views?: number; // Added
+  completed_sessions?: number; // Added
   role?: 'client' | 'coach' | 'admin';
   [key: string]: unknown;
 }
@@ -113,25 +121,7 @@ const retryWithBackoff = async <T,>(
 };
 
 // Mock user for development
-const createMockUser = (email: string, role: 'client' | 'coach' | 'admin' = 'client'): TypeUser => ({
-  id: `mock-${role}-${Date.now()}`,
-  email,
-  user_metadata: { name: `Mock ${role.charAt(0).toUpperCase() + role.slice(1)}`, role },
-  app_metadata: { role },
-  aud: 'authenticated',
-  created_at: new Date().toISOString(),
-  role: 'authenticated',
-  updated_at: new Date().toISOString()
-});
-
-const createMockSession = (user: TypeUser): TypeSession => ({
-  access_token: 'mock-access-token',
-  refresh_token: 'mock-refresh-token',
-  expires_in: 3600,
-  expires_at: Math.floor(Date.now() / 1000) + 3600,
-  token_type: 'bearer',
-  user
-});
+// Mock authentication functions removed for production security
 
 // Define props for the provider
 interface AuthProviderProps {
@@ -180,15 +170,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     async function getInitialSession() {
       console.log('[AuthContext] Attempting to get initial session...');
       try {
-        // Check if we're in development mode and should use mock auth
-        if (isDevelopmentMode && import.meta.env.DEV) {
-          console.log('[AuthContext] Development mode - no initial session, allowing public access');
-          if (!ignore) {
-            setSession(null);
-            setUser(null);
-          }
-          return;
-        }
+        // PRODUCTION: Always attempt to get real Supabase session
         
         const { data: { session } } = await supabase.auth.getSession();
         if (!ignore) {
@@ -392,25 +374,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setAuthError(null);
     
     try {
-      // Check if we should use mock authentication for development
-      if (isDevelopmentMode && import.meta.env.DEV) {
-        console.log('[AuthContext] Using mock authentication for development');
-        
-        // Create mock user based on email
-        let role: 'client' | 'coach' | 'admin' = 'client';
-        if (email?.includes('coach')) role = 'coach';
-        if (email?.includes('admin')) role = 'admin';
-        
-        const mockUser = createMockUser(email || 'test@example.com', role);
-        const mockSession = createMockSession(mockUser);
-        
-        // Set the mock session and user
-        setSession(mockSession);
-        setUser(mockUser);
-        
-        return { data: { user: mockUser, session: mockSession }, error: null };
-      }
-      
+      // PRODUCTION AUTH: Only use Supabase authentication
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
