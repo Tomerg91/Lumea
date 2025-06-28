@@ -34,9 +34,11 @@ import { Client } from './ClientsTable';
 import { 
   SessionWithUsers,
   SessionStatus,
-  UISessionStatus,
   SessionListProps as BaseSessionListProps
 } from '../types/session';
+
+// Define UISessionStatus directly to fix build
+type UISessionStatus = 'pending' | 'in-progress' | 'completed' | 'cancelled';
 
 // Legacy Session type for backward compatibility
 export type Session = {

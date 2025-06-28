@@ -413,15 +413,21 @@ const MobileSessionCard: React.FC<{
   const typeConfig = getSessionTypeConfig();
   const TypeIcon = typeConfig.icon;
 
-  // Long press handler for additional actions
+  // Enhanced touch feedback with loading states
   const longPressTimer = useRef<NodeJS.Timeout>();
   const handleTouchStart = () => {
     setIsPressed(true);
+    // Immediate haptic feedback for touch responsiveness
+    if ('vibrate' in navigator) {
+      navigator.vibrate(10); // Light immediate feedback
+    }
+    
     longPressTimer.current = setTimeout(() => {
       if (userRole === 'coach') {
         setShowActions(true);
+        // Stronger haptic feedback for action trigger
         if ('vibrate' in navigator) {
-          navigator.vibrate(50);
+          navigator.vibrate([50, 50, 50]); // Pattern for action activation
         }
       }
     }, 500);

@@ -1,15 +1,15 @@
 {
-  "name": "Lumea Coaching Platform",
-  "short_name": "Lumea",
-  "description": "Personal development coaching platform for transformative growth",
+  "name": "סטיה קואצ׳ינג - פלטפורמת אימון אישי",
+  "short_name": "סטיה קואצ׳ינג",
+  "description": "פלטפורמת אימון אישי לצמיחה וטרנספורמציה אישית - Satya Coaching Platform for Personal Growth",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "theme_color": "#8B5CF6",
-  "background_color": "#F8FAFC",
-  "lang": "en",
-  "dir": "auto",
+  "theme_color": "#667eea",
+  "background_color": "#f8fafc",
+  "lang": "he",
+  "dir": "rtl",
   "categories": ["education", "health", "lifestyle", "productivity"],
   "icons": [
     {
@@ -86,37 +86,49 @@
   ],
   "shortcuts": [
     {
-      "name": "New Session",
-      "short_name": "Session",
-      "description": "Create a new coaching session",
-      "url": "/coach/sessions/new",
+      "name": "פגישה חדשה",
+      "short_name": "פגישה",
+      "description": "יצירת פגישת אימון חדשה",
+      "url": "/sessions/new",
       "icons": [
         {
-          "src": "/icons/shortcut-session.png",
+          "src": "/icons/icon-192x192.png",
           "sizes": "96x96"
         }
       ]
     },
     {
-      "name": "Reflections",
-      "short_name": "Reflect",
-      "description": "View reflection history",
-      "url": "/client/reflections",
+      "name": "השתקפויות",
+      "short_name": "השתקפות",
+      "description": "צפייה בהיסטוריית השתקפויות",
+      "url": "/reflections",
       "icons": [
         {
-          "src": "/icons/shortcut-reflection.png",
+          "src": "/icons/icon-192x192.png",
           "sizes": "96x96"
         }
       ]
     },
     {
-      "name": "Notifications",
-      "short_name": "Alerts",
-      "description": "Check notifications",
+      "name": "התראות",
+      "short_name": "התראות",
+      "description": "בדיקת התראות והודעות",
       "url": "/notifications",
       "icons": [
         {
-          "src": "/icons/shortcut-notifications.png",
+          "src": "/icons/icon-192x192.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "פרופיל",
+      "short_name": "פרופיל",
+      "description": "צפייה ועריכת הפרופיל האישי",
+      "url": "/profile",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
           "sizes": "96x96"
         }
       ]
@@ -124,7 +136,7 @@
   ],
   "protocol_handlers": [
     {
-      "protocol": "web+lumea",
+      "protocol": "web+satyacoaching",
       "url": "/handle?url=%s"
     }
   ],

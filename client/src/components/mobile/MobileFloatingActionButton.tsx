@@ -95,13 +95,13 @@ const MobileFloatingActionButton: React.FC<MobileFloatingActionButtonProps> = ({
   const handleActionClick = (action: QuickAction) => {
     if (action.disabled) return;
     
+    // Enhanced haptic feedback with loading indication
+    if ('vibrate' in navigator) {
+      navigator.vibrate([15, 25, 15]); // Success pattern
+    }
+    
     action.action();
     setIsExpanded(false);
-    
-    // Haptic feedback
-    if ('vibrate' in navigator) {
-      navigator.vibrate(20);
-    }
   };
 
   return (

@@ -1,0 +1,71 @@
+# Daily Intention Homepage Feature - Product Requirements Document
+
+## Overview
+Implement a daily intention feature that helps users (coaches and clients) set their daily intentions by selecting from pre-defined or custom "beings" (character traits, values, or intentions) each day.
+
+## Core Features
+
+### Backend Implementation
+- Create database schema for Beings and DailyIntentionLog tables
+- Implement database functions for checking daily selection needs
+- Create API endpoints (RPC functions) for managing beings and daily intentions
+- Set up Row Level Security (RLS) for data protection
+
+### Frontend Implementation
+- Create intention service for API communication
+- Build UI components for beings selection screen
+- Develop coach and client homepage components
+- Implement routing and navigation logic
+- Add internationalization support (Hebrew/English)
+
+### Testing Implementation
+- Unit tests for services and components
+- Integration tests for complete user flows
+- End-to-end tests for daily intention feature
+
+## Database Schema
+
+### Beings Table
+- being_id (UUID, Primary Key)
+- label_en (TEXT, English label)
+- label_he (TEXT, Hebrew label) 
+- created_by_user_id (UUID, Foreign Key)
+- is_default (BOOLEAN)
+- created_at (TIMESTAMPTZ)
+
+### DailyIntentionLog Table
+- log_id (UUID, Primary Key)
+- user_id (UUID, Foreign Key)
+- being_id (UUID, Foreign Key)
+- selection_date (DATE)
+- created_at (TIMESTAMPTZ)
+
+## API Endpoints
+- get_beings(): Fetch all available beings
+- add_being(): Create custom beings
+- add_daily_intention(): Save daily selections
+- get_daily_intentions(): Retrieve today's selections
+- needs_beings_selection(): Check if selection needed
+
+## User Experience Flow
+1. User logs into application
+2. System checks if daily intention selection needed
+3. If needed, redirect to beings selection screen
+4. User selects beings and saves selections
+5. User redirected to role-appropriate homepage
+6. Homepage displays selected beings for the day
+
+## Success Criteria
+- Users can select daily intentions seamlessly
+- Database properly stores and retrieves intention data
+- UI supports both Hebrew and English languages
+- Security implemented through RLS policies
+- Comprehensive test coverage for all features
+
+## Technical Requirements
+- Supabase database integration
+- React/Vite frontend implementation
+- TypeScript for type safety
+- Internationalization support
+- Responsive mobile design
+- Unit, integration, and E2E testing

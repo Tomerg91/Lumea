@@ -10,12 +10,31 @@
 
 // Import the authoritative Session types from shared database schema
 import { 
-  Session as DatabaseSession,
-  SessionInsert,
-  SessionUpdate,
   SessionStatus as DatabaseSessionStatus,
-  User
+  UserRole
 } from '../../../shared/types/database';
+
+// Define types that might not exist in database types yet
+interface DatabaseSession {
+  id: string;
+  coach_id: string;
+  client_id: string;
+  date: string;
+  status: DatabaseSessionStatus;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface SessionInsert extends Omit<DatabaseSession, 'id' | 'created_at' | 'updated_at'> {}
+interface SessionUpdate extends Partial<Omit<DatabaseSession, 'id' | 'created_at'>> {}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+}
 
 // ====================== STATUS MAPPING ======================
 
