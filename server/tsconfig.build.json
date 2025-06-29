@@ -7,25 +7,28 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "outDir": "dist",
-    "rootDir": "..",
+    "rootDir": "src",
     "noEmit": false,
     "declaration": false,
-    "sourceMap": true,
+    "sourceMap": false,
     "removeComments": true,
-    "forceConsistentCasingInFileNames": true,
+    "forceConsistentCasingInFileNames": false,
     "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "strictFunctionTypes": false,
+    "strictPropertyInitialization": false,
+    "noImplicitThis": false,
+    "noImplicitReturns": false,
     "skipLibCheck": true,
-    "baseUrl": "..",
-    "paths": {
-      "@shared/*": ["shared/*"]
-    },
+    "baseUrl": ".",
     "resolveJsonModule": true,
-    "typeRoots": ["./node_modules/@types", "./src/types"]
+    "allowJs": true,
+    "checkJs": false,
+    "noErrorTruncation": false
   },
   "include": [
-    "./src/**/*.ts",
-    "../shared/**/*.ts",
-    "./src/types/**/*.d.ts"
+    "src/**/*.ts"
   ],
   "exclude": [
     "node_modules",

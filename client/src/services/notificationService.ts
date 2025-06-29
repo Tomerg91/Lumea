@@ -1,6 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+import { API_BASE_URL } from '../lib/api';
 
 // Notification types matching backend
 export type NotificationType = 

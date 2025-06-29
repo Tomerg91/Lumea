@@ -2,8 +2,7 @@
 
 import { Session, SessionStatus } from '../components/SessionList';
 import { supabase } from '../lib/supabase';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+import { API_BASE_URL } from '../lib/api';
 
 // Type for session creation data (API-specific with public booking fields)
 export interface APICreateSessionData {

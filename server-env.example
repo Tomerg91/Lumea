@@ -78,8 +78,8 @@ CDN_URL="https://your-cdn-domain.com"
 # ==========================================
 
 # CORS Configuration
-ALLOWED_ORIGINS="http://localhost:5173,https://your-domain.vercel.app"
-FRONTEND_URL="https://your-domain.vercel.app"
+ALLOWED_ORIGINS="http://localhost:5173,https://your-netlify-domain.netlify.app"
+FRONTEND_URL="https://your-netlify-domain.netlify.app"
 
 # Rate Limiting
 RATE_LIMIT_WINDOW_MS="900000"  # 15 minutes

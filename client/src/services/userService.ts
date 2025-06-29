@@ -11,7 +11,7 @@ export interface UserProfile {
   // Add other fields like imageUrl if managed by backend
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'; // Base path for all API calls
+import { API_BASE_URL } from "../lib/api"; // Base path for all API calls
 
 export const fetchUserProfile = async (): Promise<UserProfile> => {
   console.log('Attempting to fetch user profile from backend...');

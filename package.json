@@ -35,7 +35,10 @@
     "coverage": "cd client && npm run test -- --coverage",
     "security:audit": "npm audit && npm audit --workspace=client",
     "upgrade:check": "npm outdated",
-    "health:check": "npm run typecheck && npm run lint && npm audit"
+    "health:check": "npm run typecheck && npm run lint && npm audit",
+    "setup:env": "chmod +x scripts/setup-env.sh && ./scripts/setup-env.sh",
+    "generate:secrets": "node scripts/generate-secrets.js",
+    "check:deployment": "node scripts/check-deployment.js"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

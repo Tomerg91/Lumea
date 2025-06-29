@@ -1,16 +1,17 @@
 # Client Environment Variables
-# Rename this file to .env and place it in the client/ directory
+# For development: Create client/.env with these variables
+# For production: Set these in Netlify dashboard
 
 # PRODUCTION DEPLOYMENT CONFIGURATION
-# For Vercel deployment, set these in Vercel project settings
+# Architecture: Netlify (Frontend) + Railway (Backend API) + Supabase (Database)
 
 # Backend API URL (REQUIRED)
-# Development: http://localhost:3001/api
-# Production: https://your-domain.vercel.app/api
-VITE_API_URL=https://your-domain.vercel.app/api
+# Development: http://localhost:3001/api  
+# Production: https://your-app.railway.app/api
+VITE_API_URL=https://your-app.railway.app/api
 
-# Vercel URL (automatically set by Vercel)
-VITE_VERCEL_URL=your-domain.vercel.app
+# Railway API URL (for API proxy in netlify.toml)
+VITE_RAILWAY_API_URL=https://your-app.railway.app
 
 # OAuth Configuration (Optional)
 VITE_GOOGLE_CLIENT_ID=your-google-client-id

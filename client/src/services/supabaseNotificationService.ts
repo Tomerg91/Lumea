@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRealtimeTable } from '../hooks/useRealtimeTable';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+import { API_BASE_URL } from "../lib/api";
 
 // Notification types matching backend Supabase schema
 export type NotificationType = 

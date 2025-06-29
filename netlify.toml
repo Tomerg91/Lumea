@@ -1,0 +1,135 @@
+# Netlify Configuration for SatyaCoaching
+# This file configures Netlify deployment for optimal performance
+
+[build]
+  # Build command - install dependencies and build the client app
+  command = "npm run install:all && npm run build --workspace client"
+  
+  # Directory to publish - Vite output
+  publish = "client/dist"
+  
+  # Node.js version
+  node_version = "20"
+
+[build.environment]
+  # Environment variables (set these in Netlify dashboard)
+  # VITE_SUPABASE_URL = "https://your-project.supabase.co"
+  # VITE_SUPABASE_ANON_KEY = "your-anon-key"
+  # VITE_RAILWAY_API_URL = "https://your-backend.railway.app"
+  # VITE_STRIPE_PUBLISHABLE_KEY = "pk_test_your-stripe-key"
+  # VITE_SENTRY_DSN = "https://your-sentry-dsn"
+  # VITE_GA_MEASUREMENT_ID = "G-YOUR-GA-ID"
+  NODE_ENV = "production"
+
+# Redirect rules for SPA routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# API proxy to your Railway backend
+[[redirects]]
+  from = "/api/*"
+  to = "${VITE_RAILWAY_API_URL}/api/:splat"
+  status = 200
+  force = true
+
+# Redirect old URLs
+[[redirects]]
+  from = "/login"
+  to = "/auth"
+  status = 301
+
+[[redirects]]
+  from = "/signup"
+  to = "/auth"
+  status = 301
+
+[[redirects]]
+  from = "/dashboard"
+  to = "/"
+  status = 302
+
+# Headers for security and performance
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Security headers
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    
+    # Performance headers
+    X-DNS-Prefetch-Control = "on"
+
+# Cache static assets aggressively with correct MIME types
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Fix MIME types for JavaScript modules
+[[headers]]
+  for = "*.js"
+  [headers.values]
+    Content-Type = "application/javascript; charset=utf-8"
+
+[[headers]]
+  for = "*.mjs"
+  [headers.values]
+    Content-Type = "application/javascript; charset=utf-8"
+
+[[headers]]
+  for = "*.tsx"
+  [headers.values]
+    Content-Type = "application/javascript; charset=utf-8"
+
+[[headers]]
+  for = "/assets/*.js"
+  [headers.values]
+    Content-Type = "application/javascript; charset=utf-8"
+
+# Cache service worker properly
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Hebrew/RTL font optimization
+[[headers]]
+  for = "*.woff2"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Cross-Origin-Embedder-Policy = "require-corp"
+
+# Preload critical resources
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    # Preload Hebrew fonts
+    Link = '''</assets/fonts/hebrew-font.woff2>; rel=preload; as=font; type=font/woff2; crossorigin,
+              </assets/fonts/english-font.woff2>; rel=preload; as=font; type=font/woff2; crossorigin'''
+
+# Form handling for contact forms (Netlify feature)
+# Your React forms will automatically work with Netlify Forms
+
+# Edge functions configuration (for future use)
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["@supabase/supabase-js"]
+
+# Deploy preview configuration
+[context.deploy-preview]
+  command = "npm run install:all && npm run build --workspace client"
+
+[context.branch-deploy]
+  command = "npm run install:all && npm run build --workspace client"
+
+# Development context
+[dev]
+  command = "npm run dev"
+  port = 5173
+  publish = "client/dist"
+  autoLaunch = false

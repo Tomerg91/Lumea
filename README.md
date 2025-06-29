@@ -439,43 +439,67 @@ The Coach Dashboard provides an efficient workspace for coaches to manage their 
 
 ## Deployment
 
-This project is configured for deployment on Vercel.
+This project is configured for deployment on Netlify (frontend) with Railway (backend).
 
-### Vercel Setup
+### Netlify Setup (Frontend)
 
-1.  **Create a Vercel Account**: If you don't have one, sign up at [vercel.com](https://vercel.com).
-2.  **Import Project**: 
-    *   Connect your GitHub account to Vercel.
-    *   Import the repository for this project.
-3.  **Configure Project Settings**:
-    *   **Build & Development Settings**:
-        *   Framework Preset: `Vite` (Vercel might detect this automatically).
-        *   Build Command: `npm run build` (or `pnpm build` if you are using pnpm, ensure `vercel.json` matches).
-        *   Output Directory: `client/dist` (ensure this matches your `vite.config.ts` and `vercel.json`).
-        *   Install Command: `npm install && npm run install:all --if-present` (or equivalent for your package manager to install root and workspace dependencies).
-    *   **Root Directory**: Leave as default (repository root) if `vercel.json` is in the root. 
-    *   **Serverless Functions**: Ensure Vercel is configured to handle your backend API routes correctly. The `vercel.json` provided in this project includes a basic setup for an Express-like server in the `/server/api` directory. You might need to adjust this based on your actual server structure. Typically, you would place your serverless functions (e.g., Express app entry point) in an `api` directory in your project root or `server/api` if your `vercel.json` routes point there.
+1. **Create a Netlify Account**: Sign up at [netlify.com](https://netlify.com).
 
-4.  **Environment Variables**: 
-    *   Add all required environment variables listed in `.env.example` files (for both `client` and `server`) to your Vercel project settings.
-    *   **Sensitive Variables**: Ensure `JWT_SECRET`, `DATABASE_URL`, `SMTP_PASS`, `ENCRYPTION_KEY`, `ENCRYPTION_IV`, `SUPABASE_SERVICE_KEY`, etc., are set securely in Vercel.
-    *   `NODE_ENV` should be set to `production` for Vercel deployments (this is often a default setting on Vercel).
-    *   `CLIENT_URL` should be the production URL of your frontend (e.g., `https://your-app-name.vercel.app`).
-    *   `VITE_API_URL` (for client) should point to your Vercel backend URL (e.g., `https://your-app-name.vercel.app/api` if your API is served from `/api`).
+2. **Connect Repository**: 
+   - Connect your GitHub account to Netlify
+   - Import the repository for this project
 
-5.  **Deploy**: Trigger a deployment. Vercel will build and deploy your application.
+3. **Build Settings** (auto-detected from `netlify.toml`):
+   - **Build command**: `npm run install:all && npm run build --workspace client`
+   - **Publish directory**: `client/dist`
+   - **Node.js version**: 20
 
-### Local Vercel CLI (Optional)
+4. **Environment Variables**: 
+   Add these to your Netlify site settings:
+   ```
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-key
+   VITE_RAILWAY_API_URL=https://your-backend.railway.app
+   VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your-stripe-key
+   VITE_SENTRY_DSN=https://your-sentry-dsn
+   VITE_GA_MEASUREMENT_ID=G-YOUR-GA-ID
+   NODE_ENV=production
+   ```
 
-For local testing of Vercel deployment:
+5. **Domain Configuration**:
+   - Configure your custom domain in Netlify dashboard
+   - Update the API proxy URL in `netlify.toml` to point to your Railway backend
 
-1.  Install Vercel CLI: `npm install -g vercel`
-2.  Login: `vercel login`
-3.  Link project: `vercel link` (from the project root)
-4.  Run development server: `vercel dev` (This will use your `vercel.json` configuration locally)
+### Railway Setup (Backend)
 
-### Important Notes for Vercel Deployment
+Deploy your backend server to Railway for API endpoints and database operations.
 
-*   **Serverless Backend**: If your `server` directory contains a traditional Node.js/Express server, you'll need to adapt it to run as Vercel Serverless Functions. Typically, this involves having an entry point file (e.g., `server/api/index.ts`) that exports the Express app or individual route handlers.
-*   **Monorepo Support**: Vercel supports monorepos. Ensure your build commands and output directories are correctly configured for your project structure. The `install:all` script is important for installing dependencies in workspaces.
-*   **Database**: Ensure your Supabase instance is accessible from Vercel's servers. For Supabase, use the production Supabase URL and keys.
+1. **Connect Repository**: Import your repository to Railway
+2. **Configure Build**: Point to the `server` directory
+3. **Set Environment Variables**: Add all backend environment variables
+4. **Deploy**: Railway will automatically deploy your Express server
+
+### Local Development with Netlify CLI (Optional)
+
+```bash
+# Install Netlify CLI
+npm install -g netlify-cli
+
+# Login to Netlify
+netlify login
+
+# Link your project
+netlify link
+
+# Run local development with Netlify functions
+netlify dev
+```
+
+### Important Notes for Netlify Deployment
+
+- **Frontend Only**: Netlify hosts the React frontend; backend runs on Railway
+- **API Proxy**: The `netlify.toml` includes proxy rules to forward `/api/*` to Railway
+- **Monorepo Structure**: Build commands handle workspace dependencies correctly
+- **Environment Variables**: All `VITE_*` variables must be set in Netlify dashboard
+- **Redirects**: SPA routing and legacy URL redirects are configured
+- **Security Headers**: CSP and security headers are automatically applied

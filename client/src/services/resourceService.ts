@@ -9,7 +9,7 @@ export interface Resource {
   // and are needed on the frontend.
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+import { API_BASE_URL } from "../lib/api";
 
 export const fetchResources = async (): Promise<Resource[]> => {
   console.log('Attempting to fetch resources from backend...');

@@ -1,7 +1,5 @@
-import { createFetchConfig } from './api';
+import { API_BASE_URL } from '../lib/api';
 import type { Payment, PaymentInsert, PaymentUpdate, PaymentStatus } from '../../../shared/types/database';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Extended types for API responses
 interface PaymentWithRelations extends Payment {

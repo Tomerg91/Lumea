@@ -69,7 +69,7 @@ interface PendingCoachesResponse {
   count: number;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { API_BASE_URL } from "../../lib/api";
 
 const PendingCoaches: React.FC = () => {
   const [coaches, setCoaches] = useState<CoachApplication[]>([]);
