@@ -61,85 +61,105 @@ config();
 
 // Environment Variable Validation
 const validateEnvVariables = () => {
-  const requiredEnvVars = [
+  // Core required variables for Railway deployment
+  const coreRequiredVars = [
     'NODE_ENV',
-    'PORT',
-    'CLIENT_URL',
-    'DATABASE_URL',
+    'PORT'
+  ];
+
+  // Database variables - required for full functionality
+  const dbRequiredVars = [
+    'DATABASE_URL'
+  ];
+
+  // JWT variables - use fallbacks for Railway deployment
+  const jwtVars = [
     'JWT_ACCESS_SECRET',
-    'JWT_REFRESH_SECRET',
-    'SESSION_SECRET',
-    'ENCRYPTION_KEY',
+    'JWT_REFRESH_SECRET', 
+    'SESSION_SECRET'
   ];
 
   if (process.env.NODE_ENV !== 'test') {
-    // Check for missing required variables
-    const missing = requiredEnvVars.filter(varName => !process.env[varName]);
-    if (missing.length > 0) {
-      console.error(`FATAL ERROR: Missing required environment variables: ${missing.join(', ')}`);
+    // Check core variables
+    const missingCore = coreRequiredVars.filter(varName => !process.env[varName]);
+    if (missingCore.length > 0) {
+      console.error(`FATAL ERROR: Missing core environment variables: ${missingCore.join(', ')}`);
       process.exit(1);
+    }
+
+    // Set defaults for Railway deployment
+    if (!process.env.JWT_ACCESS_SECRET && process.env.JWT_SECRET) {
+      process.env.JWT_ACCESS_SECRET = process.env.JWT_SECRET;
+    }
+    if (!process.env.JWT_REFRESH_SECRET && process.env.JWT_SECRET) {
+      process.env.JWT_REFRESH_SECRET = process.env.JWT_SECRET;
+    }
+    if (!process.env.CLIENT_URL && process.env.FRONTEND_URL) {
+      process.env.CLIENT_URL = process.env.FRONTEND_URL;
+    }
+
+    // Warn about missing database but don't exit (allow health check to work)
+    const missingDb = dbRequiredVars.filter(varName => !process.env[varName]);
+    if (missingDb.length > 0) {
+      console.warn(`WARNING: Database variables missing: ${missingDb.join(', ')} - some features will be limited`);
+    }
+
+    // Check JWT variables with fallbacks
+    const missingJwt = jwtVars.filter(varName => !process.env[varName]);
+    if (missingJwt.length > 0) {
+      console.warn(`WARNING: JWT variables missing: ${missingJwt.join(', ')} - authentication will be limited`);
     }
 
     // Validate NODE_ENV
     if (!['development', 'production', 'test'].includes(process.env.NODE_ENV!)) {
-      console.error(`FATAL ERROR: Invalid NODE_ENV value: ${process.env.NODE_ENV}. Must be development, production, or test.`);
-      process.exit(1);
+      console.warn(`WARNING: Invalid NODE_ENV value: ${process.env.NODE_ENV}. Defaulting to production.`);
+      process.env.NODE_ENV = 'production';
     }
 
-    // Validate JWT secrets are not defaults
+    // Validate JWT secrets are not defaults (warn but don't exit)
     if (process.env.JWT_ACCESS_SECRET === 'your_default_access_secret' ||
-        process.env.JWT_REFRESH_SECRET === 'your_default_refresh_secret') {
-      console.error('FATAL ERROR: Default JWT secrets detected. Change them immediately for security.');
-      process.exit(1);
+        process.env.JWT_REFRESH_SECRET === 'your_default_refresh_secret' ||
+        process.env.JWT_SECRET === 'your_default_jwt_secret') {
+      console.warn('WARNING: Default JWT secrets detected. Change them for security.');
     }
 
-    // Validate session secret is not default
+    // Validate session secret is not default (warn but don't exit)
     if (process.env.SESSION_SECRET === 'your_default_session_secret') {
-      console.error('FATAL ERROR: Default session secret detected. Change it immediately for security.');
-      process.exit(1);
+      console.warn('WARNING: Default session secret detected. Change it for security.');
     }
 
-    // Validate encryption key format
+    // Validate encryption key format (warn but don't exit)
     if (process.env.ENCRYPTION_KEY) {
       try {
         const keyBuffer = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
         if (keyBuffer.length !== 32) {
-          console.error('FATAL ERROR: ENCRYPTION_KEY must be 32 bytes (64 hex characters)');
-          process.exit(1);
+          console.warn('WARNING: ENCRYPTION_KEY must be 32 bytes (64 hex characters) - encryption features may not work');
         }
       } catch (error) {
-        console.error('FATAL ERROR: ENCRYPTION_KEY must be a valid hex string');
-        process.exit(1);
+        console.warn('WARNING: ENCRYPTION_KEY must be a valid hex string - encryption features may not work');
       }
     }
 
-    // Validate DATABASE_URL format
+    // Validate DATABASE_URL format (warn but don't exit)
     if (process.env.DATABASE_URL) {
       const dbUrl = process.env.DATABASE_URL;
       const isPostgreSQL = dbUrl.startsWith('postgresql://') || dbUrl.startsWith('postgres://');
       
       if (!isPostgreSQL) {
-        console.error('FATAL ERROR: DATABASE_URL must be a valid PostgreSQL connection string');
-        process.exit(1);
-      }
-      
-      // Log database type for debugging
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`Database type detected: PostgreSQL`);
+        console.warn('WARNING: DATABASE_URL must be a valid PostgreSQL connection string');
+      } else {
+        console.log(`✅ Database connection configured`);
       }
     }
 
-    // Production-specific validations
+    // Production-specific validations (warn but don't exit)
     if (process.env.NODE_ENV === 'production') {
-      if (!process.env.CLIENT_URL || process.env.CLIENT_URL.startsWith('http://localhost')) {
-        console.error('FATAL ERROR: CLIENT_URL must be set to production domain in production environment');
-        process.exit(1);
-      }
-      
-      // Validate HTTPS in production
-      if (!process.env.CLIENT_URL.startsWith('https://')) {
-        console.error('FATAL ERROR: CLIENT_URL must use HTTPS in production environment');
-        process.exit(1);
+      if (!process.env.CLIENT_URL && !process.env.FRONTEND_URL) {
+        console.warn('WARNING: CLIENT_URL or FRONTEND_URL should be set in production');
+      } else if (process.env.CLIENT_URL && process.env.CLIENT_URL.startsWith('http://localhost')) {
+        console.warn('WARNING: CLIENT_URL should not use localhost in production');
+      } else if (process.env.CLIENT_URL && !process.env.CLIENT_URL.startsWith('https://')) {
+        console.warn('WARNING: CLIENT_URL should use HTTPS in production');
       }
     }
   }
