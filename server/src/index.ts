@@ -50,8 +50,7 @@ import {
 } from './middleware/rateLimit.js';
 import { auditMiddleware } from './middleware/auditMiddleware.js';
 import http from 'http';
-import connectPgSimple from 'connect-pg-simple';
-import pg from 'pg';
+// PostgreSQL imports removed - using Supabase instead
 import { logger } from './services/logger';
 import './services/monitoring'; // Initialize Monitoring Service early
 import { encryptionService } from './services/encryptionService';
@@ -67,9 +66,10 @@ const validateEnvVariables = () => {
     'PORT'
   ];
 
-  // Database variables - required for full functionality
-  const dbRequiredVars = [
-    'DATABASE_URL'
+  // Supabase variables - required for full functionality
+  const supabaseRequiredVars = [
+    'SUPABASE_URL',
+    'SUPABASE_SERVICE_ROLE_KEY'
   ];
 
   // JWT variables - use fallbacks for Railway deployment
@@ -98,10 +98,10 @@ const validateEnvVariables = () => {
       process.env.CLIENT_URL = process.env.FRONTEND_URL;
     }
 
-    // Warn about missing database but don't exit (allow health check to work)
-    const missingDb = dbRequiredVars.filter(varName => !process.env[varName]);
-    if (missingDb.length > 0) {
-      console.warn(`WARNING: Database variables missing: ${missingDb.join(', ')} - some features will be limited`);
+    // Warn about missing Supabase but don't exit (allow health check to work)
+    const missingSupabase = supabaseRequiredVars.filter(varName => !process.env[varName]);
+    if (missingSupabase.length > 0) {
+      console.warn(`WARNING: Supabase variables missing: ${missingSupabase.join(', ')} - database features will be limited`);
     }
 
     // Check JWT variables with fallbacks
@@ -140,16 +140,11 @@ const validateEnvVariables = () => {
       }
     }
 
-    // Validate DATABASE_URL format (warn but don't exit)
-    if (process.env.DATABASE_URL) {
-      const dbUrl = process.env.DATABASE_URL;
-      const isPostgreSQL = dbUrl.startsWith('postgresql://') || dbUrl.startsWith('postgres://');
-      
-      if (!isPostgreSQL) {
-        console.warn('WARNING: DATABASE_URL must be a valid PostgreSQL connection string');
-      } else {
-        console.log(`✅ Database connection configured`);
-      }
+    // Validate Supabase configuration
+    if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.log(`✅ Supabase configuration detected`);
+    } else {
+      console.warn('WARNING: Supabase not fully configured - database features will be limited');
     }
 
     // Production-specific validations (warn but don't exit)
@@ -235,18 +230,9 @@ app.use('/api/subscriptions/webhook', express.raw({ type: 'application/json' }))
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Session Configuration
-const PgStore = connectPgSimple(session);
-const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-});
-
-const sessionStore = new PgStore({
-  pool: pool,
-  tableName: 'user_sessions', // Or your preferred table name
-  createTableIfMissing: true,
-});
+// Session Configuration - using memory store since Supabase handles auth
+console.log('✅ Using memory store for sessions (Supabase handles authentication)');
+const sessionStore = new session.MemoryStore();
 
 const sessionOptions: SessionOptions = {
   secret: process.env.SESSION_SECRET!,
@@ -373,10 +359,8 @@ const gracefulShutdown = (signal: string) => {
         } else {
           logger.info('Redis client was not connected, skipping disconnection.');
         }
-        return pool.end();
-      })
-      .then(() => {
-        logger.info('Database pool closed.');
+        // No database pool to close - using Supabase
+        logger.info('No database pool to close (using Supabase).');
         clearTimeout(shutdownTimeout);
         logger.info('Graceful shutdown complete.');
         process.exit(0);
