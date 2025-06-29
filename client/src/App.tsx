@@ -34,6 +34,11 @@ const AISettingsPage = lazy(() => import('./pages/AISettingsPage'));
 // Admin components - only load for admin users
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 
+// Daily Intention components - lazy loaded
+const BeingsSelectionScreen = lazy(() => import('./components/intentions/BeingsSelectionScreen'));
+const CoachHomepage = lazy(() => import('./components/intentions/CoachHomepage'));
+const ClientHomepage = lazy(() => import('./components/intentions/ClientHomepage'));
+
 // Development/testing components - conditionally loaded only in development
 const TestPage = import.meta.env.DEV ? lazy(() => import('./pages/Test')) : null;
 const DebugPage = import.meta.env.DEV ? lazy(() => import('./pages/Debug')) : null;
@@ -347,6 +352,38 @@ const App: React.FC = () => {
                 element={
                   <RoleProtectedRoute allowedRoles={['client']}>
                     <SessionsPage />
+                  </RoleProtectedRoute>
+                } 
+              />
+            </Route>
+
+            {/* Daily Intention Routes */}
+            <Route element={<PublicLayout />}>
+              <Route 
+                path="/select-intentions" 
+                element={
+                  <ProtectedRoute>
+                    <BeingsSelectionScreen />
+                  </ProtectedRoute>
+                } 
+              />
+            </Route>
+
+            {/* Role-Specific Dashboard Routes */}
+            <Route element={<Layout />}>
+              <Route 
+                path="/coach-dashboard" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['coach']}>
+                    <CoachHomepage />
+                  </RoleProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/client-dashboard" 
+                element={
+                  <RoleProtectedRoute allowedRoles={['client']}>
+                    <ClientHomepage />
                   </RoleProtectedRoute>
                 } 
               />

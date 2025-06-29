@@ -19,7 +19,6 @@ import {
   TrendingUp,
   CheckCircle,
   ArrowRight,
-  MessageCircle,
   Target,
   BookOpen
 } from 'lucide-react';
@@ -172,7 +171,7 @@ export const ClientHomepage: React.FC<ClientHomepageProps> = ({ className }) => 
 
               {dailyIntentions.length > 0 ? (
                 <div className="space-y-2">
-                  {dailyIntentions.map((intention, index) => (
+                  {dailyIntentions.map((intention) => (
                     <div
                       key={intention.being_id}
                       className="flex items-center p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg"

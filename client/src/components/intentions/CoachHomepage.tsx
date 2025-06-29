@@ -171,7 +171,7 @@ export const CoachHomepage: React.FC<CoachHomepageProps> = ({ className }) => {
 
               {dailyIntentions.length > 0 ? (
                 <div className="space-y-2">
-                  {dailyIntentions.map((intention, index) => (
+                  {dailyIntentions.map((intention) => (
                     <div
                       key={intention.being_id}
                       className="flex items-center p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg"

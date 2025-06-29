@@ -73,11 +73,11 @@ class MobilePerformanceTester {
   private setupTouchLatencyTesting(): void {
     let touchStartTime = 0;
 
-    document.addEventListener('touchstart', (e) => {
+    document.addEventListener('touchstart', () => {
       touchStartTime = performance.now();
     }, { passive: true });
 
-    document.addEventListener('touchend', (e) => {
+    document.addEventListener('touchend', () => {
       const touchEndTime = performance.now();
       const latency = touchEndTime - touchStartTime;
       
@@ -103,7 +103,7 @@ class MobilePerformanceTester {
   public async testScrollPerformance(element: HTMLElement): Promise<number> {
     return new Promise((resolve) => {
       let frameCount = 0;
-      let startTime = performance.now();
+      const startTime = performance.now();
       const duration = 1000; // Test for 1 second
 
       const scrollTest = () => {

@@ -670,5 +670,62 @@
     "error": "שגיאה",
     "languageChanged": "השפה שונתה בהצלחה",
     "languageChangeFailed": "נכשל בשינוי השפה"
+  },
+  "intentions": {
+    "title": "כוונות יומיות",
+    "subtitle": "בחר עד {{max}} תכונות או ערכים שיובילו אותך היום",
+    "selectionCounter": "{{selected}} מתוך {{max}} נבחרו",
+    "suggestedBeings": "ישויות מוצעות",
+    "customBeings": "הישויות המותאמות שלי",
+    "addCustomBeing": "הוסף ישות מותאמת",
+    "addCustomTitle": "הוסף ישות מותאמת",
+    "englishLabel": "תווית אנגלית",
+    "englishPlaceholder": "למשל, חסד",
+    "hebrewLabel": "תווית עברית",
+    "hebrewPlaceholder": "למשל, חסד",
+    "add": "הוסף",
+    "cancel": "בטל",
+    "back": "חזור",
+    "continue": "המשך",
+    "saving": "שומר...",
+    "loading": "טוען את הכוונות היומיות שלך...",
+    "errors": {
+      "title": "שגיאה",
+      "selectAtLeastOne": "אנא בחר לפחות ישות אחת לכוונה היומית שלך.",
+      "failedToLoad": "נכשל לטעון ישויות. אנא נסה שוב.",
+      "failedToSave": "נכשל לשמור את הבחירות שלך. אנא נסה שוב.",
+      "failedToAdd": "נכשל להוסיף ישות מותאמת. אנא נסה שוב.",
+      "englishRequired": "תווית אנגלית נדרשת",
+      "hebrewRequired": "תווית עברית נדרשת"
+    },
+    "beings": {
+      "compassion": "חמלה",
+      "wisdom": "חוכמה",
+      "courage": "אומץ",
+      "patience": "סבלנות",
+      "joy": "שמחה",
+      "peace": "שלווה",
+      "love": "אהבה",
+      "gratitude": "הכרת הטוב",
+      "mindfulness": "קשיבות",
+      "strength": "כוח",
+      "creativity": "יצירתיות",
+      "balance": "איזון",
+      "trust": "אמון",
+      "forgiveness": "סליחה",
+      "acceptance": "קבלה",
+      "clarity": "בהירות",
+      "purpose": "מטרה",
+      "resilience": "חוסן",
+      "authenticity": "אותנטיות",
+      "connection": "חיבור"
+    }
+  },
+  "appInitializer": {
+    "checkingIntentions": "בודק את הכוונות היומיות שלך...",
+    "checkingIntentionsHebrew": "בודק את הכוונות היומיות שלך...",
+    "connectionError": "שגיאת חיבור",
+    "retry": "נסה שוב",
+    "loadingDashboard": "טוען את הדשבורד שלך..."
   }
 }

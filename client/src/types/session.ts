@@ -26,8 +26,8 @@ interface DatabaseSession {
   updated_at: string;
 }
 
-interface SessionInsert extends Omit<DatabaseSession, 'id' | 'created_at' | 'updated_at'> {}
-interface SessionUpdate extends Partial<Omit<DatabaseSession, 'id' | 'created_at'>> {}
+type SessionInsert = Omit<DatabaseSession, 'id' | 'created_at' | 'updated_at'>;
+type SessionUpdate = Partial<Omit<DatabaseSession, 'id' | 'created_at'>>;
 
 interface User {
   id: string;
