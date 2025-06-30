@@ -293,12 +293,27 @@ app.use('/api/security-monitoring', apiLimiter, securityMonitoringRoutes);
 // Health check endpoint (no rate limiting)
 app.get('/api/health', (req: Request, res: Response) => {
   const clientIp = getClientIp(req);
+  console.log(`Health check accessed at /api/health from IP: ${clientIp}`);
   res.status(200).json({ 
     status: 'UP', 
     message: 'Server is healthy',
     timestamp: new Date().toISOString(),
     clientIp: clientIp,
     environment: process.env.NODE_ENV 
+  });
+});
+
+// Railway healthcheck endpoint (matches railway.json healthcheckPath)
+app.get('/health', (req: Request, res: Response) => {
+  const clientIp = getClientIp(req);
+  console.log(`Railway health check accessed at /health from IP: ${clientIp}`);
+  res.status(200).json({ 
+    status: 'UP', 
+    message: 'Railway health check successful',
+    timestamp: new Date().toISOString(),
+    clientIp: clientIp,
+    environment: process.env.NODE_ENV,
+    railway: true
   });
 });
 
