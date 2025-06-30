@@ -3,7 +3,7 @@
 
 [build]
   # Build command - install dependencies and build the client app
-  command = "npm run install:all && npm run build --workspace client"
+  command = "npm install && npm run build --workspace client"
   
   # Directory to publish - Vite output
   publish = "client/dist"
@@ -122,10 +122,10 @@
 
 # Deploy preview configuration
 [context.deploy-preview]
-  command = "npm run install:all && npm run build --workspace client"
+  command = "npm install && npm run build --workspace client"
 
 [context.branch-deploy]
-  command = "npm run install:all && npm run build --workspace client"
+  command = "npm install && npm run build --workspace client"
 
 # Development context
 [dev]
