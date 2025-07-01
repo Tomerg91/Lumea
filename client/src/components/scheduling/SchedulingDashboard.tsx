@@ -26,6 +26,7 @@ import {
 import { format, startOfWeek, endOfWeek, addDays, isSameDay, isToday, isTomorrow } from 'date-fns';
 import { useSessions } from '@/hooks/useSessions';
 import { useTranslation } from 'react-i18next';
+import { toUIStatus } from '@/utils/status';
 
 interface UpcomingAppointment {
   id: string;
@@ -103,7 +104,7 @@ export const SchedulingDashboard: React.FC = () => {
           date: new Date(session.date),
           duration: session.duration || 60,
           type: session.type || 'Coaching Session',
-          status: session.status === 'scheduled' ? 'confirmed' : 'pending',
+          status: toUIStatus(session.status) === 'pending' ? 'confirmed' : 'pending',
           notes: session.notes,
           isRecurring: false,
           meetingLink: session.meetingLink

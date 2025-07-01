@@ -178,3 +178,30 @@
 - ✅ Beautiful design system with consistent patterns
 
 The platform now stands at 44.4% completion with all foundational infrastructure complete and ready for the final UI/UX enhancement and production deployment phases.
+
+## 🛠️ CI Stabilization & Type Refactor (May 2025)
+
+**CI Improvements**
+- Added deterministic *Preflight Sanity Checks* job in `.github/workflows/ci.yml`
+  - Enables Corepack, pins **pnpm @ 8.15.5**
+  - Verifies `package-lock.json` cleanliness
+  - Checks mandatory secrets (currently only `SUPABASE_URL`)
+- Removed unnecessary `ANTHROPIC_API_KEY` requirement after user feedback
+- Type-check and lint jobs now depend on preflight → early failure on env drift
+
+**Dependency Fixes**
+- Added missing client deps: `@headlessui/react`, `@radix-ui/react-icons`, `libsodium-wrappers`, `@supabase/auth-helpers-react`
+- Downgraded **date-fns** to **2.30.0** (v4 prerelease broke `parseISO`, typings)
+- Patched TanStack Query v5 typings via `postinstall` script (copies modern d.cts to legacy path)
+- Enabled `skipLibCheck` in `client/tsconfig.json` to silence 3rd-party d.ts noise
+
+**Codebase Refactor**
+- Introduced `utils/status.ts` with `toUIStatus / toDBStatus` mapping helpers referencing `StatusMapping` in `types/session.ts`
+- Replaced hard-coded status string comparisons in `Sessions.tsx`, `Dashboard.tsx`, `SchedulingDashboard.tsx` with helper → fixes *SessionStatus vs "completed"* overlap errors
+- Began sweep to align DB snake_case fields to UI camelCase (Reflection, User, etc.) – WIP
+
+**Next Technical Steps**
+1. Create adapter layer for Reflection / User field mapping (`created_at` → `createdAt`, etc.)
+2. Patch remaining missing exports (`parseISO` import path, MUI Grid prop requirements)
+3. Expose legacy wrappers in `coachNoteService` to satisfy old tests while migration completes
+4. Re-run `tsc --noEmit` until error-free, then re-enable stricter TS flags

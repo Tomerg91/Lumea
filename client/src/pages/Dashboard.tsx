@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -33,6 +33,7 @@ import {
   StatusIndicator,
   LoadingButton
 } from '../components/LoadingSystem';
+import { toUIStatus } from '@/utils/status';
 
 interface DashboardStats {
   totalSessions: number;
@@ -171,11 +172,11 @@ const SessionCard: React.FC<SessionCardProps> = ({ session, isRTL }) => (
         <span className={cn(
           "px-3 py-1 rounded-full text-xs font-medium",
           session.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-          session.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
+          toUIStatus(session.status) === 'pending' ? 'bg-blue-100 text-blue-800' :
           'bg-yellow-100 text-yellow-800'
         )}>
           {session.status === 'confirmed' ? 'Confirmed' :
-           session.status === 'scheduled' ? 'Scheduled' : 'Pending'}
+           toUIStatus(session.status) === 'pending' ? 'Scheduled' : 'Pending'}
         </span>
         <Video className="w-5 h-5 text-blue-500" />
       </div>

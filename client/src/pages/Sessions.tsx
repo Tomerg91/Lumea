@@ -26,6 +26,7 @@ import { useRealtimeSessions, useCreateSession, useDeleteSession, Session, Creat
 import { useAvailableCoaches } from '@/hooks/useCoaches';
 import { CancelSessionModal } from '@/components/ui/CancelSessionModal';
 import { RescheduleSessionModal } from '@/components/ui/RescheduleSessionModal';
+import { toUIStatus } from '@/utils/status';
 
 // Local interface for the new session form data
 interface NewSessionFormData {
@@ -383,7 +384,7 @@ const Sessions = () => {
                   {t('sessions.stats.upcoming', 'Upcoming')}
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {sessions.filter(s => s.status === 'scheduled').length}
+                  {sessions.filter(s => toUIStatus(s.status) === 'pending').length}
                 </p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
@@ -402,7 +403,7 @@ const Sessions = () => {
                   {t('sessions.stats.completed', 'Completed')}
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {sessions.filter(s => s.status === 'completed').length}
+                  {sessions.filter(s => toUIStatus(s.status) === 'completed').length}
                 </p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl flex items-center justify-center">
@@ -547,7 +548,7 @@ const Sessions = () => {
                       isRTL && "flex-row-reverse"
                     )}>
                       <Badge 
-                        variant={session.status === 'completed' ? 'default' : session.status === 'scheduled' ? 'secondary' : 'destructive'}
+                        variant={toUIStatus(session.status) === 'completed' ? 'default' : toUIStatus(session.status) === 'pending' ? 'secondary' : 'destructive'}
                         className="px-3 py-1"
                       >
                         {t(`sessions.status.${session.status}`, session.status)}
