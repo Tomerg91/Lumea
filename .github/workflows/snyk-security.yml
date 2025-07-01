@@ -13,8 +13,6 @@ jobs:
   snyk-security:
     name: Snyk Security Analysis
     runs-on: ubuntu-latest
-    # Only run if SNYK_TOKEN is available
-    if: ${{ secrets.SNYK_TOKEN != '' }}
     
     permissions:
       security-events: write
@@ -24,17 +22,32 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        
+      - name: Check if Snyk token is available
+        id: check-snyk
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          if [ -n "$SNYK_TOKEN" ]; then
+            echo "enabled=true" >> $GITHUB_OUTPUT
+          else
+            echo "enabled=false" >> $GITHUB_OUTPUT
+            echo "Snyk token not available, skipping Snyk security scans"
+          fi
 
       - name: Setup Node.js
+        if: steps.check-snyk.outputs.enabled == 'true'
         uses: actions/setup-node@v3
         with:
           node-version: 20
           cache: 'npm'
 
       - name: Install dependencies
+        if: steps.check-snyk.outputs.enabled == 'true'
         run: npm ci --workspaces --if-present
 
       - name: Run Snyk to check for vulnerabilities
+        if: steps.check-snyk.outputs.enabled == 'true'
         uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -43,6 +56,7 @@ jobs:
           command: test
 
       - name: Run Snyk to check for open source vulnerabilities
+        if: steps.check-snyk.outputs.enabled == 'true'
         uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -52,22 +66,33 @@ jobs:
         continue-on-error: true
 
       - name: Upload Snyk results to GitHub Code Scanning
+        if: steps.check-snyk.outputs.enabled == 'true'
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
         with:
           sarif_file: snyk.sarif
 
   snyk-container:
     name: Snyk Container Security
     runs-on: ubuntu-latest
-    # Only run if SNYK_TOKEN is available and there are Dockerfiles
-    if: ${{ secrets.SNYK_TOKEN != '' }}
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        
+      - name: Check if Snyk token is available
+        id: check-snyk
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          if [ -n "$SNYK_TOKEN" ]; then
+            echo "enabled=true" >> $GITHUB_OUTPUT
+          else
+            echo "enabled=false" >> $GITHUB_OUTPUT
+            echo "Snyk token not available, skipping Snyk container scans"
+          fi
 
       - name: Check for Dockerfiles
+        if: steps.check-snyk.outputs.enabled == 'true'
         id: check-docker
         run: |
           if find . -name "Dockerfile*" -type f | grep -q .; then
@@ -77,7 +102,7 @@ jobs:
           fi
 
       - name: Run Snyk to check Docker images for vulnerabilities
-        if: steps.check-docker.outputs.dockerfiles == 'true'
+        if: steps.check-snyk.outputs.enabled == 'true' && steps.check-docker.outputs.dockerfiles == 'true'
         uses: snyk/actions/docker@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -88,14 +113,25 @@ jobs:
   snyk-iac:
     name: Snyk Infrastructure as Code
     runs-on: ubuntu-latest
-    # Only run if SNYK_TOKEN is available
-    if: ${{ secrets.SNYK_TOKEN != '' }}
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        
+      - name: Check if Snyk token is available
+        id: check-snyk
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          if [ -n "$SNYK_TOKEN" ]; then
+            echo "enabled=true" >> $GITHUB_OUTPUT
+          else
+            echo "enabled=false" >> $GITHUB_OUTPUT
+            echo "Snyk token not available, skipping Snyk IaC scans"
+          fi
 
       - name: Run Snyk to check for IaC vulnerabilities
+        if: steps.check-snyk.outputs.enabled == 'true'
         uses: snyk/actions/iac@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -105,23 +141,38 @@ jobs:
   snyk-monitor:
     name: Snyk Monitor (Track Dependencies)
     runs-on: ubuntu-latest
-    # Only run on main branch and if SNYK_TOKEN is available
-    if: ${{ github.ref == 'refs/heads/main' && secrets.SNYK_TOKEN != '' }}
+    # Only run on main branch
+    if: ${{ github.ref == 'refs/heads/main' }}
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        
+      - name: Check if Snyk token is available
+        id: check-snyk
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          if [ -n "$SNYK_TOKEN" ]; then
+            echo "enabled=true" >> $GITHUB_OUTPUT
+          else
+            echo "enabled=false" >> $GITHUB_OUTPUT
+            echo "Snyk token not available, skipping Snyk monitoring"
+          fi
 
       - name: Setup Node.js
+        if: steps.check-snyk.outputs.enabled == 'true'
         uses: actions/setup-node@v3
         with:
           node-version: 20
           cache: 'npm'
 
       - name: Install dependencies
+        if: steps.check-snyk.outputs.enabled == 'true'
         run: npm ci --workspaces --if-present
 
       - name: Monitor dependencies with Snyk
+        if: steps.check-snyk.outputs.enabled == 'true'
         uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
