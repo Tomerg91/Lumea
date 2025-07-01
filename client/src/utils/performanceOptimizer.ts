@@ -63,7 +63,7 @@ class PerformanceMonitor {
     this.observePerformanceEntry('first-input', (entries) => {
       const fidEntry = entries[0];
       if (fidEntry) {
-        this.metrics.FID = fidEntry.processingStart - fidEntry.startTime;
+        this.metrics.FID = (fidEntry as any).processingStart - fidEntry.startTime;
       }
     });
 

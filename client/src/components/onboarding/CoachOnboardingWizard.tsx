@@ -420,6 +420,36 @@ const CoachOnboardingWizard: React.FC = () => {
     </div>
   );
 
+  const FinalizeStep: React.FC = () => (
+    <div className="space-y-6">
+      <div className="text-center">
+        <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Setup Complete!</h3>
+        <p className="text-gray-600">
+          You've successfully completed your onboarding. You're now ready to start coaching.
+        </p>
+      </div>
+      
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h4 className="font-medium text-gray-900 mb-2">What's Next?</h4>
+        <ul className="space-y-2 text-sm text-gray-600">
+          <li className="flex items-center">
+            <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+            Invite your first client
+          </li>
+          <li className="flex items-center">
+            <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+            Schedule your first session
+          </li>
+          <li className="flex items-center">
+            <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+            Explore coaching tools and resources
+          </li>
+        </ul>
+      </div>
+    </div>
+  );
+
   const steps: OnboardingStep[] = [
     {
       id: 'profile',

@@ -62,7 +62,7 @@ const NotFound = () => {
 
             <Button
               variant="outline"
-              onClick={() => navigate(-1)}
+              onClick={() => navigate(-1 as any)}
               className="w-full hover:bg-gray-50 h-12"
             >
               <ArrowLeft className={cn(

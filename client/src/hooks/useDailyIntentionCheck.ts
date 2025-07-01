@@ -22,7 +22,9 @@ export const useDailyIntentionCheck = (
   autoRedirect: boolean = true
 ): DailyIntentionCheckResult => {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
+  
+  const isAuthenticated = !!user;
   
   const [needsSelection, setNeedsSelection] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

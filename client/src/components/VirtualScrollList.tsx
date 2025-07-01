@@ -67,7 +67,7 @@ const VirtualScrollList = <T,>({
   }, [onScroll]);
 
   // Optimized scroll handler using RAF
-  const rafId = useRef<number>();
+  const rafId = useRef<number | null>(null);
   const handleScrollOptimized = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     if (rafId.current) {
       cancelAnimationFrame(rafId.current);

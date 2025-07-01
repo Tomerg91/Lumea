@@ -30,7 +30,7 @@ import {
   Upload,
   RefreshCw,
 } from 'lucide-react';
-import SessionList, { SessionStatus, Session as ComponentSession } from '../components/SessionList';
+import { SessionList, SessionStatus, Session as ComponentSession } from '../components/SessionList';
 import SessionsCalendar from '../components/SessionsCalendar';
 import MobileSessionList from '../components/mobile/MobileSessionList';
 import MobileFloatingActionButton, { SessionsFAB } from '../components/mobile/MobileFloatingActionButton';
@@ -403,7 +403,11 @@ const SessionsPage: React.FC = () => {
       client_id: data.clientId,
       coach_id: profile.id as string,
       date: data.date,
+      time: '09:00', // Default time
+      type: 'video' as const, // Default type
+      title: 'Coaching Session', // Default title
       notes: data.notes,
+      status: 'Upcoming' as const,
     }, {
       onSuccess: () => {
         setIsModalOpen(false);
@@ -517,7 +521,11 @@ const SessionsPage: React.FC = () => {
       client_id: data.clientId,
       coach_id: profile.id as string,
       date: data.date,
+      time: '09:00', // Default time
+      type: 'video' as const, // Default type
+      title: 'Coaching Session', // Default title
       notes: selectedTemplate.notes,
+      status: 'Upcoming' as const,
     }, {
       onSuccess: () => {
         setIsModalOpen(false);

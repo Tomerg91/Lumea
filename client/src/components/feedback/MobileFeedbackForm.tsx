@@ -218,7 +218,7 @@ export const MobileFeedbackForm: React.FC<FeedbackFormProps> = ({
   });
 
   // Auto-save functionality with debouncing
-  const autoSaveTimeout = useRef<NodeJS.Timeout>();
+  const autoSaveTimeout = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
     const subscription = form.watch((value) => {

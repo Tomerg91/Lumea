@@ -112,7 +112,7 @@ export function useSessions(filters: SessionFilters = {}) {
 export function useUpcomingSessions() {
   const now = new Date().toISOString();
   return useSessions({ 
-    status: 'upcoming',
+    status: 'Upcoming',
     start_date: now,
     limit: 20, // Limit for performance
     live: true // Enable background refetch for upcoming sessions
@@ -255,7 +255,7 @@ export function useUpdateSession() {
       // Optimistically update to the new value
       if (previousSession) {
         queryClient.setQueryData(['sessions', 'detail', sessionId], {
-          ...previousSession,
+          ...(previousSession as object),
           ...data,
         });
       }
@@ -325,7 +325,7 @@ export function useCancelSession() {
       
       if (previousSession) {
         queryClient.setQueryData(['sessions', 'detail', sessionId], {
-          ...previousSession,
+          ...(previousSession as object),
           status: 'cancelled',
         });
       }
@@ -390,7 +390,7 @@ export function useRescheduleSession() {
       
       if (previousSession) {
         queryClient.setQueryData(['sessions', 'detail', sessionId], {
-          ...previousSession,
+          ...(previousSession as object),
           date: newDate,
           status: 'upcoming',
         });
@@ -422,7 +422,7 @@ export function useCompleteSession() {
   return useMutation({
     mutationFn: async ({ sessionId, notes }: { sessionId: string; notes?: string }) => {
       const updateData: UpdateSessionData = { 
-        status: 'completed',
+        status: 'Completed',
         ...(notes && { notes }) 
       };
       
@@ -458,8 +458,8 @@ export function useCompleteSession() {
       
       if (previousSession) {
         queryClient.setQueryData(['sessions', 'detail', sessionId], {
-          ...previousSession,
-          status: 'completed',
+          ...(previousSession as object),
+          status: 'Completed',
           ...(notes && { notes }),
         });
       }
@@ -533,25 +533,12 @@ export function useRealtimeSessions(filters: SessionFilters = {}) {
   // Use realtime subscription for live updates
   useRealtimeTable(
     'sessions',
-    {
-      onInsert: (payload) => {
-        // Handle new session
-        const queryClient = useQueryClient();
-        queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
-        queryClient.invalidateQueries({ queryKey: ['sessions', 'stats'] });
-      },
-      onUpdate: (payload) => {
-        // Handle session update
-        const queryClient = useQueryClient();
-        queryClient.invalidateQueries({ queryKey: ['sessions', 'detail', payload.new.id] });
-        queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
-      },
-      onDelete: (payload) => {
-        // Handle session deletion
-        const queryClient = useQueryClient();
-        queryClient.removeQueries({ queryKey: ['sessions', 'detail', payload.old.id] });
-        queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
-      }
+    null, // No filter
+    (payload) => {
+      const queryClient = useQueryClient();
+      // Handle real-time updates
+      queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
+      queryClient.invalidateQueries({ queryKey: ['sessions', 'stats'] });
     }
   );
   

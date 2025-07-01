@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase';
 import type { User, Session } from '@supabase/supabase-js';
 
 export interface AuthUser extends User {
-  user_metadata?: {
+  user_metadata: {
     full_name?: string;
     avatar_url?: string;
     email_verified?: boolean;
@@ -472,12 +472,9 @@ class EnhancedAuthService {
 
   private async incrementFailedLogins(email: string): Promise<void> {
     try {
-      await supabase
-        .from('profiles')
-        .update({
-          failed_login_attempts: supabase.sql`failed_login_attempts + 1`,
-        })
-        .eq('email', email);
+      await supabase.rpc('increment_failed_logins', {
+        user_email: email
+      });
     } catch (error) {
       console.error('Increment failed logins error:', error);
     }
@@ -517,14 +514,10 @@ class EnhancedAuthService {
     try {
       if (!this.currentUser) return;
 
-      await supabase
-        .from('profiles')
-        .update({
-          last_login_at: new Date().toISOString(),
-          last_login_ip: await this.getClientIP(),
-          login_count: supabase.sql`login_count + 1`,
-        })
-        .eq('id', this.currentUser.id);
+      await supabase.rpc('update_last_login', {
+        user_id: this.currentUser.id,
+        ip_address: await this.getClientIP()
+      });
     } catch (error) {
       console.error('Update last login error:', error);
     }

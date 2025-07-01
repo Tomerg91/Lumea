@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Users, Plus, Search, Video, MapPin, User, Eye, Edit, Trash2, CheckCircle, XCircle, Loader2, Phone, Sparkles } from 'lucide-react';
+import { Calendar, Clock, Users, Plus, Search, Video, MapPin, User, Eye, Edit, Trash2, CheckCircle, XCircle, Loader2, Phone, Sparkles, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { 
@@ -22,7 +22,8 @@ import {
   FormFieldSkeleton,
   StatusIndicator
 } from '@/components/LoadingSystem';
-import { useRealtimeSessions, useCreateSession, useDeleteSession, Session, CreateSessionData } from '@/hooks/useSessions';
+import { useRealtimeSessions, useCreateSession, useDeleteSession } from '@/hooks/useSessions';
+import { SessionWithUsers, Session, CreateSessionData, SessionStatus } from '@/types/session';
 import { useAvailableCoaches } from '@/hooks/useCoaches';
 import { CancelSessionModal } from '@/components/ui/CancelSessionModal';
 import { RescheduleSessionModal } from '@/components/ui/RescheduleSessionModal';
@@ -134,8 +135,10 @@ const Sessions = () => {
         coach_id: newSessionData.coach,
         date: sessionDateTime.toISOString(),
         notes: newSessionData.notes,
-        title: newSessionData.title, // Added
-        type: newSessionData.type,   // Added
+        status: 'Upcoming' as SessionStatus,
+        type: newSessionData.type,
+        time: newSessionData.time,
+        title: newSessionData.title,
       };
 
       await createSessionMutation.mutateAsync(createSessionPayload);
@@ -144,8 +147,10 @@ const Sessions = () => {
         date: new Date(),
         time: '',
         coach: '',
-        type: '',
+        type: 'video',
         notes: '',
+        title: '',
+        description: '',
       });
       toast({
         title: t('common.success'),

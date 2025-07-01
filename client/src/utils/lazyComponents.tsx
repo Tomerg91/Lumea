@@ -22,7 +22,7 @@ const ChartLoader = () => (
 // Lazy load heavy animation library components with proper typing
 export const LazyFramerMotion = {
   MotionDiv: lazy(() => import('framer-motion').then(module => ({ 
-    default: module.motion.div 
+    default: module.motion.div as any
   }))),
   AnimatePresence: lazy(() => import('framer-motion').then(module => ({ 
     default: module.AnimatePresence 
@@ -78,9 +78,7 @@ export const OptimizedMotion = ({
 
   return (
     <Suspense fallback={<div className={className}>{children}</div>}>
-      <LazyFramerMotion.MotionDiv className={className} {...props}>
-        {children}
-      </LazyFramerMotion.MotionDiv>
+      {React.createElement(LazyFramerMotion.MotionDiv as any, { className, ...props }, children)}
     </Suspense>
   );
 };
@@ -110,11 +108,11 @@ export const OptimizedChart = ({
   return (
     <Suspense fallback={<ChartLoader />}>
       <div className={className}>
-        <LazyCharts.ResponsiveContainer width="100%" height={height}>
-          <ChartComponent data={data} {...props}>
-            {children}
-          </ChartComponent>
-        </LazyCharts.ResponsiveContainer>
+        {React.createElement(
+          LazyCharts.ResponsiveContainer as any,
+          { width: "100%", height },
+          React.createElement(ChartComponent as any, { data, ...props }, children)
+        )}
       </div>
     </Suspense>
   );

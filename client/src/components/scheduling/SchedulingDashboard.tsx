@@ -99,7 +99,7 @@ export const SchedulingDashboard: React.FC = () => {
         .filter(session => new Date(session.date) > new Date())
         .map(session => ({
           id: session.id,
-          clientName: `${session.client?.firstName || 'Unknown'} ${session.client?.lastName || 'Client'}`,
+          clientName: `${(session.client as any)?.firstName || 'Unknown'} ${(session.client as any)?.lastName || 'Client'}`,
           clientEmail: session.client?.email || '',
           date: new Date(session.date),
           duration: session.duration || 60,
@@ -150,8 +150,8 @@ export const SchedulingDashboard: React.FC = () => {
         totalAppointments: sessions.length,
         upcomingAppointments: appointments.length,
         pendingRequests: mockRequests.filter(req => req.status === 'pending').length,
-        completedThisWeek: weekSessions.filter(session => session.status === 'completed').length,
-        cancellationRate: sessions.length > 0 ? (sessions.filter(s => s.status === 'cancelled').length / sessions.length) * 100 : 0,
+        completedThisWeek: weekSessions.filter(session => session.status === 'Completed').length,
+        cancellationRate: sessions.length > 0 ? (sessions.filter(s => s.status === 'Cancelled').length / sessions.length) * 100 : 0,
         averageBookingLead: 5, // Mock data
         popularTimeSlots: ['10:00 AM', '2:00 PM', '4:00 PM'],
         busyDays: ['Monday', 'Wednesday', 'Friday']

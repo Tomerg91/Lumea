@@ -36,11 +36,34 @@ export const AudioReflectionForm: React.FC<AudioReflectionFormProps> = ({
     const loadSessions = async () => {
       setIsLoadingSessions(true);
       try {
-        // Mock sessions for now - replace with actual API call
         await new Promise(resolve => setTimeout(resolve, 500));
         setSessions([
-          { id: '1', date: '2024-12-16', status: 'completed' },
-          { id: '2', date: '2024-12-10', status: 'scheduled' },
+          { 
+            id: '1', 
+            date: '2024-12-16', 
+            status: 'Completed',
+            notes: null,
+            client_id: 'client-1',
+            coach_id: 'coach-1',
+            payment_id: null,
+            reminder_sent: false,
+            audio_file: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          },
+          { 
+            id: '2', 
+            date: '2024-12-10', 
+            status: 'Upcoming',
+            notes: null,
+            client_id: 'client-2',
+            coach_id: 'coach-1',
+            payment_id: null,
+            reminder_sent: false,
+            audio_file: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          },
         ]);
       } catch (error) {
         console.error('Failed to load sessions:', error);

@@ -106,33 +106,13 @@ export interface AnalyticsSummary {
   totalAdjustments: number;
 }
 
-// Common fetch configuration with authentication
-const createFetchConfig = async (options: RequestInit = {}): Promise<RequestInit> => {
-  const { data: { session } } = await supabase.auth.getSession();
-  
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-    ...options.headers,
-  };
-
-  // Add JWT token if available
-  if (session?.access_token) {
-    headers['Authorization'] = `Bearer ${session.access_token}`;
-  }
-
-  return {
-    ...options,
-    headers,
-    credentials: 'include', // Essential for session cookies!
-  };
-};
+import { createFetchConfig } from './api';
 
 export const fetchSessions = async (): Promise<Session[]> => {
   console.log('Attempting to fetch sessions from backend...');
   const response = await fetch(
     `${API_BASE_URL}/sessions/client/all`, 
-    await createFetchConfig()
+    createFetchConfig()
   );
   
   if (!response.ok) {
@@ -152,7 +132,7 @@ export const createSession = async (sessionData: APICreateSessionData): Promise<
   
   const response = await fetch(
     `${API_BASE_URL}/sessions`, 
-    await createFetchConfig({
+    createFetchConfig({
       method: 'POST',
       body: JSON.stringify(sessionData),
     })
@@ -205,7 +185,7 @@ export const updateSessionStatus = async (
   
   const response = await fetch(
     `${API_BASE_URL}/sessions/${sessionId}/status`, 
-    await createFetchConfig({
+    createFetchConfig({
       method: 'PUT',
       body: JSON.stringify(statusData),
     })
@@ -249,7 +229,7 @@ export const fetchSessionById = async (sessionId: string): Promise<Session> => {
   
   const response = await fetch(
     `${API_BASE_URL}/sessions/${sessionId}`, 
-    createFetchConfig()
+    await createFetchConfig()
   );
 
   if (!response.ok) {

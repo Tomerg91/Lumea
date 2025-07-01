@@ -267,7 +267,7 @@ const MobileSessionTimer: React.FC<MobileSessionTimerProps> = ({
   const [isVisible, setIsVisible] = useState(!document.hidden);
   const [backgroundDuration, setBackgroundDuration] = useState(0);
   const wakeLockRef = useRef<boolean>(false);
-  const visibilityHandlerRef = useRef<() => void>();
+  const visibilityHandlerRef = useRef<(() => void) | null>(null);
 
   const {
     timerData,

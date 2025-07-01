@@ -292,10 +292,10 @@ const Dashboard = () => {
   }));
 
   // Helper function to safely get display name
-  const getDisplayName = () => {
-    if (profile?.full_name) return profile.full_name;
+  const getDisplayName = (): string => {
+    if (profile?.full_name) return String(profile.full_name);
     if (profile?.email) {
-      return (profile.email as string).split('@')[0];
+      return String(profile.email).split('@')[0];
     }
     return 'User';
   };

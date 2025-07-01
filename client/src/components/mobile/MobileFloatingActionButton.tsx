@@ -39,8 +39,8 @@ const MobileFloatingActionButton: React.FC<MobileFloatingActionButtonProps> = ({
   const { isRTL } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPressed, setIsPressed] = useState(false);
-  const longPressTimer = useRef<NodeJS.Timeout>();
-  const expandTimer = useRef<NodeJS.Timeout>();
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const expandTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Auto-collapse after delay
   useEffect(() => {

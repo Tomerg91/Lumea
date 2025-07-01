@@ -355,7 +355,7 @@ export const BeingsSelectionScreen: React.FC<BeingsSelectionScreenProps> = ({
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate(-1 as any)}
             className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
           >
             {language === 'he' ? 'חזור' : 'Back'}

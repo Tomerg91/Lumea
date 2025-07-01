@@ -6,6 +6,14 @@ import {
   matchRoutes 
 } from 'react-router-dom';
 import * as Sentry from '@sentry/react';
+import { 
+  captureException as sentryCaptureException,
+  captureMessage as sentryCaptureMessage,
+  addBreadcrumb as sentryAddBreadcrumb,
+  setUser as sentrySetUser,
+  setTag as sentrySetTag,
+  setContext as sentrySetContext
+} from '@sentry/browser';
 
 export function initSentry() {
   if (!import.meta.env.VITE_SENTRY_DSN) {
@@ -20,10 +28,6 @@ export function initSentry() {
     // Performance monitoring
     tracesSampleRate: import.meta.env.MODE === 'production' ? 0.1 : 1.0,
     
-    // Session replay for debugging
-    replaysSessionSampleRate: import.meta.env.MODE === 'production' ? 0.01 : 0.1,
-    replaysOnErrorSampleRate: 1.0,
-    
     integrations: [
       // React Router integration
       Sentry.reactRouterV6BrowserTracingIntegration({
@@ -32,12 +36,6 @@ export function initSentry() {
         useNavigationType,
         createRoutesFromChildren,
         matchRoutes,
-      }),
-      
-      // Session replay
-      Sentry.replayIntegration({
-        maskAllText: import.meta.env.MODE === 'production',
-        blockAllMedia: import.meta.env.MODE === 'production',
       }),
     ],
 
@@ -126,11 +124,11 @@ export function initSentry() {
 export const SentryErrorBoundary = Sentry.ErrorBoundary;
 
 // Performance monitoring helpers
-export const captureException = Sentry.captureException;
-export const captureMessage = Sentry.captureMessage;
-export const addBreadcrumb = Sentry.addBreadcrumb;
-export const setUser = Sentry.setUser;
-export const setTag = Sentry.setTag;
-export const setContext = Sentry.setContext;
+export const captureException = sentryCaptureException;
+export const captureMessage = sentryCaptureMessage;
+export const addBreadcrumb = sentryAddBreadcrumb;
+export const setUser = sentrySetUser;
+export const setTag = sentrySetTag;
+export const setContext = sentrySetContext;
 
 export { Sentry }; 

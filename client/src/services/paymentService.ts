@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../lib/api';
+import { createFetchConfig } from './api';
 import type { Payment, PaymentInsert, PaymentUpdate, PaymentStatus } from '../../../shared/types/database';
 
 // Extended types for API responses

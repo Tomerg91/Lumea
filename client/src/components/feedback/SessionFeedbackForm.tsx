@@ -101,7 +101,7 @@ export const SessionFeedbackForm: React.FC<FeedbackFormProps> = ({
     startTime: new Date(),
   });
   
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout>();
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef(new Date());
 
   const form = useForm<FeedbackFormValues>({

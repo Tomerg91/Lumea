@@ -414,7 +414,7 @@ const MobileSessionCard: React.FC<{
   const TypeIcon = typeConfig.icon;
 
   // Enhanced touch feedback with loading states
-  const longPressTimer = useRef<NodeJS.Timeout>();
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const handleTouchStart = () => {
     setIsPressed(true);
     // Immediate haptic feedback for touch responsiveness

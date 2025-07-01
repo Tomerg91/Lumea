@@ -20,6 +20,12 @@ interface DatabaseSession {
   coach_id: string;
   client_id: string;
   date: string;
+  time: string;
+  title: string;
+  description?: string;
+  type: 'video' | 'phone' | 'in-person';
+  duration?: number;
+  meetingLink?: string;
   status: DatabaseSessionStatus;
   notes?: string;
   created_at: string;
@@ -86,6 +92,8 @@ export type Session = DatabaseSession;
 export interface SessionWithUsers extends Session {
   client?: Pick<User, 'id' | 'name' | 'email'> | null;
   coach?: Pick<User, 'id' | 'name' | 'email'> | null;
+  clientName?: string;
+  coachName?: string;
 }
 
 /**

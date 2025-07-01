@@ -39,7 +39,7 @@ interface ClientHomepageProps {
 export const ClientHomepage: React.FC<ClientHomepageProps> = ({ className }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { sessions, loading: sessionsLoading } = useSessions();
+  const { data: sessions, isLoading: sessionsLoading } = useSessions();
   
   const [dailyIntentions, setDailyIntentions] = useState<DailyIntention[]>([]);
   const [intentionStats, setIntentionStats] = useState<IntentionStats | null>(null);
@@ -82,7 +82,7 @@ export const ClientHomepage: React.FC<ClientHomepageProps> = ({ className }) => 
   const upcomingSessions = sessions.filter(session => {
     const sessionDate = new Date(session.date);
     const now = new Date();
-    return sessionDate >= now && (session.status === 'Upcoming' || session.status === 'upcoming');
+    return sessionDate >= now && session.status !== 'Completed' && session.status !== 'Cancelled';
   });
 
   const nextSession = upcomingSessions[0];
@@ -110,7 +110,7 @@ export const ClientHomepage: React.FC<ClientHomepageProps> = ({ className }) => 
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                {language === 'he' ? 'שלום' : 'Welcome back'}, {user?.name || 'Client'}
+                {language === 'he' ? 'שלום' : 'Welcome back'}, {user?.email?.split('@')[0] || 'Client'}
               </h1>
               <p className="text-gray-600 mt-1">
                 {language === 'he' 

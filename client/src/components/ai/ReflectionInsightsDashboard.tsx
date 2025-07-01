@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import aiService, { ReflectionInsight } from '../../services/aiService';
-import { useReflections } from '../../hooks/useReflections';
+import { useReflections, Reflection } from '../../hooks/useReflections';
 import { useToast } from '../../hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -234,6 +234,24 @@ export const ReflectionInsightsDashboard: React.FC = () => {
     if (confidence >= 0.8) return 'text-green-600';
     if (confidence >= 0.6) return 'text-yellow-600';
     return 'text-red-600';
+  };
+
+  // Helper function to extract content from reflection answers
+  const getReflectionContent = (reflection: Reflection): string => {
+    if (!reflection.answers || reflection.answers.length === 0) return '';
+    return reflection.answers
+      .map(answer => {
+        if (typeof answer.value === 'string') return answer.value;
+        if (answer.audioData?.transcript) return answer.audioData.transcript;
+        return JSON.stringify(answer.value);
+      })
+      .join(' ');
+  };
+
+  // Helper function to get insights (placeholder for now)
+  const getReflectionInsights = (reflection: Reflection): ReflectionInsight[] => {
+    // This would normally come from a separate insights service/query
+    return [];
   };
 
   if (loading || reflectionsLoading) {
@@ -562,18 +580,18 @@ export const ReflectionInsightsDashboard: React.FC = () => {
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-medium flex items-center gap-2">
                           <Calendar className="w-4 h-4" />
-                          {new Date(reflection.createdAt).toLocaleDateString()}
+                          {new Date(reflection.created_at).toLocaleDateString()}
                         </p>
                         <div className="flex items-center gap-2">
-                          {reflection.insights && reflection.insights.length > 0 ? (
+                          {getReflectionInsights(reflection).length > 0 ? (
                             <Badge variant="default" className="text-xs">
-                              {reflection.insights.length} insights
+                              {getReflectionInsights(reflection).length} insights
                             </Badge>
                           ) : (
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => analyzeReflection(reflection.id, reflection.content || '')}
+                              onClick={() => analyzeReflection(reflection.id, getReflectionContent(reflection))}
                               disabled={analyzing === reflection.id}
                             >
                               {analyzing === reflection.id ? (
@@ -587,11 +605,11 @@ export const ReflectionInsightsDashboard: React.FC = () => {
                         </div>
                       </div>
                       
-                      <p className="text-sm text-gray-700">{reflection.content}</p>
+                      <p className="text-sm text-gray-700">{getReflectionContent(reflection)}</p>
                       
-                      {reflection.insights && reflection.insights.length > 0 && (
+                      {getReflectionInsights(reflection).length > 0 && (
                         <div className="space-y-2 pl-4 border-l-2 border-blue-200">
-                          {reflection.insights.map((insight) => (
+                          {getReflectionInsights(reflection).map((insight) => (
                             <div key={insight.id} className="flex items-center gap-2 text-xs">
                               {getInsightIcon(insight.type)}
                               <span className="text-gray-600">{insight.content.slice(0, 100)}...</span>

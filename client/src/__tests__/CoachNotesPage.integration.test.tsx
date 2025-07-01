@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type MockedFunction } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
@@ -40,18 +40,25 @@ vi.mock('../components/notes/EnhancedAnalyticsFilters', () => ({
 
 // Mock services
 vi.mock('../services/coachNoteService', () => ({
-  getAllNotes: vi.fn().mockResolvedValue([
-    {
-      id: '1',
-      title: 'Session Notes',
-      content: 'Client made good progress',
-      coachId: 'test-coach-id',
-      clientId: 'client-1',
-      createdAt: '2025-01-15T10:00:00Z',
-      tags: ['progress'],
-      isPrivate: true
-    }
-  ]),
+  coachNoteService: {
+    getAllNotes: vi.fn().mockResolvedValue([
+      {
+        id: '1',
+        title: 'Session Notes',
+        content: 'Client made good progress',
+        coachId: 'test-coach-id',
+        clientId: 'client-1',
+        createdAt: '2025-01-15T10:00:00Z',
+        tags: ['progress'],
+        isPrivate: true
+      }
+    ]),
+    getAnalyticsData: vi.fn().mockResolvedValue({
+      totalNotes: 100,
+      clients: ['Client A', 'Client B'],
+      tags: ['important', 'follow-up']
+    }),
+  }
 }));
 
 vi.mock('../services/analyticsService', () => ({
@@ -233,9 +240,10 @@ describe('CoachNotesPage Integration', () => {
   });
 
   it('should handle error states gracefully', async () => {
-    // Mock service error
-    const { getAllNotes } = await import('../services/coachNoteService');
-    vi.mocked(getAllNotes).mockRejectedValueOnce(new Error('Failed to load notes'));
+    // Mock service error by importing the mocked module
+    const { coachNoteService } = await import('../services/coachNoteService');
+    const mockGetAllNotes = coachNoteService.getAllNotes as MockedFunction<typeof coachNoteService.getAllNotes>;
+    mockGetAllNotes.mockRejectedValueOnce(new Error('Failed to load notes'));
 
     render(<CoachNotesPage />, { wrapper: createWrapper() });
 

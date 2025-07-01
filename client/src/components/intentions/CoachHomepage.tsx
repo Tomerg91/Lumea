@@ -38,7 +38,7 @@ interface CoachHomepageProps {
 export const CoachHomepage: React.FC<CoachHomepageProps> = ({ className }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { sessions, loading: sessionsLoading } = useSessions();
+  const { data: sessions, isLoading: sessionsLoading } = useSessions();
   
   const [dailyIntentions, setDailyIntentions] = useState<DailyIntention[]>([]);
   const [intentionStats, setIntentionStats] = useState<IntentionStats | null>(null);
@@ -85,7 +85,7 @@ export const CoachHomepage: React.FC<CoachHomepageProps> = ({ className }) => {
   });
 
   const upcomingSessions = todaySessions.filter(session => 
-    session.status === 'Upcoming' || session.status === 'upcoming'
+    session.status !== 'Completed' && session.status !== 'Cancelled'
   );
 
   if (isLoading) {
@@ -110,7 +110,7 @@ export const CoachHomepage: React.FC<CoachHomepageProps> = ({ className }) => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                {language === 'he' ? 'שלום' : 'Welcome back'}, {user?.name || 'Coach'}
+                {language === 'he' ? 'שלום' : 'Welcome back'}, {user?.email?.split('@')[0] || 'Coach'}
               </h1>
               <p className="text-gray-600 mt-1">
                 {language === 'he' 

@@ -24,6 +24,7 @@ interface ProfileFormData {
   location: string;
   website: string;
   timezone: string;
+  [key: string]: string | undefined;
 }
 
 const Profile = () => {
@@ -39,25 +40,25 @@ const Profile = () => {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const imageStorage = useImageStorage();
   const [formData, setFormData] = useState<ProfileFormData>({
-    full_name: profile?.full_name || '',
-    email: profile?.email || user?.email || '',
-    phone: profile?.phone || '',
-    bio: profile?.bio || '',
-    location: profile?.location || '',
-    website: profile?.website || '',
-    timezone: profile?.timezone || '',
+    full_name: String(profile?.full_name || ''),
+    email: String(profile?.email || user?.email || ''),
+    phone: String(profile?.phone || ''),
+    bio: String(profile?.bio || ''),
+    location: String(profile?.location || ''),
+    website: String(profile?.website || ''),
+    timezone: String(profile?.timezone || ''),
   });
 
   useEffect(() => {
     if (profile) {
       setFormData({
-        full_name: (profile.full_name as string) || '',
-        email: (profile.email as string) || user?.email || '',
-        phone: (profile.phone as string) || '',
-        bio: (profile.bio as string) || '',
-        location: (profile.location as string) || '',
-        website: (profile.website as string) || '',
-        timezone: (profile.timezone as string) || '',
+        full_name: String(profile.full_name || ''),
+        email: String(profile.email || user?.email || ''),
+        phone: String(profile.phone || ''),
+        bio: String(profile.bio || ''),
+        location: String(profile.location || ''),
+        website: String(profile.website || ''),
+        timezone: String(profile.timezone || ''),
       });
     }
   }, [profile, user]);
@@ -240,9 +241,9 @@ const Profile = () => {
             )}>
               <div className="relative">
                 <Avatar className="w-16 h-16 sm:w-20 sm:h-20 border-4 border-white shadow-lg">
-                  <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || t('profile.avatarAlt', 'User profile picture')} />
-                  <AvatarFallback className="text-2xl font-semibold bg-gradient-to-r from-purple-500 to-blue-500 text-white">
-                    {profile?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                  <AvatarImage src={String(profile?.avatar_url || '')} alt={String(profile?.full_name || t('profile.avatarAlt', 'User profile picture'))} />
+                  <AvatarFallback className="bg-gradient-purple text-white">
+                    {String(profile?.full_name || '').split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <button 
@@ -267,11 +268,11 @@ const Profile = () => {
                 />
               </div>
               <div>
-                <h1 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
-                  {profile?.full_name || t('profile.unnamed', 'Unnamed User')}
-                </h1>
-                <p className="text-gray-600 text-lg mb-2">
-                  {profile?.email || user?.email}
+                <h2 className="text-2xl font-bold text-gradient-purple">
+                  {String(profile?.full_name || t('profile.unnamed', 'Unnamed User'))}
+                </h2>
+                <p className="text-gray-600">
+                  {String(profile?.email || user?.email || '')}
                 </p>
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="px-3 py-1">
@@ -467,7 +468,7 @@ const Profile = () => {
                     {t('profile.stats.memberSince', 'Member Since')}
                   </span>
                   <span className="font-semibold text-gray-900">
-                    {profile?.created_at ? new Date(profile.created_at).toLocaleDateString(isRTL ? 'he-IL' : 'en-US') : 'N/A'}
+                    {profile?.created_at ? new Date(String(profile.created_at)).toLocaleDateString(isRTL ? 'he-IL' : 'en-US') : 'N/A'}
                   </span>
                 </div>
                 <div className={cn(
@@ -478,7 +479,7 @@ const Profile = () => {
                     {t('profile.stats.profileViews', 'Profile Views')}
                   </span>
                   <span className="font-semibold text-gray-900">
-                    {profile?.profile_views || 0}
+                    {String(profile?.profile_views || 0)}
                   </span>
                 </div>
                 <div className={cn(
@@ -489,7 +490,7 @@ const Profile = () => {
                     {t('profile.stats.completedSessions', 'Completed Sessions')}
                   </span>
                   <span className="font-semibold text-gray-900">
-                    {profile?.completed_sessions || 0}
+                    {String(profile?.completed_sessions || 0)}
                   </span>
                 </div>
               </div>

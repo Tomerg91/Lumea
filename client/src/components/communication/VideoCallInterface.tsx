@@ -66,7 +66,7 @@ const VideoCallInterface: React.FC<{
   isHost?: boolean;
 }> = ({ sessionId, onCallEnd, isHost = false }) => {
   const { t, isRTL } = useLanguage();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [participants, setParticipants] = useState<CallParticipant[]>([]);
   const [callSettings, setCallSettings] = useState<CallSettings>({
     audioEnabled: true,
@@ -99,7 +99,7 @@ const VideoCallInterface: React.FC<{
     const mockParticipants: CallParticipant[] = [
       {
         id: user?.id || '1',
-        name: user?.name || 'You',
+        name: (profile?.full_name as string) || 'You',
         role: user?.role as 'coach' | 'client' || 'coach',
         isAudioEnabled: callSettings.audioEnabled,
         isVideoEnabled: callSettings.videoEnabled,
@@ -180,7 +180,7 @@ const VideoCallInterface: React.FC<{
     const message: ChatMessage = {
       id: Date.now().toString(),
       senderId: user?.id || '1',
-      senderName: user?.name || 'You',
+      senderName: (profile?.full_name as string) || 'You',
       content: newChatMessage.trim(),
       timestamp: new Date(),
       type: 'message'

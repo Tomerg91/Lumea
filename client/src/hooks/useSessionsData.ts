@@ -109,8 +109,11 @@ export const useSessionsData = (page = 1, limit = 100, clientId?: string) => {
               createdAt: new Date().toISOString(),
             },
             date: newSession.date,
-            status: 'pending', // Default status for new sessions
-            notes: newSession.notes,
+            status: 'pending' as const,
+            notes: newSession.notes || '',
+            title: 'New Session',
+            type: 'video' as const,
+            time: '10:00',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           };

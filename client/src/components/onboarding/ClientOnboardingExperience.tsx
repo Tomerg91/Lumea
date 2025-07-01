@@ -135,8 +135,8 @@ export const ClientOnboardingExperience: React.FC = () => {
   const personalInfoForm = useForm<PersonalInfoData>({
     resolver: zodResolver(personalInfoSchema),
     defaultValues: {
-      firstName: profile?.firstName || '',
-      lastName: profile?.lastName || '',
+      firstName: String(profile?.firstName || ''),
+      lastName: String(profile?.lastName || ''),
       timezone: '',
       preferredLanguage: 'en',
     },

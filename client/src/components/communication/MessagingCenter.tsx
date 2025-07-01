@@ -68,7 +68,7 @@ interface Participant {
 
 const MessagingCenter: React.FC = () => {
   const { t, isRTL } = useLanguage();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -226,7 +226,7 @@ const MessagingCenter: React.FC = () => {
       id: Date.now().toString(),
       conversationId: selectedConversation,
       senderId: user?.id || '2',
-      senderName: user?.name || 'Dr. Smith',
+      senderName: (profile?.full_name as string) || 'Dr. Smith',
       senderRole: user?.role as 'coach' | 'client' || 'coach',
       content: newMessage.trim(),
       type: 'text',
@@ -263,12 +263,12 @@ const MessagingCenter: React.FC = () => {
     const files = event.target.files;
     if (!files || !selectedConversation) return;
 
-    Array.from(files).forEach(file => {
+    Array.from(files).forEach((file: File) => {
       const message: Message = {
         id: Date.now().toString(),
         conversationId: selectedConversation,
         senderId: user?.id || '2',
-        senderName: user?.name || 'Dr. Smith',
+        senderName: (profile?.full_name as string) || 'Dr. Smith',
         senderRole: user?.role as 'coach' | 'client' || 'coach',
         content: `Shared ${file.name}`,
         type: file.type.startsWith('image/') ? 'image' : 'file',

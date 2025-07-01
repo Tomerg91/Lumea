@@ -30,12 +30,6 @@ import {
   NoSearchResultsEmptyState 
 } from './SessionLoadingStates';
 import { Client } from './ClientsTable';
-// Import centralized session types
-import { 
-  SessionWithUsers,
-  SessionStatus,
-  SessionListProps as BaseSessionListProps
-} from '../types/session';
 
 // Define UISessionStatus directly to fix build
 type UISessionStatus = 'pending' | 'in-progress' | 'completed' | 'cancelled';
@@ -150,7 +144,8 @@ const SessionTypeIcon = memo<{ type: string; className?: string }>(({ type, clas
     }
   }, [type]);
 
-  return <getTypeIcon className={cn('w-5 h-5', className)} />;
+  const IconComponent = getTypeIcon;
+  return <IconComponent className={cn('w-5 h-5', className)} />;
 });
 
 SessionTypeIcon.displayName = 'SessionTypeIcon';
@@ -538,3 +533,4 @@ const SessionList: React.FC<SessionListProps> = ({
 };
 
 export default memo(SessionList);
+export { SessionList };

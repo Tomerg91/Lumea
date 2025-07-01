@@ -213,7 +213,7 @@ export function useSupabaseSelect<TData = any>(
   filters?: Record<string, any>,
   options: UseSupabaseQueryOptions<TData[]> = {}
 ) {
-  return useSupabaseQuery(
+  return useSupabaseQuery<TData[]>(
     [table, select, filters],
     async () => {
       let query = supabase.from(table).select(select);
@@ -227,7 +227,7 @@ export function useSupabaseSelect<TData = any>(
         });
       }
 
-      return query;
+      return query as any;
     },
     {
       requireAuth: true,

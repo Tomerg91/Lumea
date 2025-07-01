@@ -127,6 +127,7 @@ const SessionModal: React.FC<SessionModalProps> = ({
       title: title.trim(),
       description: description.trim() || undefined,
       notes: notes.trim(),
+      status: 'Upcoming' as const,
     };
 
     try {

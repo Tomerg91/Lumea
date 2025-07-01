@@ -332,8 +332,9 @@ export default intentionService;
 
 /**
  * Format being label based on current language
+ * Works with both Being and DailyIntention types
  */
-export const formatBeingLabel = (being: Being, language: 'en' | 'he' = 'en'): string => {
+export const formatBeingLabel = (being: Being | DailyIntention, language: 'en' | 'he' = 'en'): string => {
   return language === 'he' ? being.label_he : being.label_en;
 };
 

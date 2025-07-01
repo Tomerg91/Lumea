@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { CoachOnboardingWizard } from '../components/onboarding/CoachOnboardingWizard';
+import CoachOnboardingWizard from '../components/onboarding/CoachOnboardingWizard';
 
 export const CoachOnboardingPage: React.FC = () => {
   const { user, profile, loading } = useAuth();

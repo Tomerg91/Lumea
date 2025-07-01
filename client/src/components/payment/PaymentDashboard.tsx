@@ -80,7 +80,7 @@ export const PaymentDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
   
   const { toast } = useToast();
-  const { data: payments = [], isLoading: isLoadingPayments, refetch: refetchPayments } = usePayments({ status: filterStatus, client_id: filterClient });
+  const { data: payments = [], isLoading: isLoadingPayments, refetch: refetchPayments } = usePayments();
   const { data: summary, isLoading: isLoadingSummary, refetch: refetchSummary } = usePaymentSummary();
 
   const loadPaymentData = () => {
@@ -299,9 +299,9 @@ export const PaymentDashboard: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Clients</SelectItem>
-                  {clients.map(client => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name || client.email}
+                  {clients.map((client: any) => (
+                    <SelectItem key={(client as any).id} value={(client as any).id}>
+                      {(client as any).name || (client as any).email}
                     </SelectItem>
                   ))}
                 </SelectContent>

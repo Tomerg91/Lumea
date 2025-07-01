@@ -1,5 +1,4 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRealtimeTable } from '../hooks/useRealtimeTable';
 
 import { API_BASE_URL } from "../lib/api";
 
