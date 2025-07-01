@@ -118,20 +118,18 @@ export const ClientProgressTimeline: React.FC<ClientProgressTimelineProps> = ({
 
       // Calculate date range
       const now = new Date();
-      let dateFrom: Date;
-      switch (currentTimeRange) {
-        case '3months':
-          dateFrom = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-          break;
-        case '6months':
-          dateFrom = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
-          break;
-        case '1year':
-          dateFrom = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-          break;
-        default:
-          dateFrom = new Date(0); // All time
-      }
+      const dateFrom: Date = (() => {
+        switch (currentTimeRange) {
+          case '3months':
+            return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+          case '6months':
+            return new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+          case '1year':
+            return new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+          default:
+            return new Date(0); // All time
+        }
+      })();
 
       // Fetch data in parallel
       const [sessionsRes, reflectionsRes, notesRes, milestonesRes] = await Promise.all([
