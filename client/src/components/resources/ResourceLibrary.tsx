@@ -103,12 +103,13 @@ export const ResourceLibrary: React.FC<ResourceLibraryProps> = ({
         case 'unviewed':
           if (assignment.viewed_at) return false;
           break;
-        case 'overdue':
+        case 'overdue': {
           if (!assignment.due_date || assignment.completed_at) return false;
           const dueDate = new Date(assignment.due_date);
           const now = new Date();
           if (dueDate > now) return false;
           break;
+        }
       }
     }
 

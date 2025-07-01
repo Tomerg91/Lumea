@@ -269,7 +269,7 @@ const SessionsPage: React.FC = () => {
 
   // Advanced filtering and sorting
   const filteredAndSortedSessions = useMemo(() => {
-    let filtered = sessions.filter(session => {
+    const filtered = sessions.filter(session => {
       // Basic filters
       const matchesSearch = debouncedSearchTerm === '' || 
         session.clientName.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
