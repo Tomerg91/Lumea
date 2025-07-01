@@ -14,6 +14,9 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      - run: corepack enable && corepack prepare pnpm@8.15.5 --activate
+        name: Enable Corepack
+        shell: bash
       - run: npm ci --workspaces --if-present
       - run: npm --workspace client run typecheck || true # Don't fail on typecheck errors
       - run: npm --workspace server run typecheck || true # Don't fail on typecheck errors 

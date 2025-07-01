@@ -7,9 +7,49 @@ on:
     branches: [main]
 
 jobs:
+  # Add preflight job before lint to enforce deterministic environment and fail fast on config drift
+  preflight:
+    name: Preflight Sanity Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node (deterministic)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable Corepack and pin package managers
+        run: |
+          corepack enable
+          corepack prepare pnpm@8.15.5 --activate
+          node -v && pnpm -v
+
+      - name: Verify lock file freshness
+        run: |
+          echo "Checking for uncommitted lock-file changes…"
+          if [ -n "$(git status --porcelain=1 **/package-lock.json)" ]; then
+            echo "❌ Detected unstaged changes in lock files. Please run 'npm ci --package-lock-only' and commit the result.";
+            exit 1;
+          fi
+      - name: Disk space check
+        run: df -h
+
+      - name: Required environment variables check
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          missing=false
+          for var in SUPABASE_URL ANTHROPIC_API_KEY; do
+            if [ -z "${!var}" ]; then echo "❌ Missing required secret: $var" && missing=true; fi
+          done
+          if [ "$missing" = true ]; then exit 1; fi
+
   lint:
     name: Lint Code
     runs-on: ubuntu-latest
+    needs: preflight
     
     steps:
       - uses: actions/checkout@v4
