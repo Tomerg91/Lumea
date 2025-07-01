@@ -29,7 +29,17 @@ jobs:
 
       - name: Install dependencies
         if: steps.cache-npm.outputs.cache-hit != 'true'
-        run: npm ci --workspaces --if-present
+        run: |
+          npm ci
+          npm ci --workspaces --if-present
+      
+      # Verify ESLint plugins are available
+      - name: Verify ESLint plugins
+        run: |
+          echo "Checking ESLint plugin availability..."
+          npm list eslint-plugin-react || echo "eslint-plugin-react not found at root"
+          cd client && npm list eslint-plugin-react-hooks || echo "eslint-plugin-react-hooks not found in client"
+          cd .. && ls -la node_modules/eslint-plugin-react* || echo "No eslint-plugin-react* found in root node_modules"
       
       # Run linting (warnings allowed, only errors fail CI)
       - name: Run ESLint
@@ -58,7 +68,9 @@ jobs:
 
       - name: Install dependencies
         if: steps.cache-npm-build.outputs.cache-hit != 'true'
-        run: npm ci --workspaces --if-present
+        run: |
+          npm ci
+          npm ci --workspaces --if-present
       
       # Run type checking
       - name: Run type checking
@@ -91,7 +103,9 @@ jobs:
 
       - name: Install dependencies
         if: steps.cache-npm-security.outputs.cache-hit != 'true'
-        run: npm ci --workspaces --if-present
+        run: |
+          npm ci
+          npm ci --workspaces --if-present
       
       # Run security audit on production dependencies
       - name: Run npm audit (Server)
@@ -130,7 +144,9 @@ jobs:
 
       - name: Install dependencies
         if: steps.cache-npm-test.outputs.cache-hit != 'true'
-        run: npm ci --workspaces --if-present
+        run: |
+          npm ci
+          npm ci --workspaces --if-present
       
       # Run tests
       - name: Run tests
