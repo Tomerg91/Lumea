@@ -31,9 +31,9 @@ jobs:
         if: steps.cache-npm.outputs.cache-hit != 'true'
         run: npm ci --workspaces --if-present
       
-      # Run linting and apply auto-fixes
+      # Run linting (warnings allowed, only errors fail CI)
       - name: Run ESLint
-        run: npm run lint -- --fix
+        run: npm run lint -- --max-warnings 1500
 
   build:
     name: Build

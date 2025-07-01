@@ -71,7 +71,7 @@ const Profile = () => {
     }
 
     // Phone validation (basic international format)
-    if (data.phone && !/^[\+]?[1-9][\d]{0,15}$/.test(data.phone.replace(/[\s\-\(\)]/g, ''))) {
+    if (data.phone && !/^[+]?[1-9][\d]{0,15}$/.test(data.phone.replace(/[\s\-()]/g, ''))) {
       errors.phone = t('profile.validation.invalidPhone', 'Please enter a valid phone number');
     }
 
