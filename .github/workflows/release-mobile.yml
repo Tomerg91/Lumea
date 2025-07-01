@@ -15,15 +15,15 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v4
         
       - name: Setup Node.js
-        uses: actions/setup-node@v3.5.1
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           
       - name: Setup PNPM
-        uses: pnpm/action-setup@v2.2.4
+        uses: pnpm/action-setup@v4
         with:
           version: 8
           run_install: false
@@ -38,7 +38,7 @@ jobs:
         run: pnpm build
       
       - name: Setup Java for Android build
-        uses: actions/setup-java@v3.6.0
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -104,7 +104,7 @@ jobs:
       
       - name: Upload Android AAB
         id: upload-aab
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v4
         with:
           name: android-aab
           path: android/app/build/outputs/bundle/release/app-release.aab
@@ -113,7 +113,7 @@ jobs:
       
       - name: Retry Android AAB Upload
         if: steps.check-aab.outputs.aab_exists == 'true' && steps.upload-aab.outcome == 'failure'
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v4
         with:
           name: android-aab-retry
           path: android/app/build/outputs/bundle/release/app-release.aab
@@ -129,7 +129,7 @@ jobs:
       - name: Upload Android build directory (for debugging)
         id: upload-android-debug
         if: steps.check-aab.outputs.aab_exists != 'true'
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v4
         with:
           name: android-build-output
           path: android/app/build/outputs/
@@ -138,7 +138,7 @@ jobs:
       
       - name: Retry Android Debug Upload
         if: steps.check-aab.outputs.aab_exists != 'true' && steps.upload-android-debug.outcome == 'failure'
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v4
         with:
           name: android-build-output-retry
           path: android/app/build/outputs/
@@ -146,7 +146,7 @@ jobs:
       
       - name: Upload iOS Archive
         id: upload-ios
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v4
         with:
           name: ios-archive
           path: ios/App/build/App.xcarchive
@@ -155,7 +155,7 @@ jobs:
       
       - name: Retry iOS Archive Upload
         if: startsWith(github.ref, 'refs/tags/v') && steps.check-archive.outputs.archive_exists == 'true' && steps.upload-ios.outcome == 'failure'
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v4
         with:
           name: ios-archive-retry
           path: ios/App/build/App.xcarchive
@@ -164,7 +164,7 @@ jobs:
       - name: Upload iOS build directory (for debugging)
         id: upload-ios-debug
         if: startsWith(github.ref, 'refs/tags/v') && steps.check-archive.outputs.archive_exists != 'true'
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v4
         with:
           name: ios-build-output
           path: ios/App/build/
@@ -173,7 +173,7 @@ jobs:
       
       - name: Retry iOS Debug Upload
         if: startsWith(github.ref, 'refs/tags/v') && steps.check-archive.outputs.archive_exists != 'true' && steps.upload-ios-debug.outcome == 'failure'
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v4
         with:
           name: ios-build-output-retry
           path: ios/App/build/

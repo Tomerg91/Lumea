@@ -37,7 +37,7 @@ jobs:
 
       - name: Setup Node.js
         if: steps.check-snyk.outputs.enabled == 'true'
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
@@ -162,7 +162,7 @@ jobs:
 
       - name: Setup Node.js
         if: steps.check-snyk.outputs.enabled == 'true'
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
