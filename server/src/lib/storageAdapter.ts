@@ -2,6 +2,14 @@ import { supabaseStorage } from './supabaseStorage.js';
 import session from 'express-session';
 import createMemoryStore from 'memorystore';
 
+// Temporary type definitions for missing types
+type Payment = any;
+type InsertPayment = any;
+type ExtendedResource = any;
+type InsertResource = any;
+type ResourceAccess = any;
+type InsertResourceAccess = any;
+
 const MemoryStore = createMemoryStore(session);
 
 // ResourceFilters interface for advanced filtering

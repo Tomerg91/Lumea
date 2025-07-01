@@ -209,3 +209,10 @@ export const registerWithInvite = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+// Export authController object for routes
+export const authController = {
+  signup,
+  updateProfile,
+  registerWithInvite,
+};

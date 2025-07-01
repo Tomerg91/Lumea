@@ -2,13 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User, IUser } from '../models/User.js';
 import { jwtConfig } from '../auth/config';
-import { AuthenticatedUserPayload } from '../types/user.js';
+import { AuthenticatedUser } from '../types/user.js';
 import { IRole } from '../models/Role.js';
 
 // Extend Express Request using module augmentation
 declare module 'express' {
   interface Request {
-    user?: AuthenticatedUserPayload;
+    user?: AuthenticatedUser;
   }
 }
 

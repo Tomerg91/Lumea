@@ -30,14 +30,14 @@ export const fileController = {
         file.buffer,
         file.originalname,
         context,
-        req.user.id,
+        String(req.user.id),
         {
           contentType: file.mimetype,
         }
       );
 
       // Create file record in database
-      const fileRecord = await supabaseStorage.createFileRecord(req.user.id, {
+      const fileRecord = await supabaseStorage.createFileRecord(String(req.user.id), {
         url: uploadResult.url,
         filename: file.originalname,
         mimetype: file.mimetype,
@@ -86,14 +86,14 @@ export const fileController = {
             file.buffer,
             file.originalname,
             context,
-            req.user.id,
+            String(req.user.id),
             {
               contentType: file.mimetype,
             }
           );
 
           // Create file record in database
-          return await supabaseStorage.createFileRecord(req.user.id, {
+          return await supabaseStorage.createFileRecord(String(req.user.id), {
             url: uploadResult.url,
             filename: file.originalname,
             mimetype: file.mimetype,
@@ -137,7 +137,7 @@ export const fileController = {
         return res.status(400).json({ error: 'Invalid file ID format' });
       }
 
-      const file = await supabaseStorage.getFileById(fileId, req.user.id);
+      const file = await supabaseStorage.getFileById(fileId, String(req.user.id));
 
       if (!file) {
         return res.status(404).json({ error: 'File not found' });
@@ -172,7 +172,7 @@ export const fileController = {
         return res.status(400).json({ error: 'Context is required' });
       }
 
-      const files = await supabaseStorage.getFilesByUserAndContext(req.user.id, validatedData.context);
+      const files = await supabaseStorage.getFilesByUserAndContext(String(req.user.id), validatedData.context);
 
       const formattedFiles = files.map(file => ({
         id: file.id,
@@ -209,7 +209,7 @@ export const fileController = {
         return res.status(400).json({ error: 'Invalid file ID format' });
       }
 
-      const file = await supabaseStorage.getFileById(fileId, req.user.id);
+      const file = await supabaseStorage.getFileById(fileId, String(req.user.id));
 
       if (!file) {
         return res.status(404).json({ error: 'File not found' });
@@ -244,7 +244,7 @@ export const fileController = {
       }
 
       // Delete from database
-      const deletedRecord = await supabaseStorage.deleteFileRecord(fileId, req.user.id);
+      const deletedRecord = await supabaseStorage.deleteFileRecord(fileId, String(req.user.id));
 
       if (!deletedRecord) {
         return res.status(500).json({ error: 'Failed to delete file record' });
@@ -269,7 +269,7 @@ export const fileController = {
         return res.status(400).json({ error: 'Invalid file ID format' });
       }
 
-      const file = await supabaseStorage.getFileById(fileId, req.user.id);
+      const file = await supabaseStorage.getFileById(fileId, String(req.user.id));
 
       if (!file) {
         return res.status(404).json({ error: 'File not found' });

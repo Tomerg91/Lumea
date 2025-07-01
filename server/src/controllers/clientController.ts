@@ -231,4 +231,66 @@ export const clientController = {
       res.status(500).json({ error: 'Failed to update feedback' });
     }
   },
+
+  async getMyClients(req: Request, res: Response) {
+    try {
+      if (!req.user || req.user.role !== 'coach') {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      const coachId = req.user.id;
+
+      // Get all clients for this coach through sessions
+      const { data: sessions, error } = await supabase
+        .from('sessions')
+        .select(`
+          client:client_id!inner(id, name, email, created_at),
+          date,
+          status
+        `)
+        .eq('coach_id', coachId)
+        .order('date', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching coach clients:', error);
+        return res.status(500).json({ error: 'Failed to fetch clients' });
+      }
+
+      // Group by client and get latest session info
+      const clientsMap = new Map();
+      
+      sessions?.forEach(session => {
+        const client = Array.isArray(session.client) ? session.client[0] : session.client;
+        if (!clientsMap.has(client.id)) {
+          clientsMap.set(client.id, {
+            id: client.id,
+            name: client.name,
+            email: client.email,
+            joinedAt: client.created_at,
+            lastSessionDate: session.date,
+            lastSessionStatus: session.status,
+            totalSessions: 1,
+          });
+        } else {
+          const existingClient = clientsMap.get(client.id);
+          existingClient.totalSessions++;
+          // Keep the most recent session date
+          if (new Date(session.date) > new Date(existingClient.lastSessionDate)) {
+            existingClient.lastSessionDate = session.date;
+            existingClient.lastSessionStatus = session.status;
+          }
+        }
+      });
+
+      const clients = Array.from(clientsMap.values());
+
+      res.json({
+        clients,
+        totalClients: clients.length,
+      });
+    } catch (error) {
+      console.error('Error fetching coach clients:', error);
+      res.status(500).json({ error: 'Failed to fetch clients' });
+    }
+  },
 };

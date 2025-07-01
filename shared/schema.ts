@@ -3,7 +3,7 @@ import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
 // User model - both coaches and clients
-export const roleEnum = pgEnum('role', ['client', 'coach']);
+export const roleEnum = pgEnum('role', ['client', 'coach', 'admin']);
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),

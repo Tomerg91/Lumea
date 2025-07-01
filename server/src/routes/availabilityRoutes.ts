@@ -18,7 +18,7 @@ router.get(
   '/:coachId',
   isAuthenticated,
   [
-    param('coachId').isMongoId().withMessage('Invalid coach ID'),
+    param('coachId').isString().withMessage('Invalid coach ID'),
   ],
   cacheResponse({ ttl: AVAILABILITY_CACHE_TTL, keyPrefix: AVAILABILITY_CACHE_PREFIX }),
   async (req: Request, res: Response) => {
@@ -142,7 +142,7 @@ router.put(
   isAuthenticated,
   isCoach,
   [
-    param('coachId').isMongoId().withMessage('Invalid coach ID'),
+    param('coachId').isString().withMessage('Invalid coach ID'),
     body('recurringAvailability').isArray().withMessage('Recurring availability must be an array'),
     body('recurringAvailability.*.dayOfWeek').isInt({ min: 0, max: 6 }).withMessage('Day of week must be 0-6'),
     body('recurringAvailability.*.startTime').matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).withMessage('Start time must be in HH:mm format'),
@@ -206,7 +206,7 @@ router.post(
   isAuthenticated,
   isCoach,
   [
-    param('coachId').isMongoId().withMessage('Invalid coach ID'),
+    param('coachId').isString().withMessage('Invalid coach ID'),
     body('date').isISO8601().withMessage('Date must be in ISO format'),
     body('isAvailable').isBoolean().withMessage('Is available must be boolean'),
     body('timeSlots').optional().isArray().withMessage('Time slots must be an array'),
@@ -275,7 +275,7 @@ router.delete(
   isAuthenticated,
   isCoach,
   [
-    param('coachId').isMongoId().withMessage('Invalid coach ID'),
+    param('coachId').isString().withMessage('Invalid coach ID'),
     param('date').isISO8601().withMessage('Date must be in ISO format'),
   ],
   async (req: Request, res: Response) => {
@@ -334,7 +334,7 @@ router.get(
   '/:coachId/slots',
   isAuthenticated,
   [
-    param('coachId').isMongoId().withMessage('Invalid coach ID'),
+    param('coachId').isString().withMessage('Invalid coach ID'),
     query('startDate').isISO8601().withMessage('Start date must be in ISO format'),
     query('endDate').isISO8601().withMessage('End date must be in ISO format'),
     query('duration').optional().isInt({ min: 15, max: 240 }).withMessage('Duration must be 15-240 minutes'),
@@ -389,7 +389,7 @@ router.get(
   '/:coachId/status',
   isAuthenticated,
   [
-    param('coachId').isMongoId().withMessage('Invalid coach ID'),
+    param('coachId').isString().withMessage('Invalid coach ID'),
   ],
   cacheResponse({ ttl: 60, keyPrefix: 'status' }), // Short cache for real-time status
   async (req: Request, res: Response) => {
@@ -429,10 +429,10 @@ router.post(
   '/:coachId/check-slot',
   isAuthenticated,
   [
-    param('coachId').isMongoId().withMessage('Invalid coach ID'),
+    param('coachId').isString().withMessage('Invalid coach ID'),
     body('startTime').isISO8601().withMessage('Start time must be in ISO format'),
     body('duration').isInt({ min: 15, max: 240 }).withMessage('Duration must be 15-240 minutes'),
-    body('excludeSessionId').optional().isMongoId().withMessage('Invalid session ID'),
+    body('excludeSessionId').optional().isString().withMessage('Invalid session ID'),
   ],
   async (req: Request, res: Response) => {
     try {
@@ -478,7 +478,7 @@ router.delete(
   isAuthenticated,
   isCoach,
   [
-    param('coachId').isMongoId().withMessage('Invalid coach ID'),
+    param('coachId').isString().withMessage('Invalid coach ID'),
   ],
   async (req: Request, res: Response) => {
     try {

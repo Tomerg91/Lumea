@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { createClient } from '@supabase/supabase-js';
-import type { Database, TypedSupabaseClient, DatabaseUser } from '../../../shared/types/database';
+import type { Database, TypedSupabaseClient, User as DatabaseUser } from '../../../shared/types/database';
 
 // Create typed Supabase client for middleware use
 const supabaseUrl = process.env.SUPABASE_URL || 'https://humlrpbtrbjnpnsusils.supabase.co';

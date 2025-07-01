@@ -155,7 +155,7 @@ router.get('/policies',
 router.get('/policies/:policyId',
   dataRetentionLimiter,
   [
-    param('policyId').isMongoId().withMessage('Invalid policy ID'),
+    param('policyId').isString().withMessage('Invalid policy ID'),
     query('includeExecutionHistory').optional().isBoolean()
   ],
   dataRetentionController.getPolicy
@@ -180,7 +180,7 @@ router.post('/policies',
 router.put('/policies/:policyId',
   dataRetentionLimiter,
   [
-    param('policyId').isMongoId().withMessage('Invalid policy ID'),
+    param('policyId').isString().withMessage('Invalid policy ID'),
     ...updatePolicyValidation
   ],
   dataRetentionController.updatePolicy
@@ -218,7 +218,7 @@ router.get('/policies/:policyId/preview',
 router.post('/policies/:policyId/execute',
   executionLimiter,
   [
-    param('policyId').isMongoId().withMessage('Invalid policy ID'),
+    param('policyId').isString().withMessage('Invalid policy ID'),
     body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
     body('executionMethod').optional().isIn(['manual', 'emergency']).withMessage('Invalid execution method')
   ],
@@ -243,7 +243,7 @@ router.post('/execute-scheduled',
 router.get('/policies/:policyId/history',
   dataRetentionLimiter,
   [
-    param('policyId').isMongoId().withMessage('Invalid policy ID'),
+    param('policyId').isString().withMessage('Invalid policy ID'),
     query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be 1-100')
   ],
   dataRetentionController.getPolicyExecutionHistory

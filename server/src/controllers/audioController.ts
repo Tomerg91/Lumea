@@ -34,6 +34,102 @@ const getUserAudioFilesSchema = z.object({
 });
 
 export const audioController = {
+  // Get presigned URL for uploading audio files
+  async getPresignedUploadUrl(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const validatedData = presignedUrlRequestSchema.parse(req.body);
+      const { mimeType, fileSize, filename } = validatedData;
+
+      // Generate presigned URL for Supabase Storage
+      const storagePath = `${String(req.user.id)}/audio_note/${filename}`;
+      const presignedUrl = await supabaseFileStorage.createSignedUrl(
+        'audio-notes',
+        storagePath,
+        3600
+      );
+
+      if (!presignedUrl) {
+        return res.status(500).json({ error: 'Failed to generate presigned URL' });
+      }
+
+      res.json({
+        presignedUrl,
+        storagePath,
+        expiresIn: 3600, // 1 hour
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: 'Validation failed', 
+          details: error.errors 
+        });
+      }
+
+      console.error('Error generating presigned URL:', error);
+      res.status(500).json({ error: 'Failed to generate presigned URL' });
+    }
+  },
+
+  // Create file record after successful upload
+  async createFileRecord(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const validatedData = createFileRequestSchema.parse(req.body);
+
+      // Get public URL for the file
+      const storagePath = `${req.user.id}/${validatedData.context}/${validatedData.filename}`;
+      const fileUrl = supabaseFileStorage.getPublicUrl('audio-notes', storagePath);
+
+      // Create file record in database
+      const { data: fileRecord, error: dbError } = await serverTables.files()
+        .insert({
+          user_id: String(req.user.id), // Convert to string
+          filename: validatedData.filename,
+          mimetype: validatedData.mimeType,
+          size: validatedData.size,
+          url: fileUrl,
+          context: validatedData.context,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (dbError || !fileRecord) {
+        console.error('Error creating file record:', dbError);
+        return res.status(500).json({ error: 'Failed to create file record' });
+      }
+
+      res.status(201).json({
+        fileId: fileRecord.id,
+        url: fileRecord.url,
+        filename: fileRecord.filename,
+        mimeType: fileRecord.mimetype,
+        size: fileRecord.size,
+        duration: validatedData.duration,
+        context: fileRecord.context,
+        uploadedAt: fileRecord.created_at,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: 'Validation failed', 
+          details: error.errors 
+        });
+      }
+
+      console.error('Error creating file record:', error);
+      res.status(500).json({ error: 'Failed to create file record' });
+    }
+  },
+
   // Upload audio file directly to Supabase Storage
   async uploadAudio(req: Request, res: Response) {
     try {
@@ -64,7 +160,7 @@ export const audioController = {
         file.buffer,
         validatedData.filename,
         'audio_note',
-        req.user.id,
+        String(req.user.id),
         {
           contentType: validatedData.mimeType,
         }
@@ -73,7 +169,7 @@ export const audioController = {
       // Create file record in database
       const { data: fileRecord, error: dbError } = await serverTables.files()
         .insert({
-          user_id: req.user.id,
+          user_id: String(req.user.id),
           filename: validatedData.filename,
           mimetype: validatedData.mimeType,
           size: validatedData.size,

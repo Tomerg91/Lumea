@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { User, IUser } from '../models/User.js';
 import { getUserByEmail, createUser } from '../storage.js';
-import { AuthenticatedUserPayload } from '../types/user.js';
+import { AuthenticatedUser } from '../types/user.js';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // Facebook doesn't use OAuth2Client, so this should be removed
@@ -69,7 +69,7 @@ export async function handleOAuthLogin(
   email: string,
   name: string,
   picture?: string
-): Promise<AuthenticatedUserPayload | null> {
+): Promise<AuthenticatedUser | null> {
   try {
     // Check if user exists using Mongoose storage function
     let user = await getUserByEmail(email);

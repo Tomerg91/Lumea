@@ -17,7 +17,7 @@ export const startTimer = async (req: Request, res: Response) => {
     }
     
     // Check if user is the coach for this session
-    if (session.coachId.toString() !== req.user?.id) {
+    if (session.coachId.toString() !== req.user?.id?.toString()) {
       throw new APIError(ErrorCode.FORBIDDEN, 'Only the coach can start the session timer', 403);
     }
     
@@ -105,7 +105,7 @@ export const stopTimer = async (req: Request, res: Response) => {
     }
     
     // Check if user is the coach for this session
-    if (session.coachId.toString() !== req.user?.id) {
+    if (session.coachId.toString() !== req.user?.id?.toString()) {
       throw new APIError(ErrorCode.FORBIDDEN, 'Only the coach can stop the session timer', 403);
     }
     
@@ -176,7 +176,7 @@ export const pauseTimer = async (req: Request, res: Response) => {
     }
     
     // Check if user is the coach for this session
-    if (session.coachId.toString() !== req.user?.id) {
+    if (session.coachId.toString() !== req.user?.id?.toString()) {
       throw new APIError(ErrorCode.FORBIDDEN, 'Only the coach can pause the session timer', 403);
     }
     
@@ -230,7 +230,7 @@ export const resumeTimer = async (req: Request, res: Response) => {
     }
     
     // Check if user is the coach for this session
-    if (session.coachId.toString() !== req.user?.id) {
+    if (session.coachId.toString() !== req.user?.id?.toString()) {
       throw new APIError(ErrorCode.FORBIDDEN, 'Only the coach can resume the session timer', 403);
     }
     
@@ -286,8 +286,8 @@ export const adjustDuration = async (req: Request, res: Response) => {
       throw new APIError(ErrorCode.RESOURCE_NOT_FOUND, 'Session not found', 404);
     }
     
-    // Check if user is the coach for this session
-    if (session.coachId.toString() !== req.user?.id) {
+        // Check if user is the coach for this session  
+    if (session.coachId.toString() !== req.user?.id?.toString()) {
       throw new APIError(ErrorCode.FORBIDDEN, 'Only the coach can adjust session duration', 403);
     }
     
@@ -348,7 +348,7 @@ export const getTimingData = async (req: Request, res: Response) => {
     }
     
     // Check if user has access to this session (coach or client)
-    if (session.coachId.toString() !== req.user?.id && session.clientId.toString() !== req.user?.id) {
+    if (session.coachId.toString() !== req.user?.id?.toString() && session.clientId.toString() !== req.user?.id?.toString()) {
       throw new APIError(ErrorCode.FORBIDDEN, 'Access denied to this session', 403);
     }
     

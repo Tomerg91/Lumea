@@ -44,53 +44,7 @@ const app = express();
 let queueService: QueueService;
 let backupService: BackupService;
 
-// Connect to MongoDB
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/satyacoaching';
 
-mongoose
-  .connect(MONGODB_URI)
-  .then(async () => {
-    logger.info('Connected to MongoDB');
-
-    // Create database indexes for better performance
-    await createDatabaseIndexes();
-
-    // Initialize queue service for background processing
-    try {
-      queueService = QueueService.getInstance();
-      await queueService.initialize();
-      logger.info('Queue service initialized successfully');
-
-      // Schedule recurring jobs
-      await queueService.scheduleRecurringJobs();
-      logger.info('Recurring background jobs scheduled');
-    } catch (error) {
-      logger.error('Failed to initialize queue service', { error: error instanceof Error ? error.message : error });
-      // Continue without queue service for now
-    }
-
-    // Initialize backup service
-    try {
-      backupService = BackupService.getInstance();
-      logger.info('Backup service initialized successfully');
-    } catch (error) {
-      logger.error('Failed to initialize backup service', { error: error instanceof Error ? error.message : error });
-      // Continue without backup service for now
-    }
-
-    // Initialize feedback trigger service
-    try {
-      await feedbackTriggerService.initialize();
-      logger.info('Feedback trigger service initialized successfully');
-    } catch (error) {
-      logger.error('Failed to initialize feedback trigger service', { error: error instanceof Error ? error.message : error });
-      // Don't exit the app if feedback service fails to initialize
-    }
-  })
-  .catch((error) => {
-    logger.error('MongoDB connection error', { error: error instanceof Error ? error.message : error });
-    process.exit(1);
-  });
 
 // Apply security middleware (includes helmet, cors, rate-limiting)
 configureSecurityMiddleware(app);

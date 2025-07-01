@@ -4,10 +4,17 @@ import { Session, Resource, Reflection } from '@shared/schema';
 declare global {
   namespace Express {
     interface User {
-      id: number;
+      id: string;
       name: string;
       email: string;
       role: 'coach' | 'client' | 'admin';
+      createdAt: Date;
+      password: string;
+      profilePicture: string;
+      phone: string;
+      bio: string;
+      passwordResetToken: string;
+      passwordResetExpires: Date;
       _id?: string;
       [key: string]: unknown;
     }

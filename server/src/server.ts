@@ -108,7 +108,7 @@ const gracefulShutdown = async (signal: string) => {
       await notificationScheduler.shutdown();
       
       // Close database connection
-      await mongoose.connection.close();
+      
       console.log('Database connection closed');
       
       console.log('Graceful shutdown completed');

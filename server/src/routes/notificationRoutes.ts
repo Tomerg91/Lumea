@@ -3,8 +3,7 @@ import { z } from 'zod';
 import { body, query, param, validationResult } from 'express-validator';
 import { NotificationService } from '../services/notificationService';
 import { isAuthenticated } from '../middleware/auth';
-import { NotificationType, NotificationChannel } from '../models/Notification';
-import { NotificationPreferences, INotificationPreferences } from '../models/NotificationPreferences';
+
 import { notificationScheduler } from '../services/notificationSchedulerService';
 
 const router = express.Router();
@@ -22,57 +21,7 @@ const notificationPreferencesSchema = z.object({
   sessionRescheduling: z.boolean().optional(),
 });
 
-/**
- * GET /api/notifications
- * Get notifications for the authenticated user
- */
-router.get(
-  '/',
-  isAuthenticated,
-  [
-    query('status').optional().isIn(['pending', 'sent', 'delivered', 'failed', 'read']).withMessage('Invalid status'),
-    query('type').optional().isIn(['session_cancelled', 'session_rescheduled', 'session_reminder', 'session_confirmation', 'cancellation_request', 'reschedule_request']).withMessage('Invalid notification type'),
-    query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
-    query('offset').optional().isInt({ min: 0 }).withMessage('Offset must be non-negative'),
-  ],
-  async (req: Request, res: Response) => {
-    try {
-      // Check validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          message: 'Validation failed',
-          errors: errors.array(),
-        });
-      }
 
-      const userId = req.user!.id;
-      const { status, type, limit = 20, offset = 0 } = req.query;
-
-      const result = await NotificationService.getUserNotifications(userId, {
-        status: status as string,
-        type: type as NotificationType,
-        limit: parseInt(limit as string),
-        offset: parseInt(offset as string),
-      });
-
-      res.status(200).json({
-        success: true,
-        data: result.notifications,
-        total: result.total,
-        limit: parseInt(limit as string),
-        offset: parseInt(offset as string),
-      });
-    } catch (error) {
-      console.error('Error getting user notifications:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to get notifications',
-      });
-    }
-  }
-);
 
 /**
  * PUT /api/notifications/:notificationId/read
@@ -82,7 +31,7 @@ router.put(
   '/:notificationId/read',
   isAuthenticated,
   [
-    param('notificationId').isMongoId().withMessage('Invalid notification ID'),
+    param('notificationId').isString().withMessage('Invalid notification ID'),
   ],
   async (req: Request, res: Response) => {
     try {
@@ -172,32 +121,7 @@ router.get(
   }
 );
 
-/**
- * GET /api/notifications/preferences
- * Get notification preferences for the authenticated user
- */
-router.get(
-  '/preferences',
-  isAuthenticated,
-  async (req: Request, res: Response) => {
-    try {
-      const userId = req.user!.id;
 
-      const preferences = await (NotificationPreferences as any).getOrCreateForUser(userId);
-
-      res.status(200).json({
-        success: true,
-        data: preferences,
-      });
-    } catch (error) {
-      console.error('Error getting notification preferences:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to get notification preferences',
-      });
-    }
-  }
-);
 
 /**
  * PUT /api/notifications/preferences
@@ -253,7 +177,7 @@ router.post(
   '/test',
   isAuthenticated,
   [
-    body('recipientId').isMongoId().withMessage('Invalid recipient ID'),
+    body('recipientId').isString().withMessage('Invalid recipient ID'),
     body('type').isIn(['session_cancelled', 'session_rescheduled', 'session_reminder', 'session_confirmation', 'cancellation_request', 'reschedule_request', 'reflection_submitted']).withMessage('Invalid notification type'),
     body('channels').isArray().withMessage('Channels must be an array'),
     body('channels.*').isIn(['email', 'in_app', 'sms', 'push']).withMessage('Invalid notification channel'),

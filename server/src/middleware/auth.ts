@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
 import { APIError, ErrorCode } from './error.js';
-import { AuthenticatedUserPayload } from '../types/user.js';
+import { AuthenticatedUser } from '../types/user.js';
 import mongoose from 'mongoose';
 
 // Middleware to check if the user is authenticated
