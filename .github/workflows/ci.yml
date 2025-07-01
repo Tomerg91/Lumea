@@ -38,10 +38,9 @@ jobs:
       - name: Required environment variables check
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           missing=false
-          for var in SUPABASE_URL ANTHROPIC_API_KEY; do
+          for var in SUPABASE_URL; do
             if [ -z "${!var}" ]; then echo "❌ Missing required secret: $var" && missing=true; fi
           done
           if [ "$missing" = true ]; then exit 1; fi
