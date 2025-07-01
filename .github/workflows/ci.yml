@@ -43,7 +43,7 @@ jobs:
       
       # Run linting (warnings allowed, only errors fail CI)
       - name: Run ESLint
-        run: npm run lint -- --max-warnings 1500
+        run: npx eslint . --ext .ts,.tsx --max-warnings 1500
 
   build:
     name: Build
