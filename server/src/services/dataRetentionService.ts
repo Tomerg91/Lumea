@@ -80,33 +80,7 @@ interface RetentionReport {
 export class DataRetentionService {
   private auditService: AuditService;
   private encryptionService: EncryptionService;
-  private modelMap: Map<string, any>;
-
-  constructor() {
-    this.auditService = new AuditService();
-    this.encryptionService = new EncryptionService();
-    this.initializeModelMap();
-  }
-
-  private initializeModelMap(): void {
-    this.modelMap = new Map([
-      ['User', User],
-      ['Session', Session],
-      ['Reflection', Reflection],
-      ['CoachNote', CoachNote],
-      ['AuditLog', AuditLog],
-      ['Notification', Notification],
-      ['SessionFeedback', SessionFeedback],
-      ['File', File],
-      ['SessionHistory', SessionHistory],
-      ['Consent', Consent],
-      ['EncryptionKey', EncryptionKey],
-      ['PasswordResetToken', PasswordResetToken],
-      ['InviteToken', InviteToken],
-      ['SessionTiming', SessionTiming],
-      ['CoachAvailability', CoachAvailability]
-    ]);
-  }
+  
 
   /**
    * Create a new data retention policy
@@ -779,44 +753,14 @@ export class DataRetentionService {
   }
 
   private async createDeletionCertificate(
-    policy: IDataRetentionPolicy,
+    policy: any, // Type changed
     result: DeletionResult,
     executedBy: string,
     executionMethod: 'automated' | 'manual' | 'emergency',
     deletedRecords: any[]
   ): Promise<any> {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const crypto = require('crypto');
-    
-    const certificateData = {
-      policyId: policy._id.toString(),
-      dataType: policy.dataType,
-      modelName: policy.modelName,
-      executedAt: new Date(),
-      executedBy,
-      executionMethod,
-      recordsProcessed: result.recordsProcessed,
-      recordsDeleted: result.recordsDeleted,
-      recordsSkipped: result.recordsSkipped,
-      recordsFailed: result.recordsFailed,
-      deletionMethod: policy.deletionMethod,
-      secureWipeUsed: policy.secureWipe,
-      cryptographicHash: this.calculateRecordsHash(deletedRecords),
-      digitalSignature: this.generateDigitalSignature(deletedRecords, policy),
-      legalBasis: 'Data retention policy compliance',
-      complianceFramework: this.getComplianceFrameworks(policy),
-      retentionPeriodMet: true,
-      affectedTables: [policy.modelName],
-      backupStatus: 'retained',
-      backupRetentionUntil: new Date(Date.now() + policy.backupRetention * 24 * 60 * 60 * 1000),
-      verificationHash: crypto.randomBytes(32).toString('hex'),
-      status: result.success ? 'completed' : 'partial'
-    };
-
-    const certificate = new DeletionCertificate(certificateData);
-    await certificate.save();
-
-    return certificate;
+    console.warn('createDeletionCertificate is a placeholder. Implement with Supabase.');
+    return {};
   }
 
   private calculateRecordsHash(records: any[]): string {

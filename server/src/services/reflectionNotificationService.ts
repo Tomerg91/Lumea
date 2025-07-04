@@ -68,8 +68,12 @@ export class ReflectionNotificationService {
         ? content.substring(0, 150) + '...' 
         : content;
 
-      // Get the notification template
-      const template = NotificationTemplates.reflection_submitted;
+      // TODO: Implement proper notification template management using Supabase
+      const template = {
+        subject: 'New Reflection Submitted by {{clientName}}',
+        htmlBody: '<p>Hello {{coachName}},</p><p>Your client {{clientName}} has submitted a new reflection for the session on {{sessionDate}}.</p><p><strong>Reflection Preview:</strong> {{reflectionPreview}}</p>{{#if mood}}<p><strong>Mood:</strong> {{mood}}</p>{{/if}}<p>View the full reflection here: <a href="{{reflectionUrl}}">{{reflectionUrl}}</a></p><p>Best regards,<br>The Lumea Team</p>',
+        textBody: 'Hello {{coachName}},\nYour client {{clientName}} has submitted a new reflection for the session on {{sessionDate}}.\nReflection Preview: {{reflectionPreview}}\n{{#if mood}}Mood: {{mood}}\n{{/if}}View the full reflection here: {{reflectionUrl}}\nBest regards,\nThe Lumea Team',
+      };
       
       // Prepare template variables
       const variables = {

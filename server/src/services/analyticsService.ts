@@ -1,11 +1,3 @@
-import mongoose from 'mongoose';
-import puppeteer from 'puppeteer';
-import { Workbook } from 'excel-builder-vanilla';
-import { CoachingSession } from '../models/CoachingSession.js';
-import { Reflection } from '../models/Reflection.js';
-import { CoachNote } from '../models/CoachNote.js';
-import { SessionFeedback } from '../models/SessionFeedback.js';
-import { SessionTiming } from '../models/SessionTiming.js';
 import { supabase } from '../lib/supabase.js';
 
 export interface AnalyticsDateRange {
@@ -146,66 +138,16 @@ class AnalyticsService {
    * Get session metrics and trends
    */
   async getSessionMetrics(dateRange: AnalyticsDateRange): Promise<SessionMetrics> {
-    const { startDate, endDate } = this.prepareDateRange(dateRange);
-    const matchStage = this.buildDateMatchStage('date', startDate, endDate);
-
-    // Get session counts by status
-    const sessionsByStatus = await CoachingSession.aggregate([
-      { $match: matchStage },
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-
-    // Get daily session trends
-    const sessionTrends = await CoachingSession.aggregate([
-      { $match: matchStage },
-      {
-        $group: {
-          _id: {
-            $dateToString: { format: '%Y-%m-%d', date: '$date' }
-          },
-          sessions: { $sum: 1 },
-          completed: {
-            $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] }
-          }
-        }
-      },
-      { $sort: { '_id': 1 } },
-      {
-        $project: {
-          date: '$_id',
-          sessions: 1,
-          completed: 1,
-          _id: 0
-        }
-      }
-    ]);
-
-             const statusCounts = sessionsByStatus.reduce((acc, item: { _id: string; count: number }) => {
-      acc[item._id] = item.count;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const totalSessions = Object.values(statusCounts).reduce((sum: number, count: number) => sum + count, 0);
-    const completedSessions = statusCounts.completed || 0;
-    const cancelledSessions = statusCounts.cancelled || 0;
-
-    // Calculate average sessions per week
-    const weeksDiff = this.getWeeksDifference(startDate, endDate);
-    const averageSessionsPerWeek = weeksDiff > 0 ? (totalSessions as number) / weeksDiff : 0;
-
+    // TODO: Implement using Supabase queries
+    console.warn('getSessionMetrics is a placeholder. Implement with Supabase.');
     return {
-      totalSessions: totalSessions as number,
-      completedSessions,
-      cancelledSessions,
-      completionRate: (totalSessions as number) > 0 ? (completedSessions / (totalSessions as number)) * 100 : 0,
-      sessionsByStatus: statusCounts,
-      averageSessionsPerWeek: Math.round(averageSessionsPerWeek * 10) / 10,
-      sessionTrends
+      totalSessions: 0,
+      completedSessions: 0,
+      cancelledSessions: 0,
+      completionRate: 0,
+      sessionsByStatus: {},
+      averageSessionsPerWeek: 0,
+      sessionTrends: [],
     };
   }
 
@@ -213,80 +155,15 @@ class AnalyticsService {
    * Get client engagement metrics
    */
   async getClientEngagementMetrics(dateRange: AnalyticsDateRange): Promise<ClientEngagementMetrics> {
-    const { startDate, endDate } = this.prepareDateRange(dateRange);
-    const sessionMatchStage = this.buildDateMatchStage('date', startDate, endDate);
-    const reflectionMatchStage = this.buildDateMatchStage('createdAt', startDate, endDate);
-
-    // Get client session data
-    const clientSessions = await CoachingSession.aggregate([
-      { $match: sessionMatchStage },
-      {
-        $group: {
-          _id: '$clientId',
-          sessionCount: { $sum: 1 },
-          completedSessions: {
-            $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] }
-          }
-        }
-      }
-    ]);
-
-    // Get reflection submission data
-    const reflectionData = await Reflection.aggregate([
-      { $match: reflectionMatchStage },
-      {
-        $group: {
-          _id: {
-            clientId: '$clientId',
-            date: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }
-          },
-          reflections: { $sum: 1 }
-        }
-      },
-      {
-        $group: {
-          _id: '$_id.date',
-          activeClients: { $sum: 1 },
-          reflectionsSubmitted: { $sum: '$reflections' }
-        }
-      },
-      { $sort: { '_id': 1 } },
-      {
-        $project: {
-          date: '$_id',
-          activeClients: 1,
-          reflectionsSubmitted: 1,
-          _id: 0
-        }
-      }
-    ]);
-
-    const totalClients = clientSessions.length;
-    const activeClients = clientSessions.filter((client: any) => (client.completedSessions || 0) > 0).length;
-    const totalSessionsAcrossClients = clientSessions.reduce((sum: number, client: any) => sum + (client.sessionCount || 0), 0);
-    const averageSessionsPerClient = totalClients > 0 ? totalSessionsAcrossClients / totalClients : 0;
-
-    // Calculate reflection submission rate (submitted vs total sessions)
-    const totalCompletedSessions = clientSessions.reduce((sum: number, client: any) => sum + (client.completedSessions || 0), 0);
-     const totalReflections = await Reflection.countDocuments(reflectionMatchStage);
-     const reflectionSubmissionRate = totalCompletedSessions > 0 ? (totalReflections / totalCompletedSessions) * 100 : 0;
-
-    // Calculate retention rate (clients with sessions in last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const recentSessions = await CoachingSession.countDocuments({
-      date: { $gte: thirtyDaysAgo },
-      status: 'completed'
-    });
-    const clientRetentionRate = totalClients > 0 ? (recentSessions / totalClients) * 100 : 0;
-
+    // TODO: Implement using Supabase queries
+    console.warn('getClientEngagementMetrics is a placeholder. Implement with Supabase.');
     return {
-      totalClients,
-      activeClients,
-      clientRetentionRate: Math.round(clientRetentionRate * 10) / 10,
-      averageSessionsPerClient: Math.round(averageSessionsPerClient * 10) / 10,
-      reflectionSubmissionRate: Math.round(reflectionSubmissionRate * 10) / 10,
-      clientEngagementTrends: reflectionData
+      totalClients: 0,
+      activeClients: 0,
+      clientRetentionRate: 0,
+      averageSessionsPerClient: 0,
+      reflectionSubmissionRate: 0,
+      clientEngagementTrends: [],
     };
   }
 
@@ -294,104 +171,12 @@ class AnalyticsService {
    * Get coach performance metrics
    */
   async getCoachPerformanceMetrics(dateRange: AnalyticsDateRange): Promise<CoachPerformanceMetrics> {
-    const { startDate, endDate } = this.prepareDateRange(dateRange);
-    const sessionMatchStage = this.buildDateMatchStage('date', startDate, endDate);
-
-    // Get coach session data with timing information
-    const coachData = await CoachingSession.aggregate([
-      { $match: sessionMatchStage },
-      {
-        $lookup: {
-          from: 'sessiontimings',
-          localField: 'timingId',
-          foreignField: '_id',
-          as: 'timing'
-        }
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'coachId',
-          foreignField: '_id',
-          as: 'coach'
-        }
-      },
-      {
-        $group: {
-          _id: '$coachId',
-          coachName: { $first: { $arrayElemAt: ['$coach.name', 0] } },
-          totalSessions: { $sum: 1 },
-          completedSessions: {
-            $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] }
-          },
-          clients: { $addToSet: '$clientId' },
-          sessionDurations: {
-            $push: {
-              $cond: [
-                { $gt: [{ $size: '$timing' }, 0] },
-                { $arrayElemAt: ['$timing.actualDuration', 0] },
-                '$duration'
-              ]
-            }
-          }
-        }
-      },
-      {
-        $project: {
-          coachId: { $toString: '$_id' },
-          coachName: 1,
-          totalSessions: 1,
-          completedSessions: 1,
-          totalClients: { $size: '$clients' },
-          averageSessionDuration: { $avg: '$sessionDurations' },
-          _id: 0
-        }
-      }
-    ]);
-
-    // Get coach notes count and feedback scores
-    for (const coach of coachData) {
-      const coachObjectId = new mongoose.Types.ObjectId(coach.coachId);
-      
-      // Get notes count
-      const notesCount = await CoachNote.countDocuments({
-        authorId: coachObjectId,
-        ...this.buildDateMatchStage('createdAt', startDate, endDate)
-      });
-
-      // Get client satisfaction scores from feedback
-      const feedbackScores = await SessionFeedback.aggregate([
-        {
-          $match: {
-            coachId: coachObjectId,
-            ...this.buildDateMatchStage('createdAt', startDate, endDate),
-            'feedbackData.coachRating': { $exists: true }
-          }
-        },
-        {
-          $group: {
-            _id: null,
-            averageRating: { $avg: '$feedbackData.coachRating' }
-          }
-        }
-      ]);
-
-      coach.notesTaken = notesCount;
-      coach.clientSatisfactionScore = feedbackScores.length > 0 ? 
-        Math.round(feedbackScores[0].averageRating * 10) / 10 : 0;
-      coach.averageSessionDuration = Math.round((coach.averageSessionDuration || 0) * 10) / 10;
-    }
-
-    const { count: totalCoaches } = await supabase
-      .from('users')
-      .select('*', { count: 'exact', head: true })
-      .eq('role', 'coach');
-    const activeCoaches = coachData.filter(coach => coach.totalSessions > 0).length;
-
+    // TODO: Implement using Supabase queries
+    console.warn('getCoachPerformanceMetrics is a placeholder. Implement with Supabase.');
     return {
-      totalCoaches,
-      activeCoaches,
-      coaches: coachData
+      totalCoaches: 0,
+      activeCoaches: 0,
+      coaches: [],
     };
   }
 
@@ -399,98 +184,14 @@ class AnalyticsService {
    * Get reflection analytics
    */
   async getReflectionAnalytics(dateRange: AnalyticsDateRange): Promise<ReflectionAnalytics> {
-    const { startDate, endDate } = this.prepareDateRange(dateRange);
-    const matchStage = this.buildDateMatchStage('createdAt', startDate, endDate);
-
-    // Get reflection counts and category analysis
-    const reflectionData = await Reflection.aggregate([
-      { $match: matchStage },
-      {
-        $facet: {
-          totalCount: [{ $count: 'count' }],
-          categoryAnalysis: [
-            { $unwind: '$answers' },
-            {
-              $lookup: {
-                from: 'reflectiontemplates',
-                pipeline: [{ $limit: 1 }],
-                as: 'template'
-              }
-            },
-            {
-              $project: {
-                answers: 1,
-                questions: { $arrayElemAt: ['$template.questions', 0] }
-              }
-            },
-            { $unwind: '$questions' },
-            {
-              $match: {
-                $expr: { $eq: ['$answers.questionId', '$questions.id'] }
-              }
-            },
-            {
-              $group: {
-                _id: '$questions.category',
-                responseCount: { $sum: 1 },
-                averageScore: {
-                  $avg: {
-                    $cond: [
-                      { $eq: ['$questions.type', 'scale'] },
-                      { $toDouble: '$answers.value' },
-                      null
-                    ]
-                  }
-                }
-              }
-            }
-          ],
-          completionTimes: [
-            {
-              $match: {
-                actualCompletionMinutes: { $exists: true, $gt: 0 }
-              }
-            },
-            {
-              $group: {
-                _id: null,
-                averageTime: { $avg: '$actualCompletionMinutes' }
-              }
-            }
-          ]
-        }
-      }
-    ]);
-
-    const result = reflectionData[0];
-    const totalReflections = result.totalCount[0]?.count || 0;
-    const averageCompletionTime = result.completionTimes[0]?.averageTime || 0;
-    
-    // Calculate submission rate against completed sessions
-    const completedSessions = await CoachingSession.countDocuments({
-      ...this.buildDateMatchStage('date', startDate, endDate),
-      status: 'completed'
-    });
-    
-    const submissionRate = completedSessions > 0 ? (totalReflections / completedSessions) * 100 : 0;
-
-    const reflectionsByCategory = result.categoryAnalysis.reduce((acc, item) => {
-      acc[item._id] = item.responseCount;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const categoryEngagement = result.categoryAnalysis.map(item => ({
-      category: item._id,
-      averageScore: Math.round((item.averageScore || 0) * 10) / 10,
-      responseCount: item.responseCount
-    }));
-
+    // TODO: Implement using Supabase queries
+    console.warn('getReflectionAnalytics is a placeholder. Implement with Supabase.');
     return {
-      totalReflections,
-      submissionRate: Math.round(submissionRate * 10) / 10,
-      averageCompletionTime: Math.round(averageCompletionTime * 10) / 10,
-      reflectionsByCategory,
-      categoryEngagement
+      totalReflections: 0,
+      submissionRate: 0,
+      averageCompletionTime: 0,
+      reflectionsByCategory: {},
+      categoryEngagement: [],
     };
   }
 

@@ -13,7 +13,7 @@ PORT=3001
 CLIENT_URL=http://localhost:5173
 
 # Database Configuration
-DATABASE_URL=mongodb://localhost:27017/satya-coaching
+# DATABASE_URL=your_supabase_connection_string_here
 
 # JWT Configuration (REQUIRED - Generate secure random secrets)
 JWT_ACCESS_SECRET=your_secure_random_access_secret_here

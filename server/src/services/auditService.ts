@@ -1,9 +1,3 @@
-import { Types } from 'mongoose';
-import { SessionHistory, ISessionHistory, SessionHistoryAction } from '../models/SessionHistory';
-import { ICoachingSession } from '../models/CoachingSession';
-import { IUser } from '../models/User';
-import { Request } from 'express';
-import { AuditLog, IAuditLog } from '../models/AuditLog.js';
 import { logger } from './logger.js';
 import { getClientIp } from '../middleware/security.js';
 import crypto from 'crypto';
@@ -1059,20 +1053,8 @@ export class AuditService {
    * Clean up expired audit logs (based on retention date)
    */
   async cleanupExpiredLogs(): Promise<number> {
-    try {
-      const result = await AuditLog.deleteMany({
-        retentionDate: { $lt: new Date() }
-      });
-
-      logger.info('Cleaned up expired audit logs', {
-        deletedCount: result.deletedCount
-      });
-
-      return result.deletedCount || 0;
-    } catch (error) {
-      logger.error('Failed to cleanup expired audit logs', error);
-      throw new Error('Failed to cleanup expired audit logs');
-    }
+    console.warn('cleanupExpiredLogs is a placeholder. Implement with Supabase.');
+    return 0;
   }
 }
 

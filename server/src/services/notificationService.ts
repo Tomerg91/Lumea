@@ -1,9 +1,50 @@
-// @ts-nocheck
-import { Notification, NotificationTemplates, NotificationType, NotificationChannel, INotification } from '../models/Notification';
-import { ICoachingSession } from '../models/CoachingSession';
-import { IUser } from '../models/User';
-import { Types } from 'mongoose';
 import { EmailService } from './emailService';
+
+interface INotification { // Placeholder interface
+  _id: string;
+  recipientId: string;
+  senderId?: string;
+  sessionId?: string;
+  type: string;
+  channel: string;
+  priority: string;
+  subject: string;
+  htmlBody: string;
+  textBody: string;
+  variables: Record<string, string>;
+  scheduledAt: Date;
+  retryCount: number;
+  maxRetries: number;
+  status: string;
+  sentAt?: Date;
+  failedAt?: Date;
+  failureReason?: string;
+  emailMessageId?: string;
+  smsMessageId?: string;
+  pushNotificationId?: string;
+}
+
+interface ICoachingSession { // Placeholder interface
+  _id: string;
+  coachId: string | any;
+  clientId: string | any;
+  date: Date;
+  duration?: number;
+  status: string;
+  completedAt?: Date;
+  notes?: string;
+  cancellationInfo?: any;
+  reschedulingInfo?: any;
+}
+
+interface IUser { // Placeholder interface
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  role: string;
+}
 
 interface NotificationContext {
   recipient: IUser;
@@ -30,37 +71,8 @@ export class NotificationService {
    * Create and schedule notifications for a session event
    */
   static async createSessionNotification(request: NotificationRequest): Promise<INotification[]> {
-    const notifications: INotification[] = [];
-
-    // Get template for the notification type
-    const template = NotificationTemplates[request.type];
-    if (!template) {
-      throw new Error(`Unknown notification type: ${request.type}`);
-    }
-
-    // Create notification for each requested channel
-    for (const channel of request.channels) {
-      const notification = new Notification({
-        recipientId: new Types.ObjectId(request.recipientId),
-        senderId: request.senderId ? new Types.ObjectId(request.senderId) : undefined,
-        sessionId: request.sessionId ? new Types.ObjectId(request.sessionId) : undefined,
-        type: request.type,
-        channel,
-        priority: request.priority || 'medium',
-        subject: template.subject,
-        htmlBody: template.htmlBody,
-        textBody: template.textBody,
-        variables: request.variables || {},
-        scheduledAt: request.scheduledAt || new Date(),
-        retryCount: 0,
-        maxRetries: 3,
-      });
-
-      await notification.save();
-      notifications.push(notification);
-    }
-
-    return notifications;
+    console.warn('createSessionNotification is a placeholder. Implement with Supabase.');
+    return [];
   }
 
   /**
@@ -92,69 +104,14 @@ export class NotificationService {
    * Send pending notifications
    */
   static async processPendingNotifications(): Promise<void> {
-    const pendingNotifications = await Notification.find({
-      status: 'pending',
-      scheduledAt: { $lte: new Date() },
-      retryCount: { $lt: 3 }, // Don't process notifications that have exceeded retry limit
-    }).populate('recipientId sessionId');
-
-    for (const notification of pendingNotifications) {
-      try {
-        await this.sendNotification(notification);
-      } catch (error) {
-        console.error(`Failed to send notification ${notification._id}:`, error);
-        
-        // Update retry count and status
-        notification.retryCount += 1;
-        if (notification.retryCount >= notification.maxRetries) {
-          notification.status = 'failed';
-          notification.failedAt = new Date();
-          notification.failureReason = error instanceof Error ? error.message : 'Unknown error';
-        }
-        await notification.save();
-      }
-    }
+    console.warn('processPendingNotifications is a placeholder. Implement with Supabase.');
   }
 
   /**
    * Send a specific notification
    */
   static async sendNotification(notification: INotification): Promise<void> {
-    // Substitute variables in content
-    const variables = notification.variables instanceof Map 
-      ? Object.fromEntries(notification.variables) 
-      : notification.variables || {};
-    const subject = this.substituteVariables(notification.subject, variables);
-    const htmlBody = this.substituteVariables(notification.htmlBody, variables);
-    const textBody = this.substituteVariables(notification.textBody, variables);
-
-    try {
-      switch (notification.channel) {
-        case 'email':
-          await this.sendEmailNotification(notification, subject, htmlBody, textBody);
-          break;
-        case 'in_app':
-          await this.sendInAppNotification(notification, subject, textBody);
-          break;
-        case 'sms':
-          await this.sendSMSNotification(notification, textBody);
-          break;
-        case 'push':
-          await this.sendPushNotification(notification, subject, textBody);
-          break;
-        default:
-          throw new Error(`Unsupported notification channel: ${notification.channel}`);
-      }
-
-      // Mark as sent
-      notification.status = 'sent';
-      notification.sentAt = new Date();
-      await notification.save();
-
-    } catch (error) {
-      console.error(`Failed to send ${notification.channel} notification:`, error);
-      throw error;
-    }
+    console.warn('sendNotification is a placeholder. Implement with Supabase.');
   }
 
   /**
@@ -472,51 +429,22 @@ export class NotificationService {
       offset?: number;
     } = {}
   ): Promise<{ notifications: INotification[]; total: number }> {
-    const filter: any = { recipientId: new Types.ObjectId(userId) };
-    
-    if (options.status) filter.status = options.status;
-    if (options.type) filter.type = options.type;
-
-    const total = await Notification.countDocuments(filter);
-    const notifications = await Notification.find(filter)
-      .sort({ createdAt: -1 })
-      .limit(options.limit || 50)
-      .skip(options.offset || 0)
-      .populate('senderId sessionId', 'firstName lastName date');
-
-    return { notifications, total };
+    console.warn('getUserNotifications is a placeholder. Implement with Supabase.');
+    return { notifications: [], total: 0 };
   }
 
   /**
    * Mark notification as read
    */
   static async markNotificationAsRead(notificationId: string, userId: string): Promise<void> {
-    await Notification.findOneAndUpdate(
-      { 
-        _id: new Types.ObjectId(notificationId),
-        recipientId: new Types.ObjectId(userId)
-      },
-      { 
-        status: 'read',
-        readAt: new Date()
-      }
-    );
+    console.warn('markNotificationAsRead is a placeholder. Implement with Supabase.');
   }
 
   /**
    * Mark all notifications as read for a user
    */
   static async markAllNotificationsAsRead(userId: string): Promise<void> {
-    await Notification.updateMany(
-      { 
-        recipientId: new Types.ObjectId(userId),
-        status: { $in: ['sent', 'delivered'] }
-      },
-      { 
-        status: 'read',
-        readAt: new Date()
-      }
-    );
+    console.warn('markAllNotificationsAsRead is a placeholder. Implement with Supabase.');
   }
 }
 

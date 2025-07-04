@@ -61,7 +61,7 @@
     "@types/testing-library__react": "10.0.1",
     "@typescript-eslint/parser": "^8.29.0",
     "bcryptjs": "3.0.2",
-    "concurrently": "^8.2.2",
+    "concurrently": "8.2.2",
     "connect-pg-simple": "10.0.0",
     "dotenv": "^16.3.1",
     "drizzle-zod": "0.7.1",

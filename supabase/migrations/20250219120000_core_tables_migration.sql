@@ -1,5 +1,5 @@
 -- Lumea Coaching Platform - Core Tables Migration
--- Migrates all Prisma and MongoDB models to Supabase PostgreSQL
+-- Migrates all Prisma and  models to Supabase PostgreSQL
 -- Date: 2025-02-19
 
 -- =============================================================================

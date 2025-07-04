@@ -1,5 +1,10 @@
-import { CoachNote, ICoachNote, NoteAccessLevel } from '../models/CoachNote.js';
-import { Types } from 'mongoose';
+export enum NoteAccessLevel {
+  PRIVATE = 'private',
+  CLIENT = 'client',
+  TEAM = 'team',
+  SUPERVISOR = 'supervisor',
+  ORGANIZATION = 'organization',
+}
 
 export interface SearchOptions {
   query?: string;
@@ -242,36 +247,8 @@ export class CoachNoteSearchService {
     userRole: string,
     limit: number = 20
   ): Promise<Array<{ tag: string; count: number }>> {
-    const pipeline: any[] = [
-      {
-        $match: {
-          $or: [
-            { coachId: new Types.ObjectId(userId) },
-            { sharedWith: userId },
-            { accessLevel: { $in: this.getAllowedAccessLevels(userRole) } }
-          ],
-          tags: { $exists: true, $ne: [] }
-        }
-      },
-      { $unwind: '$tags' },
-      {
-        $group: {
-          _id: '$tags',
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { count: -1 } },
-      { $limit: limit },
-      {
-        $project: {
-          tag: '$_id',
-          count: 1,
-          _id: 0
-        }
-      }
-    ];
-    
-    return await CoachNote.aggregate(pipeline);
+    console.warn('getPopularTags is a placeholder. Implement with Supabase.');
+    return [];
   }
   
   /**

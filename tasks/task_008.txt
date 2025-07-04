@@ -15,7 +15,7 @@ Test search accuracy, filtering functionality, bulk operations, and performance 
 ### Dependencies: None
 ### Description: Build comprehensive search functionality across all coach notes with relevance scoring and advanced query support
 ### Details:
-- Implement full-text search using MongoDB text indexes
+- Implement full-text search for coach notes
 - Add search across note titles, content, and tags
 - Implement search relevance scoring and ranking
 - Add search highlighting for matched terms

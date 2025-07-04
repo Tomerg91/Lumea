@@ -1,7 +1,7 @@
 import { OAuth2Client } from 'google-auth-library';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { User, IUser } from '../models/User.js';
+
 import { getUserByEmail, createUser } from '../storage.js';
 import { AuthenticatedUser } from '../types/user.js';
 
@@ -105,14 +105,7 @@ export async function handleOAuthLogin(
     }
 
     // Ensure sensitive fields like passwordHash/passwordSalt are not returned
-    // user will be AuthenticatedUserPayload or the plain object from Mongoose createUser, neither have toObject or passwordHash/Salt
-    // const userObject =
-    //   user && typeof user.toObject === 'function' ? user.toObject() : user ? { ...user } : null;
-
-    // if (userObject) {
-    //   delete userObject.passwordHash;
-    //   delete userObject.passwordSalt;
-    // }
+    // TODO: Ensure the returned user object from Supabase does not contain sensitive fields.
 
     return user; // user is already AuthenticatedUserPayload or a clean Partial<IUser>
   } catch (error) {

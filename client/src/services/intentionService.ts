@@ -48,6 +48,12 @@ class IntentionService {
    */
   async needsBeingsSelection(): Promise<boolean> {
     try {
+      // MOCK AUTH: Return mock response in development mode
+      if (import.meta.env.VITE_MOCK_AUTH === 'true' || import.meta.env.VITE_DEVELOPMENT_MODE === 'true') {
+        console.log('[IntentionService] Using mock needsBeingsSelection - returning true');
+        return true; // Always needs selection in mock mode for testing
+      }
+
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) {
         throw new Error('User not authenticated');
@@ -74,6 +80,43 @@ class IntentionService {
    */
   async getBeings(): Promise<Being[]> {
     try {
+      // MOCK AUTH: Return mock beings in development mode
+      if (import.meta.env.VITE_MOCK_AUTH === 'true' || import.meta.env.VITE_DEVELOPMENT_MODE === 'true') {
+        console.log('[IntentionService] Using mock getBeings');
+        return [
+          {
+            being_id: 'mock-being-1',
+            label_en: 'Courage',
+            label_he: 'אומץ',
+            is_default: true
+          },
+          {
+            being_id: 'mock-being-2',
+            label_en: 'Compassion',
+            label_he: 'רחמים',
+            is_default: true
+          },
+          {
+            being_id: 'mock-being-3',
+            label_en: 'Wisdom',
+            label_he: 'חכמה',
+            is_default: true
+          },
+          {
+            being_id: 'mock-being-4',
+            label_en: 'Creativity',
+            label_he: 'יצירתיות',
+            is_default: true
+          },
+          {
+            being_id: 'mock-being-5',
+            label_en: 'Patience',
+            label_he: 'סבלנות',
+            is_default: true
+          }
+        ];
+      }
+
       const { data, error } = await supabase.rpc('get_beings');
 
       if (error) {
@@ -125,6 +168,12 @@ class IntentionService {
         throw new Error('At least one being must be selected');
       }
 
+      // MOCK AUTH: Return mock response in development mode
+      if (import.meta.env.VITE_MOCK_AUTH === 'true' || import.meta.env.VITE_DEVELOPMENT_MODE === 'true') {
+        console.log('[IntentionService] Using mock addDailyIntention for beings:', beingIds);
+        return beingIds.length; // Return the count of added intentions
+      }
+
       const { data, error } = await supabase.rpc('add_daily_intention', {
         p_being_ids: beingIds
       });
@@ -147,6 +196,13 @@ class IntentionService {
   async getDailyIntentions(date?: string): Promise<DailyIntention[]> {
     try {
       const targetDate = date ? new Date(date).toISOString().split('T')[0] : undefined;
+
+      // MOCK AUTH: Return mock daily intentions in development mode
+      if (import.meta.env.VITE_MOCK_AUTH === 'true' || import.meta.env.VITE_DEVELOPMENT_MODE === 'true') {
+        console.log('[IntentionService] Using mock getDailyIntentions for date:', targetDate);
+        // Return empty array initially - user hasn't made selections yet in mock mode
+        return [];
+      }
 
       const { data, error } = await supabase.rpc('get_daily_intentions', {
         p_date: targetDate
@@ -174,6 +230,18 @@ class IntentionService {
     try {
       const start = startDate ? new Date(startDate).toISOString().split('T')[0] : undefined;
       const end = endDate ? new Date(endDate).toISOString().split('T')[0] : undefined;
+
+      // MOCK AUTH: Return mock stats in development mode
+      if (import.meta.env.VITE_MOCK_AUTH === 'true' || import.meta.env.VITE_DEVELOPMENT_MODE === 'true') {
+        console.log('[IntentionService] Using mock getIntentionStats');
+        return {
+          total_days: 30,
+          days_with_selections: 25,
+          most_selected_being_en: 'Courage',
+          most_selected_being_he: 'אומץ',
+          selection_streak: 7
+        };
+      }
 
       const { data, error } = await supabase.rpc('get_intention_stats', {
         p_start_date: start,

@@ -622,7 +622,7 @@ I need to regenerate the subtasks for task 3 with a different approach. Can you 
 ### Handling changes
 
 ```
-We've decided to use MongoDB instead of PostgreSQL. Can you update all future tasks to reflect this change?
+
 ```
 
 ### Completing work

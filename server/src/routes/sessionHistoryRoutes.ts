@@ -2,7 +2,7 @@
 import express, { Request, Response } from 'express';
 import { AuditService, SessionHistoryFilter } from '../services/auditService';
 import { isAuthenticated as auth } from '../middleware/auth';
-import { Types } from 'mongoose';
+
 
 const router = express.Router();
 
@@ -175,12 +175,7 @@ router.get('/user/:userId', auth, async (req: Request, res: Response) => {
     const { userId } = req.params;
     const { limit, offset, dateFrom, dateTo } = req.query;
 
-    if (!Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid user ID',
-      });
-    }
+    
 
     // Authorization check - users can only see their own history unless admin
     if (req.user?.role !== 'admin' && req.user?.id !== userId) {

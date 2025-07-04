@@ -15,7 +15,7 @@ Test data calculations, visualization accuracy, export functionality, and perfor
 ### Dependencies: None
 ### Description: Create backend API endpoints for analytics data aggregation including session statistics, client engagement metrics, reflection analysis, and coaching effectiveness indicators
 ### Details:
-Implement MongoDB aggregation pipelines for session data analysis, create REST endpoints for analytics queries, and add data caching for performance optimization
+Implement data aggregation pipelines for session data analysis, create REST endpoints for analytics queries, and add data caching for performance optimization
 
 ## 2. Create Dashboard Data Visualization Components [done]
 ### Dependencies: 14.1

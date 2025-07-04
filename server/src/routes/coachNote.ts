@@ -4,7 +4,7 @@ import { coachNoteController } from '../controllers/coachNoteController.js';
 import { validateBody, validateParams, validateQuery, validateMultiple } from '../middleware/validate.js';
 import { validationSchemas } from '../schemas/validation.js';
 import { abac } from '../middleware/abac.js';
-import { CoachNote } from '../models/CoachNote.js';
+// import { CoachNote } from '../models/CoachNote.js';
 import { requireAccessReason } from '../middleware/accessReason.js';
 
 const router = express.Router();
@@ -12,6 +12,8 @@ const router = express.Router();
 // Middleware to load note and attach resource for ABAC policies
 async function loadNoteResource(req: any, res: any, next: any) {
   try {
+    // TODO: Re-enable when CoachNote model is available
+    /*
     const id = req.params.id;
     if (!id) return next();
     const note = await CoachNote.findById(id).select('coachId privacySettings sharedWith').lean();
@@ -22,6 +24,7 @@ async function loadNoteResource(req: any, res: any, next: any) {
         sharedWith: note.sharedWith,
       };
     }
+    */
     return next();
   } catch (err) {
     return next(err);

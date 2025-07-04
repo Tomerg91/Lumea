@@ -170,8 +170,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     async function getInitialSession() {
       console.log('[AuthContext] Attempting to get initial session...');
       try {
-        // PRODUCTION: Always attempt to get real Supabase session
+        // MOCK AUTH: Skip Supabase calls in mock mode
+        if (import.meta.env.VITE_MOCK_AUTH === 'true' || import.meta.env.VITE_DEVELOPMENT_MODE === 'true') {
+          console.log('[AuthContext] Using mock initial session (no existing session)');
+          // No existing session in mock mode - user will need to sign in
+          if (!ignore) {
+            setSession(null);
+            setUser(null);
+          }
+          return;
+        }
         
+        // PRODUCTION: Always attempt to get real Supabase session
         const { data: { session } } = await supabase.auth.getSession();
         if (!ignore) {
           setSession(session);
@@ -192,18 +202,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     getInitialSession();
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!ignore) {
-          console.log('[AuthContext] Auth state changed:', event, session?.user?.id);
-          setSession(session);
-          setUser(session?.user ?? null);
-          setLoadingSession(false);
-          setLoading(false);
+    // Listen for auth changes - only in production mode
+    let subscription: any = null;
+    if (!(import.meta.env.VITE_MOCK_AUTH === 'true' || import.meta.env.VITE_DEVELOPMENT_MODE === 'true')) {
+      const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
+        async (event, session) => {
+          if (!ignore) {
+            console.log('[AuthContext] Auth state changed:', event, session?.user?.id);
+            setSession(session);
+            setUser(session?.user ?? null);
+            setLoadingSession(false);
+            setLoading(false);
+          }
         }
-      }
-    );
+      );
+      subscription = authSubscription;
+    } else {
+      console.log('[AuthContext] Skipping auth state listener in mock mode');
+    }
 
     return () => {
       console.log('[AuthContext] Session Effect cleanup. Unsubscribing listener.');
@@ -252,6 +268,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     try {
       console.log('[AuthContext] Attempting to fetch profile for user:', userId);
+
+      // MOCK AUTH: Skip Supabase calls in mock mode
+      if (import.meta.env.VITE_MOCK_AUTH === 'true' || import.meta.env.VITE_DEVELOPMENT_MODE === 'true') {
+        console.log('[AuthContext] Using mock profile fetch');
+        
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Create mock profile
+        const mockProfile = {
+          id: userId,
+          name: 'Mock User',
+          email: user?.email || 'user@example.com',
+          role: 'client',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        
+        console.log('[AuthContext] Mock profile created:', mockProfile);
+        setProfile(mockProfile);
+        return mockProfile;
+      }
 
       // Get current user from auth (this should always work if user is authenticated)
       const {
@@ -374,6 +412,54 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setAuthError(null);
     
     try {
+      // MOCK AUTH: Use mock authentication for development
+      if (import.meta.env.VITE_MOCK_AUTH === 'true' || import.meta.env.VITE_DEVELOPMENT_MODE === 'true') {
+        console.log('[AuthContext] Using mock authentication');
+        
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Create mock user data
+        const mockUser = {
+          id: 'mock-user-123',
+          email: email || 'user@example.com',
+          user_metadata: {
+            name: 'Mock User',
+            role: 'client'
+          },
+          created_at: new Date().toISOString(),
+          app_metadata: {},
+          aud: 'authenticated'
+        };
+        
+        const mockSession = {
+          access_token: 'mock-access-token',
+          refresh_token: 'mock-refresh-token',
+          expires_in: 3600,
+          expires_at: Date.now() + 3600 * 1000,
+          token_type: 'bearer',
+          user: mockUser
+        };
+        
+        // Set mock user and session
+        setUser(mockUser as any);
+        setSession(mockSession as any);
+        
+        // Create mock profile
+        const mockProfile = {
+          id: mockUser.id,
+          name: mockUser.user_metadata.name,
+          email: mockUser.email,
+          role: mockUser.user_metadata.role,
+          created_at: mockUser.created_at,
+          updated_at: new Date().toISOString(),
+        };
+        
+        setProfile(mockProfile);
+        
+        return { data: { user: mockUser, session: mockSession }, error: null };
+      }
+      
       // PRODUCTION AUTH: Only use Supabase authentication
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -419,6 +505,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(true);
     setAuthError(null);
     try {
+      // MOCK AUTH: Use mock authentication for development
+      if (import.meta.env.VITE_MOCK_AUTH === 'true' || import.meta.env.VITE_DEVELOPMENT_MODE === 'true') {
+        console.log('[AuthContext] Using mock sign out');
+        
+        // Clear mock user data
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        return;
+      }
+      
       const { error } = await supabase.auth.signOut();
       if (error) throw error; // onAuthStateChange will handle clearing user/session/profile
     } catch (error) {

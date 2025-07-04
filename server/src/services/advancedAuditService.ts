@@ -1,10 +1,8 @@
 import crypto from 'crypto';
-import { AuditLog, IAuditLog } from '../models/AuditLog.js';
 import { AuditService, AuditLogEntry } from './auditService.js';
 import { logger } from './logger.js';
 import fs from 'fs';
 import path from 'path';
-import mongoose from 'mongoose';
 
 interface IntegrityCheckResult {
   isValid: boolean;
@@ -338,84 +336,13 @@ export class AdvancedAuditService extends AuditService {
    * Verify audit log chain integrity
    */
   async verifyLogIntegrity(startSequence?: number, endSequence?: number): Promise<IntegrityCheckResult> {
-    try {
-      const query: any = {};
-      if (startSequence !== undefined) query.sequenceNumber = { $gte: startSequence };
-      if (endSequence !== undefined) {
-        query.sequenceNumber = query.sequenceNumber || {};
-        query.sequenceNumber.$lte = endSequence;
-      }
-
-      const logs = await AuditLog.find(query).sort({ sequenceNumber: 1 });
-      const issues: string[] = [];
-      let lastValidSequence = 0;
-      let brokenChainAt: number | undefined;
-
-      for (let i = 0; i < logs.length; i++) {
-        const log = logs[i];
-        const previousLog = i > 0 ? logs[i - 1] : null;
-
-        // Verify sequence number continuity
-        if (previousLog && log.sequenceNumber !== previousLog.sequenceNumber + 1) {
-          issues.push(`Sequence gap detected: ${previousLog.sequenceNumber} -> ${log.sequenceNumber}`);
-          if (!brokenChainAt) brokenChainAt = log.sequenceNumber;
-        }
-
-        // Verify hash chain
-        if (previousLog && log.previousLogHash !== previousLog.integrityHash) {
-          issues.push(`Hash chain broken at sequence ${log.sequenceNumber}`);
-          if (!brokenChainAt) brokenChainAt = log.sequenceNumber;
-        }
-
-        // Verify integrity hash
-        const expectedHash = this.generateIntegrityHash(
-          {
-            userId: log.userId,
-            action: log.action,
-            resource: log.resource,
-            resourceId: log.resourceId,
-            ipAddress: log.ipAddress,
-            riskLevel: log.riskLevel,
-            eventType: log.eventType,
-            eventCategory: log.eventCategory,
-            dataClassification: log.dataClassification
-          } as AuditLogEntry,
-          log.sequenceNumber || 0,
-          log.previousLogHash
-        );
-
-        if (log.integrityHash !== expectedHash) {
-          issues.push(`Integrity hash mismatch at sequence ${log.sequenceNumber}`);
-          if (!brokenChainAt) brokenChainAt = log.sequenceNumber;
-        }
-
-        // Verify digital signature
-        if (log.integrityHash && log.digitalSignature) {
-          const expectedSignature = this.generateDigitalSignature(log.integrityHash);
-          if (log.digitalSignature !== expectedSignature) {
-            issues.push(`Digital signature invalid at sequence ${log.sequenceNumber}`);
-            if (!brokenChainAt) brokenChainAt = log.sequenceNumber;
-          }
-        }
-
-        if (issues.length === 0) {
-          lastValidSequence = log.sequenceNumber || 0;
-        }
-      }
-
-      return {
-        isValid: issues.length === 0,
-        issues,
-        lastValidSequence: lastValidSequence || undefined,
-        brokenChainAt
-      };
-    } catch (error) {
-      logger.error('Failed to verify log integrity', error);
-      return {
-        isValid: false,
-        issues: ['Failed to perform integrity check: ' + error.message]
-      };
-    }
+    logger.warn('Audit log integrity verification is a placeholder. Implement with Supabase.');
+    return {
+      isValid: false,
+      issues: ['Integrity verification not implemented for Supabase'],
+      lastValidSequence: 0,
+      brokenChainAt: 0
+    };
   }
 
   /**

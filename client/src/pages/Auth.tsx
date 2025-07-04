@@ -52,6 +52,7 @@ const Auth = () => {
   const { t } = useTranslation();
   const { isRTL } = useLanguage();
   const { signIn, signUp } = useAuth();
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -74,6 +75,9 @@ const Auth = () => {
         if (result.error) {
           throw new Error(result.error.message);
         }
+        // Successfully signed in - redirect to appropriate dashboard
+        console.log('[Auth] Login successful, redirecting to dashboard...');
+        navigate('/', { replace: true });
       } else {
         if (password !== confirmPassword) {
           throw new Error(t('validation.passwordsDontMatch'));
@@ -92,6 +96,9 @@ const Auth = () => {
         if (result.error) {
           throw new Error(result.error.message);
         }
+        // Successfully signed up - redirect to onboarding or dashboard  
+        console.log('[Auth] Signup successful, redirecting...');
+        navigate('/', { replace: true });
       }
     } catch (err: any) {
       setError(err.message);

@@ -33,6 +33,22 @@ model User {
   coachMilestones      Milestone[]           @relation("CoachMilestones")
   milestoneProgress    MilestoneProgress[]   @relation("MilestoneProgressRecorder")
   
+  // Additional relationships for missing models
+  coachNotes           CoachNote[]           @relation("CoachNotesCreator")
+  coachNotesClient     CoachNote[]           @relation("CoachNotesClient")
+  auditLogs            AuditLog[]            @relation("UserAuditLogs")
+  notifications        Notification[]        @relation("UserNotifications")
+  sessionFeedback      SessionFeedback[]     @relation("UserSessionFeedback")
+  sessionHistory       SessionHistory[]      @relation("UserSessionHistory")
+  consent              Consent[]             @relation("UserConsent")
+  inviteTokensCreated  InviteToken[]         @relation("InviteTokenCreator")
+  coachAvailability    CoachAvailability[]   @relation("CoachAvailabilityUser")
+  userRoles            UserRole[]            @relation("UserRoles")
+  feedbackAnalytics    FeedbackAnalytics[]   @relation("UserFeedbackAnalytics")
+  clientCoachingSessions CoachingSession[]   @relation("ClientCoachingSessions")
+  coachCoachingSessions CoachingSession[]    @relation("CoachCoachingSessions")
+  notificationPreferences NotificationPreferences? @relation("UserNotificationPreferences")
+  
   createdAt            DateTime              @default(now()) @map("created_at")
   updatedAt            DateTime              @updatedAt @map("updated_at")
 
@@ -56,6 +72,15 @@ model Session {
   audioFile         String?
   calendarEvents    CalendarEvent[] // Calendar events linked to this session
   milestoneProgress MilestoneProgress[] // Milestone progress recorded in this session
+  
+  // Additional relationships for missing models
+  coachNotes        CoachNote[]         @relation("SessionCoachNotes")
+  sessionTiming     SessionTiming[]     @relation("SessionTiming")
+  sessionFeedback   SessionFeedback[]   @relation("SessionFeedback")
+  sessionHistory    SessionHistory[]    @relation("SessionHistory")
+  templateSessions  TemplateSession[]   @relation("SessionTemplateUsage")
+  feedbackAnalytics FeedbackAnalytics[] @relation("SessionFeedbackAnalytics")
+  
   createdAt         DateTime            @default(now()) @map("created_at")
   updatedAt         DateTime            @updatedAt @map("updated_at")
 
@@ -256,6 +281,7 @@ model PasswordResetToken {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime @map("expires_at")
+  isUsed    Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([userId])
@@ -347,5 +373,691 @@ model MilestoneProgress {
   @@index([recordedBy])
   @@index([recordedAt])
   @@map("milestone_progress")
+  @@schema("public")
+}
+
+// Missing Models that are imported in the server code
+
+model CoachingSession {
+  id                String              @id @default(cuid())
+  title             String?
+  description       String?
+  startTime         DateTime
+  endTime           DateTime?
+  status            String              @default("scheduled") // scheduled, in-progress, completed, cancelled
+  clientId          String
+  client            User                @relation("ClientCoachingSessions", fields: [clientId], references: [id])
+  coachId           String
+  coach             User                @relation("CoachCoachingSessions", fields: [coachId], references: [id])
+  sessionType       String?             // individual, group, workshop
+  methodology       String?             // coaching methodology used
+  objectives        Json?               // session objectives
+  outcomes          Json?               // session outcomes
+  notes             String?
+  feedback          String?
+  rating            Int?                // 1-5 rating
+  recordingUrl      String?
+  materialsUsed     Json?               // array of materials/resources used
+  completedAt       DateTime?
+  sessionTiming     SessionTiming[]     @relation("CoachingSessionTiming")
+  coachNotes        CoachNote[]         @relation("CoachingSessionNotes")
+  sessionFeedback   SessionFeedback[]   @relation("CoachingSessionFeedback")
+  templateSessions  TemplateSession[]   @relation("CoachingSessionTemplateUsage")
+  feedbackAnalytics FeedbackAnalytics[] @relation("CoachingSessionFeedbackAnalytics")
+  
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+
+  @@index([clientId])
+  @@index([coachId])
+  @@index([status])
+  @@index([startTime])
+  @@map("coaching_sessions")
+  @@schema("public")
+}
+
+model CoachNote {
+  id                String          @id @default(cuid())
+  title             String
+  content           String
+  noteType          String          @default("general") // general, session, goal, observation
+  priority          String          @default("medium") // high, medium, low
+  accessLevel       String          @default("private") // private, shared, client_visible
+  
+  // Relationships
+  coachId           String
+  coach             User            @relation("CoachNotesCreator", fields: [coachId], references: [id])
+  clientId          String
+  client            User            @relation("CoachNotesClient", fields: [clientId], references: [id])
+  sessionId         String?
+  session           Session?        @relation("SessionCoachNotes", fields: [sessionId], references: [id])
+  coachingSessionId String?
+  coachingSession   CoachingSession? @relation("CoachingSessionNotes", fields: [coachingSessionId], references: [id])
+  
+  // Metadata
+  tags              String[]        // for categorization
+  isEncrypted       Boolean         @default(false)
+  encryptionKeyId   String?
+  
+  // Audit trail
+  isDeleted         Boolean         @default(false)
+  deletedAt         DateTime?
+  deletedBy         String?
+  
+  // Versioning
+  version           Int             @default(1)
+  previousVersionId String?
+  
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  @@index([coachId])
+  @@index([clientId])
+  @@index([sessionId])
+  @@index([noteType])
+  @@index([accessLevel])
+  @@index([createdAt])
+  @@map("coach_notes")
+  @@schema("public")
+}
+
+model AuditLog {
+  id              String    @id @default(cuid())
+  userId          String?
+  user            User?     @relation("UserAuditLogs", fields: [userId], references: [id])
+  action          String    // CREATE, READ, UPDATE, DELETE, LOGIN, LOGOUT, etc.
+  resource        String    // users, sessions, payments, etc.
+  resourceId      String?   // ID of the affected resource
+  details         Json?     // Additional details about the action
+  ipAddress       String?
+  userAgent       String?
+  sessionId       String?
+  endpoint        String?   // API endpoint accessed
+  httpMethod      String?   // GET, POST, PUT, DELETE
+  statusCode      Int?      // HTTP status code
+  
+  // Security fields
+  severity        String    @default("info") // info, warning, error, critical
+  phiAccessed     Boolean   @default(false) // Personal Health Information accessed
+  suspicious      Boolean   @default(false) // Flagged as suspicious activity
+  complianceFlag  String?   // HIPAA, GDPR, etc.
+  
+  // Metadata
+  metadata        Json?     // Additional metadata
+  sequenceNumber  BigInt?   // For ordering events
+  
+  timestamp       DateTime  @default(now())
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([timestamp])
+  @@index([severity])
+  @@index([phiAccessed])
+  @@index([suspicious])
+  @@map("audit_logs")
+  @@schema("public")
+}
+
+model SessionTiming {
+  id                  String          @id @default(cuid())
+  sessionId           String?
+  session             Session?        @relation("SessionTiming", fields: [sessionId], references: [id])
+  coachingSessionId   String?
+  coachingSession     CoachingSession? @relation("CoachingSessionTiming", fields: [coachingSessionId], references: [id])
+  
+  startTime           DateTime
+  endTime             DateTime?
+  duration            Int?            // Duration in seconds
+  plannedDuration     Int             // Planned duration in seconds
+  actualDuration      Int?            // Actual duration in seconds
+  overtime            Boolean         @default(false)
+  
+  // Break/pause tracking
+  pausedDuration      Int             @default(0) // Total paused time in seconds
+  pauseReasons        String[]        // Reasons for pauses
+  breaks              Json?           // Array of break periods
+  
+  status              String          @default("scheduled") // scheduled, started, paused, completed, cancelled
+  timezone            String          @default("UTC")
+  
+  // Timing adjustments
+  adjustments         Json?           // Array of manual time adjustments
+  
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+
+  @@index([sessionId])
+  @@index([coachingSessionId])
+  @@index([status])
+  @@index([startTime])
+  @@map("session_timing")
+  @@schema("public")
+}
+
+model File {
+  id              String    @id @default(cuid())
+  filename        String
+  originalName    String
+  mimeType        String
+  size            BigInt    // File size in bytes
+  path            String    // File path or S3 key
+  url             String?   // Public URL if applicable
+  
+  // Security
+  isEncrypted     Boolean   @default(false)
+  encryptionKeyId String?
+  
+  // Access control
+  accessLevel     String    @default("private") // private, shared, public
+  uploadedBy      String    // User who uploaded the file
+  
+  // Virus scanning
+  virusScanned    Boolean   @default(false)
+  virusScanResult String?   // clean, infected, error
+  virusScanDate   DateTime?
+  
+  // Metadata
+  metadata        Json?     // Additional file metadata
+  tags            String[]  // File tags for organization
+  
+  // Relationships
+  attachedTo      String?   // What entity this file is attached to (sessions, notes, etc.)
+  attachedToType  String?   // Type of entity (session, note, user, etc.)
+  
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([uploadedBy])
+  @@index([attachedTo])
+  @@index([attachedToType])
+  @@index([accessLevel])
+  @@index([virusScanned])
+  @@map("files")
+  @@schema("public")
+}
+
+model Tag {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  color       String?  // Hex color for UI display
+  category    String?  // Category of tag (session, note, user, etc.)
+  isSystem    Boolean  @default(false) // System tags vs user-created tags
+  
+  // Usage tracking
+  usageCount  Int      @default(0)
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@index([isSystem])
+  @@map("tags")
+  @@schema("public")
+}
+
+model Role {
+  id            String     @id @default(cuid())
+  name          String     @unique
+  description   String?
+  permissions   Json       // Array of permissions
+  isSystem      Boolean    @default(false) // System roles vs custom roles
+  isActive      Boolean    @default(true)
+  hierarchy     Int        @default(0) // Role hierarchy level
+  
+  // Role relationships
+  userRoles     UserRole[] @relation("RoleUsers")
+  
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  @@index([isSystem])
+  @@index([isActive])
+  @@index([hierarchy])
+  @@map("roles")
+  @@schema("public")
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("UserRoles", fields: [userId], references: [id], onDelete: Cascade)
+  roleId    String
+  role      Role     @relation("RoleUsers", fields: [roleId], references: [id], onDelete: Cascade)
+  
+  assignedBy String? // Who assigned this role
+  assignedAt DateTime @default(now())
+  expiresAt  DateTime? // Optional role expiration
+  isActive   Boolean  @default(true)
+  
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, roleId]) // Prevent duplicate role assignments
+  @@index([userId])
+  @@index([roleId])
+  @@index([isActive])
+  @@map("user_roles")
+  @@schema("public")
+}
+
+model CoachAvailability {
+  id                String   @id @default(cuid())
+  coachId           String
+  coach             User     @relation("CoachAvailabilityUser", fields: [coachId], references: [id], onDelete: Cascade)
+  
+  dayOfWeek         Int      // 0 = Sunday, 1 = Monday, etc.
+  startTime         String   // HH:MM format
+  endTime           String   // HH:MM format
+  timezone          String
+  
+  isRecurring       Boolean  @default(true)
+  recurringPattern  String?  @default("weekly") // weekly, biweekly, monthly
+  specificDate      DateTime? // For non-recurring availability
+  
+  isAvailable       Boolean  @default(true)
+  maxSessionsPerDay Int?
+  sessionDuration   Int      @default(60) // in minutes
+  bufferTime        Int      @default(15) // in minutes between sessions
+  
+  unavailableDates  Json?    // Array of unavailable dates
+  notes             String?
+  
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([coachId])
+  @@index([dayOfWeek])
+  @@index([isAvailable])
+  @@map("coach_availability")
+  @@schema("public")
+}
+
+model SessionFeedback {
+  id              String          @id @default(cuid())
+  sessionId       String?
+  session         Session?        @relation("SessionFeedback", fields: [sessionId], references: [id])
+  coachingSessionId String?
+  coachingSession CoachingSession? @relation("CoachingSessionFeedback", fields: [coachingSessionId], references: [id])
+  
+  userId          String
+  user            User            @relation("UserSessionFeedback", fields: [userId], references: [id])
+  
+  rating          Int             // 1-5 rating
+  comment         String?
+  categories      Json?           // Rating categories (preparation, engagement, effectiveness, etc.)
+  wouldRecommend  Boolean?
+  
+  // Feedback type
+  feedbackType    String          @default("post_session") // post_session, mid_session, follow_up
+  
+  // Anonymous feedback option
+  isAnonymous     Boolean         @default(false)
+  
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  @@index([sessionId])
+  @@index([coachingSessionId])
+  @@index([userId])
+  @@index([rating])
+  @@index([feedbackType])
+  @@map("session_feedback")
+  @@schema("public")
+}
+
+model SessionTemplate {
+  id            String            @id @default(cuid())
+  title         String
+  description   String?
+  objectives    Json              // Array of session objectives
+  duration      Int               // Duration in minutes
+  type          String            // individual, group, workshop
+  methodology   String?           // Coaching methodology
+  structure     Json?             // Session structure/agenda
+  materials     Json?             // Required materials/resources
+  
+  // Template usage
+  isPublic      Boolean           @default(false)
+  createdBy     String?           // User who created the template
+  usageCount    Int               @default(0)
+  
+  // Template sessions
+  templateSessions TemplateSession[] @relation("SessionTemplateUsage")
+  
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  @@index([type])
+  @@index([isPublic])
+  @@index([createdBy])
+  @@map("session_templates")
+  @@schema("public")
+}
+
+model TemplateSession {
+  id              String          @id @default(cuid())
+  templateId      String
+  template        SessionTemplate @relation("SessionTemplateUsage", fields: [templateId], references: [id])
+  sessionId       String?
+  session         Session?        @relation("SessionTemplateUsage", fields: [sessionId], references: [id])
+  coachingSessionId String?
+  coachingSession CoachingSession? @relation("CoachingSessionTemplateUsage", fields: [coachingSessionId], references: [id])
+  
+  customizations  Json?           // Template customizations for this session
+  
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  @@index([templateId])
+  @@index([sessionId])
+  @@index([coachingSessionId])
+  @@map("template_sessions")
+  @@schema("public")
+}
+
+model FeedbackTemplate {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  questions   Json     // Array of feedback questions
+  type        String   // session, course, coach, overall
+  
+  // Template settings
+  isActive    Boolean  @default(true)
+  isRequired  Boolean  @default(false)
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([type])
+  @@index([isActive])
+  @@map("feedback_templates")
+  @@schema("public")
+}
+
+model FeedbackAnalytics {
+  id                String   @id @default(cuid())
+  sessionId         String?
+  session           Session? @relation("SessionFeedbackAnalytics", fields: [sessionId], references: [id])
+  coachingSessionId String?
+  coachingSession   CoachingSession? @relation("CoachingSessionFeedbackAnalytics", fields: [coachingSessionId], references: [id])
+  
+  userId            String
+  user              User     @relation("UserFeedbackAnalytics", fields: [userId], references: [id])
+  
+  averageRating     Float
+  totalFeedback     Int
+  insights          Json     // Array of insights
+  trends            Json?    // Trend analysis
+  recommendations   Json?    // Recommendations based on feedback
+  
+  periodStart       DateTime // Analytics period start
+  periodEnd         DateTime // Analytics period end
+  
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([sessionId])
+  @@index([coachingSessionId])
+  @@index([userId])
+  @@index([periodStart])
+  @@map("feedback_analytics")
+  @@schema("public")
+}
+
+model ReflectionTemplate {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  questions   Json     // Array of reflection questions
+  type        String   // daily, weekly, session, goal
+  category    String?  // personal, professional, health, etc.
+  
+  isPublic    Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  
+  // Usage tracking
+  usageCount  Int      @default(0)
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([type])
+  @@index([category])
+  @@index([isPublic])
+  @@index([isActive])
+  @@map("reflection_templates")
+  @@schema("public")
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  
+  title       String
+  message     String
+  type        String   // session_reminder, payment_due, feedback_request, etc.
+  priority    String   @default("normal") // low, normal, high, urgent
+  
+  // Notification channels
+  channels    Json     // Array of channels (email, sms, push, in_app)
+  
+  // Delivery status
+  isRead      Boolean  @default(false)
+  isDelivered Boolean  @default(false)
+  deliveredAt DateTime?
+  readAt      DateTime?
+  
+  // Related entities
+  relatedId   String?  // ID of related entity (session, payment, etc.)
+  relatedType String?  // Type of related entity
+  
+  // Scheduling
+  scheduledFor DateTime? // For scheduled notifications
+  expiresAt    DateTime? // When notification expires
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([type])
+  @@index([isRead])
+  @@index([scheduledFor])
+  @@index([relatedId])
+  @@map("notifications")
+  @@schema("public")
+}
+
+model NotificationPreferences {
+  id       String  @id @default(cuid())
+  userId   String  @unique
+  user     User    @relation("UserNotificationPreferences", fields: [userId], references: [id], onDelete: Cascade)
+  
+  email    Boolean @default(true)
+  sms      Boolean @default(false)
+  push     Boolean @default(true)
+  inApp    Boolean @default(true)
+  
+  // Notification type preferences
+  sessionReminders Boolean @default(true)
+  paymentReminders Boolean @default(true)
+  feedbackRequests Boolean @default(true)
+  systemUpdates    Boolean @default(true)
+  
+  // Quiet hours
+  quietHoursStart String? // HH:MM format
+  quietHoursEnd   String? // HH:MM format
+  timezone        String  @default("UTC")
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("notification_preferences")
+  @@schema("public")
+}
+
+model DeletionCertificate {
+  id               String   @id @default(cuid())
+  userId           String   // User whose data was deleted
+  dataType         String   // Type of data deleted
+  deletionDate     DateTime // When deletion occurred
+  verificationHash String   // Hash to verify deletion integrity
+  
+  // Deletion details
+  recordsDeleted   Int      @default(0)
+  deletionMethod   String   // hard_delete, soft_delete, anonymize
+  policyId         String?  // Data retention policy that triggered deletion
+  
+  // Compliance
+  complianceFlags  Json?    // GDPR, HIPAA, etc. compliance flags
+  
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([dataType])
+  @@index([deletionDate])
+  @@map("deletion_certificates")
+  @@schema("public")
+}
+
+model DataRetentionPolicy {
+  id                String   @id @default(cuid())
+  name              String
+  description       String
+  retentionPeriod   Int      // Retention period in days
+  dataTypes         Json     // Array of data types this policy applies to
+  
+  // Policy configuration
+  isActive          Boolean  @default(true)
+  autoExecute       Boolean  @default(false)
+  deletionMethod    String   @default("soft_delete") // hard_delete, soft_delete, anonymize
+  
+  // Legal and compliance
+  legalBasis        String?  // Legal basis for retention (GDPR Article 6)
+  complianceFlags   Json?    // HIPAA, GDPR, etc.
+  
+  // Execution tracking
+  lastExecutedAt    DateTime?
+  nextExecutionAt   DateTime?
+  executionCount    Int      @default(0)
+  
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive])
+  @@index([autoExecute])
+  @@index([nextExecutionAt])
+  @@map("data_retention_policies")
+  @@schema("public")
+}
+
+model Consent {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation("UserConsent", fields: [userId], references: [id], onDelete: Cascade)
+  
+  consentType  String    // data_processing, marketing, cookies, etc.
+  purpose      String    // Purpose of data processing
+  legalBasis   String    // Legal basis (GDPR Article 6)
+  
+  isGranted    Boolean   @default(false)
+  grantedAt    DateTime?
+  revokedAt    DateTime?
+  expiresAt    DateTime? // Consent expiration
+  
+  // Consent details
+  consentText  String?   // Text that user consented to
+  version      String    @default("1.0") // Consent version
+  ipAddress    String?   // IP when consent was given
+  userAgent    String?   // User agent when consent was given
+  
+  // Withdrawal details
+  withdrawalReason String?
+  
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([consentType])
+  @@index([isGranted])
+  @@index([expiresAt])
+  @@map("consent")
+  @@schema("public")
+}
+
+model SessionHistory {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   Session  @relation("SessionHistory", fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  action    String   // created, updated, cancelled, rescheduled, completed
+  userId    String
+  user      User     @relation("UserSessionHistory", fields: [userId], references: [id])
+  
+  timestamp DateTime @default(now())
+  details   Json?    // Additional details about the action
+  
+  // Action metadata
+  ipAddress String?
+  userAgent String?
+  
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([sessionId])
+  @@index([userId])
+  @@index([action])
+  @@index([timestamp])
+  @@map("session_history")
+  @@schema("public")
+}
+
+model EncryptionKey {
+  id        String    @id @default(cuid())
+  keyId     String    @unique // Key identifier
+  algorithm String    // Encryption algorithm
+  keySize   Int       // Key size in bits
+  
+  isActive  Boolean   @default(true)
+  expiresAt DateTime?
+  
+  // Key metadata
+  purpose   String?   // What this key is used for
+  version   String    @default("1")
+  
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([keyId])
+  @@index([isActive])
+  @@index([expiresAt])
+  @@map("encryption_keys")
+  @@schema("public")
+}
+
+model InviteToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  role      String
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  
+  createdBy String
+  creator   User     @relation("InviteTokenCreator", fields: [createdBy], references: [id])
+  
+  // Invite details
+  message   String?  // Optional message to include with invite
+  
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([email])
+  @@index([token])
+  @@index([expiresAt])
+  @@index([isUsed])
+  @@map("invite_tokens")
   @@schema("public")
 }

@@ -34,7 +34,7 @@ Remaining work:
 - RTL/LTR layout polish and mobile optimization
 - Final mobile language switching enhancements
 
-Technologies used: Frontend: React (`^18.3.1`) with TypeScript (`5.8.3`), Tailwind CSS (`^3.4.11`), i18next, Vite (`^5.4.1`) **with performance-first architecture**. Backend: **Supabase-first architecture** - **Supabase** for PostgreSQL database, JWT authentication, storage, and real-time features. **CRITICAL: Backend server currently DOWN/DISCONNECTED**. **Legacy systems fully migrated**: Node.js/Express API endpoints (migrated to Supabase), Prisma ORM (replaced), MongoDB/Mongoose interactions (migrated). **Redis** still used for caching. Native Wrapper: Capacitor (`^7.2.0`). **NEW: Automated performance monitoring, comprehensive payment management system**.
+Technologies used: Frontend: React (`^18.3.1`) with TypeScript (`5.8.3`), Tailwind CSS (`^3.4.11`), i18next, Vite (`^5.4.1`) **with performance-first architecture**. Backend: **Supabase-first architecture** - **Supabase** for PostgreSQL database, JWT authentication, storage, and real-time features. **CRITICAL: Backend server currently DOWN/DISCONNECTED**. **Legacy systems fully migrated**: Node.js/Express API endpoints (migrated to Supabase), , MongoDB/Mongoose interactions (migrated). **Redis** still used for caching. Native Wrapper: Capacitor (`^7.2.0`). **NEW: Automated performance monitoring, comprehensive payment management system**.
 
 Development setup: Project structure using npm workspaces (`client`, `server`). Configuration managed via .env files (including Supabase URL/keys). **Supabase CLI** for database management and local development. **GitHub Actions CI/CD** with automated performance budgets, bundle analysis, and quality gates. **CRITICAL ISSUE: Backend server connection completely broken, all API endpoints failing**.
 
@@ -266,7 +266,7 @@ Tool usage patterns: Development involves interaction with AI code generation to
 *   `radix-ui`: Foundation for many UI components.
 *   `i18next`: Handles internationalization.
 *   **Performance (NEW)**: `bundlesize2`, `@lhci/cli`, `rollup-plugin-visualizer`, `vite-plugin-compression2`, `size-limit`.
-*   **Migrated/Removed**: ~~`express-session`~~, ~~`connect-pg-simple`~~, ~~`passport`~~, ~~`mongoose`~~, ~~`prisma`~~.
+*   **Migrated/Removed**: ~~`express-session`~~, ~~`connect-pg-simple`~~, ~~`passport`~~, ~~`mongoose`~~, 
 *   `vite`: Frontend build and development server **with performance optimization**.
 *   `tailwindcss`: Utility-first CSS framework.
 *   `capacitor`: For potential mobile app builds.

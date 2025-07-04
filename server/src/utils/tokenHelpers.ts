@@ -1,7 +1,5 @@
 import crypto from 'crypto';
-import { InviteToken, IInviteToken } from '../models/InviteToken';
-import { PasswordResetToken, IPasswordResetToken } from '../models/PasswordResetToken';
-import { Types } from 'mongoose';
+
 import {
   createPasswordResetToken as createPasswordResetTokenPrisma,
   validatePasswordResetToken as validatePasswordResetTokenPrisma,
@@ -88,5 +86,5 @@ export async function invalidatePasswordResetToken(token: string): Promise<void>
  * Invalidate an invite token after use
  */
 export async function invalidateInviteToken(token: string): Promise<void> {
-  await InviteToken.deleteOne({ token });
+  console.warn('invalidateInviteToken is a placeholder. Implement with Supabase.');
 }

@@ -15,7 +15,7 @@ Test form submission, draft saving, RTL text input, mobile usability, and data p
 ### Dependencies: None
 ### Description: Implement backend data models and API endpoints for client reflection forms
 ### Details:
-Create Mongoose models for:
+Create data models for:
 - Reflection forms (questions, templates, Satya Method categories)
 - Client reflection responses (linked to sessions)
 - Draft/saved states

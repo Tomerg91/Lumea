@@ -1,8 +1,5 @@
 import * as cron from 'node-cron';
-import { CoachingSession } from '../models/CoachingSession';
 import { NotificationService } from './notificationService';
-import { NotificationPreferences } from '../models/NotificationPreferences';
-import { User } from '../models/User';
 
 interface ScheduledReminder {
   sessionId: string;
@@ -296,28 +293,7 @@ export class NotificationSchedulerService {
    * Send session confirmation
    */
   private async sendSessionConfirmation(session: any): Promise<void> {
-    try {
-      const coach = session.coachId;
-      const client = session.clientId;
-
-      if (!coach || !client) {
-        console.error('Cannot send confirmation: coach or client not found');
-        return;
-      }
-
-      // Send confirmation to both coach and client
-      await NotificationService.sendSessionConfirmation(session, coach);
-      await NotificationService.sendSessionConfirmation(session, client);
-
-      // Mark confirmation as sent (add this field to the schema if needed)
-      await CoachingSession.findByIdAndUpdate(session._id, {
-        confirmationSent: true
-      });
-
-      console.log(`Sent session confirmation for session ${session._id}`);
-    } catch (error) {
-      console.error('Error sending session confirmation:', error);
-    }
+    console.warn('sendSessionConfirmation is a placeholder. Implement with Supabase.');
   }
 
   /**

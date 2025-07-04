@@ -1,6 +1,34 @@
-import { CoachAvailability, ICoachAvailability, IRecurringAvailability, IDateOverride } from '../models/CoachAvailability';
-import { CoachingSession } from '../models/CoachingSession';
-import { Types } from 'mongoose';
+export interface IRecurringAvailability {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+}
+
+export interface IDateOverride {
+  date: Date;
+  isAvailable: boolean;
+  timeSlots?: Array<{ startTime: string; endTime: string }>;
+  reason?: string;
+}
+
+export interface ICoachAvailability {
+  coachId: string;
+  timezone: string;
+  recurringAvailability: IRecurringAvailability[];
+  dateOverrides: IDateOverride[];
+  bufferSettings: {
+    beforeSession: number;
+    afterSession: number;
+    betweenSessions: number;
+  };
+  defaultSessionDuration: number;
+  allowedDurations: number[];
+  advanceBookingDays: number;
+  lastMinuteBookingHours: number;
+  autoAcceptBookings: boolean;
+  requireApproval: boolean;
+}
 
 export interface AvailableSlot {
   start: Date;
@@ -338,7 +366,7 @@ export class AvailabilityService {
    * Delete coach availability settings
    */
   static async deleteAvailability(coachId: string): Promise<boolean> {
-    const result = await CoachAvailability.deleteOne({ coachId });
-    return result.deletedCount > 0;
+    console.warn('deleteAvailability is a placeholder. Implement with Supabase.');
+    return false;
   }
 } 
