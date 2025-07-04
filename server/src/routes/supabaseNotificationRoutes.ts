@@ -1,7 +1,7 @@
 import express from 'express';
 import { body, query, param, validationResult } from 'express-validator';
-import { NotificationController } from '../controllers/notificationController';
-import { isAuthenticated } from '../middleware/auth';
+import { NotificationController } from '../controllers/notificationController.js';
+import { isAuthenticated } from '../middleware/auth.js';
 
 const router = express.Router();
 

@@ -1,1063 +1,209 @@
+// This is your Prisma schema file.
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["multiSchema"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  schemas   = ["public", "auth"]
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id                   String                @id @default(cuid())
-  email                String                @unique
-  name                 String?
-  bio                  String? // Temporarily commented out
-  password             String
-  resetToken           String?
-  resetTokenExpiry     DateTime?
-  role                 String                @default("user")
-  clientSessions       Session[]             @relation("ClientSessions")
-  coachSessions        Session[]             @relation("CoachSessions")
-  clientPayments       Payment[]             @relation("ClientPayments")
-  coachPayments        Payment[]             @relation("CoachPayments")
-  reflections          Reflection[]
-  resources            ResourceUser[]
-  calendarIntegrations CalendarIntegration[] @relation("UserCalendarIntegrations")
-  passwordResetTokens  PasswordResetToken[] // Relation to password reset tokens
-  
-  // Milestone relationships
-  milestoneCategories  MilestoneCategory[]   @relation("CoachMilestoneCategories")
-  clientMilestones     Milestone[]           @relation("ClientMilestones")
-  coachMilestones      Milestone[]           @relation("CoachMilestones")
-  milestoneProgress    MilestoneProgress[]   @relation("MilestoneProgressRecorder")
-  
-  // Additional relationships for missing models
-  coachNotes           CoachNote[]           @relation("CoachNotesCreator")
-  coachNotesClient     CoachNote[]           @relation("CoachNotesClient")
-  auditLogs            AuditLog[]            @relation("UserAuditLogs")
-  notifications        Notification[]        @relation("UserNotifications")
-  sessionFeedback      SessionFeedback[]     @relation("UserSessionFeedback")
-  sessionHistory       SessionHistory[]      @relation("UserSessionHistory")
-  consent              Consent[]             @relation("UserConsent")
-  inviteTokensCreated  InviteToken[]         @relation("InviteTokenCreator")
-  coachAvailability    CoachAvailability[]   @relation("CoachAvailabilityUser")
-  userRoles            UserRole[]            @relation("UserRoles")
-  feedbackAnalytics    FeedbackAnalytics[]   @relation("UserFeedbackAnalytics")
-  clientCoachingSessions CoachingSession[]   @relation("ClientCoachingSessions")
-  coachCoachingSessions CoachingSession[]    @relation("CoachCoachingSessions")
-  notificationPreferences NotificationPreferences? @relation("UserNotificationPreferences")
-  
-  createdAt            DateTime              @default(now()) @map("created_at")
-  updatedAt            DateTime              @updatedAt @map("updated_at")
+  id                  String   @id @default(cuid())
+  email               String   @unique
+  name                String?
+  password            String?
+  role                String   @default("client")
+  emailVerified       DateTime?
+  image               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-  @@index([role])
+  // Sessions
+  sessions            Session[]
+  
+  // New coaching-related fields
+  coachingSessions    CoachingSession[]
+  coachNotes          CoachNote[]
+  files               File[]
+  reflections         Reflection[]
+  calendarIntegrations CalendarIntegration[]
+  
   @@map("users")
-  @@schema("public")
 }
 
 model Session {
-  id                String              @id @default(cuid())
-  date              DateTime            @map("date")
-  status            String              @default("Upcoming")
-  notes             String?
-  clientId          String // Changed from ObjectId, type String matches User.id
-  client            User                @relation("ClientSessions", fields: [clientId], references: [id])
-  coachId           String // Changed from ObjectId, type String matches User.id
-  coach             User                @relation("CoachSessions", fields: [coachId], references: [id])
-  paymentId         String? // Changed from ObjectId, type String matches Payment.id
-  payment           Payment?            @relation(fields: [paymentId], references: [id])
-  reminderSent      Boolean             @default(false) @map("reminder_sent")
-  audioFile         String?
-  calendarEvents    CalendarEvent[] // Calendar events linked to this session
-  milestoneProgress MilestoneProgress[] // Milestone progress recorded in this session
-  
-  // Additional relationships for missing models
-  coachNotes        CoachNote[]         @relation("SessionCoachNotes")
-  sessionTiming     SessionTiming[]     @relation("SessionTiming")
-  sessionFeedback   SessionFeedback[]   @relation("SessionFeedback")
-  sessionHistory    SessionHistory[]    @relation("SessionHistory")
-  templateSessions  TemplateSession[]   @relation("SessionTemplateUsage")
-  feedbackAnalytics FeedbackAnalytics[] @relation("SessionFeedbackAnalytics")
-  
-  createdAt         DateTime            @default(now()) @map("created_at")
-  updatedAt         DateTime            @updatedAt @map("updated_at")
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([clientId])
-  @@index([coachId])
-  @@index([date])
-  @@index([status])
-  @@index([paymentId])
   @@map("sessions")
-  @@schema("public")
 }
-
-model Payment {
-  id              String    @id @default(cuid())
-  amount          Float
-  status          String    @default("Due")
-  dueDate         DateTime  @map("due_date")
-  clientId        String // Changed from ObjectId, type String matches User.id
-  client          User      @relation("ClientPayments", fields: [clientId], references: [id])
-  coachId         String // Changed from ObjectId, type String matches User.id
-  coach           User      @relation("CoachPayments", fields: [coachId], references: [id])
-  sessions        Session[]
-  reminderSent    Boolean   @default(false) @map("reminder_sent")
-  sessionsCovered String[] // Assuming this was intended to be an array of strings
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-
-  @@index([clientId])
-  @@index([coachId])
-  @@index([status])
-  @@index([dueDate])
-  @@map("payments")
-  @@schema("public")
-}
-
-model Reflection {
-  id        String   @id @default(cuid())
-  content   String
-  userId    String // Changed from ObjectId, type String matches User.id
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@index([userId])
-  @@index([createdAt])
-  @@map("reflections")
-  @@schema("public")
-}
-
-model Resource {
-  id        String         @id @default(cuid())
-  title     String
-  content   String
-  type      String
-  users     ResourceUser[]
-  createdAt DateTime       @default(now()) @map("created_at")
-  updatedAt DateTime       @updatedAt @map("updated_at")
-
-  @@index([type])
-  @@index([title])
-  @@map("resources")
-  @@schema("public")
-}
-
-model ResourceUser {
-  id         String   @id @default(cuid())
-  userId     String // Changed from ObjectId, type String matches User.id
-  user       User     @relation(fields: [userId], references: [id])
-  resourceId String // Changed from ObjectId, type String matches Resource.id
-  resource   Resource @relation(fields: [resourceId], references: [id])
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-
-  @@index([userId])
-  @@index([resourceId])
-  @@map("resource_users")
-  @@schema("public")
-}
-
-model PerformanceMetric {
-  id        String   @id @default(cuid())
-  userId    String? // Changed from ObjectId, type String matches User.id
-  url       String?
-  userAgent String?  @map("user_agent")
-  ipAddress String?  @map("ip_address")
-  timestamp DateTime @default(now())
-  metrics   Json // Json type is valid in PostgreSQL
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([userId]) // Note: If userId is optional and you index it, consider implications for NULLs
-  @@index([timestamp])
-  @@map("performance_metrics")
-  @@schema("public")
-}
-
-// Calendar Integration Models
-model CalendarIntegration {
-  id                String    @id @default(cuid())
-  userId            String // User who owns this calendar integration
-  user              User      @relation("UserCalendarIntegrations", fields: [userId], references: [id], onDelete: Cascade)
-  provider          String // 'google', 'microsoft', 'apple'
-  providerAccountId String // External account ID from the provider
-  accessToken       String // Encrypted OAuth access token
-  refreshToken      String? // Encrypted OAuth refresh token
-  tokenExpiry       DateTime? // When the access token expires
-  calendarId        String? // Primary calendar ID from the provider
-  calendarName      String? // Display name of the calendar
-  isActive          Boolean   @default(true)
-  syncEnabled       Boolean   @default(true)
-  lastSyncAt        DateTime?
-  syncErrors        Json? // Store any sync errors
-  settings          Json? // Provider-specific settings
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-
-  // Relations
-  calendarEvents CalendarEvent[]
-  syncLogs       CalendarSyncLog[] @relation("CalendarSyncLogs")
-
-  @@unique([userId, provider])
-  @@index([userId])
-  @@index([provider])
-  @@index([isActive])
-  @@map("calendar_integrations")
-  @@schema("public")
-}
-
-model CalendarEvent {
-  id                    String              @id @default(cuid())
-  calendarIntegrationId String
-  calendarIntegration   CalendarIntegration @relation(fields: [calendarIntegrationId], references: [id], onDelete: Cascade)
-  providerEventId       String // Event ID from the external calendar provider
-  title                 String
-  description           String?
-  startTime             DateTime
-  endTime               DateTime
-  timezone              String              @default("UTC")
-  isAllDay              Boolean             @default(false)
-  location              String?
-  attendees             Json? // Array of attendee objects
-  recurrenceRule        String? // RRULE for recurring events
-  status                String              @default("confirmed") // confirmed, tentative, cancelled
-  visibility            String              @default("default") // default, public, private
-
-  // Satya Coaching specific fields
-  sessionId         String? // Link to internal session if this event represents a coaching session
-  session           Session? @relation(fields: [sessionId], references: [id])
-  isCoachingSession Boolean  @default(false)
-  isBlocked         Boolean  @default(false) // If this event blocks availability
-
-  // Sync metadata
-  lastSyncAt DateTime?
-  syncStatus String    @default("synced") // synced, pending, error
-  syncErrors Json?
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@unique([calendarIntegrationId, providerEventId])
-  @@index([calendarIntegrationId])
-  @@index([startTime])
-  @@index([endTime])
-  @@index([sessionId])
-  @@index([isCoachingSession])
-  @@index([isBlocked])
-  @@map("calendar_events")
-  @@schema("public")
-}
-
-model CalendarSyncLog {
-  id                    String              @id @default(cuid())
-  calendarIntegrationId String
-  calendarIntegration   CalendarIntegration @relation("CalendarSyncLogs", fields: [calendarIntegrationId], references: [id], onDelete: Cascade)
-  syncType              String // 'full', 'incremental', 'manual'
-  direction             String // 'import', 'export', 'bidirectional'
-  status                String // 'started', 'completed', 'failed', 'partial'
-  eventsProcessed       Int                 @default(0)
-  eventsCreated         Int                 @default(0)
-  eventsUpdated         Int                 @default(0)
-  eventsDeleted         Int                 @default(0)
-  errors                Json? // Array of error objects
-  startedAt             DateTime
-  completedAt           DateTime?
-  duration              Int? // Duration in milliseconds
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([calendarIntegrationId])
-  @@index([status])
-  @@index([startedAt])
-  @@map("calendar_sync_logs")
-  @@schema("public")
-}
-
-model PasswordResetToken {
-  id        String   @id @default(cuid())
-  token     String   @unique
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime @map("expires_at")
-  isUsed    Boolean  @default(false)
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([userId])
-  @@index([expiresAt])
-  @@map("password_reset_tokens")
-  @@schema("public")
-}
-
-// Milestone System Models
-model MilestoneCategory {
-  id          String      @id @default(cuid())
-  name        String // e.g., "Personal Growth", "Career Development", "Health & Wellness"
-  description String?
-  color       String      @default("#3B82F6") // Hex color for UI display
-  icon        String? // Icon name for UI display
-  coachId     String // Coach who created this category
-  coach       User        @relation("CoachMilestoneCategories", fields: [coachId], references: [id], onDelete: Cascade)
-  milestones  Milestone[]
-  isDefault   Boolean     @default(false) // System-wide default categories
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
-
-  @@unique([coachId, name]) // Prevent duplicate category names per coach
-  @@index([coachId])
-  @@index([isDefault])
-  @@map("milestone_categories")
-  @@schema("public")
-}
-
-model Milestone {
-  id          String              @id @default(cuid())
-  title       String
-  description String?
-  targetDate  DateTime? // Optional target completion date
-  priority    String              @default("medium") // high, medium, low
-  status      String              @default("active") // active, completed, paused, cancelled
-  
-  // Relationships
-  clientId    String
-  client      User                @relation("ClientMilestones", fields: [clientId], references: [id], onDelete: Cascade)
-  coachId     String
-  coach       User                @relation("CoachMilestones", fields: [coachId], references: [id], onDelete: Cascade)
-  categoryId  String?
-  category    MilestoneCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  
-  // Progress tracking
-  progress    MilestoneProgress[]
-  
-  // Metadata
-  completedAt DateTime?
-  notes       String? // Coach notes about this milestone
-  tags        String[] // Array of tags for filtering/organization
-  
-  createdAt   DateTime            @default(now()) @map("created_at")
-  updatedAt   DateTime            @updatedAt @map("updated_at")
-
-  @@index([clientId])
-  @@index([coachId])
-  @@index([categoryId])
-  @@index([status])
-  @@index([priority])
-  @@index([targetDate])
-  @@map("milestones")
-  @@schema("public")
-}
-
-model MilestoneProgress {
-  id          String    @id @default(cuid())
-  milestoneId String
-  milestone   Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
-  
-  // Progress details
-  progressPercent Int       @default(0) // 0-100
-  notes           String?   // Progress notes from coach or client
-  evidence        String?   // Evidence or proof of progress (file paths, descriptions)
-  sessionId       String?   // Optional link to session where progress was recorded
-  session         Session?  @relation(fields: [sessionId], references: [id], onDelete: SetNull)
-  
-  // Metadata
-  recordedBy      String    // User ID of who recorded this progress (coach or client)
-  recordedByUser  User      @relation("MilestoneProgressRecorder", fields: [recordedBy], references: [id])
-  recordedAt      DateTime  @default(now()) @map("recorded_at")
-  
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-
-  @@index([milestoneId])
-  @@index([sessionId])
-  @@index([recordedBy])
-  @@index([recordedAt])
-  @@map("milestone_progress")
-  @@schema("public")
-}
-
-// Missing Models that are imported in the server code
 
 model CoachingSession {
   id                String              @id @default(cuid())
-  title             String?
-  description       String?
-  startTime         DateTime
-  endTime           DateTime?
-  status            String              @default("scheduled") // scheduled, in-progress, completed, cancelled
   clientId          String
-  client            User                @relation("ClientCoachingSessions", fields: [clientId], references: [id])
-  coachId           String
-  coach             User                @relation("CoachCoachingSessions", fields: [coachId], references: [id])
-  sessionType       String?             // individual, group, workshop
-  methodology       String?             // coaching methodology used
-  objectives        Json?               // session objectives
-  outcomes          Json?               // session outcomes
+  client            User                @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  // Session details
+  title             String
+  description       String?
+  date              DateTime            // when the session is scheduled
+  duration          Int                 // duration in minutes
+  status            String              @default("scheduled") // scheduled, in_progress, completed, cancelled, no_show
+  type              String              @default("individual") // individual, group, workshop
+  format            String              @default("video") // video, phone, in_person
+  
+  // Session content
   notes             String?
-  feedback          String?
-  rating            Int?                // 1-5 rating
-  recordingUrl      String?
-  materialsUsed     Json?               // array of materials/resources used
   completedAt       DateTime?
-  sessionTiming     SessionTiming[]     @relation("CoachingSessionTiming")
-  coachNotes        CoachNote[]         @relation("CoachingSessionNotes")
-  sessionFeedback   SessionFeedback[]   @relation("CoachingSessionFeedback")
-  templateSessions  TemplateSession[]   @relation("CoachingSessionTemplateUsage")
-  feedbackAnalytics FeedbackAnalytics[] @relation("CoachingSessionFeedbackAnalytics")
+  
+  // Relationships
+  coachNotes        CoachNote[]
+  calendarEvents    CalendarEvent[]
   
   createdAt         DateTime            @default(now()) @map("created_at")
   updatedAt         DateTime            @updatedAt @map("updated_at")
 
-  @@index([clientId])
-  @@index([coachId])
-  @@index([status])
-  @@index([startTime])
   @@map("coaching_sessions")
-  @@schema("public")
 }
 
 model CoachNote {
   id                String          @id @default(cuid())
-  title             String
-  content           String
-  noteType          String          @default("general") // general, session, goal, observation
-  priority          String          @default("medium") // high, medium, low
-  accessLevel       String          @default("private") // private, shared, client_visible
-  
-  // Relationships
+  sessionId         String
   coachId           String
-  coach             User            @relation("CoachNotesCreator", fields: [coachId], references: [id])
-  clientId          String
-  client            User            @relation("CoachNotesClient", fields: [clientId], references: [id])
-  sessionId         String?
-  session           Session?        @relation("SessionCoachNotes", fields: [sessionId], references: [id])
-  coachingSessionId String?
-  coachingSession   CoachingSession? @relation("CoachingSessionNotes", fields: [coachingSessionId], references: [id])
+  session           CoachingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  coach             User            @relation(fields: [coachId], references: [id], onDelete: Cascade)
   
-  // Metadata
-  tags              String[]        // for categorization
-  isEncrypted       Boolean         @default(false)
-  encryptionKeyId   String?
-  
-  // Audit trail
-  isDeleted         Boolean         @default(false)
-  deletedAt         DateTime?
-  deletedBy         String?
-  
-  // Versioning
-  version           Int             @default(1)
-  previousVersionId String?
+  // Note content
+  title             String?
+  content           String
+  type              String          @default("session") // session, client, goal, observation
   
   createdAt         DateTime        @default(now()) @map("created_at")
   updatedAt         DateTime        @updatedAt @map("updated_at")
 
-  @@index([coachId])
-  @@index([clientId])
-  @@index([sessionId])
-  @@index([noteType])
-  @@index([accessLevel])
-  @@index([createdAt])
   @@map("coach_notes")
-  @@schema("public")
-}
-
-model AuditLog {
-  id              String    @id @default(cuid())
-  userId          String?
-  user            User?     @relation("UserAuditLogs", fields: [userId], references: [id])
-  action          String    // CREATE, READ, UPDATE, DELETE, LOGIN, LOGOUT, etc.
-  resource        String    // users, sessions, payments, etc.
-  resourceId      String?   // ID of the affected resource
-  details         Json?     // Additional details about the action
-  ipAddress       String?
-  userAgent       String?
-  sessionId       String?
-  endpoint        String?   // API endpoint accessed
-  httpMethod      String?   // GET, POST, PUT, DELETE
-  statusCode      Int?      // HTTP status code
-  
-  // Security fields
-  severity        String    @default("info") // info, warning, error, critical
-  phiAccessed     Boolean   @default(false) // Personal Health Information accessed
-  suspicious      Boolean   @default(false) // Flagged as suspicious activity
-  complianceFlag  String?   // HIPAA, GDPR, etc.
-  
-  // Metadata
-  metadata        Json?     // Additional metadata
-  sequenceNumber  BigInt?   // For ordering events
-  
-  timestamp       DateTime  @default(now())
-  createdAt       DateTime  @default(now()) @map("created_at")
-
-  @@index([userId])
-  @@index([action])
-  @@index([resource])
-  @@index([timestamp])
-  @@index([severity])
-  @@index([phiAccessed])
-  @@index([suspicious])
-  @@map("audit_logs")
-  @@schema("public")
-}
-
-model SessionTiming {
-  id                  String          @id @default(cuid())
-  sessionId           String?
-  session             Session?        @relation("SessionTiming", fields: [sessionId], references: [id])
-  coachingSessionId   String?
-  coachingSession     CoachingSession? @relation("CoachingSessionTiming", fields: [coachingSessionId], references: [id])
-  
-  startTime           DateTime
-  endTime             DateTime?
-  duration            Int?            // Duration in seconds
-  plannedDuration     Int             // Planned duration in seconds
-  actualDuration      Int?            // Actual duration in seconds
-  overtime            Boolean         @default(false)
-  
-  // Break/pause tracking
-  pausedDuration      Int             @default(0) // Total paused time in seconds
-  pauseReasons        String[]        // Reasons for pauses
-  breaks              Json?           // Array of break periods
-  
-  status              String          @default("scheduled") // scheduled, started, paused, completed, cancelled
-  timezone            String          @default("UTC")
-  
-  // Timing adjustments
-  adjustments         Json?           // Array of manual time adjustments
-  
-  createdAt           DateTime        @default(now()) @map("created_at")
-  updatedAt           DateTime        @updatedAt @map("updated_at")
-
-  @@index([sessionId])
-  @@index([coachingSessionId])
-  @@index([status])
-  @@index([startTime])
-  @@map("session_timing")
-  @@schema("public")
 }
 
 model File {
   id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // File details
   filename        String
   originalName    String
   mimeType        String
-  size            BigInt    // File size in bytes
-  path            String    // File path or S3 key
+  size            Int       // File size in bytes
+  path            String    // Storage path
   url             String?   // Public URL if applicable
   
-  // Security
-  isEncrypted     Boolean   @default(false)
-  encryptionKeyId String?
-  
-  // Access control
-  accessLevel     String    @default("private") // private, shared, public
-  uploadedBy      String    // User who uploaded the file
-  
-  // Virus scanning
-  virusScanned    Boolean   @default(false)
-  virusScanResult String?   // clean, infected, error
-  virusScanDate   DateTime?
-  
-  // Metadata
-  metadata        Json?     // Additional file metadata
-  tags            String[]  // File tags for organization
-  
-  // Relationships
-  attachedTo      String?   // What entity this file is attached to (sessions, notes, etc.)
-  attachedToType  String?   // Type of entity (session, note, user, etc.)
+  // File categorization
+  category        String    @default("document") // document, image, video, audio, other
   
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
-  @@index([uploadedBy])
-  @@index([attachedTo])
-  @@index([attachedToType])
-  @@index([accessLevel])
-  @@index([virusScanned])
   @@map("files")
-  @@schema("public")
 }
 
 model Tag {
   id          String   @id @default(cuid())
   name        String   @unique
   description String?
-  color       String?  // Hex color for UI display
-  category    String?  // Category of tag (session, note, user, etc.)
-  isSystem    Boolean  @default(false) // System tags vs user-created tags
-  
-  // Usage tracking
-  usageCount  Int      @default(0)
+  color       String?  // Hex color code
   
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  @@index([category])
-  @@index([isSystem])
   @@map("tags")
-  @@schema("public")
 }
 
-model Role {
-  id            String     @id @default(cuid())
-  name          String     @unique
-  description   String?
-  permissions   Json       // Array of permissions
-  isSystem      Boolean    @default(false) // System roles vs custom roles
-  isActive      Boolean    @default(true)
-  hierarchy     Int        @default(0) // Role hierarchy level
-  
-  // Role relationships
-  userRoles     UserRole[] @relation("RoleUsers")
-  
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
-
-  @@index([isSystem])
-  @@index([isActive])
-  @@index([hierarchy])
-  @@map("roles")
-  @@schema("public")
-}
-
-model UserRole {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation("UserRoles", fields: [userId], references: [id], onDelete: Cascade)
-  roleId    String
-  role      Role     @relation("RoleUsers", fields: [roleId], references: [id], onDelete: Cascade)
-  
-  assignedBy String? // Who assigned this role
-  assignedAt DateTime @default(now())
-  expiresAt  DateTime? // Optional role expiration
-  isActive   Boolean  @default(true)
-  
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-
-  @@unique([userId, roleId]) // Prevent duplicate role assignments
-  @@index([userId])
-  @@index([roleId])
-  @@index([isActive])
-  @@map("user_roles")
-  @@schema("public")
-}
-
-model CoachAvailability {
-  id                String   @id @default(cuid())
-  coachId           String
-  coach             User     @relation("CoachAvailabilityUser", fields: [coachId], references: [id], onDelete: Cascade)
-  
-  dayOfWeek         Int      // 0 = Sunday, 1 = Monday, etc.
-  startTime         String   // HH:MM format
-  endTime           String   // HH:MM format
-  timezone          String
-  
-  isRecurring       Boolean  @default(true)
-  recurringPattern  String?  @default("weekly") // weekly, biweekly, monthly
-  specificDate      DateTime? // For non-recurring availability
-  
-  isAvailable       Boolean  @default(true)
-  maxSessionsPerDay Int?
-  sessionDuration   Int      @default(60) // in minutes
-  bufferTime        Int      @default(15) // in minutes between sessions
-  
-  unavailableDates  Json?    // Array of unavailable dates
-  notes             String?
-  
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
-
-  @@index([coachId])
-  @@index([dayOfWeek])
-  @@index([isAvailable])
-  @@map("coach_availability")
-  @@schema("public")
-}
-
-model SessionFeedback {
-  id              String          @id @default(cuid())
-  sessionId       String?
-  session         Session?        @relation("SessionFeedback", fields: [sessionId], references: [id])
-  coachingSessionId String?
-  coachingSession CoachingSession? @relation("CoachingSessionFeedback", fields: [coachingSessionId], references: [id])
-  
-  userId          String
-  user            User            @relation("UserSessionFeedback", fields: [userId], references: [id])
-  
-  rating          Int             // 1-5 rating
-  comment         String?
-  categories      Json?           // Rating categories (preparation, engagement, effectiveness, etc.)
-  wouldRecommend  Boolean?
-  
-  // Feedback type
-  feedbackType    String          @default("post_session") // post_session, mid_session, follow_up
-  
-  // Anonymous feedback option
-  isAnonymous     Boolean         @default(false)
-  
-  createdAt       DateTime        @default(now()) @map("created_at")
-  updatedAt       DateTime        @updatedAt @map("updated_at")
-
-  @@index([sessionId])
-  @@index([coachingSessionId])
-  @@index([userId])
-  @@index([rating])
-  @@index([feedbackType])
-  @@map("session_feedback")
-  @@schema("public")
-}
-
-model SessionTemplate {
-  id            String            @id @default(cuid())
-  title         String
-  description   String?
-  objectives    Json              // Array of session objectives
-  duration      Int               // Duration in minutes
-  type          String            // individual, group, workshop
-  methodology   String?           // Coaching methodology
-  structure     Json?             // Session structure/agenda
-  materials     Json?             // Required materials/resources
-  
-  // Template usage
-  isPublic      Boolean           @default(false)
-  createdBy     String?           // User who created the template
-  usageCount    Int               @default(0)
-  
-  // Template sessions
-  templateSessions TemplateSession[] @relation("SessionTemplateUsage")
-  
-  createdAt     DateTime          @default(now()) @map("created_at")
-  updatedAt     DateTime          @updatedAt @map("updated_at")
-
-  @@index([type])
-  @@index([isPublic])
-  @@index([createdBy])
-  @@map("session_templates")
-  @@schema("public")
-}
-
-model TemplateSession {
-  id              String          @id @default(cuid())
-  templateId      String
-  template        SessionTemplate @relation("SessionTemplateUsage", fields: [templateId], references: [id])
-  sessionId       String?
-  session         Session?        @relation("SessionTemplateUsage", fields: [sessionId], references: [id])
-  coachingSessionId String?
-  coachingSession CoachingSession? @relation("CoachingSessionTemplateUsage", fields: [coachingSessionId], references: [id])
-  
-  customizations  Json?           // Template customizations for this session
-  
-  createdAt       DateTime        @default(now()) @map("created_at")
-
-  @@index([templateId])
-  @@index([sessionId])
-  @@index([coachingSessionId])
-  @@map("template_sessions")
-  @@schema("public")
-}
-
-model FeedbackTemplate {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  questions   Json     // Array of feedback questions
-  type        String   // session, course, coach, overall
-  
-  // Template settings
-  isActive    Boolean  @default(true)
-  isRequired  Boolean  @default(false)
-  
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  @@index([type])
-  @@index([isActive])
-  @@map("feedback_templates")
-  @@schema("public")
-}
-
-model FeedbackAnalytics {
-  id                String   @id @default(cuid())
-  sessionId         String?
-  session           Session? @relation("SessionFeedbackAnalytics", fields: [sessionId], references: [id])
-  coachingSessionId String?
-  coachingSession   CoachingSession? @relation("CoachingSessionFeedbackAnalytics", fields: [coachingSessionId], references: [id])
-  
-  userId            String
-  user              User     @relation("UserFeedbackAnalytics", fields: [userId], references: [id])
-  
-  averageRating     Float
-  totalFeedback     Int
-  insights          Json     // Array of insights
-  trends            Json?    // Trend analysis
-  recommendations   Json?    // Recommendations based on feedback
-  
-  periodStart       DateTime // Analytics period start
-  periodEnd         DateTime // Analytics period end
-  
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
-
-  @@index([sessionId])
-  @@index([coachingSessionId])
-  @@index([userId])
-  @@index([periodStart])
-  @@map("feedback_analytics")
-  @@schema("public")
-}
-
-model ReflectionTemplate {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  questions   Json     // Array of reflection questions
-  type        String   // daily, weekly, session, goal
-  category    String?  // personal, professional, health, etc.
-  
-  isPublic    Boolean  @default(false)
-  isActive    Boolean  @default(true)
-  
-  // Usage tracking
-  usageCount  Int      @default(0)
-  
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  @@index([type])
-  @@index([category])
-  @@index([isPublic])
-  @@index([isActive])
-  @@map("reflection_templates")
-  @@schema("public")
-}
-
-model Notification {
+model Reflection {
   id          String   @id @default(cuid())
   userId      String
-  user        User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
+  // Reflection content
   title       String
-  message     String
-  type        String   // session_reminder, payment_due, feedback_request, etc.
-  priority    String   @default("normal") // low, normal, high, urgent
+  content     String
+  mood        String?  // happy, sad, anxious, excited, etc.
+  tags        String?  // Comma-separated tags
   
-  // Notification channels
-  channels    Json     // Array of channels (email, sms, push, in_app)
-  
-  // Delivery status
-  isRead      Boolean  @default(false)
-  isDelivered Boolean  @default(false)
-  deliveredAt DateTime?
-  readAt      DateTime?
-  
-  // Related entities
-  relatedId   String?  // ID of related entity (session, payment, etc.)
-  relatedType String?  // Type of related entity
-  
-  // Scheduling
-  scheduledFor DateTime? // For scheduled notifications
-  expiresAt    DateTime? // When notification expires
+  // Metadata
+  isPrivate   Boolean  @default(true)
+  template    String?  // Template used for this reflection
   
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  @@index([userId])
-  @@index([type])
-  @@index([isRead])
-  @@index([scheduledFor])
-  @@index([relatedId])
-  @@map("notifications")
-  @@schema("public")
+  @@map("reflections")
 }
 
-model NotificationPreferences {
-  id       String  @id @default(cuid())
-  userId   String  @unique
-  user     User    @relation("UserNotificationPreferences", fields: [userId], references: [id], onDelete: Cascade)
-  
-  email    Boolean @default(true)
-  sms      Boolean @default(false)
-  push     Boolean @default(true)
-  inApp    Boolean @default(true)
-  
-  // Notification type preferences
-  sessionReminders Boolean @default(true)
-  paymentReminders Boolean @default(true)
-  feedbackRequests Boolean @default(true)
-  systemUpdates    Boolean @default(true)
-  
-  // Quiet hours
-  quietHoursStart String? // HH:MM format
-  quietHoursEnd   String? // HH:MM format
-  timezone        String  @default("UTC")
-  
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@index([userId])
-  @@map("notification_preferences")
-  @@schema("public")
-}
-
-model DeletionCertificate {
-  id               String   @id @default(cuid())
-  userId           String   // User whose data was deleted
-  dataType         String   // Type of data deleted
-  deletionDate     DateTime // When deletion occurred
-  verificationHash String   // Hash to verify deletion integrity
-  
-  // Deletion details
-  recordsDeleted   Int      @default(0)
-  deletionMethod   String   // hard_delete, soft_delete, anonymize
-  policyId         String?  // Data retention policy that triggered deletion
-  
-  // Compliance
-  complianceFlags  Json?    // GDPR, HIPAA, etc. compliance flags
-  
-  createdAt        DateTime @default(now()) @map("created_at")
-
-  @@index([userId])
-  @@index([dataType])
-  @@index([deletionDate])
-  @@map("deletion_certificates")
-  @@schema("public")
-}
-
-model DataRetentionPolicy {
+model CalendarIntegration {
   id                String   @id @default(cuid())
-  name              String
-  description       String
-  retentionPeriod   Int      // Retention period in days
-  dataTypes         Json     // Array of data types this policy applies to
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  // Policy configuration
+  // Provider details
+  provider          String   // google, microsoft, apple
+  providerAccountId String
+  
+  // OAuth tokens (encrypted)
+  accessToken       String
+  refreshToken      String?
+  tokenExpiry       DateTime?
+  
+  // Calendar details
+  calendarId        String
+  calendarName      String?
+  
+  // Sync settings
   isActive          Boolean  @default(true)
-  autoExecute       Boolean  @default(false)
-  deletionMethod    String   @default("soft_delete") // hard_delete, soft_delete, anonymize
+  syncEnabled       Boolean  @default(true)
+  lastSyncAt        DateTime?
+  syncErrors        String?
   
-  // Legal and compliance
-  legalBasis        String?  // Legal basis for retention (GDPR Article 6)
-  complianceFlags   Json?    // HIPAA, GDPR, etc.
-  
-  // Execution tracking
-  lastExecutedAt    DateTime?
-  nextExecutionAt   DateTime?
-  executionCount    Int      @default(0)
+  // Relationships
+  calendarEvents    CalendarEvent[]
   
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  @@index([isActive])
-  @@index([autoExecute])
-  @@index([nextExecutionAt])
-  @@map("data_retention_policies")
-  @@schema("public")
+  @@unique([userId, provider])
+  @@map("calendar_integrations")
 }
 
-model Consent {
-  id           String    @id @default(cuid())
-  userId       String
-  user         User      @relation("UserConsent", fields: [userId], references: [id], onDelete: Cascade)
+model CalendarEvent {
+  id                  String               @id @default(cuid())
+  integrationId       String
+  integration         CalendarIntegration  @relation(fields: [integrationId], references: [id], onDelete: Cascade)
   
-  consentType  String    // data_processing, marketing, cookies, etc.
-  purpose      String    // Purpose of data processing
-  legalBasis   String    // Legal basis (GDPR Article 6)
+  // External event details
+  externalEventId     String
+  title               String
+  description         String?
+  startTime           DateTime
+  endTime             DateTime
+  location            String?
+  isAllDay            Boolean              @default(false)
   
-  isGranted    Boolean   @default(false)
-  grantedAt    DateTime?
-  revokedAt    DateTime?
-  expiresAt    DateTime? // Consent expiration
+  // Sync details
+  lastSyncAt          DateTime?
+  syncStatus          String               @default("synced") // synced, pending, error
   
-  // Consent details
-  consentText  String?   // Text that user consented to
-  version      String    @default("1.0") // Consent version
-  ipAddress    String?   // IP when consent was given
-  userAgent    String?   // User agent when consent was given
+  // Optional coaching session link
+  coachingSessionId   String?
+  coachingSession     CoachingSession?     @relation(fields: [coachingSessionId], references: [id], onDelete: SetNull)
   
-  // Withdrawal details
-  withdrawalReason String?
-  
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
 
-  @@index([userId])
-  @@index([consentType])
-  @@index([isGranted])
-  @@index([expiresAt])
-  @@map("consent")
-  @@schema("public")
-}
-
-model SessionHistory {
-  id        String   @id @default(cuid())
-  sessionId String
-  session   Session  @relation("SessionHistory", fields: [sessionId], references: [id], onDelete: Cascade)
-  
-  action    String   // created, updated, cancelled, rescheduled, completed
-  userId    String
-  user      User     @relation("UserSessionHistory", fields: [userId], references: [id])
-  
-  timestamp DateTime @default(now())
-  details   Json?    // Additional details about the action
-  
-  // Action metadata
-  ipAddress String?
-  userAgent String?
-  
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([sessionId])
-  @@index([userId])
-  @@index([action])
-  @@index([timestamp])
-  @@map("session_history")
-  @@schema("public")
-}
-
-model EncryptionKey {
-  id        String    @id @default(cuid())
-  keyId     String    @unique // Key identifier
-  algorithm String    // Encryption algorithm
-  keySize   Int       // Key size in bits
-  
-  isActive  Boolean   @default(true)
-  expiresAt DateTime?
-  
-  // Key metadata
-  purpose   String?   // What this key is used for
-  version   String    @default("1")
-  
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-
-  @@index([keyId])
-  @@index([isActive])
-  @@index([expiresAt])
-  @@map("encryption_keys")
-  @@schema("public")
-}
-
-model InviteToken {
-  id        String   @id @default(cuid())
-  email     String
-  token     String   @unique
-  role      String
-  expiresAt DateTime
-  isUsed    Boolean  @default(false)
-  
-  createdBy String
-  creator   User     @relation("InviteTokenCreator", fields: [createdBy], references: [id])
-  
-  // Invite details
-  message   String?  // Optional message to include with invite
-  
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([email])
-  @@index([token])
-  @@index([expiresAt])
-  @@index([isUsed])
-  @@map("invite_tokens")
-  @@schema("public")
+  @@unique([integrationId, externalEventId])
+  @@map("calendar_events")
 }

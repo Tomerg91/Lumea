@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { supabase, serverTables } from '../lib/supabase.js';
 import type { Reflection, ReflectionInsert, ReflectionUpdate } from '../../../shared/types/database';
-import { reflectionNotificationService } from '../services/reflectionNotificationService';
+import { reflectionNotificationService } from '../services/reflectionNotificationService.js';
 
 // Validation schema for reflection creation
 const createReflectionSchema = z.object({

@@ -1,7 +1,7 @@
 // server/src/auth/passport.ts
 import passport from 'passport';
 import { Strategy as JwtStrategy, ExtractJwt, StrategyOptions } from 'passport-jwt';
-import { User, IUser } from '../models/User'; // Adjust path as necessary
+import { User, IUser } from '../models/User.js'; // Adjust path as necessary
 import { jwtConfig } from './config';
 
 // --- Access Token Strategy ---

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { supabase } from '../lib/supabase.js';
-import { createInviteToken } from '../utils/tokenHelpers';
-import { sendInvite } from '../mail/sendInvite';
+import { createInviteToken } from '../utils/tokenHelpers.js';
+import { sendInvite } from '../mail/sendInvite.js';
 
 // Rate limit cache
 interface RateLimitEntry {

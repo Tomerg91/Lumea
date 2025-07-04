@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { consentController } from '../controllers/consentController';
-import { authenticate } from '../middleware/auth';
-import { auditMiddleware } from '../middleware/auditMiddleware';
+import { consentController } from '../controllers/consentController.js';
+import { authenticate } from '../middleware/auth.js';
+import { auditMiddleware } from '../middleware/auditMiddleware.js';
 import rateLimit from 'express-rate-limit';
 
 const router = Router();

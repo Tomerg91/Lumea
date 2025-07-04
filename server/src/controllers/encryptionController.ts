@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { encryptionService } from '../services/encryptionService';
-import { EncryptionKeyMetadata } from '../models/EncryptionKey';
-import { auditService } from '../services/auditService';
+import { encryptionService } from '../services/encryptionService.js';
+import { EncryptionKeyMetadata } from '../models/EncryptionKey.js';
+import { auditService } from '../services/auditService.js';
 
 export class EncryptionController {
   /**

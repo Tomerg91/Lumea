@@ -5,7 +5,7 @@ import nodemailer from 'nodemailer';
 import { supabaseAuth, isAuthenticated } from '../middleware/supabaseAuth.js';
 import { users } from '../../../shared/schema';
 import { eq, and, gt } from 'drizzle-orm';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase.js';
 import bcrypt from 'bcryptjs';
 
 const router = express.Router();

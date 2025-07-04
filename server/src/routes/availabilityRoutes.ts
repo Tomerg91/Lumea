@@ -1,8 +1,8 @@
 import express, { Request, Response } from 'express';
 import { body, param, query, validationResult } from 'express-validator';
-import { AvailabilityService, CreateAvailabilityData, UpdateAvailabilityData } from '../services/availabilityService';
-import { isAuthenticated, isCoach } from '../middlewares/auth';
-import { cacheResponse, clearCache } from '../middleware/cache';
+import { AvailabilityService, CreateAvailabilityData, UpdateAvailabilityData } from '../services/availabilityService.js';
+import { isAuthenticated, isCoach } from '../middlewares/auth.js';
+import { cacheResponse, clearCache } from '../middleware/cache.js';
 
 const router = express.Router();
 

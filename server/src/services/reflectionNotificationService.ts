@@ -1,6 +1,6 @@
-import { serverTables } from '../lib/supabase';
+import { serverTables } from '../lib/supabase.js';
 import { SupabaseNotificationService } from './supabaseNotificationService';
-import { NotificationTemplates } from '../models/Notification';
+import { NotificationTemplates } from '../models/Notification.js';
 
 export interface ReflectionNotificationData {
   reflectionId: string;

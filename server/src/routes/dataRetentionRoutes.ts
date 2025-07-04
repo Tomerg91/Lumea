@@ -1,7 +1,7 @@
 import express from 'express';
 import { body, param, query } from 'express-validator';
-import { DataRetentionController } from '../controllers/dataRetentionController';
-import { isAuthenticated, hasRole } from '../middleware/auth';
+import { DataRetentionController } from '../controllers/dataRetentionController.js';
+import { isAuthenticated, hasRole } from '../middleware/auth.js';
 import rateLimit from 'express-rate-limit';
 
 const router = express.Router();

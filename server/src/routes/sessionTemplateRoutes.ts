@@ -1,11 +1,11 @@
 import express, { Request, Response } from 'express';
 import { body, param, query, validationResult } from 'express-validator';
-import { SessionTemplate } from '../models/SessionTemplate';
-import { TemplateSession } from '../models/TemplateSession';
-import { CoachingSession } from '../models/CoachingSession';
-import { isAuthenticated, isCoach } from '../middlewares/auth';
-import { cacheResponse, clearCache } from '../middleware/cache';
-import { sessionTemplateSchemas } from '../schemas/validation';
+import { SessionTemplate } from '../models/SessionTemplate.js';
+import { TemplateSession } from '../models/TemplateSession.js';
+import { CoachingSession } from '../models/CoachingSession.js';
+import { isAuthenticated, isCoach } from '../middlewares/auth.js';
+import { cacheResponse, clearCache } from '../middleware/cache.js';
+import { sessionTemplateSchemas } from '../schemas/validation.js';
 
 import { v4 as uuidv4 } from 'uuid';
 

@@ -1,6 +1,6 @@
 import express from 'express';
-import { isAuthenticated } from '../middlewares/auth';
-import { reflectionController } from '../controllers/reflectionController';
+import { isAuthenticated } from '../middlewares/auth.js';
+import { reflectionController } from '../controllers/reflectionController.js';
 
 const router = express.Router();
 

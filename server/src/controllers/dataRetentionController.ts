@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { DataRetentionService } from '../services/dataRetentionService';
-import DataRetentionPolicy from '../models/DataRetentionPolicy';
-import DeletionCertificate from '../models/DeletionCertificate';
-import logger from '../utils/logger';
+import { DataRetentionService } from '../services/dataRetentionService.js';
+import DataRetentionPolicy from '../models/DataRetentionPolicy.js';
+import DeletionCertificate from '../models/DeletionCertificate.js';
+import logger from '../utils/logger.js';
 import { validationResult } from 'express-validator';
 
 export class DataRetentionController {

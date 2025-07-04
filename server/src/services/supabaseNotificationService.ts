@@ -1,4 +1,4 @@
-import { serverTables, supabase } from '../lib/supabase';
+import { serverTables, supabase } from '../lib/supabase.js';
 import * as cron from 'node-cron';
 
 // Types for notifications

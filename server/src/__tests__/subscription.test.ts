@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { Request, Response } from 'express';
-import { subscriptionController } from '../controllers/subscriptionController';
-import { IsraPayService } from '../services/israPayService';
-import { supabase } from '../lib/supabase';
+import { subscriptionController } from '../controllers/subscriptionController.js';
+import { IsraPayService } from '../services/israPayService.js';
+import { supabase } from '../lib/supabase.js';
 
 // Mock the dependencies
 jest.mock('../services/israPayService');

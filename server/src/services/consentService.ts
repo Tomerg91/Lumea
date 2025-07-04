@@ -1,6 +1,6 @@
 import { auditService } from './auditService';
 import { encryptionService } from './encryptionService';
-import { User } from '../models/User';
+import { User } from '../models/User.js';
 
 export interface IConsent { // Placeholder interface
   _id: string;

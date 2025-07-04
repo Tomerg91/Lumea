@@ -1,7 +1,7 @@
 import jwt, { SignOptions, Secret, JwtPayload } from 'jsonwebtoken';
 import mongoose, { Types } from 'mongoose';
 import { jwtConfig } from './config';
-import { Session } from '../models/Session'; // Adjust path as needed
+import { Session } from '../models/Session.js'; // Adjust path as needed
 import crypto from 'crypto'; // For generating refresh token jti
 
 // Define the structure of the payload for clarity

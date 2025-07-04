@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { EncryptionController } from '../controllers/encryptionController';
-import { isAuthenticated } from '../../middleware/authMiddleware';
-import { auditMiddleware } from '../middleware/auditMiddleware';
+import { EncryptionController } from '../controllers/encryptionController.js';
+import { isAuthenticated } from '../../middleware/authMiddleware.js';
+import { auditMiddleware } from '../middleware/auditMiddleware.js';
 import rateLimit from 'express-rate-limit';
 
 const router = Router();

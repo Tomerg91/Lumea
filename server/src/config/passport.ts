@@ -1,7 +1,7 @@
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 // import scrypt from 'scrypt-js'; // scrypt logic is now handled in storage.ts if needed for password verification, or by bcrypt in User model
-import { db } from '../../db'; // Import Drizzle db instance
+import { db } from '../../db.js'; // Import Drizzle db instance
 import { users, User as DrizzleUser } from '../../../shared/schema'; // Import Drizzle schema and type
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';

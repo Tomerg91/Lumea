@@ -1,8 +1,8 @@
 import express from 'express';
-import { QueueService } from '../services/queueService';
-import { BackupService } from '../services/backupService';
-import { isAuthenticated, hasRole } from '../middleware/auth';
-import logger from '../utils/logger';
+import { QueueService } from '../services/queueService.js';
+import { BackupService } from '../services/backupService.js';
+import { isAuthenticated, hasRole } from '../middleware/auth.js';
+import logger from '../utils/logger.js';
 
 const router = express.Router();
 

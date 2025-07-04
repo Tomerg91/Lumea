@@ -1,10 +1,10 @@
 import express, { Request, Response } from 'express';
 import { body, param, query, validationResult } from 'express-validator';
-import { sessionController } from '../controllers/sessionController';
-import SessionService, { CancellationRequest, ReschedulingRequest } from '../services/sessionService';
+import { sessionController } from '../controllers/sessionController.js';
+import SessionService, { CancellationRequest, ReschedulingRequest } from '../services/sessionService.js';
 
-import { isAuthenticated, isCoach } from '../middlewares/auth';
-import { cacheResponse, clearCache } from '../middleware/cache';
+import { isAuthenticated, isCoach } from '../middlewares/auth.js';
+import { cacheResponse, clearCache } from '../middleware/cache.js';
 
 const router = express.Router();
 

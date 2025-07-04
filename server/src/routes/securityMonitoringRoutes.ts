@@ -1,7 +1,7 @@
 import express from 'express';
 import { param, query } from 'express-validator';
-import SecurityMonitoringController from '../controllers/securityMonitoringController';
-import { isAuthenticated, hasRole } from '../middleware/auth';
+import SecurityMonitoringController from '../controllers/securityMonitoringController.js';
+import { isAuthenticated, hasRole } from '../middleware/auth.js';
 import rateLimit from 'express-rate-limit';
 
 const router = express.Router();

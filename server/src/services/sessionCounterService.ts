@@ -2,7 +2,7 @@
 // Commenting out entire file as it seems outdated/broken 
 // based on current Prisma schema and potential ORM mismatch.
 
-import { prisma } from '../lib/prisma';
+import { prisma } from '../lib/prisma.js';
 
 class SessionCounterService {
   public async updateSessionCounters(sessionId: string): Promise<void> {

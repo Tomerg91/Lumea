@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { validateInviteToken, invalidateInviteToken } from '../utils/tokenHelpers';
+import { validateInviteToken, invalidateInviteToken } from '../utils/tokenHelpers.js';
 import bcrypt from 'bcryptjs';
 import { supabase } from '../lib/supabase.js';
 

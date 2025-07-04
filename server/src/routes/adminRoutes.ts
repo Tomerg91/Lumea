@@ -1,6 +1,6 @@
 import express from 'express';
 import { Router } from 'express';
-// import { approveCoach, getPendingCoaches } from '../controllers/adminController'; // Old incorrect import
+// import { approveCoach, getPendingCoaches } from '../controllers/adminController.js'; // Old incorrect import
 import { adminController } from '../controllers/adminController.js'; // Corrected import
 import { isAuthenticated, isAdmin } from '../middleware/auth.js';
 
