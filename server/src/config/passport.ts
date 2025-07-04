@@ -1,14 +1,14 @@
 import passport from 'passport';
 import { Strategy as LocalStrategy } from 'passport-local';
 // import scrypt from 'scrypt-js'; // scrypt logic is now handled in storage.ts if needed for password verification, or by bcrypt in User model
-import { db } from '../../db.js'; // Import Drizzle db instance
+import { db } from '../../db'; // Import Drizzle db instance
 import { users, User as DrizzleUser } from '../../../shared/schema'; // Import Drizzle schema and type
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-// import { User } from '../models/User.js'; // No longer directly using User model here
+// import { User } from '../models/User'; // No longer directly using User model here
 // import { HydratedDocument } from 'mongoose'; // Not needed
-import { AuthenticatedUserPayload } from '../types/user.js'; // Import the correct payload type
-import { IUser } from '../models/User.js'; // Needed for fullUser type
+import { AuthenticatedUserPayload } from '../types/user'; // Import the correct payload type
+import { IUser } from '../models/User'; // Needed for fullUser type
 
 // Remove local AuthenticatedUser interface, use AuthenticatedUserPayload from types
 /*

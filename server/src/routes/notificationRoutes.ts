@@ -1,10 +1,10 @@
 import express, { Request, Response } from 'express';
 import { z } from 'zod';
 import { body, query, param, validationResult } from 'express-validator';
-import { NotificationService } from '../services/notificationService.js';
-import { isAuthenticated } from '../middleware/auth.js';
+import { NotificationService } from '../services/notificationService';
+import { isAuthenticated } from '../middleware/auth';
 
-import { notificationScheduler } from '../services/notificationSchedulerService.js';
+import { notificationScheduler } from '../services/notificationSchedulerService';
 
 const router = express.Router();
 

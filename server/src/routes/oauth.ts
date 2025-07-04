@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { verifyGoogleToken, verifyFacebookToken, handleOAuthLogin } from '../services/oauth.js';
+import { verifyGoogleToken, verifyFacebookToken, handleOAuthLogin } from '../services/oauth';
 import jwt from 'jsonwebtoken';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate } from '../middleware/auth';
 
 const router = Router();
 

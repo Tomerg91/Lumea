@@ -1,6 +1,6 @@
 import express from 'express';
-import { inviteClient, getMyClients } from '../controllers/inviteController.js';
-import { isAuthenticated } from '../middlewares/auth.js';
+import { inviteClient, getMyClients } from '../controllers/inviteController';
+import { isAuthenticated } from '../middlewares/auth';
 
 const router = express.Router();
 

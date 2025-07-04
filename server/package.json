@@ -82,6 +82,7 @@
   "devDependencies": {
     "@babel/preset-env": "7.27.2",
     "@babel/preset-typescript": "7.27.1",
+    "concurrently": "8.2.2",
     "@types/bcrypt": "^5.0.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.6.12",

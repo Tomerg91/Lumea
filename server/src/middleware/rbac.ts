@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { IUser } from '../models/User.js';
+import { IUser } from '../models/User';
 
 // Define the roles and their permissions
 export enum Role {

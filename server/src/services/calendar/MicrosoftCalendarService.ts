@@ -5,7 +5,7 @@ import {
   OAuthTokens, 
   ExternalCalendarEvent, 
   CalendarMetadata 
-} from './CalendarService.js';
+} from './CalendarService';
 
 interface TokenResponse {
   access_token: string;

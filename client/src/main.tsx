@@ -92,7 +92,7 @@ const root = ReactDOM.createRoot(document.getElementById('root')!, {
       console.debug('Error info:', errorInfo);
     }
   }
-});
+} as any); // Type assertion to handle React 19 options not yet in @types/react
 
 // Remove initial loading screen when React app is ready
 const removeInitialLoader = () => {

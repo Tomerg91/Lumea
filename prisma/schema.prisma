@@ -1,0 +1,122 @@
+// This is your Prisma schema file.
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String   @id @default(cuid())
+  email               String   @unique
+  name                String?
+  password            String?
+  role                String   @default("client")
+  emailVerified       DateTime?
+  image               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Sessions
+  sessions            Session[]
+  
+  // New coaching-related fields
+  coachingSessions    CoachingSession[]
+  coachNotes          CoachNote[]
+  files               File[]
+  
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model CoachingSession {
+  id                String              @id @default(cuid())
+  clientId          String
+  client            User                @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  // Session details
+  title             String
+  description       String?
+  date              DateTime            // when the session is scheduled
+  duration          Int                 // duration in minutes
+  status            String              @default("scheduled") // scheduled, in_progress, completed, cancelled, no_show
+  type              String              @default("individual") // individual, group, workshop
+  format            String              @default("video") // video, phone, in_person
+  
+  // Session content
+  notes             String?
+  completedAt       DateTime?
+  
+  // Relationships
+  coachNotes        CoachNote[]
+  
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+
+  @@map("coaching_sessions")
+}
+
+model CoachNote {
+  id                String          @id @default(cuid())
+  sessionId         String
+  coachId           String
+  session           CoachingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  coach             User            @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  
+  // Note content
+  title             String?
+  content           String
+  type              String          @default("session") // session, client, goal, observation
+  
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  @@map("coach_notes")
+}
+
+model File {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // File details
+  filename        String
+  originalName    String
+  mimeType        String
+  size            Int       // File size in bytes
+  path            String    // Storage path
+  url             String?   // Public URL if applicable
+  
+  // File categorization
+  category        String    @default("document") // document, image, video, audio, other
+  
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("files")
+}
+
+model Tag {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  color       String?  // Hex color code
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("tags")
+} 

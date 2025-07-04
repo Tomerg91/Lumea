@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { authenticate } from '../middleware/auth.js';
-import { asyncHandler } from '../middleware/error.js';
+import { authenticate } from '../middleware/auth';
+import { asyncHandler } from '../middleware/error';
 import {
   startTimer,
   stopTimer,
@@ -9,7 +9,7 @@ import {
   adjustDuration,
   getTimingData,
   getDurationAnalytics,
-} from '../controllers/sessionTimerController.js';
+} from '../controllers/sessionTimerController';
 
 const router = Router();
 

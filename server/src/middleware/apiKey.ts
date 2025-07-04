@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
-import { APIError, ErrorCode } from './error.js';
+import { APIError, ErrorCode } from './error';
 
 // API Key configuration
 interface ApiKeyConfig {

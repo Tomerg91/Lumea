@@ -1,12 +1,12 @@
-import { supabase } from '../lib/supabase.js';
-import { MFAService } from './mfaService.js';
-import { encryptionService } from './encryptionService.js';
+import { supabase } from '../lib/supabase';
+import { MFAService } from './mfaService';
+import { encryptionService } from './encryptionService';
 import { 
   encryptedSupabase, 
   batchEncryptTable, 
   PHITables,
   logEncryptionEvent 
-} from '../utils/fieldEncryption.js';
+} from '../utils/fieldEncryption';
 
 /**
  * HIPAA Compliance Service

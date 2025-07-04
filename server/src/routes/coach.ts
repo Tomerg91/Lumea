@@ -1,6 +1,6 @@
 import express from 'express';
-import { isCoach } from '../middleware/auth.js';
-import { coachController } from '../controllers/coachController.js';
+import { isCoach } from '../middleware/auth';
+import { coachController } from '../controllers/coachController';
 
 const router = express.Router();
 

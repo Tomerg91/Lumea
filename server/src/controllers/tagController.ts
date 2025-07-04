@@ -8,7 +8,7 @@ import {
   deleteTag,
   createTagSchema,
   updateTagSchema,
-} from '../storage.js';
+} from '../storage';
 
 export const tagController = {
   // Create a new tag

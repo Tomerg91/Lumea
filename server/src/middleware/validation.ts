@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { Schema } from 'joi';
-import { APIError, ErrorCode } from './error.js';
+import { APIError, ErrorCode } from './error';
 
 // Middleware to validate request body
 export const validateBody = (schema: Schema) => {

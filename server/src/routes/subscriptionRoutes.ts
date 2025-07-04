@@ -1,6 +1,6 @@
 import express from 'express';
-import { subscriptionController } from '../controllers/subscriptionController.js';
-import { supabaseAuth } from '../middleware/supabaseAuth.js';
+import { subscriptionController } from '../controllers/subscriptionController';
+import { supabaseAuth } from '../middleware/supabaseAuth';
 
 const router = express.Router();
 

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { consentService, ConsentRequest, ConsentWithdrawalRequest, DataPortabilityRequest } from '../services/consentService.js';
-import { auditService } from '../services/auditService.js';
-import { logger } from '../services/logger.js';
+import { consentService, ConsentRequest, ConsentWithdrawalRequest, DataPortabilityRequest } from '../services/consentService';
+import { auditService } from '../services/auditService';
+import { logger } from '../services/logger';
 
 interface AuthenticatedRequest extends Request {
   user?: {

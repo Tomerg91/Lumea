@@ -7,8 +7,8 @@ import {
   disableMFA,
   isMFARequired,
   generateBackupCodes,
-} from '../controllers/mfaController.js';
-import { requireAuth } from '../middleware/auth.js';
+} from '../controllers/mfaController';
+import { requireAuth } from '../middleware/auth';
 
 const router = express.Router();
 

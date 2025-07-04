@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { auditService } from '../services/auditService.js';
-import { getClientIp } from './security.js';
+import { auditService } from '../services/auditService';
+import { getClientIp } from './security';
 import crypto from 'crypto';
 
 // PHI-sensitive endpoints that require special audit logging

@@ -1,14 +1,14 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
-import { supabase, serverTables } from '../lib/supabase.js';
+import { supabase, serverTables } from '../lib/supabase';
 import {
   createPasswordResetToken,
   validatePasswordResetToken,
   invalidatePasswordResetToken,
-} from '../services/passwordResetTokenService.js';
-import { sendReset } from '../mail/sendReset.js';
-import type { User } from '../../../shared/types/database.js';
+} from '../services/passwordResetTokenService';
+import { sendReset } from '../mail/sendReset';
+import type { User } from '../../../shared/types/database';
 
 // Validation schema for password reset request
 const resetRequestSchema = z.object({

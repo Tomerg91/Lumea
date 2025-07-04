@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { APIError, ErrorCode } from './error.js';
+import { APIError, ErrorCode } from './error';
 
 // Timeout middleware options
 interface TimeoutOptions {

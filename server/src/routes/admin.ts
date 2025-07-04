@@ -1,7 +1,7 @@
 import express from 'express';
-import { isAdmin } from '../middleware/auth.js';
-import { analyticsController } from '../controllers/analyticsController.js';
-import { adminController } from '../controllers/adminController.js';
+import { isAdmin } from '../middleware/auth';
+import { analyticsController } from '../controllers/analyticsController';
+import { adminController } from '../controllers/adminController';
 
 const router = express.Router();
 

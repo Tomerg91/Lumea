@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { supabase } from '../lib/supabase.js';
+import { supabase } from '../lib/supabase';
 
 export const coachController = {
   async getClients(req: Request, res: Response) {

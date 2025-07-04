@@ -1,7 +1,7 @@
 import express from 'express';
-import { SupportService } from '../services/supportService.js';
-import { isAuthenticated, isAdmin, hasRole } from '../middleware/auth.js';
-import logger from '../utils/logger.js';
+import { SupportService } from '../services/supportService';
+import { isAuthenticated, isAdmin, hasRole } from '../middleware/auth';
+import logger from '../utils/logger';
 
 const router = express.Router();
 const supportService = SupportService.getInstance();

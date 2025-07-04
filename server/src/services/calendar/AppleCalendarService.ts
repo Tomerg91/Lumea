@@ -4,7 +4,7 @@ import {
   OAuthTokens, 
   ExternalCalendarEvent, 
   CalendarMetadata 
-} from './CalendarService.js';
+} from './CalendarService';
 
 // Apple Calendar uses CalDAV protocol, not OAuth
 // Users need to provide their iCloud credentials and app-specific password

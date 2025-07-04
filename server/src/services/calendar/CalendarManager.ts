@@ -6,10 +6,10 @@ import {
   ExternalCalendarEvent,
   CalendarMetadata,
   SyncResult
-} from './CalendarService.js';
-import { GoogleCalendarService } from './GoogleCalendarService.js';
-import { MicrosoftCalendarService } from './MicrosoftCalendarService.js';
-import { AppleCalendarService } from './AppleCalendarService.js';
+} from './CalendarService';
+import { GoogleCalendarService } from './GoogleCalendarService';
+import { MicrosoftCalendarService } from './MicrosoftCalendarService';
+import { AppleCalendarService } from './AppleCalendarService';
 import crypto from 'crypto';
 
 // Initialize calendar services

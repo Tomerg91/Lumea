@@ -1,6 +1,6 @@
 import crypto from 'crypto';
-import { AuditService, AuditLogEntry } from './auditService.js';
-import { logger } from './logger.js';
+import { AuditService, AuditLogEntry } from './auditService';
+import { logger } from './logger';
 import fs from 'fs';
 import path from 'path';
 

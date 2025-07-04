@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { APIError } from './error.js';
+import { APIError } from './error';
 
 /**
  * Attribute-based access-control (ABAC) policy definition.

@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { supabaseFileStorage } from '../lib/supabaseFileStorage.js';
-import { supabase, serverTables } from '../lib/supabase.js';
+import { supabaseFileStorage } from '../lib/supabaseFileStorage';
+import { supabase, serverTables } from '../lib/supabase';
 import { validate as uuidValidate } from 'uuid';
-import type { File } from '../../../shared/types/database.js';
+import type { File } from '../../../shared/types/database';
 
 // Validation schemas
 const presignedUrlRequestSchema = z.object({

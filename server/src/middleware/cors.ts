@@ -1,5 +1,5 @@
 import cors from 'cors';
-import { APIError, ErrorCode } from './error.js';
+import { APIError, ErrorCode } from './error';
 
 // Define the allowed origins
 const allowedOrigins = [

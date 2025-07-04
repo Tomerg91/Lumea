@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { analyticsService, AnalyticsDateRange } from '../services/analyticsService.js';
+import { analyticsService, AnalyticsDateRange } from '../services/analyticsService';
 
 export const analyticsController = {
   /**

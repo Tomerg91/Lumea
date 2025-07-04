@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { supabase, serverTables } from '../lib/supabase.js';
-import { EmailService } from '../services/emailService.js';
-import type { User, UserStatus } from '../../../shared/types/database.js';
+import { supabase, serverTables } from '../lib/supabase';
+import { EmailService } from '../services/emailService';
+import type { User, UserStatus } from '../../../shared/types/database';
 
 const emailService = new EmailService();
 

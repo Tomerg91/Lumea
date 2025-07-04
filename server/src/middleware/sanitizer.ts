@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { APIError, ErrorCode } from './error.js';
+import { APIError, ErrorCode } from './error';
 
 // Simple HTML sanitization - removes potentially dangerous content
 export const sanitizeHtmlContent = (content: string): string => {

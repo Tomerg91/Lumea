@@ -1,6 +1,6 @@
-import { supabase, serverTables } from '../lib/supabase.js';
+import { supabase, serverTables } from '../lib/supabase';
 import crypto from 'crypto';
-import type { PasswordResetToken, PasswordResetTokenInsert } from '../../../shared/types/database.js';
+import type { PasswordResetToken, PasswordResetTokenInsert } from '../../../shared/types/database';
 
 const TOKEN_BYTES = 32; // 32 bytes -> 64-char hex string
 const TOKEN_TTL_MINUTES = 30; // token valid for 30 minutes

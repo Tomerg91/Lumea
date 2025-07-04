@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { HIPAAComplianceController } from '../controllers/hipaaComplianceController.js';
-import { isAuthenticated, isCoach } from '../middleware/auth.js';
+import { HIPAAComplianceController } from '../controllers/hipaaComplianceController';
+import { isAuthenticated, isCoach } from '../middleware/auth';
 
 const router = Router();
 

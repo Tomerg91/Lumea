@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { ReflectionNotificationService } from '../services/reflectionNotificationService.js';
-import { SupabaseNotificationService } from '../services/supabaseNotificationService.js';
-import { serverTables } from '../lib/supabase.js';
+import { ReflectionNotificationService } from '../services/reflectionNotificationService';
+import { SupabaseNotificationService } from '../services/supabaseNotificationService';
+import { serverTables } from '../lib/supabase';
 
 // Mock dependencies
 jest.mock('../lib/supabase', () => ({

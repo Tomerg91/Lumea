@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { HIPAAComplianceService } from '../services/hipaaComplianceService.js';
-import { logger } from '../services/logger.js';
+import { HIPAAComplianceService } from '../services/hipaaComplianceService';
+import { logger } from '../services/logger';
 
 export class HIPAAComplianceController {
   /**

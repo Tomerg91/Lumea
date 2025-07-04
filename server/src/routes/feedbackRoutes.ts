@@ -1,12 +1,12 @@
 import express, { Request, Response } from 'express';
 import { body, param, query, validationResult } from 'express-validator';
-import { SessionFeedback } from '../models/SessionFeedback.js';
-import { FeedbackTemplate } from '../models/FeedbackTemplate.js';
-import { FeedbackAnalytics } from '../models/FeedbackAnalytics.js';
-import { CoachingSession } from '../models/CoachingSession.js';
-import { isAuthenticated, isCoach, isClient } from '../middlewares/auth.js';
-import { cacheResponse, clearCache } from '../middleware/cache.js';
-import { feedbackTriggerService } from '../services/feedbackTriggerService.js';
+import { SessionFeedback } from '../models/SessionFeedback';
+import { FeedbackTemplate } from '../models/FeedbackTemplate';
+import { FeedbackAnalytics } from '../models/FeedbackAnalytics';
+import { CoachingSession } from '../models/CoachingSession';
+import { isAuthenticated, isCoach, isClient } from '../middlewares/auth';
+import { cacheResponse, clearCache } from '../middleware/cache';
+import { feedbackTriggerService } from '../services/feedbackTriggerService';
 
 
 const router = express.Router();

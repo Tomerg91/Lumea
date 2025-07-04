@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { supabase, serverTables } from '../lib/supabase.js';
+import { supabase, serverTables } from '../lib/supabase';
 import type { User, UserUpdate } from '../../../shared/types/database';
 
 // Validation schema for user profile updates

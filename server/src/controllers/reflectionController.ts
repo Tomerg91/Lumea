@@ -1,9 +1,9 @@
 // @ts-nocheck
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { supabase, serverTables } from '../lib/supabase.js';
+import { supabase, serverTables } from '../lib/supabase';
 import type { Reflection, ReflectionInsert, ReflectionUpdate } from '../../../shared/types/database';
-import { reflectionNotificationService } from '../services/reflectionNotificationService.js';
+import { reflectionNotificationService } from '../services/reflectionNotificationService';
 
 // Validation schema for reflection creation
 const createReflectionSchema = z.object({

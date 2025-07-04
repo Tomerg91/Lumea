@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { serverTables } from '../lib/supabase.js';
-import { supabaseNotificationService } from '../services/supabaseNotificationService.js';
+import { serverTables } from '../lib/supabase';
+import { supabaseNotificationService } from '../services/supabaseNotificationService';
 
 export class NotificationController {
   /**

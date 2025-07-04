@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { db } from '../../db.js';
+import { db } from '../../db';
 import { eq } from 'drizzle-orm';
 import * as schema from '@shared/schema';
-import { getNumericUserId } from '../../utils.js';
+import { getNumericUserId } from '../../utils';
 
 // Admin role check middleware
 export const isAdmin = async (req: Request, res: Response, next: NextFunction) => {

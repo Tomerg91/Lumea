@@ -1,7 +1,7 @@
-import { supabase } from '../lib/supabase.js';
+import { supabase } from '../lib/supabase';
 import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
-import { APIError, ErrorCode } from '../middleware/error.js';
+import { APIError, ErrorCode } from '../middleware/error';
 
 // MFA configuration
 const MFA_CONFIG = {

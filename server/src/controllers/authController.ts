@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { validateInviteToken, invalidateInviteToken } from '../utils/tokenHelpers.js';
+import { validateInviteToken, invalidateInviteToken } from '../utils/tokenHelpers';
 import bcrypt from 'bcryptjs';
-import { supabase } from '../lib/supabase.js';
+import { supabase } from '../lib/supabase';
 
 // Validation schema for profile update
 const profileUpdateSchema = z.object({

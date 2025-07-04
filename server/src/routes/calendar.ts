@@ -1,8 +1,8 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { CalendarManager, CalendarConnectionRequest, CalendarSyncOptions } from '../services/calendar/CalendarManager.js';
-import { CalendarProvider } from '../services/calendar/CalendarService.js';
-import { authenticate } from '../middleware/auth.js';
+import { CalendarManager, CalendarConnectionRequest, CalendarSyncOptions } from '../services/calendar/CalendarManager';
+import { CalendarProvider } from '../services/calendar/CalendarService';
+import { authenticate } from '../middleware/auth';
 
 const router = express.Router();
 const prisma = new PrismaClient();

@@ -3,7 +3,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import { Express } from 'express';
 import rateLimit from 'express-rate-limit';
-import { APIError, ErrorCode } from './error.js';
+import { APIError, ErrorCode } from './error';
 
 // Security configuration
 const SECURITY_CONFIG = {

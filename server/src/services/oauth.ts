@@ -2,8 +2,8 @@ import { OAuth2Client } from 'google-auth-library';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 
-import { getUserByEmail, createUser } from '../storage.js';
-import { AuthenticatedUser } from '../types/user.js';
+import { getUserByEmail, createUser } from '../storage';
+import { AuthenticatedUser } from '../types/user';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // Facebook doesn't use OAuth2Client, so this should be removed

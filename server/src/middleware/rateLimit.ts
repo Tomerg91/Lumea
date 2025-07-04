@@ -1,9 +1,9 @@
 import rateLimit from 'express-rate-limit';
 import { Request, Response, NextFunction } from 'express';
-import { APIError, ErrorCode } from './error.js';
+import { APIError, ErrorCode } from './error';
 // @ts-ignore – package may not have TypeScript types installed
 import RedisStore from 'rate-limit-redis';
-import redisClient from '../utils/cache.js';
+import redisClient from '../utils/cache';
 
 // Sliding window rate limiter using in-memory store
 // In production, use Redis for distributed rate limiting

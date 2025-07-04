@@ -1,6 +1,6 @@
 import { QueueService } from './queueService';
 import { BackupService } from './backupService';
-import logger from '../utils/logger.js';
+import logger from '../utils/logger';
 
 export interface SupportTicket {
   id: string;

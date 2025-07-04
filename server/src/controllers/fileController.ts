@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { supabaseFileStorage } from '../lib/supabaseFileStorage.js';
-import { supabaseStorage } from '../lib/supabaseStorage.js';
+import { supabaseFileStorage } from '../lib/supabaseFileStorage';
+import { supabaseStorage } from '../lib/supabaseStorage';
 import { validate as uuidValidate } from 'uuid';
 
 // Validation schemas

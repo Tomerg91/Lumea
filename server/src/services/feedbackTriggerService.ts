@@ -1,10 +1,10 @@
 import { Types } from 'mongoose';
-import { CoachingSession, ICoachingSession } from '../models/CoachingSession.js';
-import { SessionFeedback } from '../models/SessionFeedback.js';
+import { CoachingSession, ICoachingSession } from '../models/CoachingSession';
+import { SessionFeedback } from '../models/SessionFeedback';
 import { NotificationService } from './notificationService';
-import { NotificationPreferences } from '../models/NotificationPreferences.js';
-import { User, IUser } from '../models/User.js';
-import { NotificationChannel } from '../models/Notification.js';
+import { NotificationPreferences } from '../models/NotificationPreferences';
+import { User, IUser } from '../models/User';
+import { NotificationChannel } from '../models/Notification';
 import * as cron from 'node-cron';
 
 export interface FeedbackTriggerConfig {

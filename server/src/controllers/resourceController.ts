@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { supabase } from '../lib/supabase.js';
+import { supabase } from '../lib/supabase';
 import { validate as uuidValidate } from 'uuid';
 
 export const resourceController = {

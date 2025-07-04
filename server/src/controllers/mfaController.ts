@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { MFAService } from '../services/mfaService.js';
-import { APIError, ErrorCode } from '../middleware/error.js';
-import { supabase } from '../lib/supabase.js';
+import { MFAService } from '../services/mfaService';
+import { APIError, ErrorCode } from '../middleware/error';
+import { supabase } from '../lib/supabase';
 
 // Validation schemas
 const mfaSetupSchema = z.object({

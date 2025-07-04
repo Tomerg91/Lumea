@@ -8,9 +8,9 @@ import { spawn } from 'child_process';
 import { promisify } from 'util';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
-import { supabase, serverTables } from '../lib/supabase.js';
-import { EncryptionService } from './encryptionService.js';
-import logger from '../utils/logger.js';
+import { supabase, serverTables } from '../lib/supabase';
+import { EncryptionService } from './encryptionService';
+import logger from '../utils/logger';
 
 export interface BackupOptions {
   compress?: boolean;

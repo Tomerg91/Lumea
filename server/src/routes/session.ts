@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { isAuthenticated, isCoach, isClient } from '../middleware/auth.js';
-import { sessionController } from '../controllers/sessionController.js';
+import { isAuthenticated, isCoach, isClient } from '../middleware/auth';
+import { sessionController } from '../controllers/sessionController';
 
 const router = Router();
 

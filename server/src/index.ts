@@ -4,37 +4,37 @@ import { config } from 'dotenv';
 import session, { SessionOptions } from 'express-session';
 import passport from 'passport';
 import './config/passport.js';
-import authRoutes from './routes/auth.js';
-import sessionRoutes from './routes/session.js';
-import adminRoutes from './routes/admin.js';
-import coachRoutes from './routes/coach.js';
-import resourceRoutes from './routes/resources.js';
-import reflectionRoutes from './routes/reflection.js';
-import fileRoutes from './routes/file.js';
-import tagRoutes from './routes/tag.js';
-// import coachNoteRoutes from './routes/coachNote.js';
-import userRoutes from './routes/user.js';
-import analyticsRoutes from './routes/analytics.js';
-import metricsRoutes from './routes/metrics.js';
-import dashboardRoutes from './routes/dashboard.js';
-import supabaseNotificationRoutes from './routes/supabaseNotificationRoutes.js';
-import sessionTimerRoutes from './routes/sessionTimer.js';
-import { sessionHistoryRoutes } from './routes/sessionHistoryRoutes.js';
-import availabilityRoutes from './routes/availabilityRoutes.js';
-import paymentRoutes from './routes/paymentRoutes.js';
-import subscriptionRoutes from './routes/subscriptionRoutes.js';
-import hipaaComplianceRoutes from './routes/hipaaComplianceRoutes.js';
-import auditRoutes from './routes/auditRoutes.js';
-import encryptionRoutes from './routes/encryptionRoutes.js';
-import consentRoutes from './routes/consentRoutes.js';
-import dataRetentionRoutes from './routes/dataRetentionRoutes.js';
-import securityMonitoringRoutes from './routes/securityMonitoringRoutes.js';
-import { errorHandler, notFoundHandler } from './middleware/error.js';
+import authRoutes from './routes/auth';
+import sessionRoutes from './routes/session';
+import adminRoutes from './routes/admin';
+import coachRoutes from './routes/coach';
+import resourceRoutes from './routes/resources';
+import reflectionRoutes from './routes/reflection';
+import fileRoutes from './routes/file';
+import tagRoutes from './routes/tag';
+// import coachNoteRoutes from './routes/coachNote';
+import userRoutes from './routes/user';
+import analyticsRoutes from './routes/analytics';
+import metricsRoutes from './routes/metrics';
+import dashboardRoutes from './routes/dashboard';
+import supabaseNotificationRoutes from './routes/supabaseNotificationRoutes';
+import sessionTimerRoutes from './routes/sessionTimer';
+import { sessionHistoryRoutes } from './routes/sessionHistoryRoutes';
+import availabilityRoutes from './routes/availabilityRoutes';
+import paymentRoutes from './routes/paymentRoutes';
+import subscriptionRoutes from './routes/subscriptionRoutes';
+import hipaaComplianceRoutes from './routes/hipaaComplianceRoutes';
+import auditRoutes from './routes/auditRoutes';
+import encryptionRoutes from './routes/encryptionRoutes';
+import consentRoutes from './routes/consentRoutes';
+import dataRetentionRoutes from './routes/dataRetentionRoutes';
+import securityMonitoringRoutes from './routes/securityMonitoringRoutes';
+import { errorHandler, notFoundHandler } from './middleware/error';
 import { 
   applySecurity, 
   getClientIp,
   securityLogging 
-} from './middleware/security.js';
+} from './middleware/security';
 import {
   authLimiter,
   passwordResetLimiter,
@@ -47,8 +47,8 @@ import {
   burstProtection,
   sustainedLimiter,
   cleanupRateLimiters
-} from './middleware/rateLimit.js';
-import { auditMiddleware } from './middleware/auditMiddleware.js';
+} from './middleware/rateLimit';
+import { auditMiddleware } from './middleware/auditMiddleware';
 import http from 'http';
 // PostgreSQL imports removed - using Supabase instead
 import { logger } from './services/logger';

@@ -1,7 +1,7 @@
 import express from 'express';
-import { isAuthenticated } from '../middleware/auth.js';
-import upload from '../config/multer.js';
-import { fileController } from '../controllers/fileController.js';
+import { isAuthenticated } from '../middleware/auth';
+import upload from '../config/multer';
+import { fileController } from '../controllers/fileController';
 
 const router = express.Router();
 

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { supabase } from '../lib/supabase.js';
-import { IsraPayService } from '../services/israPayService.js';
-import logger from '../utils/logger.js';
+import { supabase } from '../lib/supabase';
+import { IsraPayService } from '../services/israPayService';
+import logger from '../utils/logger';
 import * as crypto from 'crypto';
 
 const israPayService = new IsraPayService();

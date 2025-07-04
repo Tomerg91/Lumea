@@ -2,10 +2,10 @@ import express, { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
-import { supabaseAuth, isAuthenticated } from '../middleware/supabaseAuth.js';
+import { supabaseAuth, isAuthenticated } from '../middleware/supabaseAuth';
 import { users } from '../../../shared/schema';
 import { eq, and, gt } from 'drizzle-orm';
-import { supabase } from '../lib/supabase.js';
+import { supabase } from '../lib/supabase';
 import bcrypt from 'bcryptjs';
 
 const router = express.Router();

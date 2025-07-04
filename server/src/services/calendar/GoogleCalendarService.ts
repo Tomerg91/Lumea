@@ -6,7 +6,7 @@ import {
   OAuthTokens, 
   ExternalCalendarEvent, 
   CalendarMetadata 
-} from './CalendarService.js';
+} from './CalendarService';
 
 export class GoogleCalendarService extends BaseCalendarService {
   provider: CalendarProvider = 'google';

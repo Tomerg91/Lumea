@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { SessionTiming, ISessionTiming } from '../models/SessionTiming.js';
-import { CoachingSession } from '../models/CoachingSession.js';
-import { APIError, ErrorCode } from '../middleware/error.js';
-import { validationSchemas } from '../schemas/validation.js';
+import { SessionTiming, ISessionTiming } from '../models/SessionTiming';
+import { CoachingSession } from '../models/CoachingSession';
+import { APIError, ErrorCode } from '../middleware/error';
+import { validationSchemas } from '../schemas/validation';
 import { Types } from 'mongoose';
 
 // Start session timer

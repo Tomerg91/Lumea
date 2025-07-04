@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { APIError } from './error.js';
+import { APIError } from './error';
 
 /**
  * Middleware that enforces a human-friendly reason for accessing sensitive resources.

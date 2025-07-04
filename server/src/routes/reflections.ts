@@ -1,7 +1,7 @@
 import express from 'express';
-import { reflectionController } from '../controllers/reflectionController.js';
-import { ReflectionTemplates } from '../models/ReflectionTemplate.js';
-import { isAuthenticated } from '../middleware/auth.js';
+import { reflectionController } from '../controllers/reflectionController';
+import { ReflectionTemplates } from '../models/ReflectionTemplate';
+import { isAuthenticated } from '../middleware/auth';
 
 const router = express.Router();
 

@@ -1,4 +1,4 @@
-import { supabaseStorage } from './supabaseStorage.js';
+import { supabaseStorage } from './supabaseStorage';
 import session from 'express-session';
 import createMemoryStore from 'memorystore';
 

@@ -1,7 +1,7 @@
 // @ts-nocheck
 import express, { Request, Response } from 'express';
-import { AuditService, SessionHistoryFilter } from '../services/auditService.js';
-import { isAuthenticated as auth } from '../middleware/auth.js';
+import { AuditService, SessionHistoryFilter } from '../services/auditService';
+import { isAuthenticated as auth } from '../middleware/auth';
 
 
 const router = express.Router();

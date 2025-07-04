@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import cacheManager from '../utils/cache.js';
+import cacheManager from '../utils/cache';
 
 /**
  * Caching middleware options

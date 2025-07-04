@@ -1,27 +1,27 @@
 
 import crypto from 'crypto';
-import DataRetentionPolicy, { IDataRetentionPolicy } from '../models/DataRetentionPolicy.js';
-import DeletionCertificate from '../models/DeletionCertificate.js';
+import DataRetentionPolicy, { IDataRetentionPolicy } from '../models/DataRetentionPolicy';
+import DeletionCertificate from '../models/DeletionCertificate';
 import { AuditService } from './auditService';
 import { EncryptionService } from './encryptionService';
-import logger from '../utils/logger.js';
+import logger from '../utils/logger';
 
 // Import all models that can have retention policies
-import { User } from '../models/User.js';
-import { Session } from '../models/Session.js';
-import { Reflection } from '../models/Reflection.js';
-import { CoachNote } from '../models/CoachNote.js';
-import { AuditLog } from '../models/AuditLog.js';
-import { Notification } from '../models/Notification.js';
-import { SessionFeedback } from '../models/SessionFeedback.js';
-import { File } from '../models/File.js';
-import { SessionHistory } from '../models/SessionHistory.js';
-import { Consent } from '../models/Consent.js';
-import { EncryptionKey } from '../models/EncryptionKey.js';
-import { PasswordResetToken } from '../models/PasswordResetToken.js';
-import { InviteToken } from '../models/InviteToken.js';
-import { SessionTiming } from '../models/SessionTiming.js';
-import { CoachAvailability } from '../models/CoachAvailability.js';
+import { User } from '../models/User';
+import { Session } from '../models/Session';
+import { Reflection } from '../models/Reflection';
+import { CoachNote } from '../models/CoachNote';
+import { AuditLog } from '../models/AuditLog';
+import { Notification } from '../models/Notification';
+import { SessionFeedback } from '../models/SessionFeedback';
+import { File } from '../models/File';
+import { SessionHistory } from '../models/SessionHistory';
+import { Consent } from '../models/Consent';
+import { EncryptionKey } from '../models/EncryptionKey';
+import { PasswordResetToken } from '../models/PasswordResetToken';
+import { InviteToken } from '../models/InviteToken';
+import { SessionTiming } from '../models/SessionTiming';
+import { CoachAvailability } from '../models/CoachAvailability';
 
 interface DeletionResult {
   success: boolean;

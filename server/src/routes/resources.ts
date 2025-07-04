@@ -1,6 +1,6 @@
 import express from 'express';
-import { isAuthenticated, isCoach } from '../middleware/auth.js';
-import { resourceController } from '../controllers/resourceController.js';
+import { isAuthenticated, isCoach } from '../middleware/auth';
+import { resourceController } from '../controllers/resourceController';
 
 const router = express.Router();
 

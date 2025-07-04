@@ -1,11 +1,11 @@
 import express from 'express';
-import { isAuthenticated, isCoach } from '../middleware/auth.js';
-import { coachNoteController } from '../controllers/coachNoteController.js';
-import { validateBody, validateParams, validateQuery, validateMultiple } from '../middleware/validate.js';
-import { validationSchemas } from '../schemas/validation.js';
-import { abac } from '../middleware/abac.js';
-// import { CoachNote } from '../models/CoachNote.js';
-import { requireAccessReason } from '../middleware/accessReason.js';
+import { isAuthenticated, isCoach } from '../middleware/auth';
+import { coachNoteController } from '../controllers/coachNoteController';
+import { validateBody, validateParams, validateQuery, validateMultiple } from '../middleware/validate';
+import { validationSchemas } from '../schemas/validation';
+import { abac } from '../middleware/abac';
+// import { CoachNote } from '../models/CoachNote';
+import { requireAccessReason } from '../middleware/accessReason';
 
 const router = express.Router();
 

@@ -1,5 +1,5 @@
-import { encryptionService, EncryptedData } from '../services/encryptionService.js';
-import { supabase } from '../lib/supabase.js';
+import { encryptionService, EncryptedData } from '../services/encryptionService';
+import { supabase } from '../lib/supabase';
 
 /**
  * PHI (Protected Health Information) field encryption utility

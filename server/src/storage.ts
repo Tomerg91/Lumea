@@ -1,4 +1,4 @@
-import prisma from './models/index.js';
+import prisma from './models/index';
 import { z } from 'zod';
 
 // Type imports for Prisma models
@@ -172,6 +172,12 @@ export async function getTagById(id: string): Promise<Tag | null> {
 
 export async function getAllTags(): Promise<Tag[]> {
   return await prisma.tag.findMany();
+}
+
+export async function getTagsByUser(userId: string): Promise<Tag[]> {
+  return await prisma.tag.findMany({
+    where: { createdBy: userId }
+  });
 }
 
 export async function deleteTag(id: string): Promise<boolean> {

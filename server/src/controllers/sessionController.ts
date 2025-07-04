@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { supabase, serverTables } from '../lib/supabase.js';
+import { supabase, serverTables } from '../lib/supabase';
 import type { Session, SessionInsert, SessionUpdate, SessionStatus } from '../../../shared/types/database';
-import { supabaseNotificationService } from '../services/supabaseNotificationService.js';
+import { supabaseNotificationService } from '../services/supabaseNotificationService';
 
 // Validation schema for creating a session using Supabase field names
 const createSessionSchema = z.object({

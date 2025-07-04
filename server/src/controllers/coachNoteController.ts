@@ -7,13 +7,13 @@ import {
   getCoachNotesBySession,
   getCoachNotesByCoach,
   deleteCoachNote,
-} from '../storage.js';
-import { Session } from '../models/Session.js';
-import { CoachNote, ICoachNote, AuditAction, NoteAccessLevel } from '../models/CoachNote.js';
-import { validationSchemas } from '../schemas/validation.js';
-import { APIError, ErrorCode } from '../middleware/error.js';
-import CoachNoteSearchService from '../services/searchService.js';
-import { applyMask, FieldMaskRule } from '../utils/dataMasking.js';
+} from '../storage';
+import { Session } from '../models/Session';
+import { CoachNote, ICoachNote, AuditAction, NoteAccessLevel } from '../models/CoachNote';
+import { validationSchemas } from '../schemas/validation';
+import { APIError, ErrorCode } from '../middleware/error';
+import CoachNoteSearchService from '../services/searchService';
+import { applyMask, FieldMaskRule } from '../utils/dataMasking';
 
 // Helper function to get client IP
 const getClientIp = (req: Request): string => {

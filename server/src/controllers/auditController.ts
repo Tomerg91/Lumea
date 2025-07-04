@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { auditService, AuditQueryOptions } from '../services/auditService.js';
-import { AuditLog } from '../models/AuditLog.js';
-import { logger } from '../services/logger.js';
+import { auditService, AuditQueryOptions } from '../services/auditService';
+import { AuditLog } from '../models/AuditLog';
+import { logger } from '../services/logger';
 
 export class AuditController {
   /**

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import dotenv from 'dotenv';
-import { serviceInitializer } from '../services/serviceInitializer.js';
-import { supabaseNotificationService } from '../services/supabaseNotificationService.js';
+import { serviceInitializer } from '../services/serviceInitializer';
+import { supabaseNotificationService } from '../services/supabaseNotificationService';
 
 // Load environment variables
 dotenv.config();

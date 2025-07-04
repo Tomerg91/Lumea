@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
 import axios from 'axios';
-import logger from '../utils/logger.js';
-import supabase from '../lib/supabase.js';
+import logger from '../utils/logger';
+import supabase from '../lib/supabase';
 
 // ====================================
 // TYPES AND INTERFACES

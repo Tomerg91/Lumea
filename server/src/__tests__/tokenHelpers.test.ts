@@ -8,10 +8,10 @@ import {
   validatePasswordResetToken,
   invalidatePasswordResetToken,
   invalidateInviteToken,
-} from '../utils/tokenHelpers.js';
+} from '../utils/tokenHelpers';
 import crypto from 'crypto';
-import { InviteToken } from '../models/InviteToken.js';
-import { PasswordResetToken } from '../models/PasswordResetToken.js';
+import { InviteToken } from '../models/InviteToken';
+import { PasswordResetToken } from '../models/PasswordResetToken';
 
 // Mock the models and crypto
 jest.mock('../models/InviteToken', () => ({

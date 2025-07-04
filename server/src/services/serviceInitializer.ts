@@ -1,4 +1,4 @@
-import { supabaseNotificationService } from './supabaseNotificationService.js';
+import { supabaseNotificationService } from './supabaseNotificationService';
 
 export class ServiceInitializer {
   private static instance: ServiceInitializer;

@@ -1,7 +1,7 @@
 import express from 'express';
-import { auditController } from '../controllers/auditController.js';
-import { isAuthenticated, isCoach } from '../middleware/auth.js';
-import { apiLimiter } from '../middleware/rateLimit.js';
+import { auditController } from '../controllers/auditController';
+import { isAuthenticated, isCoach } from '../middleware/auth';
+import { apiLimiter } from '../middleware/rateLimit';
 
 const router = express.Router();
 

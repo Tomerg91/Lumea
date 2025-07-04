@@ -1,8 +1,8 @@
 import { EventEmitter } from 'events';
-import { AuditLog } from '../models/AuditLog.js';
-import DeletionCertificate from '../models/DeletionCertificate.js';
-import DataRetentionPolicy from '../models/DataRetentionPolicy.js';
-import { Consent } from '../models/Consent.js';
+import { AuditLog } from '../models/AuditLog';
+import DeletionCertificate from '../models/DeletionCertificate';
+import DataRetentionPolicy from '../models/DataRetentionPolicy';
+import { Consent } from '../models/Consent';
 
 // Simple logger implementation
 const logger = {

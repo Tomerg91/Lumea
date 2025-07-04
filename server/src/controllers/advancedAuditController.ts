@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { AdvancedAuditService } from '../services/advancedAuditService.js';
-import { AuditController } from './auditController.js';
-import { AuditLog } from '../models/AuditLog.js';
-import { logger } from '../services/logger.js';
+import { AdvancedAuditService } from '../services/advancedAuditService';
+import { AuditController } from './auditController';
+import { AuditLog } from '../models/AuditLog';
+import { logger } from '../services/logger';
 
 export class AdvancedAuditController extends AuditController {
   private advancedAuditService: AdvancedAuditService;

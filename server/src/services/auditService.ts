@@ -1,5 +1,5 @@
-import { logger } from './logger.js';
-import { getClientIp } from '../middleware/security.js';
+import { logger } from './logger';
+import { getClientIp } from '../middleware/security';
 import crypto from 'crypto';
 
 export interface CreateHistoryEntryRequest {
