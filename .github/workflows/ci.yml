@@ -19,11 +19,9 @@ jobs:
         with:
           node-version: 20
 
-      - name: Enable Corepack and pin package managers
+      - name: Check Node and npm versions
         run: |
-          corepack enable
-          corepack prepare pnpm@8.15.5 --activate
-          node -v && pnpm -v
+          node -v && npm -v
 
       - name: Verify lock file freshness
         run: |
@@ -82,7 +80,7 @@ jobs:
       
       # Run linting (warnings allowed, only errors fail CI)
       - name: Run ESLint
-        run: npx eslint . --ext .ts,.tsx --max-warnings 1500
+        run: npx eslint . --ext .ts,.tsx --max-warnings 100
 
   build:
     name: Build
